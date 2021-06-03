@@ -760,7 +760,7 @@ version_system="$(cat /etc/debian_version)"
 ## fonction qui permet de checker automatiquement les versions des logiciels qui s'installent manuellement, de façon automatique
 ##------------------------------------------------------------------------------
 check_latest_version_manual_install_apps() {
-    veracrypt_version="$(curl --silent https://www.veracrypt.fr/en/Downloads.html | grep "tar.bz2" | grep -v ".sig\|x86\|Source\|freebsd" | grep -Po "(?<=veracrypt-)(\d+\.+\d+)+\d+")"
+    veracrypt_version="$(curl --silent https://www.veracrypt.fr/en/Downloads.html | grep 'tar.bz2' | grep -v ".sig\|x86\|Source\|freebsd" | grep -Po "(?<=veracrypt-)(\d+\.+\d+)+\d+")"
     if [ $? != 0 ] || [ -z $veracrypt_version ]; then
         veracrypt_version='1.24'
     fi
@@ -800,7 +800,7 @@ check_latest_version_manual_install_apps() {
     if [ $? != 0 ] || [ -z $shotcut_version ]; then
         shotcut_version='20.11.28'
     fi
-    shotcut_appimage="$(curl --silent https://api.github.com/repos/mltframework/shotcut/releases/latest | grep -Po '"name": "\K.*?(?=")' | grep "AppImage")"
+    shotcut_appimage="$(curl --silent https://api.github.com/repos/mltframework/shotcut/releases/latest | grep -Po '"name": "\K.*?(?=")' | grep 'AppImage')"
     if [ $? != 0 ] || [ -z $shotcut_appimage ]; then
         shotcut_appimage='shotcut-linux-x86_64-201128.AppImage'
     fi
@@ -889,31 +889,32 @@ manual_check_latest_version() {
   echo "bat ""$bat_version"
   joplin_version="$(curl --silent https://api.github.com/repos/laurent22/joplin/releases/latest | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   echo "Joplin ""$joplin_version"
-  krita_version="$(curl --silent https://krita.org/fr/telechargement/krita-desktop/ | grep "stable" | grep "appimage>" | grep -Po "(?<=/stable/krita/)(\d+\.+\d\.\d+)")"
+  krita_version="$(curl --silent https://krita.org/fr/telechargement/krita-desktop/ | grep 'stable' | grep 'appimage>' | grep -Po "(?<=/stable/krita/)(\d+\.+\d\.\d+)")"
   echo "Krita ""$krita_version"
 }
 # manual_check_latest_version
 ################################################################################
 
-Local_User="$(grep "1000" /etc/passwd | cut -d: -f 1)"
-# autre méthode pour obtenir le user, lorsqu'il est à l'origine de la session en cour : $(who | awk 'FNR == 1 {print $1}')
-Local_User_UID="$(id -u $Local_User)"
-GnomeShellExtensionPath="/home/$Local_User/.local/share/gnome-shell/extensions"
-ExeAsUser="sudo -u $Local_User"
+Local_User="$(grep '1000' /etc/passwd | cut -d: -f 1)"
+# autre méthode pour obtenir le user, lorsqu'il est à l'origine de la session en cour : "$(who | awk 'FNR == 1 {print $1}')"
+Local_User_UID="$(id -u "$Local_User")"
+GnomeShellExtensionPath="/home/"$Local_User"/.local/share/gnome-shell/extensions"
+ExeAsUser="sudo -u "$Local_User""
 AGI='apt-get install -y'
 AG='apt-get'
 WGET='wget -q'
 Architecture="$(uname -r | grep -Po '.*-\K.*')" # peut aussi se faire avec : uname -r | /usr/bin/cut -d '-' -f 3
-NomIntReseau="$(ip a | grep "UP" | cut -d " " -f 2 | cut -d ":" -f 1 | grep "enp")"
-AdressIPv4local="$(ip -o -4 addr list $NomIntReseau | awk '{print $4}' | cut -d/ -f1)"
+NomIntReseau="$(ip a | grep 'UP' | cut -d " " -f 2 | cut -d ":" -f 1 | grep 'enp')"
+AdressIPv4local="$(ip -o -4 addr list "$NomIntReseau" | awk '{print $4}' | cut -d/ -f1)"
 AdressIPv4Ext="$(GET http://ipinfo.io/ip)"
-AdressIPv6local="$(ip -o -6 addr list $NomIntReseau | grep "fe80" | awk '{print $4}' | cut -d/ -f1)"
-AdressIPv6Ext="$(ip -o -6 addr list $NomIntReseau | grep -v "noprefixroute" | awk '{print $4}' | cut -d/ -f1)"
-ComputerRAM="$(grep "MemTotal" /proc/meminfo | awk '{ printf("%.0f", $2/1024/1024+1); }')"
+AdressIPv6local="$(ip -o -6 addr list "$NomIntReseau" | grep 'fe80' | awk '{print $4}' | cut -d/ -f1)"
+AdressIPv6Ext="$(ip -o -6 addr list "$NomIntReseau" | grep -v 'noprefixroute' | awk '{print $4}' | cut -d/ -f1)"
+ComputerRAM="$(grep 'MemTotal' /proc/meminfo | awk '{printf("%.0f", $2/1024/1024+1);}')"
 # grep "MemTotal" /proc/meminfo | awk '{print $2}' | sed -r 's/.{3}$//'
 ComputerProc="$(grep -c "^processor" /proc/cpuinfo)"
 ComputerProcModelName="$(grep -Po -m 1 "^model name.*: \K.*" /proc/cpuinfo)"
 ComputerProcVendorId="$(grep -Po -m 1 "(^vendor_id\s: )\K(.*)" /proc/cpuinfo)"
+DebianRelease='buster'
 #autres méthodes :
 #AdressIPv4Ext=$($AG install -y curl > /dev/null && curl -s http://ipinfo.io/ip)
 #wget -q http://ipinfo.io/ip && AdressIPv4Ext=$(cat ip)
@@ -974,19 +975,19 @@ displayandexec "Suppression du CDROM dans sources.list              " "sed -i '/
 # /etc/init.d/unattended-upgrades stop
 
 # remise au propre de /etc/apt/sources.list
-cat> /etc/apt/sources.list << 'EOF'
-deb http://deb.debian.org/debian/ buster main contrib non-free
-deb-src http://deb.debian.org/debian/ buster main contrib non-free
+cat> /etc/apt/sources.list << EOF
+deb http://deb.debian.org/debian/ "$DebianRelease" main contrib non-free
+deb-src http://deb.debian.org/debian/ "$DebianRelease" main contrib non-free
 
-deb http://security.debian.org/debian-security buster/updates main contrib
-deb-src http://security.debian.org/debian-security buster/updates main contrib
+deb http://security.debian.org/debian-security "$DebianRelease"/updates main contrib
+deb-src http://security.debian.org/debian-security "$DebianRelease"/updates main contrib
 
 # buster-updates, previously known as 'volatile'
-deb http://deb.debian.org/debian/ buster-updates main contrib
-deb-src http://deb.debian.org/debian/ buster-updates main contrib
+deb http://deb.debian.org/debian/ "$DebianRelease"-updates main contrib
+deb-src http://deb.debian.org/debian/ "$DebianRelease"-updates main contrib
 
 #backport
-#deb http://deb.debian.org/debian buster-backports main contrib non-free
+#deb http://deb.debian.org/debian "$DebianRelease"-backports main contrib non-free
 EOF
 
 echo ""
@@ -1118,6 +1119,7 @@ displayandexec "Installation de nextcloud-desktop                   " "$AGI next
 displayandexec "Installation de ngrep                               " "$AGI ngrep"
 displayandexec "Installation de nikto                               " "$AGI nikto"
 displayandexec "Installation de nmap                                " "$AGI nmap"
+displayandexec "Installation de oathtool                            " "$AGI oathtool"
 displayandexec "Installation de openvpn                             " "$AGI openvpn"
 displayandexec "Installation de p7zip-full                          " "$AGI p7zip-full"
 displayandexec "Installation de p7zip-rar                           " "$AGI p7zip-rar"
@@ -1127,6 +1129,7 @@ displayandexec "Installation de python3-scapy                       " "$AGI pyth
 # displayandexec "Installation de python-pip                          " "$AGI python-pip" # probablement qu'il faudra supprimer cette ligne pour les prochaines releases
 displayandexec "Installation de rdesktop                            " "$AGI rdesktop"
 displayandexec "Installation de rkhunter                            " "$AGI rkhunter"
+displayandexec "Installation de rsync                               " "$AGI rsync"
 displayandexec "Installation de secure-delete                       " "$AGI secure-delete"
 displayandexec "Installation de shotwell                            " "$AGI shotwell"
 displayandexec "Installation de sqlitebrowser                       " "$AGI sqlitebrowser"
@@ -1154,6 +1157,9 @@ displayandexec "Installation de zenmap                              " "$AGI zenm
 displayandexec "Installation de zip                                 " "$AGI zip"
 displayandexec "Installation de zsh                                 " "$AGI zsh"
 displayandexec "Installation de zstd                                " "$AGI zstd"
+install_zfs() {
+
+
 ################################################################################
 
 
@@ -1360,7 +1366,7 @@ EOF
   # test qui vérifie l'activation du SecureBoot
   which mokutil > /dev/null
   if [ $? -eq 0 ]; then
-      test_secure_boot="$(mokutil --sb-state | grep "SecureBoot")"
+      test_secure_boot="$(mokutil --sb-state | grep 'SecureBoot')"
       if [ "$test_secure_boot" == "SecureBoot enabled" ]; then
           configure_SecureBoot_params
           # displayandexec "Install du script pour signer module (SecureBoot)   " "$AGI dkms"
@@ -1412,7 +1418,7 @@ install_etcher() {
   #Etcher
   displayandexec "Installation des dépendances de Etcher              " "$AGI libappindicator1 libpango1.0-0 libdbusmenu-gtk4 libindicator7 libpangox-1.0-0"
   displayandexec "Installation de Etcher                              " "\
-$WGET -P $tmp_dir https://github.com/balena-io/etcher/releases/download/v$etcher_version/balena-etcher-electron_"$etcher_version"_amd64.deb && \
+$WGET -P $tmp_dir https://github.com/balena-io/etcher/releases/download/v"$etcher_version"/balena-etcher-electron_"$etcher_version"_amd64.deb && \
 dpkg -i $tmp_dir/balena-etcher-electron_"$etcher_version"_amd64.deb"
 }
 ################################################################################
@@ -1424,8 +1430,8 @@ install_shotcut() {
   displayandexec "Installation de Shotcut                             " "\
 mkdir $manual_install_dir/shotcut/ && \
 $WGET -P $manual_install_dir/shotcut/ https://github.com/mltframework/shotcut/releases/download/v$shotcut_version/$shotcut_appimage && \
-chmod +x $manual_install_dir/shotcut/$shotcut_appimage && \
-ln -s $manual_install_dir/shotcut/$shotcut_appimage /usr/bin/shotcut"
+chmod +x $manual_install_dir/shotcut/"$shotcut_appimage" && \
+ln -s $manual_install_dir/shotcut/"$shotcut_appimage" /usr/bin/shotcut"
 }
 ################################################################################
 
@@ -1446,7 +1452,7 @@ $AGI signal-desktop"
 ##------------------------------------------------------------------------------
 install_stacer() {
   displayandexec "Installation de Stacer                              " "\
-$WGET -P $tmp_dir https://github.com/oguzhaninan/Stacer/releases/download/v$stacer_version/stacer_"$stacer_version"_amd64.deb && \
+$WGET -P $tmp_dir https://github.com/oguzhaninan/Stacer/releases/download/v"$stacer_version"/stacer_"$stacer_version"_amd64.deb && \
 dpkg -i $tmp_dir/stacer_"$stacer_version"_amd64.deb"
 }
 ################################################################################
@@ -1475,7 +1481,7 @@ $AGI asbru-cm"
 ##------------------------------------------------------------------------------
 install_bat() {
   displayandexec "Installation de Bat                                 " "\
-$WGET -P $tmp_dir https://github.com/sharkdp/bat/releases/download/v$bat_version/bat_"$bat_version"_amd64.deb && \
+$WGET -P $tmp_dir https://github.com/sharkdp/bat/releases/download/v"$bat_version"/bat_"$bat_version"_amd64.deb && \
 dpkg -i $tmp_dir/bat_"$bat_version"_amd64.deb"
 }
 ################################################################################
@@ -1485,7 +1491,7 @@ dpkg -i $tmp_dir/bat_"$bat_version"_amd64.deb"
 ##------------------------------------------------------------------------------
 install_youtubedl() {
   displayandexec "Installation de youtube-dl                          " "\
-$WGET -P /usr/bin https://github.com/ytdl-org/youtube-dl/releases/download/$youtubedl_version/youtube-dl && \
+$WGET -P /usr/bin https://github.com/ytdl-org/youtube-dl/releases/download/"$youtubedl_version"/youtube-dl && \
 chmod +x /usr/bin/youtube-dl"
 }
 ################################################################################
@@ -1496,7 +1502,7 @@ chmod +x /usr/bin/youtube-dl"
 install_joplin() {
   displayandexec "Installation de joplin                              " "\
 mkdir $manual_install_dir/Joplin/ && \
-$WGET -P $manual_install_dir/Joplin/ https://github.com/laurent22/joplin/releases/download/v$joplin_version/Joplin-"$joplin_version".AppImage && \
+$WGET -P $manual_install_dir/Joplin/ https://github.com/laurent22/joplin/releases/download/v"$joplin_version"/Joplin-"$joplin_version".AppImage && \
 chmod +x $manual_install_dir/Joplin/Joplin-"$joplin_version".AppImage && \
 $WGET -P $manual_install_dir/Joplin/ https://raw.githubusercontent.com/laurent22/joplin/master/Assets/LinuxIcons/256x256.png"
 cat> /usr/share/applications/joplin.desktop << EOF
@@ -1539,7 +1545,7 @@ EOF
 ################################################################################
 
 ################################################################################
-## instalation de Krita
+## instalation de OpenSnitch
 ##------------------------------------------------------------------------------
 install_opensnitch() {
   $AGI python3-pyqt5.qtsql python3-pyinotify
@@ -1622,11 +1628,11 @@ aisleriot"
 # the UUID is in the metadata.json
 GnomeShellExtUUID='gnome-shell-screenshot@ttll.de'
 # the directory name must be the UUID of the gnome shell extension
-mkdir -p $GnomeShellExtensionPath/$GnomeShellExtUUID
+mkdir -p "$GnomeShellExtensionPath"/"$GnomeShellExtUUID"
 #--------------------------------------------------------------------------------------------------------#
 # with official gnome extension site
 $WGET https://extensions.gnome.org/extension-data/gnome-shell-screenshotttll.de.v40.shell-extension.zip
-unzip -q gnome-shell-screenshotttll.de.v40.shell-extension.zip -d $GnomeShellExtensionPath/$GnomeShellExtUUID
+unzip -q gnome-shell-screenshotttll.de.v40.shell-extension.zip -d "$GnomeShellExtensionPath"/"$GnomeShellExtUUID"
 #--------------------------------------------------------------------------------------------------------#
 # # with github code source
 # wget https://github.com/OttoAllmendinger/gnome-shell-screenshot/archive/v40.zip
@@ -1637,7 +1643,7 @@ unzip -q gnome-shell-screenshotttll.de.v40.shell-extension.zip -d $GnomeShellExt
 # unzip -q gnome-shell-screenshot.zip -d $GnomeShellExtensionPath/$GnomeShellExtUUID
 #--------------------------------------------------------------------------------------------------------#
 # enable the gnome shell extension
-$ExeAsUser gnome-shell-extension-tool -e $GnomeShellExtUUID
+$ExeAsUser gnome-shell-extension-tool -e "$GnomeShellExtUUID"
 # should restart gdm with Alt+F2+r
 ################################################################################
 
@@ -1763,7 +1769,7 @@ CheckAvailableUpdate() {
 CheckUpdateShotcut() {
   local SoftwareName='Shotcut'
   # local v1="$(shotcut --version | cut -c 9-)"
-  local v1="$(shotcut --version 2>&1 | cut -c 9- | grep -v "Gtk-WARNING" | sed '/^$/d')"
+  local v1="$(shotcut --version 2>&1 | cut -c 9- | grep -v 'Gtk-WARNING' | sed '/^$/d')"
   # voir si on ne remplace pas par : shotcut --version 2>&1 | cut -c 9- | grep -v "Gtk-WARNING" | sed '/^$/d'
   # pour éviter les warnings gtk
   # ref : [Ubuntu – How to stop gedit (and other programs) from outputting GTK warnings and the like in the terminal – iTecTec](https://itectec.com/ubuntu/ubuntu-how-to-stop-gedit-and-other-programs-from-outputting-gtk-warnings-and-the-like-in-the-terminal/)
@@ -1823,7 +1829,7 @@ CheckUpdateBat() {
 CheckUpdateKrita() {
   local SoftwareName='Krita'
   local v1="$(grep -Po '^Exec.*-\K\d+.\d+.\d+' /usr/share/applications/krita.desktop)"
-  local v2="$(curl --silent https://krita.org/fr/telechargement/krita-desktop/ | grep "stable" | grep "appimage>" | grep -Po "(?<=/stable/krita/)(\d+\.+\d\.\d+)")"
+  local v2="$(curl --silent https://krita.org/fr/telechargement/krita-desktop/ | grep 'stable' | grep 'appimage>' | grep -Po "(?<=/stable/krita/)(\d+\.+\d\.\d+)")"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
@@ -1831,10 +1837,10 @@ CheckUpdateKrita() {
 
 UpdateShotcut() {
   local shotcut_version="$(curl --silent https://api.github.com/repos/mltframework/shotcut/releases/latest | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
-  local shotcut_appimage="$(curl --silent https://api.github.com/repos/mltframework/shotcut/releases/latest | grep -Po '"name": "\K.*?(?=")' | grep "AppImage")"
+  local shotcut_appimage="$(curl --silent https://api.github.com/repos/mltframework/shotcut/releases/latest | grep -Po '"name": "\K.*?(?=")' | grep 'AppImage')"
   rm -rf /usr/bin/shotcut
   rm -rf $manual_install_dir/shotcut/*.AppImage
-	$WGET -P $manual_install_dir/shotcut/ https://github.com/mltframework/shotcut/releases/download/v$shotcut_version/$shotcut_appimage
+	$WGET -P $manual_install_dir/shotcut/ https://github.com/mltframework/shotcut/releases/download/v"$shotcut_version"/$shotcut_appimage
 	chmod +x $manual_install_dir/shotcut/$shotcut_appimage
   ln -s $manual_install_dir/shotcut/$shotcut_appimage /usr/bin/shotcut
 }
@@ -1851,19 +1857,19 @@ UpdateBoostnote() {
 }
 
 UpdateFreefilesync() {
-  local freefilesync_version="$(curl --silent https://freefilesync.org/download.php | grep "Linux.tar.gz" | grep -Po "(FreeFileSync_)\K(\d+\.+\d+)")"
+  local freefilesync_version="$(curl --silent https://freefilesync.org/download.php | grep 'Linux.tar.gz' | grep -Po "(FreeFileSync_)\K(\d+\.+\d+)")"
   rm -rf $manual_install_dir/FreeFileSync
   TMP="$(mktemp -d)"
-  aria2c -d $TMP https://freefilesync.org/download/FreeFileSync_$freefilesync_version\_Linux.tar.gz -o /FreeFileSync_"$freefilesync_version"_Linux.tar.gz
+  aria2c -d $TMP https://freefilesync.org/download/FreeFileSync_"$freefilesync_version"_Linux.tar.gz -o /FreeFileSync_"$freefilesync_version"_Linux.tar.gz
   tar xvf $TMP/FreeFileSync_"$freefilesync_version"_Linux.tar.gz --directory $manual_install_dir >/dev/null
 }
 
 UpdateKeepassxc() {
   local keepassxc_version="$(curl --silent https://api.github.com/repos/keepassxreboot/keepassxc/releases/latest | grep -Po '"tag_name": "\K.*?(?=")')"
   rm -rf $manual_install_dir/KeePassXC/KeePassXC-*.AppImage
-  $WGET -P $manual_install_dir/KeePassXC/ https://github.com/keepassxreboot/keepassxc/releases/download/$keepassxc_version/KeePassXC-"$keepassxc_version"-x86_64.AppImage
+  $WGET -P $manual_install_dir/KeePassXC/ https://github.com/keepassxreboot/keepassxc/releases/download/"$keepassxc_version"/KeePassXC-"$keepassxc_version"-x86_64.AppImage
   chmod +x $manual_install_dir/KeePassXC/KeePassXC-$keepassxc_version-x86_64.AppImage
-  sed -i s,.*Exec=.*,Exec=$manual_install_dir/KeePassXC/KeePassXC-$keepassxc_version-x86_64.AppImage,g /usr/share/applications/keepassxc.desktop
+  sed -i s,.*Exec=.*,Exec=$manual_install_dir/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage,g /usr/share/applications/keepassxc.desktop
   [ -f /home/$Local_User/.config/autostart/keepassxc.desktop ] && sed -i s,.*Exec=.*,Exec=$manual_install_dir/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage,g /home/$Local_User/.config/autostart/keepassxc.desktop
   [ -f $manual_install_dir/KeePassXC/keepassxc-logo.svg ] || $WGET -P $manual_install_dir/KeePassXC/ https://keepassxc.org/images/keepassxc-logo.svg
 }
@@ -1871,7 +1877,7 @@ UpdateKeepassxc() {
 UpdateJoplin() {
   local joplin_version="$(curl --silent https://api.github.com/repos/laurent22/joplin/releases/latest | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   rm -rf $manual_install_dir/Joplin/Joplin-*.AppImage
-  $WGET -P $manual_install_dir/Joplin/ https://github.com/laurent22/joplin/releases/download/v$joplin_version/Joplin-$joplin_version.AppImage
+  $WGET -P $manual_install_dir/Joplin/ https://github.com/laurent22/joplin/releases/download/v"$joplin_version"/Joplin-$joplin_version.AppImage
   chmod +x $manual_install_dir/Joplin/Joplin-$joplin_version.AppImage
   sed -i "s,^Exec=.*,Exec=$manual_install_dir/Joplin/Joplin-$joplin_version.AppImage --no-sandbox,g" /usr/share/applications/joplin.desktop
   [ -f /home/$Local_User/.config/autostart/joplin.desktop ] && sed -i "s,^Exec=.*,Exec=$manual_install_dir/Joplin/Joplin-$joplin_version.AppImage --no-sandbox,g" /home/$Local_User/.config/autostart/joplin.desktop
@@ -1888,12 +1894,12 @@ UpdateStacer() {
 UpdateBat() {
   local bat_version="$(curl --silent https://api.github.com/repos/sharkdp/bat/releases/latest | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   TMP="$(mktemp -d)"
-  $WGET -P $TMP https://github.com/sharkdp/bat/releases/download/v$bat_version/bat_"$bat_version"_amd64.deb
+  $WGET -P $TMP https://github.com/sharkdp/bat/releases/download/v"$bat_version"/bat_"$bat_version"_amd64.deb
   dpkg -i $TMP/bat_"$bat_version"_amd64.deb
 }
 
 UpdateKrita() {
-  local krita_version="$(curl --silent https://krita.org/fr/telechargement/krita-desktop/ | grep "stable" | grep "appimage>" | grep -Po "(?<=/stable/krita/)(\d+\.+\d\.\d+)")"
+  local krita_version="$(curl --silent https://krita.org/fr/telechargement/krita-desktop/ | grep 'stable' | grep 'appimage>' | grep -Po "(?<=/stable/krita/)(\d+\.+\d\.\d+)")"
   rm -rf $manual_install_dir/Krita/krita-*.appimage
   $WGET -P $manual_install_dir/Krita/ https://download.kde.org/stable/krita/"$krita_version"/krita-"$krita_version"-x86_64.appimage && \
   chmod +x $manual_install_dir/Krita/krita-"$krita_version"-x86_64.appimage
@@ -2184,7 +2190,7 @@ sed -E -i 's/^#PermitRootLogin/PermitRootLogin/' /etc/ssh/sshd_config
 ## configuration de SSHFS
 ##------------------------------------------------------------------------------
 # création du répertoire qui servira de point de montage pour SSHFS
-[ -d /home/$Local_User/.mnt/sshfs/ ] || $ExeAsUser mkdir -p /home/$Local_User/.mnt/sshfs/
+[ -d /home/"$Local_User"/.mnt/sshfs/ ] || $ExeAsUser mkdir -p /home/"$Local_User"/.mnt/sshfs/
 ################################################################################
 
 ################################################################################
@@ -2211,23 +2217,23 @@ echo '
 ################################################################################
 ## configuration de stacer
 ##------------------------------------------------------------------------------
-[ -d /home/$Local_User/.config/stacer/ ] || $ExeAsUser mkdir /home/$Local_User/.config/stacer/ && \
+[ -d /home/"$Local_User"/.config/stacer/ ] || $ExeAsUser mkdir /home/"$Local_User"/.config/stacer/ && \
 $ExeAsUser echo '[General]
 AppQuitDialogDontAsk=true
-Language=fr' > /home/$Local_User/.config/stacer/settings.ini
+Language=fr' > /home/"$Local_User"/.config/stacer/settings.ini
 ################################################################################
 
 ################################################################################
 ## configuration de Etcher
 ##------------------------------------------------------------------------------
-[ -d /home/$Local_User/.config/balena-etcher-electron/ ] || $ExeAsUser mkdir /home/$Local_User/.config/balena-etcher-electron/ && \
+[ -d /home/"$Local_User"/.config/balena-etcher-electron/ ] || $ExeAsUser mkdir /home/"$Local_User"/.config/balena-etcher-electron/ && \
 $ExeAsUser echo '{
   "errorReporting": false,
   "updatesEnabled": false,
   "desktopNotifications": true,
   "autoBlockmapping": true,
   "decompressFirst": true
-  }' > /home/$Local_User/.config/balena-etcher-electron/config.json
+}' > /home/"$Local_User"/.config/balena-etcher-electron/config.json
 ################################################################################
 
 ################################################################################
@@ -2271,7 +2277,7 @@ sed -i 's/# set linenumbers/set linenumbers/g' /etc/nanorc
 ################################################################################
 ## configuration de atom
 ##------------------------------------------------------------------------------
-[ -d /home/$Local_User/.atom/ ] || $ExeAsUser mkdir /home/$Local_User/.atom/ && \
+[ -d /home/"$Local_User"/.atom/ ] || $ExeAsUser mkdir /home/"$Local_User"/.atom/ && \
 $ExeAsUser echo '"*":
   autosave:
     enabled: true
@@ -2280,7 +2286,7 @@ $ExeAsUser echo '"*":
   editor:
     softWrap: true
   welcome:
-    showOnStartup: false' > /home/$Local_User/.atom/config.cson && \
+    showOnStartup: false' > /home/"$Local_User"/.atom/config.cson && \
 $ExeAsUser apm install language-cisco && \
 $ExeAsUser apm install language-powershell && \
 $ExeAsUser apm install script && \
@@ -2298,8 +2304,8 @@ $ExeAsUser apm install tab-title
 ################################################################################
 ## configuration de typora
 ##------------------------------------------------------------------------------
-[ -d /home/$Local_User/.config/Typora/ ] || $ExeAsUser mkdir /home/$Local_User/.config/Typora/ && \
-$ExeAsUser echo '7b22696e697469616c697a655f766572223a22302e392e3738222c226c696e655f656e64696e675f63726c66223a66616c73652c227072654c696e65627265616b4f6e4578706f7274223a747275652c2275756964223a2237346265383439362d343239372d343362382d616633632d336439343463646432376439222c227374726963745f6d6f6465223a747275652c22636f70795f6d61726b646f776e5f62795f64656661756c74223a747275652c226261636b67726f756e64436f6c6f72223a2223333633423430222c227468656d65223a226e696768742e637373222c22736964656261725f746162223a22222c2273656e645f75736167655f696e666f223a66616c73652c22656e61626c654175746f53617665223a747275652c226c617374436c6f736564426f756e6473223a7b2266756c6c73637265656e223a66616c73652c226d6178696d697a6564223a747275657d7d' > /home/$Local_User/.config/Typora/profile.data
+[ -d /home/"$Local_User"/.config/Typora/ ] || $ExeAsUser mkdir /home/"$Local_User"/.config/Typora/ && \
+$ExeAsUser echo '7b22696e697469616c697a655f766572223a22302e392e3738222c226c696e655f656e64696e675f63726c66223a66616c73652c227072654c696e65627265616b4f6e4578706f7274223a747275652c2275756964223a2237346265383439362d343239372d343362382d616633632d336439343463646432376439222c227374726963745f6d6f6465223a747275652c22636f70795f6d61726b646f776e5f62795f64656661756c74223a747275652c226261636b67726f756e64436f6c6f72223a2223333633423430222c227468656d65223a226e696768742e637373222c22736964656261725f746162223a22222c2273656e645f75736167655f696e666f223a66616c73652c22656e61626c654175746f53617665223a747275652c226c617374436c6f736564426f756e6473223a7b2266756c6c73637265656e223a66616c73652c226d6178696d697a6564223a747275657d7d' > /home/"$Local_User"/.config/Typora/profile.data
 # la configuration des préférences de Typora ne peut se faire que graphiquement le seul moyen de contourner ce problème est de configurer graphiquement les préférences et de récupérer le contenu du fichier /home/$Local_User/.config/Typora/profile.data
 ################################################################################
 
@@ -2346,18 +2352,18 @@ EOF
 ################################################################################
 ## configuration de Handbrake
 ##------------------------------------------------------------------------------
-[ -d /home/$Local_User/.config/ghb/ ] || $ExeAsUser mkdir /home/$Local_User/.config/ghb/ && \
-$ExeAsUser sed -E -i '/("UseM4v":) (false|true)/{s/true/false/;}' /home/$Local_User/.config/ghb/Preferences
+[ -d /home/"$Local_User"/.config/ghb/ ] || $ExeAsUser mkdir /home/"$Local_User"/.config/ghb/ && \
+$ExeAsUser sed -E -i '/("UseM4v":) (false|true)/{s/true/false/;}' /home/"$Local_User"/.config/ghb/Preferences
 # permet de décocher la case "Utiliser l'extension de fichier compatible iPod/iTunes (.m4v) pour MP4" (Fichier -> Préférences -> Général)
 # attention peut être qu'il faudra que Handbrake soit lancé en graphique une première fois pour que les configurations soient enregistrées dans le fichier de conf dans .config/ghb
 # et donc qu'il faille faire le sed qu'une fois que le fichier de configuration de soit présent
 ################################################################################
 
 # ajout du dossier partagé pour VirtualBox
-[ -d /home/$Local_User/dossier_partage_VM/ ] || $ExeAsUser mkdir /home/$Local_User/dossier_partage_VM/
+[ -d /home/"$Local_User"/dossier_partage_VM/ ] || $ExeAsUser mkdir /home/"$Local_User"/dossier_partage_VM/
 
 # ajout du dossier autostart pour les apps qui se lance au démarage
-[ -d /home/$Local_User/.config/autostart/ ] || $ExeAsUser mkdir /home/$Local_User/.config/autostart/
+[ -d /home/"$Local_User"/.config/autostart/ ] || $ExeAsUser mkdir /home/"$Local_User"/.config/autostart/
 
 ################################################################################
 ## configuration des applis qui doivent se lancer au démarage
@@ -2371,7 +2377,7 @@ Terminal=false
 Type=Application
 Icon=signal-desktop
 StartupWMClass=Signal
-Categories=Network;InstantMessaging;Chat;' > /home/$Local_User/.config/autostart/signal.desktop
+Categories=Network;InstantMessaging;Chat;' > /home/"$Local_User"/.config/autostart/signal.desktop
 
 #terminal
 $ExeAsUser echo '[Desktop Entry]
@@ -2380,7 +2386,7 @@ Comment=lancement du terminal au démarage
 Exec=gnome-terminal --maximize
 Type=Application
 Terminal=false
-Hidden=false' > /home/$Local_User/.config/autostart/terminal.desktop
+Hidden=false' > /home/"$Local_User"/.config/autostart/terminal.desktop
 
 #boostnote
 # $ExeAsUser echo '[Desktop Entry]
@@ -2398,7 +2404,7 @@ Comment=Password Manager
 Exec=$manual_install_dir/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage
 Type=Application
 Terminal=false
-Hidden=false" > /home/$Local_User/.config/autostart/keepassxc.desktop
+Hidden=false" > /home/"$Local_User"/.config/autostart/keepassxc.desktop
 
 #joplin
 $ExeAsUser echo "[Desktop Entry]
@@ -2407,14 +2413,14 @@ Comment=Markdown Editor
 Exec=$manual_install_dir/Joplin/Joplin-"$joplin_version".AppImage --no-sandbox
 Type=Application
 Terminal=false
-Hidden=false" > /home/$Local_User/.config/autostart/joplin.desktop
+Hidden=false" > /home/"$Local_User"/.config/autostart/joplin.desktop
 ################################################################################
 
 ################################################################################
 ## configuration de KeePassXC
 ##------------------------------------------------------------------------------
-[ -d /home/$Local_User/.config/keepassxc/ ] || $ExeAsUser mkdir /home/$Local_User/.config/keepassxc/ && \
-$ExeAsUser cat> /home/$Local_User/.config/keepassxc/keepassxc.ini << 'EOF'
+[ -d /home/"$Local_User"/.config/keepassxc/ ] || $ExeAsUser mkdir /home/"$Local_User"/.config/keepassxc/ && \
+$ExeAsUser cat> /home/"$Local_User"/.config/keepassxc/keepassxc.ini << 'EOF'
 [General]
 AutoReloadOnChange=true
 AutoSaveAfterEveryChange=true
@@ -2541,7 +2547,7 @@ had-bluetooth-devices-setup=false
 sort-directories-first=true
 show-hidden=true
 EOF
-$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$Local_User_UID/bus" dconf load /org/ < tmp_conf_dconf
+$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$Local_User_UID"/bus" dconf load /org/ < tmp_conf_dconf
 # ref : https://superuser.com/questions/726550/use-dconf-or-comparable-to-set-configs-for-another-user/1265786#1265786
 
 
@@ -2549,7 +2555,7 @@ CustomGnomeShortcut() {
 	local name="$1"
 	local command="$2"
 	local shortcut="$3"
-	local value="$($ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$Local_User_UID/bus" gsettings get org.gnome.settings-daemon.plugins.media-keys custom-keybindings)"
+	local value="$($ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$Local_User_UID"/bus" gsettings get org.gnome.settings-daemon.plugins.media-keys custom-keybindings)"
 	local test="$(echo $value | sed "s/\['//;s/', '/,/g;s/'\]//" - | tr ',' '\n' | grep -oP ".*/custom\K[0-9]*(?=/$)")"
 
 	if [ "$(echo "$value" | grep -o "@as")" = "@as" ]; then
@@ -2563,13 +2569,13 @@ CustomGnomeShortcut() {
 			fi
 			i=$(echo 1+$i | bc);
 		done
-		local value_new="$($ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$Local_User_UID/bus" gsettings get org.gnome.settings-daemon.plugins.media-keys custom-keybindings | sed "s#']\$#', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom${num}/']#" -)"
+		local value_new="$($ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$Local_User_UID"/bus" gsettings get org.gnome.settings-daemon.plugins.media-keys custom-keybindings | sed "s#']\$#', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom${num}/']#" -)"
 	fi
 
-	$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$Local_User_UID/bus" gsettings set org.gnome.settings-daemon.plugins.media-keys custom-keybindings "$value_new"
-	$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$Local_User_UID/bus" gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom${num}/ name "$name"
-	$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$Local_User_UID/bus" gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom${num}/ command "$command"
-	$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$Local_User_UID/bus" gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom${num}/ binding "$shortcut"
+	$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$Local_User_UID"/bus" gsettings set org.gnome.settings-daemon.plugins.media-keys custom-keybindings "$value_new"
+	$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$Local_User_UID"/bus" gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom${num}/ name "$name"
+	$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$Local_User_UID"/bus" gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom${num}/ command "$command"
+	$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$Local_User_UID"/bus" gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom${num}/ binding "$shortcut"
 }
 
 CustomGnomeShortcut "Ouvrir le terminal" "gnome-terminal" "<Super>r"
@@ -2592,7 +2598,7 @@ CustomGnomeShortcut "désactiver le bluetooth" "/usr/bin/desactivebt" "<Primary>
 ## configuration des MIME types
 ##------------------------------------------------------------------------------
 # bien faire attention au point virgule, présent dans "Added Associations" mais pas dans "Default Applications"
-$ExeAsUser cat> /home/$Local_User/.config/mimeapps.list  << 'EOF'
+$ExeAsUser cat> /home/"$Local_User"/.config/mimeapps.list  << 'EOF'
 [Added Associations]
 application/octet-stream=atom.desktop;
 application/vnd.jgraph.mxfile=drawio.desktop;
@@ -2726,7 +2732,7 @@ chmod 4755 /opt/draw.io/chrome-sandbox
 ##------------------------------------------------------------------------------
 
 # alias user
-$ExeAsUser cat>> /home/$Local_User/.bashrc <<EOF
+$ExeAsUser cat>> /home/"$Local_User"/.bashrc <<EOF
 
 # alias perso
 alias ll='ls --color=always -l -h'
@@ -2782,7 +2788,7 @@ displayandexec "Configuration du bashrc                             " "stat /roo
 ################################################################################
 
 # Commande temporaire pour éviter que des fichiers de /home/user/.config n'appartienent à root lors de l'install, sans qu'on comprenne bien pourquoi (executé par ExeAsUser)
-chown -R $Local_User:$Local_User /home/$Local_User/.config/
+chown -R $Local_User:$Local_User /home/"$Local_User"/.config/
 
 ################################################################################
 ## Mise à jour de la base de donnée de rkhunter
@@ -2970,16 +2976,7 @@ exit 0
 
 
 
-#echo "       ###############################"
-#echo "       #   Chnger le thème du GRUB   #"
-#echo "       ###############################"
 
-#wget https://dl.opendesktop.org/api/files/download/id/1460735684/174670-breeze-grub.zip
-#unzip 174670-breeze-grub.zip
-#mv Breeze /boot/grub/themes/
-#mkdir /boot/grub/themes
-#echo 'GRUB_THEME="/boot/grub/themes/Breeze/theme.txt"' >> /etc/default/grub
-#grub-mkconfig -o /boot/grub/grub.cfg
 
 
 
