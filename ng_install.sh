@@ -761,13 +761,13 @@ version_system="$(cat /etc/debian_version)"
 ##------------------------------------------------------------------------------
 check_latest_version_manual_install_apps() {
     veracrypt_version="$(curl --silent https://www.veracrypt.fr/en/Downloads.html | grep 'tar.bz2' | grep -v ".sig\|x86\|Source\|freebsd" | grep -Po "(?<=veracrypt-)(\d+\.+\d+)+\d+")"
-    if [ $? != 0 ] || [ -z $veracrypt_version ]; then
+    if [ $? != 0 ] || [ -z "$veracrypt_version" ]; then
         veracrypt_version='1.24'
     fi
     # check version : https://www.veracrypt.fr/en/Downloads.html
 
     drawio_version="$(curl --silent https://api.github.com/repos/jgraph/drawio-desktop/releases/latest | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
-    if [ $? != 0 ] || [ -z $drawio_version ]; then
+    if [ $? != 0 ] || [ -z "$drawio_version" ]; then
         drawio_version='11.3.0'
     fi
     # check version : https://github.com/jgraph/drawio-desktop/releases
@@ -778,66 +778,66 @@ check_latest_version_manual_install_apps() {
     # fi
     # check version : https://www.openoffice.org/fr/Telecharger/
 
-    freefilesync_version="$(curl --silent https://freefilesync.org/download.php | grep "Linux.tar.gz" | grep -Po "(?<=FreeFileSync_)(\d+\.+\d)")"
-    if [ $? != 0 ] || [ -z $freefilesync_version ]; then
+    freefilesync_version="$(curl --silent https://freefilesync.org/download.php | grep 'Linux.tar.gz' | grep -Po "(?<=FreeFileSync_)(\d+\.+\d)")"
+    if [ $? != 0 ] || [ -z "$freefilesync_version" ]; then
         freefilesync_version='11.3'
     fi
     # check version : https://freefilesync.org/download.ph"
 
     boostnote_version="$(curl --silent https://api.github.com/repos/BoostIO/boost-releases/releases/latest | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
-    if [ $? != 0 ] || [ -z $boostnote_version ]; then
+    if [ $? != 0 ] || [ -z "$boostnote_version" ]; then
         boostnote_version='0.12.1'
     fi
     # check version : https://github.com/BoostIO/boost-releases/releases/
 
     etcher_version="$(curl --silent https://api.github.com/repos/balena-io/etcher/releases/latest | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
-    if [ $? != 0 ] || [ -z $etcher_version ]; then
+    if [ $? != 0 ] || [ -z "$etcher_version" ]; then
         etcher_version='1.5.112'
     fi
     # check version : https://github.com/balena-io/etcher/releases/
 
     shotcut_version="$(curl --silent https://api.github.com/repos/mltframework/shotcut/releases/latest | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
-    if [ $? != 0 ] || [ -z $shotcut_version ]; then
+    if [ $? != 0 ] || [ -z "$shotcut_version" ]; then
         shotcut_version='20.11.28'
     fi
     shotcut_appimage="$(curl --silent https://api.github.com/repos/mltframework/shotcut/releases/latest | grep -Po '"name": "\K.*?(?=")' | grep 'AppImage')"
-    if [ $? != 0 ] || [ -z $shotcut_appimage ]; then
+    if [ $? != 0 ] || [ -z "$shotcut_appimage" ]; then
         shotcut_appimage='shotcut-linux-x86_64-201128.AppImage'
     fi
     # check version : https://github.com/mltframework/shotcut/releases/
 
     stacer_version="$(curl --silent https://api.github.com/repos/oguzhaninan/Stacer/releases/latest | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
-    if [ $? != 0 ] || [ -z $stacer_version ]; then
+    if [ $? != 0 ] || [ -z "$stacer_version" ]; then
         stacer_version='1.1.0'
     fi
     # check version : https://github.com/oguzhaninan/Stacer/releases/
 
     keepassxc_version="$(curl --silent https://api.github.com/repos/keepassxreboot/keepassxc/releases/latest | grep -Po '"tag_name": "\K.*?(?=")')"
-    if [ $? != 0 ] || [ -z $keepassxc_version ]; then
+    if [ $? != 0 ] || [ -z "$keepassxc_version" ]; then
         keepassxc_version='2.6.2'
     fi
     # check version : https://github.com/keepassxreboot/keepassxc/releases/
 
     bat_version="$(curl --silent https://api.github.com/repos/sharkdp/bat/releases/latest | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
-    if [ $? != 0 ] || [ -z $bat_version ]; then
+    if [ $? != 0 ] || [ -z "$bat_version" ]; then
         bat_version='0.17.1'
     fi
     # check version : https://github.com/sharkdp/bat/releases/
 
     youtubedl_version="$(curl --silent https://api.github.com/repos/ytdl-org/youtube-dl/releases/latest | grep -Po '"tag_name": "\K.*?(?=")')"
-    if [ $? != 0 ] || [ -z $youtubedl_version ]; then
+    if [ $? != 0 ] || [ -z "$youtubedl_version" ]; then
         youtubedl_version='2020.12.14'
     fi
     # check version : https://github.com/ytdl-org/youtube-dl/releases/
 
     joplin_version="$(curl --silent https://api.github.com/repos/laurent22/joplin/releases/latest | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
-    if [ $? != 0 ] || [ -z $joplin_version ]; then
+    if [ $? != 0 ] || [ -z "$joplin_version" ]; then
         joplin_version='1.4.19'
     fi
     # check version : https://github.com/laurent22/joplin/releases/
 
     krita_version="$(curl --silent https://krita.org/fr/telechargement/krita-desktop/ | grep "stable" | grep "appimage>" | grep -Po "(?<=/stable/krita/)(\d+\.+\d\.\d+)")"
-    if [ $? != 0 ] || [ -z $krita_version ]; then
+    if [ $? != 0 ] || [ -z "$krita_version" ]; then
         krita_version='4.4.1'
     fi
     # check version : https://krita.org/fr/telechargement/krita-desktop/
@@ -871,7 +871,7 @@ manual_check_latest_version() {
   echo "drawio ""$drawio_version"
   openoffice_version="$(curl --silent https://www.openoffice.org/fr/Telecharger/ | grep -m 1 "deb\|x86-64" | grep -Po "(?<=OpenOffice_)(\d+\.+)+\d+")"
   echo "OpenOffice ""$openoffice_version"
-  freefilesync_version="$(curl --silent https://freefilesync.org/download.php | grep "Linux.tar.gz" | grep -Po "(?<=FreeFileSync_)(\d+\.+\d)+\d")"
+  freefilesync_version="$(curl --silent https://freefilesync.org/download.php | grep 'Linux.tar.gz' | grep -Po "(?<=FreeFileSync_)(\d+\.+\d)+\d")"
   echo "FreeFileSync ""$freefilesync_version"
   boostnote_version="$(curl --silent https://api.github.com/repos/BoostIO/boost-releases/releases/latest | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   echo "Boosnote ""$boostnote_version"
@@ -923,11 +923,11 @@ DebianRelease='buster'
 ## désactivation de la mise en veille automatique pendant l'installation
 ##------------------------------------------------------------------------------
 # désactivation de l'écran noir
-$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$Local_User_UID/bus" dconf write /org/gnome/desktop/session/idle-delay "'uint32 0'"
+$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$Local_User_UID"/bus" dconf write /org/gnome/desktop/session/idle-delay "'uint32 0'"
 # désactivation de la mise en veille automatique sur batterie
-$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$Local_User_UID/bus" dconf write /org/gnome/settings-daemon/plugins/power/sleep-inactive-battery-type "'nothing'"
+$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$Local_User_UID"/bus" dconf write /org/gnome/settings-daemon/plugins/power/sleep-inactive-battery-type "'nothing'"
 # désactivation de la mise en veille automatique sur cable
-$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$Local_User_UID/bus" dconf write /org/gnome/settings-daemon/plugins/power/sleep-inactive-ac-type "'nothing'"
+$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$Local_User_UID"/bus" dconf write /org/gnome/settings-daemon/plugins/power/sleep-inactive-ac-type "'nothing'"
 ################################################################################
 
 clear
@@ -1046,7 +1046,7 @@ echo "       ################################################################"
 echo ""
 
 # si besoin de iwlwifi
-lspci -nn | grep "Network" | grep "Intel" &> /dev/null
+lspci -nn | grep 'Network' | grep 'Intel' &> /dev/null
 if [ $? == 0 ]; then
    displayandexec "Installation de firmware-iwlwifi                    " "$AGI firmware-iwlwifi"
 fi
@@ -1158,8 +1158,18 @@ displayandexec "Installation de zip                                 " "$AGI zip"
 displayandexec "Installation de zsh                                 " "$AGI zsh"
 displayandexec "Installation de zstd                                " "$AGI zstd"
 install_zfs() {
-
-
+  sed -i 's%^#deb http://deb.debian.org/debian buster-backports%deb http://deb.debian.org/debian buster-backports%' /etc/apt/sources.list
+  apt-get update
+  echo 'zfs-dkms	zfs-dkms/stop-build-for-32bit-kernel	boolean	true' | debconf-set-selections
+  echo 'zfs-dkms	zfs-dkms/note-incompatible-licenses	note' | debconf-set-selections
+  echo 'zfs-dkms	zfs-dkms/stop-build-for-unknown-kernel	boolean	true"'| debconf-set-selections
+  apt-get -t "$DebianRelease"-backports install -y zfsutils-linux zfs-dkms zfs-zed
+  modprobe zfs
+  sed -i 's%^deb http://deb.debian.org/debian buster-backports%#deb http://deb.debian.org/debian buster-backports%' /etc/apt/sources.list
+  apt-get update
+}
+install_zfs
+# regarder si on peut intégrer l'appel à la fonction install_zfs dans la fonction displayandexec
 ################################################################################
 
 
@@ -1286,7 +1296,7 @@ EOF"
 install_boostnote() {
   displayandexec "Installation des dépendances de Boostnote           " "$AGI gconf2 gconf-service"
   displayandexec "Installation de Boostnote                           " "\
-$WGET -P $tmp_dir https://github.com/BoostIO/boost-releases/releases/download/v$boostnote_version/boostnote_"$boostnote_version"_amd64.deb && \
+$WGET -P $tmp_dir https://github.com/BoostIO/boost-releases/releases/download/v"$boostnote_version"/boostnote_"$boostnote_version"_amd64.deb && \
 dpkg -i $tmp_dir/boostnote_"$boostnote_version"_amd64.deb"
 }
 ################################################################################
