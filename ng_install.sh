@@ -402,6 +402,8 @@
 # EOF
 
 
+## regarder aussi .local/share/solaar/udev-rules.d/42-logitech-unify-permissions.rules
+
 
 ## pour désinstaller le driver de realtek du dongle bluetooth
 # ll /lib/modules/$(uname -r)/kernel/drivers/bluetooth/ | grep "hci_uart.ko\|rtk_btusb.ko"
@@ -751,7 +753,7 @@ else
     echo -e "${RED}######################################################################${RESET}" | tee -a $log_file
     exit 1
 fi
-version='2.0'
+ScriptVersion='2.0'
 version_system="$(cat /etc/debian_version)"
 
 # https://github.com/shiftkey/desktop/releases
@@ -865,31 +867,31 @@ check_latest_version_manual_install_apps() {
 ## Pour obtenir un listing des logiciels avec les dernières versions disponnibles
 ##------------------------------------------------------------------------------
 manual_check_latest_version() {
-  veracrypt_version="$(curl --silent https://www.veracrypt.fr/en/Downloads.html | grep "tar.bz2" | grep -v ".sig\|x86\|Source\|freebsd" | grep -Po "(?<=veracrypt-)(\d+\.+\d+)+\d+")"
+  veracrypt_version="$(curl --silent 'https://www.veracrypt.fr/en/Downloads.html' | grep 'tar.bz2' | grep -v '.sig\|x86\|Source\|freebsd' | grep -Po '(?<=veracrypt-)(\d+\.+\d+)+\d+')"
   echo "VeraCrypt ""$veracrypt_version"
-  drawio_version="$(curl --silent https://api.github.com/repos/jgraph/drawio-desktop/releases/latest | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  drawio_version="$(curl --silent 'https://api.github.com/repos/jgraph/drawio-desktop/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   echo "drawio ""$drawio_version"
-  openoffice_version="$(curl --silent https://www.openoffice.org/fr/Telecharger/ | grep -m 1 "deb\|x86-64" | grep -Po "(?<=OpenOffice_)(\d+\.+)+\d+")"
+  openoffice_version="$(curl --silent 'https://www.openoffice.org/fr/Telecharger/' | grep -m 1 'deb\|x86-64' | grep -Po "(?<=OpenOffice_)(\d+\.+)+\d+")"
   echo "OpenOffice ""$openoffice_version"
-  freefilesync_version="$(curl --silent https://freefilesync.org/download.php | grep 'Linux.tar.gz' | grep -Po "(?<=FreeFileSync_)(\d+\.+\d)+\d")"
+  freefilesync_version="$(curl --silent 'https://freefilesync.org/download.php' | grep 'Linux.tar.gz' | grep -Po '(?<=FreeFileSync_)(\d+\.+\d)+\d')"
   echo "FreeFileSync ""$freefilesync_version"
-  boostnote_version="$(curl --silent https://api.github.com/repos/BoostIO/boost-releases/releases/latest | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  boostnote_version="$(curl --silent 'https://api.github.com/repos/BoostIO/boost-releases/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   echo "Boosnote ""$boostnote_version"
-  etcher_version="$(curl --silent https://api.github.com/repos/balena-io/etcher/releases/latest | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  etcher_version="$(curl --silent 'https://api.github.com/repos/balena-io/etcher/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   echo "Etcher ""$etcher_version"
-  shotcut_version="$(curl --silent https://api.github.com/repos/mltframework/shotcut/releases/latest | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  shotcut_version="$(curl --silent 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   echo "Shotcut ""$shotcut_version"
-  stacer_version="$(curl --silent https://api.github.com/repos/oguzhaninan/Stacer/releases/latest | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  stacer_version="$(curl --silent 'https://api.github.com/repos/oguzhaninan/Stacer/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   echo "Stacer ""$stacer_version"
-  keepassxc_version="$(curl --silent https://api.github.com/repos/keepassxreboot/keepassxc/releases/latest | grep -Po '"tag_name": "\K.*?(?=")')"
+  keepassxc_version="$(curl --silent 'https://api.github.com/repos/keepassxreboot/keepassxc/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
   echo "KeePassXC ""$keepassxc_version"
-  youtubedl_version="$(curl --silent https://api.github.com/repos/ytdl-org/youtube-dl/releases/latest | grep -Po '"tag_name": "\K.*?(?=")')"
+  youtubedl_version="$(curl --silent 'https://api.github.com/repos/ytdl-org/youtube-dl/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
   echo "youtube-dl ""$youtubedl_version"
-  bat_version="$(curl --silent https://api.github.com/repos/sharkdp/bat/releases/latest | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  bat_version="$(curl --silent 'https://api.github.com/repos/sharkdp/bat/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   echo "bat ""$bat_version"
-  joplin_version="$(curl --silent https://api.github.com/repos/laurent22/joplin/releases/latest | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  joplin_version="$(curl --silent 'https://api.github.com/repos/laurent22/joplin/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   echo "Joplin ""$joplin_version"
-  krita_version="$(curl --silent https://krita.org/fr/telechargement/krita-desktop/ | grep 'stable' | grep 'appimage>' | grep -Po "(?<=/stable/krita/)(\d+\.+\d\.\d+)")"
+  krita_version="$(curl --silent 'https://krita.org/fr/telechargement/krita-desktop/' | grep 'stable' | grep 'appimage>' | grep -Po '(?<=/stable/krita/)(\d+\.+\d\.\d+)')"
   echo "Krita ""$krita_version"
 }
 # manual_check_latest_version
@@ -903,17 +905,17 @@ ExeAsUser="sudo -u "$Local_User""
 AGI='apt-get install -y'
 AG='apt-get'
 WGET='wget -q'
-Architecture="$(uname -r | grep -Po '.*-\K.*')" # peut aussi se faire avec : uname -r | /usr/bin/cut -d '-' -f 3
+ComputerProcArchitecture="$(uname -r | grep -Po '.*-\K.*')" # peut aussi se faire avec : "$(uname -r | /usr/bin/cut -d '-' -f 3)"
 NomIntReseau="$(ip a | grep 'UP' | cut -d " " -f 2 | cut -d ":" -f 1 | grep 'enp')"
-AdressIPv4local="$(ip -o -4 addr list "$NomIntReseau" | awk '{print $4}' | cut -d/ -f1)"
+AddressIPv4Local="$(ip -o -4 addr list "$NomIntReseau" | awk '{print $4}' | cut -d/ -f1)"
 AdressIPv4Ext="$(GET http://ipinfo.io/ip)"
-AdressIPv6local="$(ip -o -6 addr list "$NomIntReseau" | grep 'fe80' | awk '{print $4}' | cut -d/ -f1)"
-AdressIPv6Ext="$(ip -o -6 addr list "$NomIntReseau" | grep -v 'noprefixroute' | awk '{print $4}' | cut -d/ -f1)"
+AddressIPv6Local="$(ip -o -6 addr list "$NomIntReseau" | grep 'fe80' | awk '{print $4}' | cut -d/ -f1)"
+AddressIPv6Ext="$(ip -o -6 addr list "$NomIntReseau" | grep -v 'noprefixroute' | awk '{print $4}' | cut -d/ -f1)"
 ComputerRAM="$(grep 'MemTotal' /proc/meminfo | awk '{printf("%.0f", $2/1024/1024+1);}')"
 # grep "MemTotal" /proc/meminfo | awk '{print $2}' | sed -r 's/.{3}$//'
-ComputerProc="$(grep -c "^processor" /proc/cpuinfo)"
-ComputerProcModelName="$(grep -Po -m 1 "^model name.*: \K.*" /proc/cpuinfo)"
-ComputerProcVendorId="$(grep -Po -m 1 "(^vendor_id\s: )\K(.*)" /proc/cpuinfo)"
+ComputerProc="$(grep -c '^processor' /proc/cpuinfo)"
+ComputerProcModelName="$(grep -Po -m 1 '^model name.*: \K.*' /proc/cpuinfo)"
+ComputerProcVendorId="$(grep -Po -m 1 '(^vendor_id\s: )\K(.*)' /proc/cpuinfo)"
 DebianRelease='buster'
 #autres méthodes :
 #AdressIPv4Ext=$($AG install -y curl > /dev/null && curl -s http://ipinfo.io/ip)
@@ -943,18 +945,18 @@ echo "       ================================================================"
 echo ""
 echo "                   nom du script       : DEBIAN_POSTINSTALL            "
 echo "                   auteur              : NRGLine4Sec                   "
-echo "                   version             : "$version
+echo "                   version             : ""$ScriptVersion"
 echo "                   lancement du script : sudo bash ng_install.sh       "
-echo "                   version du système  : "$version_linux $version_system
-echo "                   architecture CPU    : "$Architecture
-echo "                   nombre de coeur CPU : "$ComputerProc
-echo "                   adresse IPv4 local  : "$AdressIPv4local
-echo "                   adresse IPv4 extern : "$AdressIPv4Ext
-if [ ! -z $AdressIPv6local ]; then
-    echo "                   adresse IPv6 local  : "$AdressIPv6local
+echo "                   version du système  : ""$version_linux" "$version_system"
+echo "                   architecture CPU    : ""$ComputerProcArchitecture"
+echo "                   nombre de coeur CPU : ""$ComputerProc"
+echo "                   adresse IPv4 local  : ""$AddressIPv4Local"
+echo "                   adresse IPv4 extern : ""$AdressIPv4Ext"
+if [ ! -z "$AddressIPv6Local" ]; then
+    echo "                   adresse IPv6 local  : ""$AddressIPv6Local"
 fi
-if [ ! -z $AdressIPv6Ext ]; then
-    echo "                   adresse IPv6 extern : "$AdressIPv6Ext
+if [ ! -z "$AddressIPv6Ext" ]; then
+    echo "                   adresse IPv6 extern : ""$AddressIPv6Ext"
 fi
 echo ""
 echo "       ================================================================"
@@ -1006,28 +1008,28 @@ displayandexec "Mise à jour du system                               " "$AG upda
 ##------------------------------------------------------------------------------
 configure_debconf() {
   #wireshark
-  echo "wireshark-common	wireshark-common/install-setuid	boolean	false" | debconf-set-selections
+  echo 'wireshark-common	wireshark-common/install-setuid	boolean	false' | debconf-set-selections
 
   #macchanger
-  echo "macchanger	macchanger/automatically_run	boolean	false" | debconf-set-selections
+  echo 'macchanger	macchanger/automatically_run	boolean	false' | debconf-set-selections
 
   # #kismet
   # echo "kismet	kismet/install-users	string	root" | debconf-set-selections
   # echo "kismet	kismet/install-setuid	boolean	false" | debconf-set-selections
 
   #apt-fast
-  echo "apt-fast	apt-fast/downloader	select	aria2c" | debconf-set-selections
-  echo "apt-fast	apt-fast/tmpdownloaddir	string	/var/cache/apt/apt-fast" | debconf-set-selections
-  echo "apt-fast	apt-fast/downloadcmd	string	aria2c --no-conf -c -j ${_MAXNUM} -x ${_MAXCONPERSRV} -s ${_SPLITCON} --min-split-size=${_MINSPLITSZ} --stream-piece-selector=${_PIECEALGO} -i ${DLLIST} --connect-timeout=600 --timeout=600 -m0 --header "Accept: */*"" | debconf-set-selections
-  echo "apt-fast	apt-fast/dlflag	boolean	true" | debconf-set-selections
-  echo "apt-fast	apt-fast/tmpdownloadlist	string	/tmp/apt-fast.list" | debconf-set-selections
-  echo "apt-fast	apt-fast/piecealgo	select	default" | debconf-set-selections
-  echo "apt-fast	apt-fast/aptmanager	select	apt-get" | debconf-set-selections
-  echo "apt-fast	apt-fast/maxconperfile	string	8" | debconf-set-selections
-  echo "apt-fast	apt-fast/minsplitsize	string	1M" | debconf-set-selections
-  echo "apt-fast	apt-fast/aptcache	string	/var/cache/apt/archives" | debconf-set-selections
-  echo "apt-fast	apt-fast/maxconpersrv	string	10" | debconf-set-selections
-  echo "apt-fast	apt-fast/maxdownloads	string	5" | debconf-set-selections
+  echo 'apt-fast	apt-fast/downloader	select	aria2c' | debconf-set-selections
+  echo 'apt-fast	apt-fast/tmpdownloaddir	string	/var/cache/apt/apt-fast' | debconf-set-selections
+  echo 'apt-fast	apt-fast/downloadcmd	string	aria2c --no-conf -c -j ${_MAXNUM} -x ${_MAXCONPERSRV} -s ${_SPLITCON} --min-split-size=${_MINSPLITSZ} --stream-piece-selector=${_PIECEALGO} -i ${DLLIST} --connect-timeout=600 --timeout=600 -m0 --header "Accept: */*"' | debconf-set-selections
+  echo 'apt-fast	apt-fast/dlflag	boolean	true' | debconf-set-selections
+  echo 'apt-fast	apt-fast/tmpdownloadlist	string	/tmp/apt-fast.list' | debconf-set-selections
+  echo 'apt-fast	apt-fast/piecealgo	select	default' | debconf-set-selections
+  echo 'apt-fast	apt-fast/aptmanager	select	apt-get' | debconf-set-selections
+  echo 'apt-fast	apt-fast/maxconperfile	string	8' | debconf-set-selections
+  echo 'apt-fast	apt-fast/minsplitsize	string	1M' | debconf-set-selections
+  echo 'apt-fast	apt-fast/aptcache	string	/var/cache/apt/archives' | debconf-set-selections
+  echo 'apt-fast	apt-fast/maxconpersrv	string	10' | debconf-set-selections
+  echo 'apt-fast	apt-fast/maxdownloads	string	5' | debconf-set-selections
 
   # Solution : installer les paquets manuellement avec les bonnes config. Ensuite installer debconf-utils et faire
   # debconf-get-selections | grep nom_du_paquet
@@ -1085,7 +1087,7 @@ displayandexec "Installation de gcc                                 " "$AGI gcc"
 # displayandexec "Installation de geeqie                              " "$AGI geeqie" # installer geekie depuis le script d'install du github car la version dans les dépots de débian est beaucoup trop vielle
 displayandexec "Installation de gimp                                " "$AGI gimp"
 displayandexec "Installation de git                                 " "$AGI git"
-displayandexec "Installation de gufw                                " "$AGI gufw"
+displayandexec "Installation de gufw                                " "$AGI gufw" #probablement que ce paquet ne sera plus nécessaire dans les prochaines versions du script
 displayandexec "Installation de gparted                             " "$AGI gparted"
 displayandexec "Installation de gsmartcontrol                       " "$AGI gsmartcontrol"
 displayandexec "Installation de hashcat                             " "$AGI hashcat"
@@ -1101,14 +1103,12 @@ displayandexec "Installation de inkscape                            " "$AGI inks
 displayandexec "Installation de iotop                               " "$AGI iotop"
 displayandexec "Installation de ipcalc                              " "$AGI ipcalc"
 # displayandexec "Installation de keepass2                            " "$AGI keepass2" # il est amener à ne plus être installé au fur et à mesure qu'on utilise et qu'on valide KeepassXC
-# displayandexec "Installation de krita                               " "$AGI krita" # la version de krita dans les dépots officiel est trop vielle -> install manuel
 displayandexec "Installation de lnav                                " "$AGI lnav"
 displayandexec "Installation de lshw                                " "$AGI lshw"
 displayandexec "Installation de lynx                                " "$AGI lynx"
 displayandexec "Installation de macchanger                          " "$AGI macchanger"
 displayandexec "Installation de make                                " "$AGI make"
 displayandexec "Installation de mediainfo-gui                       " "$AGI mediainfo-gui"
-# displayandexec "Installation de mkvtoolnix-gui                      " "$AGI mkvtoolnix-gui"  # la version de mkvtoolnix dans les dépots officiel est trop vielle -> install manuel
 displayandexec "Installation de mpv                                 " "$AGI mpv"
 displayandexec "Installation de nautilus-gtkhash                    " "$AGI nautilus-gtkhash"
 displayandexec "Installation de nautilus-wipe                       " "$AGI nautilus-wipe"
@@ -1126,7 +1126,6 @@ displayandexec "Installation de p7zip-rar                           " "$AGI p7zi
 displayandexec "Installation de printer-driver-all                  " "$AGI printer-driver-all"
 displayandexec "Installation de python3-pip                         " "$AGI python3-pip"
 displayandexec "Installation de python3-scapy                       " "$AGI python3-scapy"
-# displayandexec "Installation de python-pip                          " "$AGI python-pip" # probablement qu'il faudra supprimer cette ligne pour les prochaines releases
 displayandexec "Installation de rdesktop                            " "$AGI rdesktop"
 displayandexec "Installation de rkhunter                            " "$AGI rkhunter"
 displayandexec "Installation de rsync                               " "$AGI rsync"
@@ -1158,18 +1157,21 @@ displayandexec "Installation de zip                                 " "$AGI zip"
 displayandexec "Installation de zsh                                 " "$AGI zsh"
 displayandexec "Installation de zstd                                " "$AGI zstd"
 install_zfs() {
-  sed -i 's%^#deb http://deb.debian.org/debian buster-backports%deb http://deb.debian.org/debian buster-backports%' /etc/apt/sources.list
+  sed -i "s%^#deb http://deb.debian.org/debian "$DebianRelease"-backports%deb http://deb.debian.org/debian "$DebianRelease"-backports%" /etc/apt/sources.list
   apt-get update
   echo 'zfs-dkms	zfs-dkms/stop-build-for-32bit-kernel	boolean	true' | debconf-set-selections
   echo 'zfs-dkms	zfs-dkms/note-incompatible-licenses	note' | debconf-set-selections
   echo 'zfs-dkms	zfs-dkms/stop-build-for-unknown-kernel	boolean	true"'| debconf-set-selections
   apt-get -t "$DebianRelease"-backports install -y zfsutils-linux zfs-dkms zfs-zed
   modprobe zfs
-  sed -i 's%^deb http://deb.debian.org/debian buster-backports%#deb http://deb.debian.org/debian buster-backports%' /etc/apt/sources.list
+  sed -i "s%^deb http://deb.debian.org/debian "$DebianRelease"-backports%#deb http://deb.debian.org/debian "$DebianRelease"-backports%" /etc/apt/sources.list
   apt-get update
 }
 install_zfs
 # regarder si on peut intégrer l'appel à la fonction install_zfs dans la fonction displayandexec
+
+# la version de mkvtoolnix dans les dépots officiel est trop vielle -> install manuel
+# la version de krita dans les dépots officiel est trop vielle -> install manuel
 ################################################################################
 
 
@@ -1288,6 +1290,11 @@ Categories=Utility;FileTools;
 StartupNotify=true
 EOF"
 }
+# Pour faire les nouvelles install avec freefilesynx :
+# tar xvf $tmp_dir/FreeFileSync_"$freefilesync_version"_Linux.tar.gz --directory $tmp_dir && \
+# Pour l'instant on est obligé de faire un chown -R $Local_User:$Local_User $manual_install_dir/FreeFileSync sinon le bianire ne s'installe pas
+# $ExeAsUser $tmp_dir/FreeFileSync_11.10_Install.run --accept-license --skip-overview --for-all-users false --directory $manual_install_dir/FreeFileSync
+# il faudra potentiellemnt supprimer /home/$Local_User/.profile qui est créé lors de l'install de FreeFileSync et qui permet  priori de renseigner le path pour l'execution des commande qui lancent les binaires de FreeFileSync (/home/$Local_User/.local/bin)
 ################################################################################
 
 ################################################################################
@@ -1390,14 +1397,14 @@ EOF
 ##------------------------------------------------------------------------------
 install_keepassxc() {
   displayandexec "Installation de KeePassXC                           " "\
-$WGET -P $manual_install_dir/KeePassXC/ https://github.com/keepassxreboot/keepassxc/releases/download/$keepassxc_version/KeePassXC-$keepassxc_version-x86_64.AppImage && \
+$WGET -P $manual_install_dir/KeePassXC/ https://github.com/keepassxreboot/keepassxc/releases/download/"$keepassxc_version"/KeePassXC-"$keepassxc_version"-x86_64.AppImage && \
 $WGET -P $manual_install_dir/KeePassXC/ https://keepassxc.org/images/keepassxc-logo.svg && \
-chmod +x $manual_install_dir/KeePassXC/KeePassXC-$keepassxc_version-x86_64.AppImage && \
+chmod +x $manual_install_dir/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage && \
 echo '[Desktop Entry]
 Comment=Password Manager
 Terminal=false
 Name=KeePassXC
-Exec=$manual_install_dir/KeePassXC/KeePassXC-$keepassxc_version-x86_64.AppImage
+Exec=$manual_install_dir/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage
 Type=Application
 Icon=$manual_install_dir/KeePassXC/keepassxc-logo.svg
 Categories=Utility;Security;Qt;
@@ -1439,7 +1446,7 @@ dpkg -i $tmp_dir/balena-etcher-electron_"$etcher_version"_amd64.deb"
 install_shotcut() {
   displayandexec "Installation de Shotcut                             " "\
 mkdir $manual_install_dir/shotcut/ && \
-$WGET -P $manual_install_dir/shotcut/ https://github.com/mltframework/shotcut/releases/download/v$shotcut_version/$shotcut_appimage && \
+$WGET -P $manual_install_dir/shotcut/ https://github.com/mltframework/shotcut/releases/download/v"$shotcut_version"/"$shotcut_appimage" && \
 chmod +x $manual_install_dir/shotcut/"$shotcut_appimage" && \
 ln -s $manual_install_dir/shotcut/"$shotcut_appimage" /usr/bin/shotcut"
 }
@@ -1538,7 +1545,7 @@ chmod +x $manual_install_dir/Krita/krita-"$krita_version"-x86_64.appimage"
 cat> /usr/share/applications/krita.desktop << EOF
 [Desktop Entry]
 Name=Krita
-Exec==$manual_install_dir/Krita/krita-$krita_version-x86_64.appimage
+Exec==$manual_install_dir/Krita/krita-"$krita_version"-x86_64.appimage
 GenericName=Digital Painting
 GenericName[fr]=Peinture numérique
 MimeType=application/x-krita;image/openraster;application/x-krita-paintoppreset;
@@ -1718,9 +1725,10 @@ manual_install_dir='/opt/manual_install'
 AG='apt-get'
 WGET='wget -q'
 Local_User="$(grep "1000" /etc/passwd | cut -d: -f 1)"
+ExeAsUser="sudo -u "$Local_User""
 now="$(date +"%d-%m-%Y")"
 [ -d /var/log/sysupdate ] || mkdir /var/log/sysupdate
-log_file=/var/log/sysupdate/update-$now.log
+log_file=/var/log/sysupdate/update-"$now".log
 touch $log_file
 
 # Premier parametre: MESSAGE
@@ -1742,8 +1750,7 @@ displayandexec() {
 
 displayandexec "Mise à jour des paquets debian                      " "$AG update && $AG upgrade -y"
 # displayandexec "Mise à jour de la base de donnée de rkhunter        " "rkhunter --versioncheck && rkhunter --update && rkhunter --propupd"
-# displayandexec "Mise à jour des paquets de pip                      " "pip install --upgrade pip"
-displayandexec "Mise à jour des paquets de pip3                     " "pip3 install --upgrade pip"
+displayandexec "Mise à jour des paquets de pip3                     " "$ExeAsUser pip3 install --upgrade pip"
 displayandexec "Suppression du cache de apt-get                     " "$AG clean"
 
 # if [ $1 = "-log" ]; then
@@ -1783,71 +1790,71 @@ CheckUpdateShotcut() {
   # voir si on ne remplace pas par : shotcut --version 2>&1 | cut -c 9- | grep -v "Gtk-WARNING" | sed '/^$/d'
   # pour éviter les warnings gtk
   # ref : [Ubuntu – How to stop gedit (and other programs) from outputting GTK warnings and the like in the terminal – iTecTec](https://itectec.com/ubuntu/ubuntu-how-to-stop-gedit-and-other-programs-from-outputting-gtk-warnings-and-the-like-in-the-terminal/)
-  local v2="$(curl --silent https://api.github.com/repos/mltframework/shotcut/releases/latest | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  local v2="$(curl --silent 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
 CheckUpdateYoutube-dl() {
   local SoftwareName='youtube-dl'
   local v1="$(youtube-dl --version)"
-  local v2="$(curl --silent https://api.github.com/repos/ytdl-org/youtube-dl/releases/latest | grep -Po '"tag_name": "\K.*?(?=")')"
+  local v2="$(curl --silent 'https://api.github.com/repos/ytdl-org/youtube-dl/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
 CheckUpdateBoosnote() {
   local SoftwareName='Boostnote'
   local v1="$(grep -Po '"version": "\K.*?(?=")' /usr/lib/boostnote/resources/app/package.json)"
-  local v2="$(curl --silent https://api.github.com/repos/BoostIO/boost-releases/releases/latest | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  local v2="$(curl --silent 'https://api.github.com/repos/BoostIO/boost-releases/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
 CheckUpdateFreefilesync() {
   local SoftwareName='FreeFileSync'
   local v1="$(head $manual_install_dir/FreeFileSync/CHANGELOG -n 1 | grep -Po 'FreeFileSync \K(\d+\.+\d+)')"
-  local v2="$(curl --silent https://freefilesync.org/download.php | grep "Linux.tar.gz" | grep -Po "(FreeFileSync_)\K(\d+\.+\d+)")"
+  local v2="$(curl --silent 'https://freefilesync.org/download.php' | grep 'Linux.tar.gz' | grep -Po '(FreeFileSync_)\K(\d+\.+\d+)')"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
 CheckUpdateKeepassxc() {
   local SoftwareName='KeePassXC'
   local v1="$(grep -Po '^Exec.*-\K\d+.\d+.\d+' /usr/share/applications/keepassxc.desktop)"
-  local v2="$(curl --silent https://api.github.com/repos/keepassxreboot/keepassxc/releases/latest | grep -Po '"tag_name": "\K.*?(?=")')"
+  local v2="$(curl --silent 'https://api.github.com/repos/keepassxreboot/keepassxc/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
 CheckUpdateJoplin() {
   local SoftwareName='Joplin'
   local v1="$(grep -Po '^Exec.*-\K\d+.\d+.\d+' /usr/share/applications/joplin.desktop)"
-  local v2="$(curl --silent https://api.github.com/repos/laurent22/joplin/releases/latest | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  local v2="$(curl --silent 'https://api.github.com/repos/laurent22/joplin/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
 CheckUpdateStacer() {
   local SoftwareName='Stacer'
   local v1="$(strings /usr/share/stacer/stacer | grep -Po '(Stacer v)\K(\d+.\d+.\d+.)')"
-  local v2="$(curl --silent https://api.github.com/repos/oguzhaninan/Stacer/releases/latest | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  local v2="$(curl --silent 'https://api.github.com/repos/oguzhaninan/Stacer/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
 CheckUpdateBat() {
   local SoftwareName='Bat'
   local v1="$(bat --version | grep -Po '(bat )\K.*')"
-  local v2="$(curl --silent https://api.github.com/repos/sharkdp/bat/releases/latest | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  local v2="$(curl --silent 'https://api.github.com/repos/sharkdp/bat/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
 CheckUpdateKrita() {
   local SoftwareName='Krita'
   local v1="$(grep -Po '^Exec.*-\K\d+.\d+.\d+' /usr/share/applications/krita.desktop)"
-  local v2="$(curl --silent https://krita.org/fr/telechargement/krita-desktop/ | grep 'stable' | grep 'appimage>' | grep -Po "(?<=/stable/krita/)(\d+\.+\d\.\d+)")"
+  local v2="$(curl --silent 'https://krita.org/fr/telechargement/krita-desktop/' | grep 'stable' | grep 'appimage>' | grep -Po '(?<=/stable/krita/)(\d+\.+\d\.\d+)')"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
 ################################################################################
 
 UpdateShotcut() {
-  local shotcut_version="$(curl --silent https://api.github.com/repos/mltframework/shotcut/releases/latest | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
-  local shotcut_appimage="$(curl --silent https://api.github.com/repos/mltframework/shotcut/releases/latest | grep -Po '"name": "\K.*?(?=")' | grep 'AppImage')"
+  local shotcut_version="$(curl --silent 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  local shotcut_appimage="$(curl --silent 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"name": "\K.*?(?=")' | grep 'AppImage')"
   rm -rf /usr/bin/shotcut
   rm -rf $manual_install_dir/shotcut/*.AppImage
 	$WGET -P $manual_install_dir/shotcut/ https://github.com/mltframework/shotcut/releases/download/v"$shotcut_version"/$shotcut_appimage
@@ -1860,56 +1867,60 @@ UpdateYoutube-dl() {
 }
 
 UpdateBoostnote() {
-  local boostnote_version="$(curl --silent https://api.github.com/repos/BoostIO/boost-releases/releases/latest | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  local boostnote_version="$(curl --silent 'https://api.github.com/repos/BoostIO/boost-releases/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   TMP="$(mktemp -d)"
   $WGET -P $TMP https://github.com/BoostIO/boost-releases/releases/download/v$boostnote_version/boostnote_"$boostnote_version"_amd64.deb
   dpkg -i $TMP/boostnote_"$boostnote_version"_amd64.deb
+  # rm -rf $TMP
 }
 
 UpdateFreefilesync() {
-  local freefilesync_version="$(curl --silent https://freefilesync.org/download.php | grep 'Linux.tar.gz' | grep -Po "(FreeFileSync_)\K(\d+\.+\d+)")"
+  local freefilesync_version="$(curl --silent 'https://freefilesync.org/download.php' | grep 'Linux.tar.gz' | grep -Po "(FreeFileSync_)\K(\d+\.+\d+)")"
   rm -rf $manual_install_dir/FreeFileSync
   TMP="$(mktemp -d)"
   aria2c -d $TMP https://freefilesync.org/download/FreeFileSync_"$freefilesync_version"_Linux.tar.gz -o /FreeFileSync_"$freefilesync_version"_Linux.tar.gz
   tar xvf $TMP/FreeFileSync_"$freefilesync_version"_Linux.tar.gz --directory $manual_install_dir >/dev/null
+  # rm -rf $TMP
 }
 
 UpdateKeepassxc() {
-  local keepassxc_version="$(curl --silent https://api.github.com/repos/keepassxreboot/keepassxc/releases/latest | grep -Po '"tag_name": "\K.*?(?=")')"
+  local keepassxc_version="$(curl --silent 'https://api.github.com/repos/keepassxreboot/keepassxc/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
   rm -rf $manual_install_dir/KeePassXC/KeePassXC-*.AppImage
   $WGET -P $manual_install_dir/KeePassXC/ https://github.com/keepassxreboot/keepassxc/releases/download/"$keepassxc_version"/KeePassXC-"$keepassxc_version"-x86_64.AppImage
-  chmod +x $manual_install_dir/KeePassXC/KeePassXC-$keepassxc_version-x86_64.AppImage
+  chmod +x $manual_install_dir/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage
   sed -i s,.*Exec=.*,Exec=$manual_install_dir/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage,g /usr/share/applications/keepassxc.desktop
-  [ -f /home/$Local_User/.config/autostart/keepassxc.desktop ] && sed -i s,.*Exec=.*,Exec=$manual_install_dir/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage,g /home/$Local_User/.config/autostart/keepassxc.desktop
-  [ -f $manual_install_dir/KeePassXC/keepassxc-logo.svg ] || $WGET -P $manual_install_dir/KeePassXC/ https://keepassxc.org/images/keepassxc-logo.svg
+  [ -f /home/"$Local_User"/.config/autostart/keepassxc.desktop ] && sed -i s,.*Exec=.*,Exec=$manual_install_dir/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage,g /home/"$Local_User"/.config/autostart/keepassxc.desktop
+  [ -f $manual_install_dir/KeePassXC/keepassxc-logo.svg ] || $WGET -P $manual_install_dir/KeePassXC/ 'https://keepassxc.org/images/keepassxc-logo.svg'
 }
 
 UpdateJoplin() {
-  local joplin_version="$(curl --silent https://api.github.com/repos/laurent22/joplin/releases/latest | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  local joplin_version="$(curl --silent 'https://api.github.com/repos/laurent22/joplin/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   rm -rf $manual_install_dir/Joplin/Joplin-*.AppImage
-  $WGET -P $manual_install_dir/Joplin/ https://github.com/laurent22/joplin/releases/download/v"$joplin_version"/Joplin-$joplin_version.AppImage
-  chmod +x $manual_install_dir/Joplin/Joplin-$joplin_version.AppImage
+  $WGET -P $manual_install_dir/Joplin/ https://github.com/laurent22/joplin/releases/download/v"$joplin_version"/Joplin-"$joplin_version".AppImage
+  chmod +x $manual_install_dir/Joplin/Joplin-"$joplin_version".AppImage
   sed -i "s,^Exec=.*,Exec=$manual_install_dir/Joplin/Joplin-$joplin_version.AppImage --no-sandbox,g" /usr/share/applications/joplin.desktop
-  [ -f /home/$Local_User/.config/autostart/joplin.desktop ] && sed -i "s,^Exec=.*,Exec=$manual_install_dir/Joplin/Joplin-$joplin_version.AppImage --no-sandbox,g" /home/$Local_User/.config/autostart/joplin.desktop
-  [ -f $manual_install_dir/Joplin/256x256.png ] || $WGET -P $manual_install_dir/Joplin/ https://raw.githubusercontent.com/laurent22/joplin/master/Assets/LinuxIcons/256x256.png
+  [ -f /home/"$Local_User"/.config/autostart/joplin.desktop ] && sed -i "s,^Exec=.*,Exec=$manual_install_dir/Joplin/Joplin-$joplin_version.AppImage --no-sandbox,g" /home/"$Local_User"/.config/autostart/joplin.desktop
+  [ -f $manual_install_dir/Joplin/256x256.png ] || $WGET -P $manual_install_dir/Joplin/ 'https://raw.githubusercontent.com/laurent22/joplin/master/Assets/LinuxIcons/256x256.png'
 }
 
 UpdateStacer() {
-  local stacer_version="$(curl --silent https://api.github.com/repos/oguzhaninan/Stacer/releases/latest | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  local stacer_version="$(curl --silent 'https://api.github.com/repos/oguzhaninan/Stacer/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   TMP="$(mktemp -d)"
   $WGET -P $TMP https://github.com/oguzhaninan/Stacer/releases/download/v$stacer_version/stacer_"$stacer_version"_amd64.deb
   dpkg -i $TMP/stacer_"$stacer_version"_amd64.deb
+  # rm -rf $TMP
 }
 
 UpdateBat() {
-  local bat_version="$(curl --silent https://api.github.com/repos/sharkdp/bat/releases/latest | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  local bat_version="$(curl --silent 'https://api.github.com/repos/sharkdp/bat/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   TMP="$(mktemp -d)"
   $WGET -P $TMP https://github.com/sharkdp/bat/releases/download/v"$bat_version"/bat_"$bat_version"_amd64.deb
   dpkg -i $TMP/bat_"$bat_version"_amd64.deb
+  # rm -rf $TMP
 }
 
 UpdateKrita() {
-  local krita_version="$(curl --silent https://krita.org/fr/telechargement/krita-desktop/ | grep 'stable' | grep 'appimage>' | grep -Po "(?<=/stable/krita/)(\d+\.+\d\.\d+)")"
+  local krita_version="$(curl --silent 'https://krita.org/fr/telechargement/krita-desktop/' | grep 'stable' | grep 'appimage>' | grep -Po '(?<=/stable/krita/)(\d+\.+\d\.\d+)')"
   rm -rf $manual_install_dir/Krita/krita-*.appimage
   $WGET -P $manual_install_dir/Krita/ https://download.kde.org/stable/krita/"$krita_version"/krita-"$krita_version"-x86_64.appimage && \
   chmod +x $manual_install_dir/Krita/krita-"$krita_version"-x86_64.appimage
@@ -2183,7 +2194,8 @@ install_all_perso_script
 ## configuration de SSH
 ##------------------------------------------------------------------------------
 # on change le port par défaut
-sed -i "s/#Port\ 22/Port\ 7894/g" /etc/ssh/sshd_config && \
+SSH_Port='7894'
+sed -i "s/#Port\ 22/Port\ $SSH_Port/g" /etc/ssh/sshd_config && \
 sed -E -i '/(^#PermitRootLogin|^PermitRootLogin) (yes|no|without-password|prohibit-password)/{s/yes/no/;t;s/without-password/no/;t;s/prohibit-password/no/;}' /etc/ssh/sshd_config && \
 sed -E -i 's/^#PermitRootLogin/PermitRootLogin/' /etc/ssh/sshd_config
 # (^#PermitRootLogin|^PermitRootLogin) : permet d'identifier que le ligne commence par #PermitRootLogin ou qu'elle commence par PermitRootLogin, uniquement
@@ -2260,7 +2272,6 @@ sed -i 's/WEB_CMD=\"\/bin\/false\"/WEB_CMD=\"\"/' /etc/rkhunter.conf
 ##------------------------------------------------------------------------------
 # conf de Libreoffice
 sed -i --follow-symlinks '/^export LC_ALL/a export GTK_THEME=Adwaita' /usr/bin/libreoffice
-# je ne sais pas du tout pourquoi maias lorsqu'on le fait avec la commande sed, libreoffice ne démare plus erreur ()
 # variante avec awk :
 # awk '1;/^export LC_ALL/{print "export GTK_THEME=Adwaita"}' /usr/bin/libreoffice
 # avec awk, on ne peut pas écrire directement dans le fichier, mais ce hack permet d'obtenir le même résultat
@@ -2268,13 +2279,23 @@ sed -i --follow-symlinks '/^export LC_ALL/a export GTK_THEME=Adwaita' /usr/bin/l
 # variante en perl (permet d'écrire directement dans le fichier, comme avec sed -i):
 # perl -pi -e '$_ .= qq(export GTK_THEME=Adwaita\n) if /export LC_ALL/' /usr/bin/libreoffice
 
-# autrement tester avec les .desktop
-# grep Exec .local/share/applications/libreoffice-*
-
 #if you want to use this in a .desktop file, you have to prepend 'env' for setting the env variable. I.e. copy the libreoffice-*.desktop files from /usr/share/applications to ~.local/share/applications, then open them in a text editor and change the line saying 'Exec' so it looks like this:
 # Exec=env GTK_THEME=Adwaita:light libreoffice --writer
 
-# libreoffice-gnome libreoffice-voikko libreoffice-pdfimport libreoffice-writer2xhtml printer-driver-cups-pdf
+# disable java settings in LibreOffice
+$ExeAsUser sed -i 's%<enabled xsi:nil="false">true</enabled>%<enabled xsi:nil="false">false</enabled>%g' /home/"$Local_User"/.config/libreoffice/4/user/config/javasettings_Linux_X86_64.xml
+# ref : https://ask.libreoffice.org/en/question/167622/how-to-disable-java-in-configuration-files/
+# Pour aider à chercher les fichiers concernés par la modification de la configuration
+# find /home/$USER/.config/libreoffice/*/ -type f -mmin -5 -exec grep -l "java" {} \;
+# find /usr/lib/libreoffice/share/ -type f -mmin -5 -exec grep -l "java" {} \;
+
+# Disable startup logo
+sed -i 's/Logo=1/Logo=0/g' /etc/libreoffice/sofficerc
+# ref : https://wiki.archlinux.org/title/LibreOffice#Disable_startup_logo
+
+# Pour changer la valeur du niveau de sécurité des macros de Elevé à Très Elevé
+$ExeAsUser sed -i 's%<item oor:path="/org.openoffice.Office.Common/Security/Scripting"><prop oor:name="MacroSecurityLevel" oor:op="fuse"><value>2</value></prop></item>%<item oor:path="/org.openoffice.Office.Common/Security/Scripting"><prop oor:name="MacroSecurityLevel" oor:op="fuse"><value>3</value></prop></item>%g' /home/"$Local_User"/.config/libreoffice/4/user/registrymodifications.xcu
+
 ################################################################################
 
 ################################################################################
@@ -2621,8 +2642,9 @@ application/x-shellscript=atom.desktop;
 application/x-keepass2=keepassxc.desktop;
 application/x-kdbx=keepassxc.desktop;
 text/markdown=typora.desktop;org.gnome.gedit.desktop;
-text/csv=libreoffice-writer.desktop;org.gnome.gedit.desktop;
+text/csv=libreoffice-calc.desktop;org.gnome.gedit.desktop;
 text/html=chromium.desktop;atom.desktop;
+text/x-patch=atom.desktop;
 text/x-python=atom.desktop;
 video/x-matroska=mpv.desktop;
 video/webm=mpv.desktop;
