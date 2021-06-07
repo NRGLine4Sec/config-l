@@ -638,7 +638,8 @@ NOIR='\e[0;30m'
 ## création d'un fichier de log
 ##------------------------------------------------------------------------------
 now="$(date +"%d-%m-%Y")"
-[ -d /var/log/postinstall ] || mkdir /var/log/postinstall
+log_dir='/var/log/postinstall'
+[ -d "$log_dir" ] || mkdir "$log_dir"
 log_file="/var/log/postinstall/log_script_install-"$now".log"
 touch "$log_file"
 install_file="/var/log/postinstall/install_file-"$now".log"
@@ -647,8 +648,17 @@ touch "$install_file"
 echo '####################################################################' > "$log_file"
 echo '#                          Debut du script                         #' >> "$log_file"
 echo '####################################################################' >> "$log_file"
-echo "" >> "$log_file"
+echo '' >> "$log_file"
 echo '--------------------------------------------------------------------' >> "$log_file"
+################################################################################
+
+################################################################################
+## copie du script ng_install dans /var/log
+##------------------------------------------------------------------------------
+cp "${BASH_SOURCE[0]}" "$log_dir"/"$(basename "$0")"
+chmod 700 "$log_dir"/"$(basename "$0")"
+# on copie le contenu du script dans le répertoire $log_dir pour pouvoir savoir plus tard ce qu'il y avait dans le script au moment de son execution
+# le chmod permet de s'assurer qu'il ne sera pas executer par mégarde et qu'il n'est accessible qu'en lecture pour root
 ################################################################################
 
 ################################################################################
@@ -843,6 +853,18 @@ check_latest_version_manual_install_apps() {
         krita_version='4.4.1'
     fi
     # check version : https://krita.org/fr/telechargement/krita-desktop/
+
+    opensnitch_stable_version="$(curl --silent 'https://api.github.com/repos/evilsocket/opensnitch/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+    if [ $? != 0 ] || [ -z "$opensnitch_stable_version" ]; then
+        opensnitch_stable_version='1.3.6'
+    fi
+    # check version : https://github.com/evilsocket/opensnitch/releases/
+
+    opensnitch_latest_version="$(curl --silent 'https://api.github.com/repos/evilsocket/opensnitch/releases' | grep -m 1 -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+    if [ $? != 0 ] || [ -z "$opensnitch_latest_version" ]; then
+        opensnitch_latest_version='1.4.0-rc.2'
+    fi
+    # check version : https://github.com/evilsocket/opensnitch/releases/
 }
 
 # tester la commande ci-dessous pour aller chercher les dernière versions directement depuis Github
@@ -893,6 +915,10 @@ manual_check_latest_version() {
   echo "Joplin ""$joplin_version"
   krita_version="$(curl --silent 'https://krita.org/fr/telechargement/krita-desktop/' | grep 'stable' | grep 'appimage>' | grep -Po '(?<=/stable/krita/)(\d+\.+\d\.\d+)')"
   echo "Krita ""$krita_version"
+  opensnitch_stable_version="$(curl --silent 'https://api.github.com/repos/evilsocket/opensnitch/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  echo "OpenSnitch stable ""$opensnitch_stable_version"
+  opensnitch_latest_version="$(curl --silent 'https://api.github.com/repos/evilsocket/opensnitch/releases' | grep -m 1 -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  echo "OpenSnitch latest (dev) ""$opensnitch_latest_version"
 }
 # manual_check_latest_version
 ################################################################################
@@ -934,16 +960,16 @@ $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$Local_User_UID"/bus" 
 ################################################################################
 
 clear
-echo ""
-echo ""
+echo ''
+echo ''
 echo '       ################################################################'
 echo '       #            LANCEMENT DU SCRIPT DEBIAN_POSTINSTALL            #'
 echo '       ################################################################'
-echo ""
+echo ''
 
-echo ""
+echo ''
 echo '       ================================================================'
-echo ""
+echo ''
 echo '                   nom du script       : DEBIAN_POSTINSTALL            '
 echo '                   auteur              : NRGLine4Sec                   '
 echo '                   version             : '"$ScriptVersion"
@@ -959,9 +985,9 @@ fi
 if [ "$AddressIPv6Ext" ]; then
     echo '                   adresse IPv6 extern : '"$AddressIPv6Ext"
 fi
-echo ""
+echo ''
 echo '       ================================================================'
-echo ""
+echo ''
 
 #//////////////////////////////////////////////////////////////////////////////#
 #                                INSTALL APPS                                  #
@@ -993,11 +1019,11 @@ deb-src http://deb.debian.org/debian/ "$DebianRelease"-updates main contrib
 #deb http://deb.debian.org/debian "$DebianRelease"-backports main contrib non-free
 EOF
 
-echo ""
+echo ''
 echo "       ################################################################"
 echo "       #                      MISE A JOUR DU SYSTEM                   #"
 echo "       ################################################################"
-echo ""
+echo ''
 
 displayandexec "Mise à jour des certificats racine                  " "update-ca-certificates"
 
@@ -1042,11 +1068,11 @@ configure_debconf
 ################################################################################
 ## installation des logiciels
 ##------------------------------------------------------------------------------
-echo ""
+echo ''
 echo '       ################################################################'
 echo '       #                   INSTALLATION DES LOGICIELS                 #'
 echo '       ################################################################'
-echo ""
+echo ''
 
 # si besoin de iwlwifi
 lspci -nn | grep 'Network' | grep 'Intel' &> /dev/null
@@ -1224,9 +1250,9 @@ chmod +x /usr/bin/winscp"
 ##------------------------------------------------------------------------------
 install_veracrypt() {
   displayandexec "Installation de veracrypt                           " "\
-$WGET -P $tmp_dir https://launchpad.net/veracrypt/trunk/$veracrypt_version/+download/veracrypt-$veracrypt_version-setup.tar.bz2 && \
-tar xjf $tmp_dir/veracrypt-$veracrypt_version-setup.tar.bz2 --directory=$tmp_dir && \
-$tmp_dir/veracrypt-$veracrypt_version-setup-gui-x64 --nox11 --noexec --target $tmp_dir && \
+$WGET -P $tmp_dir https://launchpad.net/veracrypt/trunk/"$veracrypt_version"/+download/veracrypt-"$veracrypt_version"-setup.tar.bz2 && \
+tar xjf $tmp_dir/veracrypt-"$veracrypt_version"-setup.tar.bz2 --directory=$tmp_dir && \
+$tmp_dir/veracrypt-"$veracrypt_version"-setup-gui-x64 --nox11 --noexec --target $tmp_dir && \
 tail -n +\$(sed -n 's/.*PACKAGE_START=\([0-9]*\).*/\1/p' $tmp_dir/veracrypt_install_gui_x64.sh) $tmp_dir/veracrypt_install_gui_x64.sh > $tmp_dir/veracrypt_installer.tar && \
 tar -C / --no-overwrite-dir -xpzvf $tmp_dir/veracrypt_installer.tar"
 # on backslash le retour de la command sed car elle est executer dans un bash -c
@@ -1321,7 +1347,7 @@ cat> /etc/apt/sources.list.d/typora.list << 'EOF'
 deb https://typora.io/linux ./
 # deb-src https://typora.io/linux ./
 EOF
-wget -qO - https://typora.io/linux/public-key.asc | apt-key add - && \
+$WGET --output-document - https://typora.io/linux/public-key.asc | apt-key add - && \
 $AG update && \
 $AGI typora"
 }
@@ -1334,8 +1360,8 @@ install_virtualbox() {
   displayandexec "Installation des dépendances de VirtualBox          " "$AGI dkms"
   displayandexec "Installation de VirtualBox                          " "\
 echo 'deb https://download.virtualbox.org/virtualbox/debian buster contrib' > /etc/apt/sources.list.d/virtualbox.list && \
-$WGET 'https://www.virtualbox.org/download/oracle_vbox_2016.asc' -O- | apt-key add - && \
-$WGET 'https://www.virtualbox.org/download/oracle_vbox.asc' -O- | apt-key add - && \
+$WGET 'https://www.virtualbox.org/download/oracle_vbox_2016.asc' --output-document - | apt-key add - && \
+$WGET 'https://www.virtualbox.org/download/oracle_vbox.asc' --output-document - | apt-key add - && \
 $AG update && \
 $AGI virtualbox-6.1"
   # virtualbox_version=$(virtualbox --help | grep v[0-9] | cut -c 35-) # ancienne version
@@ -1572,14 +1598,19 @@ EOF
 ## instalation de OpenSnitch
 ##------------------------------------------------------------------------------
 install_opensnitch() {
-  $AGI python3-pyqt5.qtsql python3-pyinotify
-  pip3 install unicode_slugify
-  pip3 install grpcio-tools
-  $WGET https://github.com/evilsocket/opensnitch/releases/download/v1.3.5/python3-opensnitch-ui_1.3.5-1_all.deb
-  $WGET https://github.com/evilsocket/opensnitch/releases/download/v1.3.5/opensnitch_1.3.5-1_amd64.deb
-  $AGI opensnitch_1.3.5-1_amd64.deb
-  $AGI python3-opensnitch-ui_1.3.5-1_all.deb
+  $AGI python3-pyqt5.qtsql python3-pyinotify && \
+  pip3 install unicode_slugify && \
+  pip3 install grpcio-tools && \
+  local tmp_dir="$(mktemp -d)" && \
+  $WGET -P "$tmp_dir" "https://github.com/evilsocket/opensnitch/releases/download/v"$opensnitch_latest_version"/python3-opensnitch-ui_"$opensnitch_latest_version"-1_all.deb" && \
+  $WGET -P "$tmp_dir" "https://github.com/evilsocket/opensnitch/releases/download/v"$opensnitch_latest_version"/opensnitch_"$opensnitch_latest_version"-1_amd64.deb" && \
+  dpkg -i "$tmp_dir"/opensnitch_"$opensnitch_latest_version"-1_amd64.deb && \
+  dpkg -i "$tmp_dir"/python3-opensnitch-ui_"$opensnitch_latest_version"-1_all.deb && \
+  rm -rf "$tmp_dir" && \
+  $AG install -f -y
 }
+# l'installation de OpenSnitch est intérecatif mais n'utilise pas d'entrés dans debconf-set-selections
+# potentiellement qu'on peut corriger le problème avec debian non-interractive
 ################################################################################
 
 install_all_manual_install_apps() {
@@ -1604,6 +1635,7 @@ install_all_manual_install_apps() {
   install_youtubedl
   install_joplin
   install_krita
+  install_opensnitch
 }
 check_latest_version_manual_install_apps
 install_all_manual_install_apps
@@ -1856,6 +1888,14 @@ CheckUpdateKrita() {
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
+CheckUpdateOpensnitch() {
+  local SoftwareName='OpenSnitch'
+  local v1="$(opensnitchd --version)"
+  local v2="$(curl --silent 'https://api.github.com/repos/evilsocket/opensnitch/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  Pour récupérer la dernière release non-stable : local v2="$(curl --silent 'https://api.github.com/repos/evilsocket/opensnitch/releases' | grep -m 1 -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
+}
+
 ################################################################################
 
 UpdateShotcut() {
@@ -1933,11 +1973,23 @@ UpdateKrita() {
   sed -i "s,^Exec=.*,Exec=$manual_install_dir/Krita/krita-"$krita_version"-x86_64.appimage,g" /usr/share/applications/krita.desktop
 }
 
+UpdateOpensnitch() {
+  local opensnitch_version="$(curl --silent 'https://api.github.com/repos/evilsocket/opensnitch/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)" && \
+  local tmp_dir="$(mktemp -d)" && \
+  $WGET -P "$tmp_dir" https://github.com/evilsocket/opensnitch/releases/download/v"$opensnitch_version"/python3-opensnitch-ui_"$opensnitch_version"-1_all.deb && \
+  $WGET -P "$tmp_dir" https://github.com/evilsocket/opensnitch/releases/download/v"$opensnitch_version"/opensnitch_"$opensnitch_version"-1_amd64.deb && \
+  dpkg -i "$tmp_dir"/opensnitch_"$opensnitch_version"-1_amd64.deb && \
+  dpkg -i "$tmp_dir"/python3-opensnitch-ui_"$opensnitch_version"-1_all.deb && \
+  rm -rf "$tmp_dir" && \
+  $AG install -f -y
+}
+
 ################################################################################
 
 # on déclare le tableau qui contiendra les logiciels qui ont besoin d'être mis à jour
 software_that_needs_updating=()
 
+# on déclare la fonction permettant d'ajouter des valeurs dans le tableau software_that_needs_updating
 AddTo_software_that_needs_updating() {
   software_that_needs_updating["${#software_that_needs_updating[*]}"]=$1
 }
@@ -1945,9 +1997,11 @@ AddTo_software_that_needs_updating() {
 # on déclare le tableau qui contiendra les logiciels qui ont été mis à jour
 software_update_failed=()
 
+# on déclare la fonction permettant d'ajouter des valeurs dans le tableau software_update_failed
 AddTo_software_update_failed() {
   software_update_failed["${#software_update_failed[*]}"]=$1
 }
+
 ################################################################################
 
 CheckUpdate() {
@@ -2040,6 +2094,23 @@ CheckUpdate() {
     fi
     unset retval
   fi
+
+  CheckUpdateOpensnitch
+  if [ "$retval" ]; then
+    AddTo_software_that_needs_updating "$retval"
+    UpdateOpensnitch
+    if [ $? != 0 ]; then
+        AddTo_software_update_failed "$retval"
+    fi
+    unset retval
+  fi
+
+# Potentiellement remplacer la forme :
+# UpdateShotcut
+# if [ $? != 0 ]; then
+#     AddTo_software_update_failed "$retval"
+# fi
+# par UpdateShotcut || AddTo_software_update_failed "$retval"
 
   # echo ${software_that_needs_updating[*]}
 
@@ -2311,6 +2382,20 @@ $ExeAsUser echo '{
 sed -i "s/UPDATE_MIRRORS=0/UPDATE_MIRRORS=1/" /etc/rkhunter.conf && \
 sed -i "s/MIRRORS_MODE=1/MIRRORS_MODE=0/" /etc/rkhunter.conf && \
 sed -i 's/WEB_CMD=\"\/bin\/false\"/WEB_CMD=\"\"/' /etc/rkhunter.conf
+################################################################################
+
+################################################################################
+## configuration des fichiers template
+##------------------------------------------------------------------------------
+create_template_for_new_file() {
+  touch "/home/"$Local_User"/Modèles/Fichier Texte.txt" && \
+  touch "/home/"$Local_User"/Modèles/Document ODT.txt" && \
+  unoconv -f odt "/home/"$Local_User"/Modèles/Document ODT.txt" && \
+  rm -f "/home/"$Local_User"/Modèles/Document ODT.txt"
+# ref : https://ask.libreoffice.org/en/question/153444/how-to-create-empty-libreoffice-file-in-a-current-directory-on-the-command-line/
+}
+create_template_for_new_file
+# cette fonction permet d'obtnir dans le clique droit de nautilus l'accès à "Nouveau Document -> Ficher Texte"
 ################################################################################
 
 ################################################################################
