@@ -514,7 +514,7 @@
 # Download Teamlock packages
 # wget https://github.com/VultureProject/archive/<VERSION>.zip
 # unzip <VERSION>.zip
-# Par exemple wget https://github.com/NRGLine4Sec/config-p/archive/master.zip
+# Par exemple wget https://github.com/NRGLine4Sec/config-p/archive/main.zip
 
 ## regarder pour ajouter une nouvelle fonction pour ne faire que les executions et envoyer les commandes ainsi que leur résultat dans le fichier de log
 ## debut du commencement de réflexion :
@@ -574,6 +574,14 @@
 # - regarder pour installer timeshift (sauvegarde incrémentale de l'OS) (l'installer depuis les releases https://github.com/teejee2008/Timeshift/releases car trop vieux depuis les dépos de debian) (c'est un .deb)
 ################################################################################
 
+################################################################################
+## Log de debug (on redirige set -x dans /tmp/ng_install_set-x_logfile)
+##------------------------------------------------------------------------------
+exec 19>/tmp/ng_install_set-x_logfile
+BASH_XTRACEFD='19'
+set -x
+################################################################################
+
 #juste pour vérifier que la fonction de calcul du temps d'execution fonctionne correctement, essayer ensuite de trouver une meilleur solution et de supprimer cette ligne
 systemctl restart systemd-timesyncd.service >/dev/null
 # utilisé à des fin de stats pour l'éxecution du script
@@ -583,7 +591,7 @@ start_time="$(date +%s)"
 ################################################################################
 ## Test que le script est lancer en root
 ##------------------------------------------------------------------------------
-if [ $EUID -ne 0 ]; then
+if [ $EUID -ne '0' ]; then
     echo "Le script doit être executer en tant que root: # sudo $0" 1>&2
     exit 1
 fi
@@ -611,8 +619,8 @@ for param in "$@"; do
         '-r'|'--reboot')
             reboot_after_install=1 ;;
         *)
-            echo 'Invalid option' ;;
-            print_usage; exit 1 ;;
+            # echo 'Invalid option' ;;
+            # print_usage; exit 1 ;;
     esac
 done
 
@@ -656,7 +664,7 @@ echo '--------------------------------------------------------------------' >> "
 ## copie du script ng_install dans /var/log
 ##------------------------------------------------------------------------------
 cp "${BASH_SOURCE[0]}" "$log_dir"/"$(basename "$0")"
-chmod 700 "$log_dir"/"$(basename "$0")"
+chmod 600 "$log_dir"/"$(basename "$0")"
 # on copie le contenu du script dans le répertoire $log_dir pour pouvoir savoir plus tard ce qu'il y avait dans le script au moment de son execution
 # le chmod permet de s'assurer qu'il ne sera pas executer par mégarde et qu'il n'est accessible qu'en lecture pour root
 ################################################################################
@@ -703,7 +711,7 @@ displayandexec() {
 ##------------------------------------------------------------------------------
 check_available_space() {
   available_space="$(df --block-size=G / | awk '(NR>1){print $4}' | sed 's/.$//')"
-  if [ "$available_space" -lt "10" ]; then
+  if [ "$available_space" -lt '10' ]; then
       echo -e "${RED}######################################################################${RESET}" | tee -a "$log_file"
       echo -e "${RED}#${RESET}  Il faut au minimum 10 Go d'espace libre pour executer le script.  ${RED}#${RESET}" | tee -a "$log_file"
       echo -e "${RED}######################################################################${RESET}" | tee -a "$log_file"
@@ -755,7 +763,7 @@ displayandexec "Synchronisation de l'heure et de la time zone       " "systemctl
 uname -a | grep "debian\|Debian" &> /dev/null
 # autre version
 # grep "^NAME=" /etc/os-release | grep "debian\|Debian" &> /dev/null
-if [ $? == 0 ]; then
+if [ $? == '0' ]; then
     version_linux='Debian'
 else
     echo -e "${RED}######################################################################${RESET}" | tee -a "$log_file"
@@ -772,7 +780,7 @@ version_system="$(cat /etc/debian_version)"
 ## fonction qui permet de checker automatiquement les versions des logiciels qui s'installent manuellement, de façon automatique
 ##------------------------------------------------------------------------------
 check_latest_version_manual_install_apps() {
-    veracrypt_version="$(curl --silent 'https://www.veracrypt.fr/en/Downloads.html' | grep 'tar.bz2' | grep -v '.sig\|x86\|Source\|freebsd' | grep -Po '(?<=veracrypt-)(\d+\.+\d+)+\d+")'
+    veracrypt_version="$(curl --silent 'https://www.veracrypt.fr/en/Downloads.html' | grep 'tar.bz2' | grep -v '.sig\|x86\|Source\|freebsd' | grep -Po '(?<=veracrypt-)(\d+\.+\d+)+\d+")')"
     if [ $? != 0 ] || [ -z "$veracrypt_version" ]; then
         veracrypt_version='1.24'
     fi
@@ -790,7 +798,7 @@ check_latest_version_manual_install_apps() {
     # fi
     # check version : https://www.openoffice.org/fr/Telecharger/
 
-    freefilesync_version="$(curl --silent 'https://freefilesync.org/download.php' | grep 'Linux.tar.gz' | grep -Po '(?<=FreeFileSync_)(\d+\.+\d)")'
+    freefilesync_version="$(curl --silent 'https://freefilesync.org/download.php' | grep 'Linux.tar.gz' | grep -Po '(?<=FreeFileSync_)(\d+\.+\d)")')"
     if [ $? != 0 ] || [ -z "$freefilesync_version" ]; then
         freefilesync_version='11.3'
     fi
@@ -933,7 +941,7 @@ AGI='apt-get install -y'
 AG='apt-get'
 WGET='wget -q'
 ComputerProcArchitecture="$(uname -r | grep -Po '.*-\K.*')" # peut aussi se faire avec : "$(uname -r | /usr/bin/cut -d '-' -f 3)"
-NomIntReseau="$(ip a | grep 'UP' | cut -d " " -f 2 | cut -d ":" -f 1 | grep 'enp')"
+NomIntReseau="$(ip a | grep 'UP' | cut -d " " -f 2 | cut -d ":" -f 1 | grep 'en')"
 AddressIPv4Local="$(ip -o -4 addr list "$NomIntReseau" | awk '{print $4}' | cut -d/ -f1)"
 AdressIPv4Ext="$(GET http://ipinfo.io/ip)"
 AddressIPv6Local="$(ip -o -6 addr list "$NomIntReseau" | grep 'fe80' | awk '{print $4}' | cut -d/ -f1)"
@@ -1005,19 +1013,20 @@ displayandexec "Suppression du CDROM dans sources.list              " "sed -i '/
 
 # remise au propre de /etc/apt/sources.list
 cat> /etc/apt/sources.list << EOF
-deb http://deb.debian.org/debian/ "$DebianRelease" main contrib non-free
-deb-src http://deb.debian.org/debian/ "$DebianRelease" main contrib non-free
+deb http://deb.debian.org/debian/ $DebianRelease main contrib non-free
+deb-src http://deb.debian.org/debian/ $DebianRelease main contrib non-free
 
-deb http://security.debian.org/debian-security "$DebianRelease"/updates main contrib
-deb-src http://security.debian.org/debian-security "$DebianRelease"/updates main contrib
+deb http://security.debian.org/debian-security $DebianRelease/updates main contrib
+deb-src http://security.debian.org/debian-security $DebianRelease/updates main contrib
 
 # buster-updates, previously known as 'volatile'
-deb http://deb.debian.org/debian/ "$DebianRelease"-updates main contrib
-deb-src http://deb.debian.org/debian/ "$DebianRelease"-updates main contrib
+deb http://deb.debian.org/debian/ $DebianRelease-updates main contrib
+deb-src http://deb.debian.org/debian/ $DebianRelease-updates main contrib
 
 #backport
-#deb http://deb.debian.org/debian "$DebianRelease"-backports main contrib non-free
+#deb http://deb.debian.org/debian $DebianRelease-backports main contrib non-free
 EOF
+# ne pas mettre les variable entre guillemet
 
 echo ''
 echo "       ################################################################"
@@ -1080,11 +1089,16 @@ if [ $? == 0 ]; then
    displayandexec "Installation de firmware-iwlwifi                    " "$AGI firmware-iwlwifi"
 fi
 
-if [ "$ComputerProcVendorId" =~ "amd" ]; then
+# on active le mode case insensitive de bash
+shopt -s nocasematch
+if [[ "$ComputerProcVendorId" =~ 'amd' ]]; then
     displayandexec "Installation de amd64-microcode                     " "$AGI amd64-microcode"
-elif [ "$ComputerProcVendorId" =~ "intel" ]; then
+fi
+if [[ "$ComputerProcVendorId" =~ 'intel' ]]; then
     displayandexec "Installation de intel-microcode                     " "$AGI intel-microcode"
 fi
+# on déscactive le mode case insensitive de bash
+shopt -u nocasematch
 
 displayandexec "Installation de ascii                               " "$AGI ascii"
 displayandexec "Installation de aria2                               " "$AGI aria2"
@@ -1131,6 +1145,7 @@ displayandexec "Installation de inkscape                            " "$AGI inks
 displayandexec "Installation de iotop                               " "$AGI iotop"
 displayandexec "Installation de ipcalc                              " "$AGI ipcalc"
 # displayandexec "Installation de keepass2                            " "$AGI keepass2" # il est amener à ne plus être installé au fur et à mesure qu'on utilise et qu'on valide KeepassXC
+displayandexec "Installation de jq                                  " "$AGI jq"
 displayandexec "Installation de lnav                                " "$AGI lnav"
 displayandexec "Installation de lshw                                " "$AGI lshw"
 displayandexec "Installation de lynx                                " "$AGI lynx"
@@ -1188,13 +1203,14 @@ displayandexec "Installation de zsh                                 " "$AGI zsh"
 displayandexec "Installation de zstd                                " "$AGI zstd"
 install_zfs() {
   sed -i "s%^#deb http://deb.debian.org/debian "$DebianRelease"-backports%deb http://deb.debian.org/debian "$DebianRelease"-backports%" /etc/apt/sources.list
-  $AG update
-  echo 'zfs-dkms	zfs-dkms/stop-build-for-32bit-kernel	boolean	true' | debconf-set-selections
-  echo 'zfs-dkms	zfs-dkms/note-incompatible-licenses	note' | debconf-set-selections
-  echo 'zfs-dkms	zfs-dkms/stop-build-for-unknown-kernel	boolean	true'| debconf-set-selections
-  $AG -t "$DebianRelease"-backports install -y zfsutils-linux zfs-dkms zfs-zed
-  modprobe zfs
-  sed -i "s%^deb http://deb.debian.org/debian "$DebianRelease"-backports%#deb http://deb.debian.org/debian "$DebianRelease"-backports%" /etc/apt/sources.list
+  displayandexec "Installation de ZFS                               " "\
+  $AG update && \
+  echo 'zfs-dkms	zfs-dkms/stop-build-for-32bit-kernel	boolean	true' | debconf-set-selections && \
+  echo 'zfs-dkms	zfs-dkms/note-incompatible-licenses	note' | debconf-set-selections && \
+  echo 'zfs-dkms	zfs-dkms/stop-build-for-unknown-kernel	boolean	true'| debconf-set-selections && \
+  $AG -t "$DebianRelease"-backports install -y zfsutils-linux zfs-dkms zfs-zed && \
+  modprobe zfs"
+  sed -i "s%^deb http://deb.debian.org/debian "$DebianRelease"-backports%#deb http://deb.debian.org/debian "$DebianRelease"-backports%" /etc/apt/sources.list && \
   $AG update
 }
 install_zfs
@@ -1216,7 +1232,7 @@ echo "###### instalation des logicies avec une instalation special ######"
 
 # création du répertoire qui contiendra les logiciels avec une installation spéciale
 manual_install_dir='/opt/manual_install'
-mkdir $manual_install_dir
+mkdir "$manual_install_dir"
 
 ################################################################################
 ## instalation de atom
@@ -1224,7 +1240,7 @@ mkdir $manual_install_dir
 install_atom() {
   displayandexec "Installation des dépendances de atom                " "$AGI libgconf-2-4 gvfs-bin gconf2-common"
   displayandexec "Installation de atom                                " "\
-wget -qO - https://packagecloud.io/AtomEditor/atom/gpgkey | apt-key add - && \
+$WGET --output-document - https://packagecloud.io/AtomEditor/atom/gpgkey | apt-key add - && \
 echo 'deb [arch=amd64] https://packagecloud.io/AtomEditor/atom/any/ any main' > /etc/apt/sources.list.d/atom.list && \
 $AG update && \
 $AGI atom"
@@ -1236,10 +1252,10 @@ $AGI atom"
 ##------------------------------------------------------------------------------
 install_winscp() {
   displayandexec "Installation de WinSCP                              " "\
-mkdir $manual_install_dir/winscp/ && \
+mkdir "$manual_install_dir"/winscp/ && \
 $WGET -P $tmp_dir 'https://winscp.net/download/files/2018112321450c4c95c4f6a1a05e87651a955f47e31f/WinSCP-5.13.5-Portable.zip' && \
-unzip $tmp_dir/WinSCP-5.13.5-Portable.zip -d $manual_install_dir/winscp/ && \
-echo "wine $manual_install_dir/winscp/WinSCP.exe" > /usr/bin/winscp && \
+unzip $tmp_dir/WinSCP-5.13.5-Portable.zip -d "$manual_install_dir"/winscp/ && \
+echo "wine "$manual_install_dir"/winscp/WinSCP.exe" > /usr/bin/winscp && \
 chmod +x /usr/bin/winscp"
 }
 # WinSCP utilise wine32 pour s'executer
@@ -1293,8 +1309,8 @@ $AGI apt-fast"
 install_drawio() {
   displayandexec "Installation des dépendances de drawio              " "$AGI libappindicator3-1" # normalement il y aussi la dépendance r-7 mais elle ne semble plus être dans les dépots de debian
   displayandexec "Installation de drawio                              " "\
-$WGET -P $tmp_dir https://github.com/jgraph/drawio-desktop/releases/download/v"$drawio_version"/draw.io-amd64-"$drawio_version".deb && \
-dpkg -i $tmp_dir/draw.io-amd64-"$drawio_version".deb"
+$WGET -P $tmp_dir https://github.com/jgraph/drawio-desktop/releases/download/v"$drawio_version"/drawio-amd64-"$drawio_version".deb && \
+dpkg -i $tmp_dir/drawio-amd64-"$drawio_version".deb"
 }
 ################################################################################
 
@@ -1304,7 +1320,7 @@ dpkg -i $tmp_dir/draw.io-amd64-"$drawio_version".deb"
 install_freefilesync() {
   displayandexec "Installation de FreeFileSync                        " "\
 $WGET -P $tmp_dir https://freefilesync.org/download/FreeFileSync_"$freefilesync_version"_Linux.tar.gz -O FreeFileSync_"$freefilesync_version"_Linux.tar.gz && \
-tar xvf $tmp_dir/FreeFileSync_"$freefilesync_version"_Linux.tar.gz --directory $manual_install_dir && \
+tar xvf $tmp_dir/FreeFileSync_"$freefilesync_version"_Linux.tar.gz --directory "$manual_install_dir" && \
 echo ""$manual_install_dir"/FreeFileSync/FreeFileSync" > /usr/bin/FreeFileSync && \
 chmod +x /usr/bin/FreeFileSync"
 cat> /usr/share/applications/freefilesync.desktop << EOF
@@ -1312,8 +1328,8 @@ cat> /usr/share/applications/freefilesync.desktop << EOF
 Type=Application
 Name=FreeFileSync
 GenericName=Folder Comparison and Synchronization
-Exec=$manual_install_dir/FreeFileSync/FreeFileSync %F
-Icon=$manual_install_dir/FreeFileSync/Resources/FreeFileSync.png
+Exec="$manual_install_dir"/FreeFileSync/FreeFileSync %F
+Icon="$manual_install_dir"/FreeFileSync/Resources/FreeFileSync.png
 NoDisplay=false
 Terminal=false
 Categories=Utility;FileTools;
@@ -1322,8 +1338,8 @@ EOF
 }
 # Pour faire les nouvelles install avec freefilesynx :
 # tar xvf $tmp_dir/FreeFileSync_"$freefilesync_version"_Linux.tar.gz --directory $tmp_dir && \
-# Pour l'instant on est obligé de faire un chown -R $Local_User:$Local_User $manual_install_dir/FreeFileSync sinon le bianire ne s'installe pas
-# $ExeAsUser $tmp_dir/FreeFileSync_11.10_Install.run --accept-license --skip-overview --for-all-users false --directory $manual_install_dir/FreeFileSync
+# Pour l'instant on est obligé de faire un chown -R $Local_User:$Local_User "$manual_install_dir"/FreeFileSync sinon le bianire ne s'installe pas
+# $ExeAsUser $tmp_dir/FreeFileSync_11.10_Install.run --accept-license --skip-overview --for-all-users false --directory "$manual_install_dir"/FreeFileSync
 # il faudra potentiellemnt supprimer /home/$Local_User/.profile qui est créé lors de l'install de FreeFileSync et qui permet  priori de renseigner le path pour l'execution des commande qui lancent les binaires de FreeFileSync (/home/$Local_User/.local/bin)
 ################################################################################
 
@@ -1347,7 +1363,7 @@ cat> /etc/apt/sources.list.d/typora.list << 'EOF'
 deb https://typora.io/linux ./
 # deb-src https://typora.io/linux ./
 EOF
-$WGET --output-document - https://typora.io/linux/public-key.asc | apt-key add - && \
+$WGET --output-document - 'https://typora.io/linux/public-key.asc' | apt-key add - && \
 $AG update && \
 $AGI typora"
 }
@@ -1360,8 +1376,8 @@ install_virtualbox() {
   displayandexec "Installation des dépendances de VirtualBox          " "$AGI dkms"
   displayandexec "Installation de VirtualBox                          " "\
 echo 'deb https://download.virtualbox.org/virtualbox/debian buster contrib' > /etc/apt/sources.list.d/virtualbox.list && \
-$WGET 'https://www.virtualbox.org/download/oracle_vbox_2016.asc' --output-document - | apt-key add - && \
-$WGET 'https://www.virtualbox.org/download/oracle_vbox.asc' --output-document - | apt-key add - && \
+$WGET --output-document - 'https://www.virtualbox.org/download/oracle_vbox_2016.asc' | apt-key add - && \
+$WGET --output-document - 'https://www.virtualbox.org/download/oracle_vbox.asc' | apt-key add - && \
 $AG update && \
 $AGI virtualbox-6.1"
   # virtualbox_version=$(virtualbox --help | grep v[0-9] | cut -c 35-) # ancienne version
@@ -1415,7 +1431,7 @@ EOF
   which mokutil > /dev/null
   if [ $? -eq 0 ]; then
       test_secure_boot="$(mokutil --sb-state | grep 'SecureBoot')"
-      if [ "$test_secure_boot" == "SecureBoot enabled" ]; then
+      if [ "$test_secure_boot" == 'SecureBoot enabled' ]; then
           configure_SecureBoot_params
           # displayandexec "Install du script pour signer module (SecureBoot)   " "$AGI dkms"
       fi
@@ -1428,17 +1444,17 @@ EOF
 ##------------------------------------------------------------------------------
 install_keepassxc() {
   displayandexec "Installation de KeePassXC                           " "\
-$WGET -P $manual_install_dir/KeePassXC/ https://github.com/keepassxreboot/keepassxc/releases/download/"$keepassxc_version"/KeePassXC-"$keepassxc_version"-x86_64.AppImage && \
-$WGET -P $manual_install_dir/KeePassXC/ 'https://keepassxc.org/images/keepassxc-logo.svg' && \
-chmod +x $manual_install_dir/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage"
+$WGET -P "$manual_install_dir"/KeePassXC/ https://github.com/keepassxreboot/keepassxc/releases/download/"$keepassxc_version"/KeePassXC-"$keepassxc_version"-x86_64.AppImage && \
+$WGET -P "$manual_install_dir"/KeePassXC/ 'https://keepassxc.org/images/keepassxc-logo.svg' && \
+chmod +x "$manual_install_dir"/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage"
 cat> /usr/share/applications/keepassxc.desktop << EOF
 [Desktop Entry]
 Comment=Password Manager
 Terminal=false
 Name=KeePassXC
-Exec=$manual_install_dir/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage
+Exec="$manual_install_dir"/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage
 Type=Application
-Icon=$manual_install_dir/KeePassXC/keepassxc-logo.svg
+Icon="$manual_install_dir"/KeePassXC/keepassxc-logo.svg
 Categories=Utility;Security;Qt;
 MimeType=application/x-keepass2;
 X-GNOME-Autostart-enabled=true' > /usr/share/applications/keepassxc.desktop
@@ -1478,10 +1494,10 @@ dpkg -i $tmp_dir/balena-etcher-electron_"$etcher_version"_amd64.deb"
 ##------------------------------------------------------------------------------
 install_shotcut() {
   displayandexec "Installation de Shotcut                             " "\
-mkdir $manual_install_dir/shotcut/ && \
-$WGET -P $manual_install_dir/shotcut/ https://github.com/mltframework/shotcut/releases/download/v"$shotcut_version"/"$shotcut_appimage" && \
-chmod +x $manual_install_dir/shotcut/"$shotcut_appimage" && \
-ln -s $manual_install_dir/shotcut/"$shotcut_appimage" /usr/bin/shotcut"
+mkdir "$manual_install_dir"/shotcut/ && \
+$WGET -P "$manual_install_dir"/shotcut/ https://github.com/mltframework/shotcut/releases/download/v"$shotcut_version"/"$shotcut_appimage" && \
+chmod +x "$manual_install_dir"/shotcut/"$shotcut_appimage" && \
+ln -s "$manual_install_dir"/shotcut/"$shotcut_appimage" /usr/bin/shotcut"
 }
 ################################################################################
 
@@ -1551,18 +1567,18 @@ chmod +x /usr/bin/youtube-dl"
 ##------------------------------------------------------------------------------
 install_joplin() {
   displayandexec "Installation de joplin                              " "\
-mkdir $manual_install_dir/Joplin/ && \
-$WGET -P $manual_install_dir/Joplin/ https://github.com/laurent22/joplin/releases/download/v"$joplin_version"/Joplin-"$joplin_version".AppImage && \
-chmod +x $manual_install_dir/Joplin/Joplin-"$joplin_version".AppImage && \
-$WGET -P $manual_install_dir/Joplin/ 'https://raw.githubusercontent.com/laurent22/joplin/master/Assets/LinuxIcons/256x256.png'"
+mkdir "$manual_install_dir"/Joplin/ && \
+$WGET -P "$manual_install_dir"/Joplin/ https://github.com/laurent22/joplin/releases/download/v"$joplin_version"/Joplin-"$joplin_version".AppImage && \
+chmod +x "$manual_install_dir"/Joplin/Joplin-"$joplin_version".AppImage && \
+$WGET -P "$manual_install_dir"/Joplin/ 'https://raw.githubusercontent.com/laurent22/joplin/master/Assets/LinuxIcons/256x256.png'"
 cat> /usr/share/applications/joplin.desktop << EOF
 [Desktop Entry]
 Comment=Markdown Editor
 Terminal=false
 Name=Joplin
-Exec=$manual_install_dir/Joplin/Joplin-"$joplin_version".AppImage --no-sandbox
+Exec="$manual_install_dir"/Joplin/Joplin-"$joplin_version".AppImage --no-sandbox
 Type=Application
-Icon=$manual_install_dir/Joplin/256x256.png
+Icon="$manual_install_dir"/Joplin/256x256.png
 EOF
 }
 ################################################################################
@@ -1572,13 +1588,13 @@ EOF
 ##------------------------------------------------------------------------------
 install_krita() {
   displayandexec "Installation de Krita                               " "\
-mkdir $manual_install_dir/Krita/ && \
-$WGET -P $manual_install_dir/Krita/ https://download.kde.org/stable/krita/"$krita_version"/krita-"$krita_version"-x86_64.appimage && \
-chmod +x $manual_install_dir/Krita/krita-"$krita_version"-x86_64.appimage"
+mkdir "$manual_install_dir"/Krita/ && \
+$WGET -P "$manual_install_dir"/Krita/ https://download.kde.org/stable/krita/"$krita_version"/krita-"$krita_version"-x86_64.appimage && \
+chmod +x "$manual_install_dir"/Krita/krita-"$krita_version"-x86_64.appimage"
 cat> /usr/share/applications/krita.desktop << EOF
 [Desktop Entry]
 Name=Krita
-Exec==$manual_install_dir/Krita/krita-"$krita_version"-x86_64.appimage
+Exec=="$manual_install_dir"/Krita/krita-"$krita_version"-x86_64.appimage
 GenericName=Digital Painting
 GenericName[fr]=Peinture numérique
 MimeType=application/x-krita;image/openraster;application/x-krita-paintoppreset;
@@ -1598,19 +1614,23 @@ EOF
 ## instalation de OpenSnitch
 ##------------------------------------------------------------------------------
 install_opensnitch() {
+  local tmp_dir="$(mktemp -d)"
+  displayandexec "Installation de OpenSnitch                          " "\
   $AGI python3-pyqt5.qtsql python3-pyinotify && \
   pip3 install unicode_slugify && \
   pip3 install grpcio-tools && \
-  local tmp_dir="$(mktemp -d)" && \
   $WGET -P "$tmp_dir" "https://github.com/evilsocket/opensnitch/releases/download/v"$opensnitch_latest_version"/python3-opensnitch-ui_"$opensnitch_latest_version"-1_all.deb" && \
   $WGET -P "$tmp_dir" "https://github.com/evilsocket/opensnitch/releases/download/v"$opensnitch_latest_version"/opensnitch_"$opensnitch_latest_version"-1_amd64.deb" && \
   dpkg -i "$tmp_dir"/opensnitch_"$opensnitch_latest_version"-1_amd64.deb && \
   dpkg -i "$tmp_dir"/python3-opensnitch-ui_"$opensnitch_latest_version"-1_all.deb && \
   rm -rf "$tmp_dir" && \
-  $AG install -f -y
+  $AG install -f -y"
 }
 # l'installation de OpenSnitch est intérecatif mais n'utilise pas d'entrés dans debconf-set-selections
 # potentiellement qu'on peut corriger le problème avec debian non-interractive
+
+# attention lors de l'install de OpenSnitch, il y a eu une érreur de l'install et à priori le paquet libnetfilter-queue1 est requis
+# voir donc comment il se gère qunad OpenSnitch s'installe correctement ou si il faut ajouter ce paquet comme une dépendance à installer avavnt en prérequis
 ################################################################################
 
 install_all_manual_install_apps() {
@@ -1687,7 +1707,7 @@ GnomeShellExtUUID='gnome-shell-screenshot@ttll.de'
 mkdir -p "$GnomeShellExtensionPath"/"$GnomeShellExtUUID"
 #--------------------------------------------------------------------------------------------------------#
 # with official gnome extension site
-$WGET https://extensions.gnome.org/extension-data/gnome-shell-screenshotttll.de.v40.shell-extension.zip
+$WGET 'https://extensions.gnome.org/extension-data/gnome-shell-screenshotttll.de.v40.shell-extension.zip'
 unzip -q gnome-shell-screenshotttll.de.v40.shell-extension.zip -d "$GnomeShellExtensionPath"/"$GnomeShellExtUUID"
 #--------------------------------------------------------------------------------------------------------#
 # # with github code source
@@ -1727,16 +1747,16 @@ cat> /opt/gitupdate << 'EOF'
 # store the current dir
 CUR_DIR="$(pwd)"
 # Find all git repositories and update it to the master latest revision
-for i in "$(find / -name ".git" | cut -c 2-)"; do
-    echo ""
-    echo "\033[33m"+$i+"\033[0m"
+for i in "$(find / -name '.git' | cut -c 2-)"; do
+    echo ''
+    echo "\033[33m"+"$i"+"\033[0m"
     # We have to go to the .git parent directory to call the pull command
     cd /"$i"
     cd ..
     # finally pull
     git pull origin master
     # lets get back to the CUR_DIR
-    cd $CUR_DIR
+    cd "$CUR_DIR"
 done
 
 exit 0
@@ -1753,6 +1773,28 @@ ln -s /opt/gitupdate /usr/bin/gitupdate"
 install_sysupdateng() {
 cat> /opt/sysupdateNG << 'EOF'
 #!/bin/bash
+
+# a priori on ne peut pas executer de fonction (tel que CheckUpdate) dans l'appel de fonction displayandexec
+# displayandexec "test d'execution de la fonction CheckUpdate      " "CheckUpdate" ne fonctionne pas
+
+# essayer avec export -f CheckUpdate
+# ref : [ubuntu - Bash function gives "command not found" when used within a bash script? - Super User](https://superuser.com/questions/1493404/bash-function-gives-command-not-found-when-used-within-a-bash-script)
+# bon ça fonctionne mais il faudrait faire l'export de toute les fonctions, et on n'aurait pas les retours des commandes mais simplement le retour des echos
+
+# pour executer les fonctions dans la fonction displayandexec :
+# il faut les mettre sous la forme :
+install_opensnitch() {
+  local opensnitch_version="$(curl --silent 'https://api.github.com/repos/evilsocket/opensnitch/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)" && \
+  local tmp_dir="$(mktemp -d)"
+  displayandexec "Installation de OpenSnitch                          " "\
+  $WGET -P "$tmp_dir" https://github.com/evilsocket/opensnitch/releases/download/v"$opensnitch_version"/python3-opensnitch-ui_"$opensnitch_version"-1_all.deb && \
+  $WGET -P "$tmp_dir" https://github.com/evilsocket/opensnitch/releases/download/v"$opensnitch_version"/opensnitch_"$opensnitch_version"-1_amd64.deb && \
+  dpkg -i "$tmp_dir"/opensnitch_"$opensnitch_version"-1_amd64.deb && \
+  dpkg -i "$tmp_dir"/python3-opensnitch-ui_"$opensnitch_version"-1_all.deb && \
+  rm -rf "$tmp_dir" && \
+  $AG install -f -y"
+}
+# bien faire attention a déclarer les variables avant l'appel à la fonction dispalyandexec
 
 # Définition des variables de couleur
 GREEN='\e[0;32m'
@@ -1848,7 +1890,7 @@ CheckUpdateBoosnote() {
 
 CheckUpdateFreefilesync() {
   local SoftwareName='FreeFileSync'
-  local v1="$(head $manual_install_dir/FreeFileSync/CHANGELOG -n 1 | grep -Po 'FreeFileSync \K(\d+\.+\d+)')"
+  local v1="$(head "$manual_install_dir"/FreeFileSync/CHANGELOG -n 1 | grep -Po 'FreeFileSync \K(\d+\.+\d+)')"
   local v2="$(curl --silent 'https://freefilesync.org/download.php' | grep 'Linux.tar.gz' | grep -Po '(FreeFileSync_)\K(\d+\.+\d+)')"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
@@ -1902,10 +1944,10 @@ UpdateShotcut() {
   local shotcut_version="$(curl --silent 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)" && \
   local shotcut_appimage="$(curl --silent 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"name": "\K.*?(?=")' | grep 'AppImage')" && \
   rm -rf /usr/bin/shotcut && \
-  rm -rf $manual_install_dir/shotcut/*.AppImage && \
-	$WGET -P $manual_install_dir/shotcut/ https://github.com/mltframework/shotcut/releases/download/v"$shotcut_version"/"$shotcut_appimage" && \
-	chmod +x $manual_install_dir/shotcut/"$shotcut_appimage" && \
-  ln -s $manual_install_dir/shotcut/"$shotcut_appimage" /usr/bin/shotcut
+  rm -rf "$manual_install_dir"/shotcut/*.AppImage && \
+	$WGET -P "$manual_install_dir"/shotcut/ https://github.com/mltframework/shotcut/releases/download/v"$shotcut_version"/"$shotcut_appimage" && \
+	chmod +x "$manual_install_dir"/shotcut/"$shotcut_appimage" && \
+  ln -s "$manual_install_dir"/shotcut/"$shotcut_appimage" /usr/bin/shotcut
 }
 
 UpdateYoutube-dl() {
@@ -1922,31 +1964,31 @@ UpdateBoostnote() {
 
 UpdateFreefilesync() {
   local freefilesync_version="$(curl --silent 'https://freefilesync.org/download.php' | grep 'Linux.tar.gz' | grep -Po "(FreeFileSync_)\K(\d+\.+\d+)")" && \
-  rm -rf $manual_install_dir/FreeFileSync && \
+  rm -rf "$manual_install_dir"/FreeFileSync && \
   local tmp_dir="$(mktemp -d)" && \
   aria2c -d "$tmp_dir" https://freefilesync.org/download/FreeFileSync_"$freefilesync_version"_Linux.tar.gz -o /FreeFileSync_"$freefilesync_version"_Linux.tar.gz && \
-  tar xvf "$tmp_dir"/FreeFileSync_"$freefilesync_version"_Linux.tar.gz --directory $manual_install_dir >/dev/null
+  tar xvf "$tmp_dir"/FreeFileSync_"$freefilesync_version"_Linux.tar.gz --directory "$manual_install_dir" >/dev/null
   # rm -rf "$tmp_dir"
 }
 
 UpdateKeepassxc() {
   local keepassxc_version="$(curl --silent 'https://api.github.com/repos/keepassxreboot/keepassxc/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')" && \
-  rm -rf $manual_install_dir/KeePassXC/KeePassXC-*.AppImage && \
-  $WGET -P $manual_install_dir/KeePassXC/ https://github.com/keepassxreboot/keepassxc/releases/download/"$keepassxc_version"/KeePassXC-"$keepassxc_version"-x86_64.AppImage && \
-  chmod +x $manual_install_dir/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage && \
-  sed -i s,.*Exec=.*,Exec=$manual_install_dir/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage,g /usr/share/applications/keepassxc.desktop && \
-  [ -f /home/"$Local_User"/.config/autostart/keepassxc.desktop ] && sed -i s,.*Exec=.*,Exec=$manual_install_dir/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage,g /home/"$Local_User"/.config/autostart/keepassxc.desktop && \
-  [ -f $manual_install_dir/KeePassXC/keepassxc-logo.svg ] || $WGET -P $manual_install_dir/KeePassXC/ 'https://keepassxc.org/images/keepassxc-logo.svg'
+  rm -rf "$manual_install_dir"/KeePassXC/KeePassXC-*.AppImage && \
+  $WGET -P "$manual_install_dir"/KeePassXC/ https://github.com/keepassxreboot/keepassxc/releases/download/"$keepassxc_version"/KeePassXC-"$keepassxc_version"-x86_64.AppImage && \
+  chmod +x "$manual_install_dir"/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage && \
+  sed -i s,.*Exec=.*,Exec="$manual_install_dir"/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage,g /usr/share/applications/keepassxc.desktop && \
+  [ -f /home/"$Local_User"/.config/autostart/keepassxc.desktop ] && sed -i s,.*Exec=.*,Exec="$manual_install_dir"/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage,g /home/"$Local_User"/.config/autostart/keepassxc.desktop && \
+  [ -f "$manual_install_dir"/KeePassXC/keepassxc-logo.svg ] || $WGET -P "$manual_install_dir"/KeePassXC/ 'https://keepassxc.org/images/keepassxc-logo.svg'
 }
 
 UpdateJoplin() {
   local joplin_version="$(curl --silent 'https://api.github.com/repos/laurent22/joplin/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)" && \
-  rm -rf $manual_install_dir/Joplin/Joplin-*.AppImage && \
-  $WGET -P $manual_install_dir/Joplin/ https://github.com/laurent22/joplin/releases/download/v"$joplin_version"/Joplin-"$joplin_version".AppImage && \
-  chmod +x $manual_install_dir/Joplin/Joplin-"$joplin_version".AppImage && \
-  sed -i "s,^Exec=.*,Exec=$manual_install_dir/Joplin/Joplin-"$joplin_version".AppImage --no-sandbox,g" /usr/share/applications/joplin.desktop && \
-  [ -f /home/"$Local_User"/.config/autostart/joplin.desktop ] && sed -i "s,^Exec=.*,Exec=$manual_install_dir/Joplin/Joplin-"$joplin_version".AppImage --no-sandbox,g" /home/"$Local_User"/.config/autostart/joplin.desktop && \
-  [ -f $manual_install_dir/Joplin/256x256.png ] || $WGET -P $manual_install_dir/Joplin/ 'https://raw.githubusercontent.com/laurent22/joplin/master/Assets/LinuxIcons/256x256.png'
+  rm -rf "$manual_install_dir"/Joplin/Joplin-*.AppImage && \
+  $WGET -P "$manual_install_dir"/Joplin/ https://github.com/laurent22/joplin/releases/download/v"$joplin_version"/Joplin-"$joplin_version".AppImage && \
+  chmod +x "$manual_install_dir"/Joplin/Joplin-"$joplin_version".AppImage && \
+  sed -i "s,^Exec=.*,Exec="$manual_install_dir"/Joplin/Joplin-"$joplin_version".AppImage --no-sandbox,g" /usr/share/applications/joplin.desktop && \
+  [ -f /home/"$Local_User"/.config/autostart/joplin.desktop ] && sed -i "s,^Exec=.*,Exec="$manual_install_dir"/Joplin/Joplin-"$joplin_version".AppImage --no-sandbox,g" /home/"$Local_User"/.config/autostart/joplin.desktop && \
+  [ -f "$manual_install_dir"/Joplin/256x256.png ] || $WGET -P "$manual_install_dir"/Joplin/ 'https://raw.githubusercontent.com/laurent22/joplin/master/Assets/LinuxIcons/256x256.png'
 }
 
 UpdateStacer() {
@@ -1967,10 +2009,10 @@ UpdateBat() {
 
 UpdateKrita() {
   local krita_version="$(curl --silent 'https://krita.org/fr/telechargement/krita-desktop/' | grep 'stable' | grep 'appimage>' | grep -Po '(?<=/stable/krita/)(\d+\.+\d\.\d+)')" && \
-  rm -rf $manual_install_dir/Krita/krita-*.appimage && \
-  $WGET -P $manual_install_dir/Krita/ https://download.kde.org/stable/krita/"$krita_version"/krita-"$krita_version"-x86_64.appimage && \
-  chmod +x $manual_install_dir/Krita/krita-"$krita_version"-x86_64.appimage && \
-  sed -i "s,^Exec=.*,Exec=$manual_install_dir/Krita/krita-"$krita_version"-x86_64.appimage,g" /usr/share/applications/krita.desktop
+  rm -rf "$manual_install_dir"/Krita/krita-*.appimage && \
+  $WGET -P "$manual_install_dir"/Krita/ https://download.kde.org/stable/krita/"$krita_version"/krita-"$krita_version"-x86_64.appimage && \
+  chmod +x "$manual_install_dir"/Krita/krita-"$krita_version"-x86_64.appimage && \
+  sed -i "s,^Exec=.*,Exec="$manual_install_dir"/Krita/krita-"$krita_version"-x86_64.appimage,g" /usr/share/applications/krita.desktop
 }
 
 UpdateOpensnitch() {
@@ -2161,7 +2203,7 @@ displayandexec "Installation du script wsudo                        " "chmod +x 
 ##------------------------------------------------------------------------------
 install_launch_url_file() {
 echo 'chromium `tail -n 1 "$@" | cut -c 5-`' > /usr/bin/launch_url_file
-displayandexec "Installation du script launch_url_file                " "chmod +x /usr/bin/launch_url_file"
+displayandexec "Installation du script launch_url_file              " "chmod +x /usr/bin/launch_url_file"
 # création du fichier launch_url_file.desktop qui permet d'utiliser le script launch_url_file comme une application
 cat> /usr/share/applications/launch_url_file.desktop << 'EOF'
 [Desktop Entry]
@@ -2366,13 +2408,15 @@ Language=fr' > /home/"$Local_User"/.config/stacer/settings.ini
 ## configuration de Etcher
 ##------------------------------------------------------------------------------
 [ -d /home/"$Local_User"/.config/balena-etcher-electron/ ] || $ExeAsUser mkdir /home/"$Local_User"/.config/balena-etcher-electron/ && \
-$ExeAsUser echo '{
+$ExeAsUser cat> /home/"$Local_User"/.config/balena-etcher-electron/config.json  << 'EOF'
+{
   "errorReporting": false,
   "updatesEnabled": false,
   "desktopNotifications": true,
   "autoBlockmapping": true,
   "decompressFirst": true
-}' > /home/"$Local_User"/.config/balena-etcher-electron/config.json
+}
+EOF
 ################################################################################
 
 ################################################################################
@@ -2388,6 +2432,7 @@ sed -i 's/WEB_CMD=\"\/bin\/false\"/WEB_CMD=\"\"/' /etc/rkhunter.conf
 ## configuration des fichiers template
 ##------------------------------------------------------------------------------
 create_template_for_new_file() {
+  # faire un test pour savoir si c'est un repertoire /Modèle ou /Templates
   touch "/home/"$Local_User"/Modèles/Fichier Texte.txt" && \
   touch "/home/"$Local_User"/Modèles/Document ODT.txt" && \
   unoconv -f odt "/home/"$Local_User"/Modèles/Document ODT.txt" && \
@@ -2414,7 +2459,10 @@ sed -i --follow-symlinks '/^export LC_ALL/a export GTK_THEME=Adwaita' /usr/bin/l
 # Exec=env GTK_THEME=Adwaita:light libreoffice --writer
 
 # disable java settings in LibreOffice
-$ExeAsUser sed -i 's%<enabled xsi:nil="false">true</enabled>%<enabled xsi:nil="false">false</enabled>%g' /home/"$Local_User"/.config/libreoffice/4/user/config/javasettings_Linux_X86_64.xml
+# $ExeAsUser sed -i 's%<enabled xsi:nil="false">true</enabled>%<enabled xsi:nil="false">false</enabled>%g' /home/"$Local_User"/.config/libreoffice/4/user/config/javasettings_Linux_X86_64.xml
+# il faut potentiellement le mettre comme ça :
+$ExeAsUser sed -i 's%<enabled xsi:nil="true"></enabled>%<enabled xsi:nil="false">false</enabled>%g' /home/"$Local_User"/.config/libreoffice/4/user/config/javasettings_Linux_X86_64.xml
+
 # ref : https://ask.libreoffice.org/en/question/167622/how-to-disable-java-in-configuration-files/
 # Pour aider à chercher les fichiers concernés par la modification de la configuration
 # find /home/$USER/.config/libreoffice/*/ -type f -mmin -5 -exec grep -l "java" {} \;
@@ -2424,6 +2472,7 @@ $ExeAsUser sed -i 's%<enabled xsi:nil="false">true</enabled>%<enabled xsi:nil="f
 sed -i 's/Logo=1/Logo=0/g' /etc/libreoffice/sofficerc
 # ref : https://wiki.archlinux.org/title/LibreOffice#Disable_startup_logo
 
+# cette configuration n'existe pas dans le fichier après une install, il faut donc trouver le moyen de l'ajouter en insérant la ligne
 # Pour changer la valeur du niveau de sécurité des macros de Elevé à Très Elevé
 $ExeAsUser sed -i 's%<item oor:path="/org.openoffice.Office.Common/Security/Scripting"><prop oor:name="MacroSecurityLevel" oor:op="fuse"><value>2</value></prop></item>%<item oor:path="/org.openoffice.Office.Common/Security/Scripting"><prop oor:name="MacroSecurityLevel" oor:op="fuse"><value>3</value></prop></item>%g' /home/"$Local_User"/.config/libreoffice/4/user/registrymodifications.xcu
 
@@ -2440,7 +2489,8 @@ sed -i 's/# set linenumbers/set linenumbers/g' /etc/nanorc
 ## configuration de atom
 ##------------------------------------------------------------------------------
 [ -d /home/"$Local_User"/.atom/ ] || $ExeAsUser mkdir /home/"$Local_User"/.atom/ && \
-$ExeAsUser echo '"*":
+$ExeAsUser cat> /home/"$Local_User"/.atom/config.cson  << 'EOF'
+"*":
   autosave:
     enabled: true
   core:
@@ -2448,7 +2498,8 @@ $ExeAsUser echo '"*":
   editor:
     softWrap: true
   welcome:
-    showOnStartup: false' > /home/"$Local_User"/.atom/config.cson && \
+    showOnStartup: false
+EOF
 $ExeAsUser apm install language-cisco && \
 $ExeAsUser apm install language-powershell && \
 $ExeAsUser apm install script && \
@@ -2515,7 +2566,7 @@ EOF
 ## configuration de Handbrake
 ##------------------------------------------------------------------------------
 [ -d /home/"$Local_User"/.config/ghb/ ] || $ExeAsUser mkdir /home/"$Local_User"/.config/ghb/ && \
-$ExeAsUser sed -E -i '/("UseM4v":) (false|true)/{s/true/false/;}' /home/"$Local_User"/.config/ghb/Preferences
+$ExeAsUser sed -E -i '/("UseM4v":) (false|true)/{s/true/false/;}' /home/"$Local_User"/.config/ghb/preferences.json
 # permet de décocher la case "Utiliser l'extension de fichier compatible iPod/iTunes (.m4v) pour MP4" (Fichier -> Préférences -> Général)
 # attention peut être qu'il faudra que Handbrake soit lancé en graphique une première fois pour que les configurations soient enregistrées dans le fichier de conf dans .config/ghb
 # et donc qu'il faille faire le sed qu'une fois que le fichier de configuration de soit présent
@@ -2531,7 +2582,8 @@ $ExeAsUser sed -E -i '/("UseM4v":) (false|true)/{s/true/false/;}' /home/"$Local_
 ## configuration des applis qui doivent se lancer au démarage
 ##------------------------------------------------------------------------------
 #signal
-$ExeAsUser echo '[Desktop Entry]
+$ExeAsUser cat> /home/"$Local_User"/.config/autostart/signal.desktop << 'EOF'
+[Desktop Entry]
 Name=Signal
 Comment=Private messaging from your desktop
 Exec="/opt/Signal/signal-desktop" %U
@@ -2539,43 +2591,52 @@ Terminal=false
 Type=Application
 Icon=signal-desktop
 StartupWMClass=Signal
-Categories=Network;InstantMessaging;Chat;' > /home/"$Local_User"/.config/autostart/signal.desktop
+Categories=Network;InstantMessaging;Chat;
+EOF
 
 #terminal
-$ExeAsUser echo '[Desktop Entry]
+$ExeAsUser cat>  /home/"$Local_User"/.config/autostart/terminal.desktop << 'EOF'
+[Desktop Entry]
 Name=Terminal
 Comment=lancement du terminal au démarage
 Exec=gnome-terminal --maximize
 Type=Application
 Terminal=false
-Hidden=false' > /home/"$Local_User"/.config/autostart/terminal.desktop
+Hidden=false
+EOF
 
-#boostnote
-# $ExeAsUser echo '[Desktop Entry]
+# boostnote
+# $ExeAsUser cat>  /home/"$Local_User"/.config/autostart/boostnote.desktop << 'EOF'
+# [Desktop Entry]
 # Name=Boostnote
 # Comment=lancement de Boostnote au démarage
 # Exec=boostnote
 # Type=Application
 # Terminal=false
-# Hidden=false' > /home/$Local_User/.config/autostart/boostnote.desktop
+# Hidden=false
+# EOF
 
 #keepassxc
-$ExeAsUser echo "[Desktop Entry]
+$ExeAsUser cat> /home/"$Local_User"/.config/autostart/keepassxc.desktop << EOF
+[Desktop Entry]
 Name=KeePassXC
 Comment=Password Manager
-Exec=$manual_install_dir/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage
+Exec="$manual_install_dir"/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage
 Type=Application
 Terminal=false
-Hidden=false" > /home/"$Local_User"/.config/autostart/keepassxc.desktop
+Hidden=false
+EOF
 
 #joplin
-$ExeAsUser echo "[Desktop Entry]
+$ExeAsUser cat> /home/"$Local_User"/.config/autostart/joplin.desktop << EOF
+[Desktop Entry]
 Name=Joplin
 Comment=Markdown Editor
-Exec=$manual_install_dir/Joplin/Joplin-"$joplin_version".AppImage --no-sandbox
+Exec="$manual_install_dir"/Joplin/Joplin-"$joplin_version".AppImage --no-sandbox
 Type=Application
 Terminal=false
-Hidden=false" > /home/"$Local_User"/.config/autostart/joplin.desktop
+Hidden=false
+EOF
 ################################################################################
 
 ################################################################################
@@ -2657,7 +2718,11 @@ EOF
 ##------------------------------------------------------------------------------
 # sed -i '/Enabled=1/a [GUI]' /home/$Local_User/.audacity-data/audacity.cfg
 # sed -i '/[GUI]/a ShowSplashScreen=0' /home/$Local_User/.audacity-data/audacity.cfg
-# si besoin timeout 10 bash -c "audacity"
+# on est obligé de lancer audacity pour que le repertoire /home/$Local_User/.audacity-data/ soit créé ainsi que les fichiers qu'il contient
+# une solution pourrait être d'utiliser la commande suivante :
+# timeout 10 bash -c "audacity"
+# normallement 10 secondes, c'est suffisant pour que audacity se lance complétement
+# en tout cas les deux commandes sed fonctionent très bien
 ################################################################################
 
 #conf de Gnome
@@ -2669,7 +2734,7 @@ EOF
 ################################################################################
 ## configuration de Gnome
 ##------------------------------------------------------------------------------
-$ExeAsUser cat> tmp_conf_dconf << EOF
+$ExeAsUser cat> tmp_conf_dconf << 'EOF'
 [gnome/documents]
 window-maximized=true
 
@@ -2833,7 +2898,7 @@ configure_for_pro() {
     # chmod +x /usr/bin/asdm
     # référence : https://community.cisco.com/t5/network-security/asdm-on-ubuntu/td-p/3067651
 }
-if [ "$conf_pro" == "1" ]; then
+if [ "$conf_pro" == '1' ]; then
     configure_for_pro
 fi
 ################################################################################
@@ -2879,7 +2944,7 @@ configure_for_perso() {
   CustomGnomeShortcut "eteindre l ecran" "/usr/bin/eteindreecran" "<Primary><Shift>y"
   CustomGnomeShortcut "réactiver l écran du PC avec les paramètres à gauche de l écran principal" "/usr/bin/redemarerecran" "<Primary><Shift>h"
 }
-if [ "$conf_perso" == "1" ]; then
+if [ "$conf_perso" == '1' ]; then
     configure_for_perso
 fi
 ################################################################################
@@ -2888,7 +2953,7 @@ fi
 chmod 4755 /opt/Signal/chrome-sandbox
 
 # apparement obligatoire pour executer draw.io
-chmod 4755 /opt/draw.io/chrome-sandbox
+chmod 4755 /opt/drawio/chrome-sandbox
 
 ################################################################################
 ## configuration du bashrc
