@@ -1036,6 +1036,9 @@ echo ''
 
 displayandexec "Mise à jour des certificats racine                  " "update-ca-certificates"
 
+# make debian non-interactive
+export DEBIAN_FRONTEND='noninteractive'
+
 displayandexec "Mise à jour du system                               " "$AG update && $AG upgrade -y"
 ################################################################################
 
@@ -2986,6 +2989,7 @@ alias youtube-dl='youtube-dl -o "%(title)s.%(ext)s"'
 alias spyme='sudo lnav /var/log/syslog /var/log/auth.log'
 alias ngupp='sudo /usr/bin/sysupdateNG'
 alias bat='bat -pp'
+alias free='free -ht'
 alias showshortcut='dconf dump /org/gnome/settings-daemon/plugins/media-keys/'
 alias bitcoin='curl -s "http://api.coindesk.com/v1/bpi/currentprice.json"  | jq ".bpi.EUR.rate" | tr -d \"'
 HISTTIMEFORMAT="%Y/%m/%d %T   "
@@ -3014,6 +3018,7 @@ alias xx='shutdown now'
 alias xwx='poweroff'
 alias spyme='lnav /var/log/syslog /var/log/auth.log'
 alias bat='bat -pp'
+alias free='free -ht'
 HISTTIMEFORMAT=\"%Y/%m/%d %T   \"
 EOF
 displayandexec "Configuration du bashrc                             " "stat /root/.bashrc && stat /home/$Local_User/.bashrc"
