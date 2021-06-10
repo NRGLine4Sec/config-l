@@ -522,7 +522,7 @@
 #     echo ">>> $*" >> $log_file 2>&1
 #     bash -c "$*" >> $log_file 2>&1
 #     local ret=$?
-#     if [ $ret -ne 0 ]; then
+#     if [ $ret != 0 ]; then
 #         echo -e "\r\e[0;30m $message                ${RED}[ERROR]${RESET} " >> $install_file
 #     else
 #         echo -e "\r\e[0;30m $message                ${GREEN}[OK]${RESET} " >> $install_file
@@ -591,7 +591,7 @@ start_time="$(date +%s)"
 ################################################################################
 ## Test que le script est lancer en root
 ##------------------------------------------------------------------------------
-if [ $EUID -ne '0' ]; then
+if [ $EUID != '0' ]; then
     echo "Le script doit être executer en tant que root: # sudo $0" 1>&2
     exit 1
 fi
@@ -607,17 +607,17 @@ for param in "$@"; do
         '-v'|'--version')
             echo "$ScriptVersion" ;;
         '-s'|'--s')
-            shutdown_after_install=1 ;;
+            shutdown_after_install='1' ;;
         '-pr'|'--pro')
-            conf_pro=1 ;;
+            conf_pro='1' ;;
         '-pe'|'--perso')
-            conf_perso=1 ;;
+            conf_perso='1' ;;
         '-l'|'--log')
-            show_log=1 ;;
+            show_log='1' ;;
         '-e'|'--error')
-            show_only_error=1 ;;
+            show_only_error='1' ;;
         '-r'|'--reboot')
-            reboot_after_install=1 ;;
+            reboot_after_install='1' ;;
         *)
             # echo 'Invalid option' ;;
             # print_usage; exit 1 ;;
@@ -663,10 +663,18 @@ echo '--------------------------------------------------------------------' >> "
 ################################################################################
 ## copie du script ng_install dans /var/log
 ##------------------------------------------------------------------------------
-cp "${BASH_SOURCE[0]}" "$log_dir"/"$(basename "$0")"
+cp "$(readlink -f "${BASH_SOURCE[0]}")" "$log_dir"/"$(basename "$0")"
 chmod 600 "$log_dir"/"$(basename "$0")"
 # on copie le contenu du script dans le répertoire $log_dir pour pouvoir savoir plus tard ce qu'il y avait dans le script au moment de son execution
 # le chmod permet de s'assurer qu'il ne sera pas executer par mégarde et qu'il n'est accessible qu'en lecture pour root
+################################################################################
+
+################################################################################
+## copie du script ng_install dans /var/log
+##------------------------------------------------------------------------------
+# importation des varaibles d'environnement
+#source ./env.sh
+SSH_Port=''
 ################################################################################
 
 ################################################################################
@@ -681,12 +689,12 @@ displayandexec() {
     echo ">>> $*" >> "$log_file" 2>&1
     bash -c "$*" >> "$log_file" 2>&1
     local ret=$?
-    if [ $ret -ne 0 ]; then
+    if [ $ret != '0' ]; then
         echo -e "\r $message                ${RED}[ERROR]${RESET} " && echo -e "\r $message                ${RED}[ERROR]${RESET} " >> "$install_file"
     else
         echo -e "\r $message                ${GREEN}[OK]${RESET} " && echo -e "\r $message                ${GREEN}[OK]${RESET} " >> "$install_file"
     fi
-    # if [ $ret -ne 0 ]; then
+    # if [ $ret != 0 ]; then
     #     echo -e "\r\e[0;30m $message                ${RED}[ERROR]${RESET} " && echo -e "\r\e[0;30m $message                ${RED}[ERROR]${RESET} " >> $install_file
     # else
     #     echo -e "\r\e[0;30m $message                ${GREEN}[OK]${RESET} " && echo -e "\r\e[0;30m $message                ${GREEN}[OK]${RESET} " >> $install_file
@@ -694,13 +702,33 @@ displayandexec() {
     # on test pour voir la différence lorsqu'on ne force pas la couleur de la police en noir pour voir ce que ça donne lorsque la couleur de fond du terminal est sombre
     return $ret
 }
-# la variable message récupère la valeur du premier argument passé à la fonction "le message", c'est à dire ce que l'on veut afficher à l'écran
+# la variable message récupère la valeur du premier argument passé à la fonction "le message", c'est à dire ce que l'on veut afficher à l'écran lors de l'execution du script (to stdout)
 # le premier echo permet de reproduire tout ce qu'on voit dans le stdout dans le fichier $install_file
-# les >>> ne servent qu'à la présentation dans le fichier de log
+# les >>> dans le deuxième echo ne servent qu'à la présentation dans le fichier de log
 # local ret=$? on défini la variable ret qui contiendra la valeur de retour de l'execution de la commande
 
 # regarder ce que fait l'option echo -e "\r $message"
 # car lorsque j'ai executer le script sans cette option, il mettait deux fois sur la même ligne le contenu de $message et ensuite le [OK]
+################################################################################
+
+################################################################################
+## fonction d'éxecution et de redirection dans le fichier de log onlyexec
+##------------------------------------------------------------------------------
+# Premier parametre: MESSAGE
+# Autres parametres: COMMAND
+# regarder pour ajouter une nouvelle fonction pour ne faire que les executions et envoyer les commandes ainsi que leur résultat dans le fichier de log
+# debut du commencement de réflexion :
+onlyexec() {
+    echo ">>> $*" >> "$log_file" 2>&1
+    bash -c "$*" >> "$log_file" 2>&1
+    local ret=$?
+    if [ $ret != '0' ]; then
+        echo -e "\r\e[0;30m $message                ${RED}[ERROR]${RESET} " >> $install_file
+    else
+        echo -e "\r\e[0;30m $message                ${GREEN}[OK]${RESET} " >> $install_file
+    fi
+    return $ret
+}
 ################################################################################
 
 # rajouter un pré-check de la taille du terminal
@@ -742,7 +770,7 @@ force_dns_for_install
 ##------------------------------------------------------------------------------
 check_internet_access() {
   displayandexec "Vérification de la connection internet              " "ping -c 1 www.google.com"
-  if [ $? -ne 0 ]; then
+  if [ $? != '0' ]; then
       echo -e "${RED}######################################################################${RESET}" | tee -a "$log_file"
       echo -e "${RED}#${RESET} Pour executer ce script, il faut disposer d'une connexion Internet ${RED}#${RESET}" | tee -a "$log_file"
       echo -e "${RED}######################################################################${RESET}" | tee -a "$log_file"
@@ -760,7 +788,7 @@ displayandexec "Synchronisation de l'heure et de la time zone       " "systemctl
 ################################################################################
 
 # variable globale
-uname -a | grep "debian\|Debian" &> /dev/null
+uname -a | grep 'debian\|Debian' &> /dev/null
 # autre version
 # grep "^NAME=" /etc/os-release | grep "debian\|Debian" &> /dev/null
 if [ $? == '0' ]; then
@@ -773,6 +801,7 @@ else
 fi
 ScriptVersion='2.0'
 version_system="$(cat /etc/debian_version)"
+CURL='curl --silent --show-error'
 
 # https://github.com/shiftkey/desktop/releases
 
@@ -780,96 +809,96 @@ version_system="$(cat /etc/debian_version)"
 ## fonction qui permet de checker automatiquement les versions des logiciels qui s'installent manuellement, de façon automatique
 ##------------------------------------------------------------------------------
 check_latest_version_manual_install_apps() {
-    veracrypt_version="$(curl --silent 'https://www.veracrypt.fr/en/Downloads.html' | grep 'tar.bz2' | grep -v '.sig\|x86\|Source\|freebsd' | grep -Po '(?<=veracrypt-)(\d+\.+\d+)+\d+")')"
-    if [ $? != 0 ] || [ -z "$veracrypt_version" ]; then
+    veracrypt_version="$($CURL 'https://www.veracrypt.fr/en/Downloads.html' | grep 'tar.bz2' | grep -v '.sig\|x86\|Source\|freebsd' | grep -Po '(?<=veracrypt-)(\d+\.+\d+)+\d+")')"
+    if [ $? != '0' ] || [ -z "$veracrypt_version" ]; then
         veracrypt_version='1.24'
     fi
     # check version : https://www.veracrypt.fr/en/Downloads.html
 
-    drawio_version="$(curl --silent 'https://api.github.com/repos/jgraph/drawio-desktop/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
-    if [ $? != 0 ] || [ -z "$drawio_version" ]; then
+    drawio_version="$($CURL 'https://api.github.com/repos/jgraph/drawio-desktop/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+    if [ $? != '0' ] || [ -z "$drawio_version" ]; then
         drawio_version='11.3.0'
     fi
     # check version : https://github.com/jgraph/drawio-desktop/releases
 
-    # openoffice_version=$(curl --silent 'https://www.openoffice.org/fr/Telecharger/' | awk '/Linux/ && /deb/ && /x86-64/' | grep -Po '(?<=OpenOffice_)(\d+\.+)+\d+')
-    # if [ $? != 0 ] || [ -z $openoffice_version ]; then
+    # openoffice_version=$($CURL 'https://www.openoffice.org/fr/Telecharger/' | awk '/Linux/ && /deb/ && /x86-64/' | grep -Po '(?<=OpenOffice_)(\d+\.+)+\d+')
+    # if [ $? != '0' ] || [ -z $openoffice_version ]; then
     #     openoffice_version='4.1.10'
     # fi
     # check version : https://www.openoffice.org/fr/Telecharger/
 
-    freefilesync_version="$(curl --silent 'https://freefilesync.org/download.php' | grep 'Linux.tar.gz' | grep -Po '(?<=FreeFileSync_)(\d+\.+\d)")')"
-    if [ $? != 0 ] || [ -z "$freefilesync_version" ]; then
+    freefilesync_version="$($CURL 'https://freefilesync.org/download.php' | grep 'Linux.tar.gz' | grep -Po '(?<=FreeFileSync_)(\d+\.+\d+)')"
+    if [ $? != '0' ] || [ -z "$freefilesync_version" ]; then
         freefilesync_version='11.3'
     fi
     # check version : https://freefilesync.org/download.ph"
 
-    boostnote_version="$(curl --silent 'https://api.github.com/repos/BoostIO/boost-releases/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
-    if [ $? != 0 ] || [ -z "$boostnote_version" ]; then
+    boostnote_version="$($CURL 'https://api.github.com/repos/BoostIO/boost-releases/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+    if [ $? != '0' ] || [ -z "$boostnote_version" ]; then
         boostnote_version='0.12.1'
     fi
     # check version : https://github.com/BoostIO/boost-releases/releases/
 
-    etcher_version="$(curl --silent 'https://api.github.com/repos/balena-io/etcher/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
-    if [ $? != 0 ] || [ -z "$etcher_version" ]; then
+    etcher_version="$($CURL 'https://api.github.com/repos/balena-io/etcher/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+    if [ $? != '0' ] || [ -z "$etcher_version" ]; then
         etcher_version='1.5.112'
     fi
     # check version : https://github.com/balena-io/etcher/releases/
 
-    shotcut_version="$(curl --silent 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
-    if [ $? != 0 ] || [ -z "$shotcut_version" ]; then
+    shotcut_version="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+    if [ $? != '0' ] || [ -z "$shotcut_version" ]; then
         shotcut_version='20.11.28'
     fi
-    shotcut_appimage="$(curl --silent 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"name": "\K.*?(?=")' | grep 'AppImage')"
-    if [ $? != 0 ] || [ -z "$shotcut_appimage" ]; then
+    shotcut_appimage="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"name": "\K.*?(?=")' | grep 'AppImage')"
+    if [ $? != '0' ] || [ -z "$shotcut_appimage" ]; then
         shotcut_appimage='shotcut-linux-x86_64-201128.AppImage'
     fi
     # check version : https://github.com/mltframework/shotcut/releases/
 
-    stacer_version="$(curl --silent 'https://api.github.com/repos/oguzhaninan/Stacer/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
-    if [ $? != 0 ] || [ -z "$stacer_version" ]; then
+    stacer_version="$($CURL 'https://api.github.com/repos/oguzhaninan/Stacer/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+    if [ $? != '0' ] || [ -z "$stacer_version" ]; then
         stacer_version='1.1.0'
     fi
     # check version : https://github.com/oguzhaninan/Stacer/releases/
 
-    keepassxc_version="$(curl --silent 'https://api.github.com/repos/keepassxreboot/keepassxc/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
-    if [ $? != 0 ] || [ -z "$keepassxc_version" ]; then
+    keepassxc_version="$($CURL 'https://api.github.com/repos/keepassxreboot/keepassxc/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
+    if [ $? != '0' ] || [ -z "$keepassxc_version" ]; then
         keepassxc_version='2.6.2'
     fi
     # check version : https://github.com/keepassxreboot/keepassxc/releases/
 
-    bat_version="$(curl --silent 'https://api.github.com/repos/sharkdp/bat/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
-    if [ $? != 0 ] || [ -z "$bat_version" ]; then
+    bat_version="$($CURL 'https://api.github.com/repos/sharkdp/bat/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+    if [ $? != '0' ] || [ -z "$bat_version" ]; then
         bat_version='0.17.1'
     fi
     # check version : https://github.com/sharkdp/bat/releases/
 
-    youtubedl_version="$(curl --silent 'https://api.github.com/repos/ytdl-org/youtube-dl/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
-    if [ $? != 0 ] || [ -z "$youtubedl_version" ]; then
+    youtubedl_version="$($CURL 'https://api.github.com/repos/ytdl-org/youtube-dl/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
+    if [ $? != '0' ] || [ -z "$youtubedl_version" ]; then
         youtubedl_version='2020.12.14'
     fi
     # check version : https://github.com/ytdl-org/youtube-dl/releases/
 
-    joplin_version="$(curl --silent 'https://api.github.com/repos/laurent22/joplin/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
-    if [ $? != 0 ] || [ -z "$joplin_version" ]; then
+    joplin_version="$($CURL 'https://api.github.com/repos/laurent22/joplin/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+    if [ $? != '0' ] || [ -z "$joplin_version" ]; then
         joplin_version='1.4.19'
     fi
     # check version : https://github.com/laurent22/joplin/releases/
 
-    krita_version="$(curl --silent 'https://krita.org/fr/telechargement/krita-desktop/' | grep 'stable' | grep 'appimage>' | grep -Po '(?<=/stable/krita/)(\d+\.+\d\.\d+)')"
-    if [ $? != 0 ] || [ -z "$krita_version" ]; then
+    krita_version="$($CURL 'https://krita.org/fr/telechargement/krita-desktop/' | grep 'stable' | grep 'appimage>' | grep -Po '(?<=/stable/krita/)(\d+\.+\d\.\d+)')"
+    if [ $? != '0' ] || [ -z "$krita_version" ]; then
         krita_version='4.4.1'
     fi
     # check version : https://krita.org/fr/telechargement/krita-desktop/
 
-    opensnitch_stable_version="$(curl --silent 'https://api.github.com/repos/evilsocket/opensnitch/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
-    if [ $? != 0 ] || [ -z "$opensnitch_stable_version" ]; then
+    opensnitch_stable_version="$($CURL 'https://api.github.com/repos/evilsocket/opensnitch/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+    if [ $? != '0' ] || [ -z "$opensnitch_stable_version" ]; then
         opensnitch_stable_version='1.3.6'
     fi
     # check version : https://github.com/evilsocket/opensnitch/releases/
 
-    opensnitch_latest_version="$(curl --silent 'https://api.github.com/repos/evilsocket/opensnitch/releases' | grep -m 1 -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
-    if [ $? != 0 ] || [ -z "$opensnitch_latest_version" ]; then
+    opensnitch_latest_version="$($CURL 'https://api.github.com/repos/evilsocket/opensnitch/releases' | grep -m 1 -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+    if [ $? != '0' ] || [ -z "$opensnitch_latest_version" ]; then
         opensnitch_latest_version='1.4.0-rc.2'
     fi
     # check version : https://github.com/evilsocket/opensnitch/releases/
@@ -877,14 +906,14 @@ check_latest_version_manual_install_apps() {
 
 # tester la commande ci-dessous pour aller chercher les dernière versions directement depuis Github
 # apt-get install -y jq
-# curl --silent https://api.github.com/repos/oguzhaninan/Stacer/releases/latest | jq .name -r
+# $CURL https://api.github.com/repos/oguzhaninan/Stacer/releases/latest | jq .name -r
 # OU
-# curl --silent https://api.github.com/repos/oguzhaninan/Stacer/releases/latest | grep -Po '"tag_name": "\K.*?(?=")'
+# $CURL https://api.github.com/repos/oguzhaninan/Stacer/releases/latest | grep -Po '"tag_name": "\K.*?(?=")'
 # OU pour enlever le v :
-# curl --silent https://api.github.com/repos/oguzhaninan/Stacer/releases/latest | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-
+# $CURL https://api.github.com/repos/oguzhaninan/Stacer/releases/latest | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-
 # parfois le .name n'est pas la variable qui contient la version et des fois c'est dans tag_name, il faut alors mettre jq .tag_name -r
 # OU alors on récupère le lien directement du .deb avec la commande suivante
-# curl --silent https://api.github.com/repos/oguzhaninan/Stacer/releases/latest | jq -r '.assets[2].browser_download_url'
+# $CURL https://api.github.com/repos/oguzhaninan/Stacer/releases/latest | jq -r '.assets[2].browser_download_url'
 # il faut changer la valeur dans assets[2] pour alterner entre les différents liens dispos (.deb, .rpm, .AppImage, ...)
 # OU
 # curl -s https://api.github.com/repos/jgm/pandoc/releases/latest \
@@ -896,37 +925,38 @@ check_latest_version_manual_install_apps() {
 ################################################################################
 ## Pour obtenir un listing des logiciels avec les dernières versions disponnibles
 ##------------------------------------------------------------------------------
+CURL='curl --silent --show-error'
 manual_check_latest_version() {
-  veracrypt_version="$(curl --silent 'https://www.veracrypt.fr/en/Downloads.html' | grep 'tar.bz2' | grep -v '.sig\|x86\|Source\|freebsd' | grep -Po '(?<=veracrypt-)(\d+\.+\d+)+\d+')"
-  echo "VeraCrypt ""$veracrypt_version"
-  drawio_version="$(curl --silent 'https://api.github.com/repos/jgraph/drawio-desktop/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
-  echo "drawio ""$drawio_version"
-  openoffice_version="$(curl --silent 'https://www.openoffice.org/fr/Telecharger/' | awk '/Linux/ && /deb/ && /x86-64/' | grep -Po '(?<=OpenOffice_)(\d+\.+)+\d+')"
-  echo "OpenOffice ""$openoffice_version"
-  freefilesync_version="$(curl --silent 'https://freefilesync.org/download.php' | grep 'Linux.tar.gz' | grep -Po '(?<=FreeFileSync_)(\d+\.+\d)+\d')"
-  echo "FreeFileSync ""$freefilesync_version"
-  boostnote_version="$(curl --silent 'https://api.github.com/repos/BoostIO/boost-releases/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
-  echo "Boosnote ""$boostnote_version"
-  etcher_version="$(curl --silent 'https://api.github.com/repos/balena-io/etcher/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
-  echo "Etcher ""$etcher_version"
-  shotcut_version="$(curl --silent 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
-  echo "Shotcut ""$shotcut_version"
-  stacer_version="$(curl --silent 'https://api.github.com/repos/oguzhaninan/Stacer/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
-  echo "Stacer ""$stacer_version"
-  keepassxc_version="$(curl --silent 'https://api.github.com/repos/keepassxreboot/keepassxc/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
-  echo "KeePassXC ""$keepassxc_version"
-  youtubedl_version="$(curl --silent 'https://api.github.com/repos/ytdl-org/youtube-dl/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
-  echo "youtube-dl ""$youtubedl_version"
-  bat_version="$(curl --silent 'https://api.github.com/repos/sharkdp/bat/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
-  echo "bat ""$bat_version"
-  joplin_version="$(curl --silent 'https://api.github.com/repos/laurent22/joplin/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
-  echo "Joplin ""$joplin_version"
-  krita_version="$(curl --silent 'https://krita.org/fr/telechargement/krita-desktop/' | grep 'stable' | grep 'appimage>' | grep -Po '(?<=/stable/krita/)(\d+\.+\d\.\d+)')"
-  echo "Krita ""$krita_version"
-  opensnitch_stable_version="$(curl --silent 'https://api.github.com/repos/evilsocket/opensnitch/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
-  echo "OpenSnitch stable ""$opensnitch_stable_version"
-  opensnitch_latest_version="$(curl --silent 'https://api.github.com/repos/evilsocket/opensnitch/releases' | grep -m 1 -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
-  echo "OpenSnitch latest (dev) ""$opensnitch_latest_version"
+  veracrypt_version="$($CURL 'https://www.veracrypt.fr/en/Downloads.html' | grep 'tar.bz2' | grep -v '.sig\|x86\|Source\|freebsd' | grep -Po '(?<=veracrypt-)(\d+\.+\d+)+\d+')"
+  echo 'VeraCrypt '"$veracrypt_version"
+  drawio_version="$($CURL 'https://api.github.com/repos/jgraph/drawio-desktop/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  echo 'drawio '"$drawio_version"
+  openoffice_version="$($CURL 'https://www.openoffice.org/fr/Telecharger/' | awk '/Linux/ && /deb/ && /x86-64/' | grep -Po '(?<=OpenOffice_)(\d+\.+)+\d+')"
+  echo 'OpenOffice '"$openoffice_version"
+  freefilesync_version="$($CURL 'https://freefilesync.org/download.php' | grep 'Linux.tar.gz' | grep -Po '(?<=FreeFileSync_)(\d+\.+\d)+\d')"
+  echo 'FreeFileSync '"$freefilesync_version"
+  boostnote_version="$($CURL 'https://api.github.com/repos/BoostIO/boost-releases/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  echo 'Boosnote '"$boostnote_version"
+  etcher_version="$($CURL 'https://api.github.com/repos/balena-io/etcher/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  echo 'Etcher '"$etcher_version"
+  shotcut_version="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  echo 'Shotcut '"$shotcut_version"
+  stacer_version="$($CURL 'https://api.github.com/repos/oguzhaninan/Stacer/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  echo 'Stacer '"$stacer_version"
+  keepassxc_version="$($CURL 'https://api.github.com/repos/keepassxreboot/keepassxc/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
+  echo 'KeePassXC '"$keepassxc_version"
+  youtubedl_version="$($CURL 'https://api.github.com/repos/ytdl-org/youtube-dl/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
+  echo 'youtube-dl '"$youtubedl_version"
+  bat_version="$($CURL 'https://api.github.com/repos/sharkdp/bat/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  echo 'bat '"$bat_version"
+  joplin_version="$($CURL 'https://api.github.com/repos/laurent22/joplin/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  echo 'Joplin '"$joplin_version"
+  krita_version="$($CURL 'https://krita.org/fr/telechargement/krita-desktop/' | grep 'stable' | grep 'appimage>' | grep -Po '(?<=/stable/krita/)(\d+\.+\d\.\d+)')"
+  echo 'Krita '"$krita_version"
+  opensnitch_stable_version="$($CURL 'https://api.github.com/repos/evilsocket/opensnitch/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  echo 'OpenSnitch stable '"$opensnitch_stable_version"
+  opensnitch_latest_version="$($CURL 'https://api.github.com/repos/evilsocket/opensnitch/releases' | grep -m 1 -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  echo 'OpenSnitch latest (dev) '"$opensnitch_latest_version"
 }
 # manual_check_latest_version
 ################################################################################
@@ -974,7 +1004,6 @@ echo '       ################################################################'
 echo '       #            LANCEMENT DU SCRIPT DEBIAN_POSTINSTALL            #'
 echo '       ################################################################'
 echo ''
-
 echo ''
 echo '       ================================================================'
 echo ''
@@ -1029,9 +1058,9 @@ EOF
 # ne pas mettre les variable entre guillemet
 
 echo ''
-echo "       ################################################################"
-echo "       #                      MISE A JOUR DU SYSTEM                   #"
-echo "       ################################################################"
+echo '       ################################################################'
+echo '       #                      MISE A JOUR DU SYSTEM                   #'
+echo '       ################################################################'
 echo ''
 
 displayandexec "Mise à jour des certificats racine                  " "update-ca-certificates"
@@ -1051,10 +1080,6 @@ configure_debconf() {
 
   #macchanger
   echo 'macchanger	macchanger/automatically_run	boolean	false' | debconf-set-selections
-
-  # #kismet
-  # echo "kismet	kismet/install-users	string	root" | debconf-set-selections
-  # echo "kismet	kismet/install-setuid	boolean	false" | debconf-set-selections
 
   #apt-fast
   echo 'apt-fast	apt-fast/downloader	select	aria2c' | debconf-set-selections
@@ -1088,7 +1113,7 @@ echo ''
 
 # si besoin de iwlwifi
 lspci -nn | grep 'Network' | grep 'Intel' &> /dev/null
-if [ $? == 0 ]; then
+if [ $? == '0' ]; then
    displayandexec "Installation de firmware-iwlwifi                    " "$AGI firmware-iwlwifi"
 fi
 
@@ -1165,6 +1190,7 @@ displayandexec "Installation de nextcloud-desktop                   " "$AGI next
 displayandexec "Installation de ngrep                               " "$AGI ngrep"
 displayandexec "Installation de nikto                               " "$AGI nikto"
 displayandexec "Installation de nmap                                " "$AGI nmap"
+displayandexec "Installation de nvme-cli                            " "$AGI nvme-cli"
 displayandexec "Installation de oathtool                            " "$AGI oathtool"
 displayandexec "Installation de openvpn                             " "$AGI openvpn"
 displayandexec "Installation de p7zip-full                          " "$AGI p7zip-full"
@@ -1231,7 +1257,7 @@ displayandexec "Désinstalation des paquets qui ne sont plus utilisés" "$AG aut
 #                       INSTALL MANUAL INSTALL APPS                            #
 #//////////////////////////////////////////////////////////////////////////////#
 
-echo "###### instalation des logicies avec une instalation special ######"
+echo '###### instalation des logiciels avec une instalation special ######'
 
 # création du répertoire qui contiendra les logiciels avec une installation spéciale
 manual_install_dir='/opt/manual_install'
@@ -1243,7 +1269,7 @@ mkdir "$manual_install_dir"
 install_atom() {
   displayandexec "Installation des dépendances de atom                " "$AGI libgconf-2-4 gvfs-bin gconf2-common"
   displayandexec "Installation de atom                                " "\
-$WGET --output-document - https://packagecloud.io/AtomEditor/atom/gpgkey | apt-key add - && \
+$WGET --output-document - 'https://packagecloud.io/AtomEditor/atom/gpgkey' | apt-key add - && \
 echo 'deb [arch=amd64] https://packagecloud.io/AtomEditor/atom/any/ any main' > /etc/apt/sources.list.d/atom.list && \
 $AG update && \
 $AGI atom"
@@ -1256,8 +1282,8 @@ $AGI atom"
 install_winscp() {
   displayandexec "Installation de WinSCP                              " "\
 mkdir "$manual_install_dir"/winscp/ && \
-$WGET -P $tmp_dir 'https://winscp.net/download/files/2018112321450c4c95c4f6a1a05e87651a955f47e31f/WinSCP-5.13.5-Portable.zip' && \
-unzip $tmp_dir/WinSCP-5.13.5-Portable.zip -d "$manual_install_dir"/winscp/ && \
+$WGET -P "$tmp_dir" 'https://winscp.net/download/files/2018112321450c4c95c4f6a1a05e87651a955f47e31f/WinSCP-5.13.5-Portable.zip' && \
+unzip "$tmp_dir"/WinSCP-5.13.5-Portable.zip -d "$manual_install_dir"/winscp/ && \
 echo "wine "$manual_install_dir"/winscp/WinSCP.exe" > /usr/bin/winscp && \
 chmod +x /usr/bin/winscp"
 }
@@ -1269,11 +1295,11 @@ chmod +x /usr/bin/winscp"
 ##------------------------------------------------------------------------------
 install_veracrypt() {
   displayandexec "Installation de veracrypt                           " "\
-$WGET -P $tmp_dir https://launchpad.net/veracrypt/trunk/"$veracrypt_version"/+download/veracrypt-"$veracrypt_version"-setup.tar.bz2 && \
-tar xjf $tmp_dir/veracrypt-"$veracrypt_version"-setup.tar.bz2 --directory=$tmp_dir && \
-$tmp_dir/veracrypt-"$veracrypt_version"-setup-gui-x64 --nox11 --noexec --target $tmp_dir && \
-tail -n +\$(sed -n 's/.*PACKAGE_START=\([0-9]*\).*/\1/p' $tmp_dir/veracrypt_install_gui_x64.sh) $tmp_dir/veracrypt_install_gui_x64.sh > $tmp_dir/veracrypt_installer.tar && \
-tar -C / --no-overwrite-dir -xpzvf $tmp_dir/veracrypt_installer.tar"
+$WGET -P "$tmp_dir" https://launchpad.net/veracrypt/trunk/"$veracrypt_version"/+download/veracrypt-"$veracrypt_version"-setup.tar.bz2 && \
+tar xjf "$tmp_dir"/veracrypt-"$veracrypt_version"-setup.tar.bz2 --directory="$tmp_dir" && \
+"$tmp_dir"/veracrypt-"$veracrypt_version"-setup-gui-x64 --nox11 --noexec --target "$tmp_dir" && \
+tail -n +\$(sed -n 's/.*PACKAGE_START=\([0-9]*\).*/\1/p' "$tmp_dir"/veracrypt_install_gui_x64.sh) "$tmp_dir"/veracrypt_install_gui_x64.sh > "$tmp_dir"/veracrypt_installer.tar && \
+tar -C / --no-overwrite-dir -xpzvf "$tmp_dir"/veracrypt_installer.tar"
 # on backslash le retour de la command sed car elle est executer dans un bash -c
 # https://stackoverflow.com/questions/1711970/i-cant-seem-to-use-the-bash-c-option-with-arguments-after-the-c-option-st
 }
@@ -1284,7 +1310,7 @@ tar -C / --no-overwrite-dir -xpzvf $tmp_dir/veracrypt_installer.tar"
 ##------------------------------------------------------------------------------
 install_spotify(){
   displayandexec "Installation de spotify                             " "\
-curl -sS https://download.spotify.com/debian/pubkey_0D811D58.gpg | apt-key add - && \
+$CURL 'https://download.spotify.com/debian/pubkey_0D811D58.gpg' | apt-key add - && \
 echo 'deb http://repository.spotify.com stable non-free' > /etc/apt/sources.list.d/spotify.list && \
 $AG update && \
 $AGI spotify-client"
@@ -1310,10 +1336,10 @@ $AGI apt-fast"
 ## instalation de drawio
 ##------------------------------------------------------------------------------
 install_drawio() {
-  displayandexec "Installation des dépendances de drawio              " "$AGI libappindicator3-1" # normalement il y aussi la dépendance r-7 mais elle ne semble plus être dans les dépots de debian
+  displayandexec "Installation des dépendances de drawio              " "$AGI libappindicator3-1"
   displayandexec "Installation de drawio                              " "\
-$WGET -P $tmp_dir https://github.com/jgraph/drawio-desktop/releases/download/v"$drawio_version"/drawio-amd64-"$drawio_version".deb && \
-dpkg -i $tmp_dir/drawio-amd64-"$drawio_version".deb"
+$WGET -P "$tmp_dir" https://github.com/jgraph/drawio-desktop/releases/download/v"$drawio_version"/drawio-amd64-"$drawio_version".deb && \
+dpkg -i "$tmp_dir"/drawio-amd64-"$drawio_version".deb"
 }
 ################################################################################
 
@@ -1322,8 +1348,8 @@ dpkg -i $tmp_dir/drawio-amd64-"$drawio_version".deb"
 ##------------------------------------------------------------------------------
 install_freefilesync() {
   displayandexec "Installation de FreeFileSync                        " "\
-$WGET -P $tmp_dir https://freefilesync.org/download/FreeFileSync_"$freefilesync_version"_Linux.tar.gz -O FreeFileSync_"$freefilesync_version"_Linux.tar.gz && \
-tar xvf $tmp_dir/FreeFileSync_"$freefilesync_version"_Linux.tar.gz --directory "$manual_install_dir" && \
+$WGET -P "$tmp_dir" https://freefilesync.org/download/FreeFileSync_"$freefilesync_version"_Linux.tar.gz -O FreeFileSync_"$freefilesync_version"_Linux.tar.gz && \
+tar xvf "$tmp_dir"/FreeFileSync_"$freefilesync_version"_Linux.tar.gz --directory "$manual_install_dir" && \
 echo ""$manual_install_dir"/FreeFileSync/FreeFileSync" > /usr/bin/FreeFileSync && \
 chmod +x /usr/bin/FreeFileSync"
 cat> /usr/share/applications/freefilesync.desktop << EOF
@@ -1331,8 +1357,8 @@ cat> /usr/share/applications/freefilesync.desktop << EOF
 Type=Application
 Name=FreeFileSync
 GenericName=Folder Comparison and Synchronization
-Exec="$manual_install_dir"/FreeFileSync/FreeFileSync %F
-Icon="$manual_install_dir"/FreeFileSync/Resources/FreeFileSync.png
+Exec=$manual_install_dir/FreeFileSync/FreeFileSync %F
+Icon=$manual_install_dir/FreeFileSync/Resources/FreeFileSync.png
 NoDisplay=false
 Terminal=false
 Categories=Utility;FileTools;
@@ -1340,9 +1366,9 @@ StartupNotify=true
 EOF
 }
 # Pour faire les nouvelles install avec freefilesynx :
-# tar xvf $tmp_dir/FreeFileSync_"$freefilesync_version"_Linux.tar.gz --directory $tmp_dir && \
+# tar xvf "$tmp_dir"/FreeFileSync_"$freefilesync_version"_Linux.tar.gz --directory "$tmp_dir" && \
 # Pour l'instant on est obligé de faire un chown -R $Local_User:$Local_User "$manual_install_dir"/FreeFileSync sinon le bianire ne s'installe pas
-# $ExeAsUser $tmp_dir/FreeFileSync_11.10_Install.run --accept-license --skip-overview --for-all-users false --directory "$manual_install_dir"/FreeFileSync
+# $ExeAsUser "$tmp_dir"/FreeFileSync_11.10_Install.run --accept-license --skip-overview --for-all-users false --directory "$manual_install_dir"/FreeFileSync
 # il faudra potentiellemnt supprimer /home/$Local_User/.profile qui est créé lors de l'install de FreeFileSync et qui permet  priori de renseigner le path pour l'execution des commande qui lancent les binaires de FreeFileSync (/home/$Local_User/.local/bin)
 ################################################################################
 
@@ -1352,8 +1378,8 @@ EOF
 install_boostnote() {
   displayandexec "Installation des dépendances de Boostnote           " "$AGI gconf2 gconf-service"
   displayandexec "Installation de Boostnote                           " "\
-$WGET -P $tmp_dir https://github.com/BoostIO/boost-releases/releases/download/v"$boostnote_version"/boostnote_"$boostnote_version"_amd64.deb && \
-dpkg -i $tmp_dir/boostnote_"$boostnote_version"_amd64.deb"
+$WGET -P "$tmp_dir" https://github.com/BoostIO/boost-releases/releases/download/v"$boostnote_version"/boostnote_"$boostnote_version"_amd64.deb && \
+dpkg -i "$tmp_dir"/boostnote_"$boostnote_version"_amd64.deb"
 }
 ################################################################################
 
@@ -1386,8 +1412,8 @@ $AGI virtualbox-6.1"
   # virtualbox_version=$(virtualbox --help | grep v[0-9] | cut -c 35-) # ancienne version
   virtualbox_version="$(virtualbox --help | grep -Po ' v\K\d+.\d+.\d+')"
   displayandexec "Installation de VM VirtualBox Extension Pack        " "\
-$WGET -P $tmp_dir https://download.virtualbox.org/virtualbox/"$virtualbox_version"/Oracle_VM_VirtualBox_Extension_Pack-"$virtualbox_version".vbox-extpack && \
-echo y | /usr/bin/VBoxManage extpack install --replace $tmp_dir/Oracle_VM_VirtualBox_Extension_Pack-"$virtualbox_version".vbox-extpack"
+$WGET -P "$tmp_dir" https://download.virtualbox.org/virtualbox/"$virtualbox_version"/Oracle_VM_VirtualBox_Extension_Pack-"$virtualbox_version".vbox-extpack && \
+echo y | /usr/bin/VBoxManage extpack install --replace "$tmp_dir"/Oracle_VM_VirtualBox_Extension_Pack-"$virtualbox_version".vbox-extpack"
   # Une solution qui devrait marché mais il faut avoir le hachage de la licence pour pouvoir l'executer et on obtient le hachage qu'en lançant une première fois la commande
   # VBoxManage extpack install --replace Oracle_VM_VirtualBox_Extension_Pack-$virtualbox_version.vbox-extpack --accept-license --accept-license=56be48f923303c8cababb0bb4c478284b688ed23f16d775d729b89a2e8e5f9eb
   # https://www.virtualbox.org/ticket/16674
@@ -1402,7 +1428,7 @@ echo y | /usr/bin/VBoxManage extpack install --replace $tmp_dir/Oracle_VM_Virtua
 #!/bin/bash
 
 # Test que le script est lancer en root
-if [ $EUID -ne 0 ]; then
+if [ $EUID != 0 ]; then
     echo "Le script doit être executer en root: # sudo $0" 1>&2
     exit 1
 fi
@@ -1411,13 +1437,13 @@ UNAMER="$(uname -r)"
 mkdir -p /usr/share/manual_sign_kernel_module/virtualbox
 cd /usr/share/manual_sign_kernel_module/virtualbox
 openssl req -new -x509 -newkey rsa:2048 -keyout vboxdrv.priv -outform DER -out vboxdrv.der -nodes -days 36500 -subj "/CN=vboxdrv/"
-/usr/src/linux-headers-"$UNAMER"/scripts/sign-file sha256 ./vboxdrv.priv ./vboxdrv.der /lib/modules/"$UNAMER"/misc/vboxdrv.ko
+/usr/src/linux-headers-$UNAMER/scripts/sign-file sha256 ./vboxdrv.priv ./vboxdrv.der /lib/modules/$UNAMER/misc/vboxdrv.ko
 openssl req -new -x509 -newkey rsa:2048 -keyout vboxnetflt.priv -outform DER -out vboxnetflt.der -nodes -days 36500 -subj "/CN=vboxnetflt/"
-/usr/src/linux-headers-"$UNAMER"/scripts/sign-file sha256 ./vboxnetflt.priv ./vboxnetflt.der /lib/modules/"$UNAMER"/misc/vboxnetflt.ko
+/usr/src/linux-headers-$UNAMER/scripts/sign-file sha256 ./vboxnetflt.priv ./vboxnetflt.der /lib/modules/$UNAMER/misc/vboxnetflt.ko
 openssl req -new -x509 -newkey rsa:2048 -keyout vboxnetadp.priv -outform DER -out vboxnetadp.der -nodes -days 36500 -subj "/CN=vboxnetadp/"
-/usr/src/linux-headers-"$UNAMER"/scripts/sign-file sha256 ./vboxnetadp.priv ./vboxnetadp.der /lib/modules/"$UNAMER"/misc/vboxnetadp.ko
+/usr/src/linux-headers-$UNAMER/scripts/sign-file sha256 ./vboxnetadp.priv ./vboxnetadp.der /lib/modules/$UNAMER/misc/vboxnetadp.ko
 openssl req -new -x509 -newkey rsa:2048 -keyout vboxpci.priv -outform DER -out vboxpci.der -nodes -days 36500 -subj "/CN=vboxpci/"
-/usr/src/linux-headers-"$UNAMER"/scripts/sign-file sha256 ./vboxpci.priv ./vboxpci.der /lib/modules/"$UNAMER"/misc/vboxpci.ko
+/usr/src/linux-headers-$UNAMER/scripts/sign-file sha256 ./vboxpci.priv ./vboxpci.der /lib/modules/$UNAMER/misc/vboxpci.ko
 mokutil --import vboxdrv.der
 mokutil --import vboxnetflt.der
 mokutil --import vboxnetadp.der
@@ -1432,7 +1458,7 @@ EOF
 
   # test qui vérifie l'activation du SecureBoot
   which mokutil > /dev/null
-  if [ $? -eq 0 ]; then
+  if [ $? == '0' ]; then
       test_secure_boot="$(mokutil --sb-state | grep 'SecureBoot')"
       if [ "$test_secure_boot" == 'SecureBoot enabled' ]; then
           configure_SecureBoot_params
@@ -1455,9 +1481,9 @@ cat> /usr/share/applications/keepassxc.desktop << EOF
 Comment=Password Manager
 Terminal=false
 Name=KeePassXC
-Exec="$manual_install_dir"/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage
+Exec=$manual_install_dir/KeePassXC/KeePassXC-$keepassxc_version-x86_64.AppImage
 Type=Application
-Icon="$manual_install_dir"/KeePassXC/keepassxc-logo.svg
+Icon=$manual_install_dir/KeePassXC/keepassxc-logo.svg
 Categories=Utility;Security;Qt;
 MimeType=application/x-keepass2;
 X-GNOME-Autostart-enabled=true' > /usr/share/applications/keepassxc.desktop
@@ -1474,7 +1500,7 @@ cat> /etc/apt/sources.list.d/mkvtoolnix.download.list << 'EOF'
 deb https://mkvtoolnix.download/debian/ buster main
 #deb-src https://mkvtoolnix.download/debian/ buster main
 EOF
-$WGET -O - 'https://mkvtoolnix.download/gpg-pub-moritzbunkus.txt' | apt-key add - && \
+$WGET --output-document - 'https://mkvtoolnix.download/gpg-pub-moritzbunkus.txt' | apt-key add - && \
 $AG update && \
 $AGI mkvtoolnix mkvtoolnix-gui"
 }
@@ -1484,11 +1510,12 @@ $AGI mkvtoolnix mkvtoolnix-gui"
 ## instalation de Etcher
 ##------------------------------------------------------------------------------
 install_etcher() {
-  #Etcher
+  local tmp_dir="$(mktemp -d)"
   displayandexec "Installation des dépendances de Etcher              " "$AGI libappindicator1 libpango1.0-0 libdbusmenu-gtk4 libindicator7 libpangox-1.0-0"
   displayandexec "Installation de Etcher                              " "\
-$WGET -P $tmp_dir https://github.com/balena-io/etcher/releases/download/v"$etcher_version"/balena-etcher-electron_"$etcher_version"_amd64.deb && \
-dpkg -i $tmp_dir/balena-etcher-electron_"$etcher_version"_amd64.deb"
+$WGET -P "$tmp_dir" https://github.com/balena-io/etcher/releases/download/v"$etcher_version"/balena-etcher-electron_"$etcher_version"_amd64.deb && \
+dpkg -i "$tmp_dir"/balena-etcher-electron_"$etcher_version"_amd64.deb
+rm -rf "$tmp_dir""
 }
 ################################################################################
 
@@ -1510,7 +1537,7 @@ ln -s "$manual_install_dir"/shotcut/"$shotcut_appimage" /usr/bin/shotcut"
 install_signal() {
   displayandexec "Installation de Signal                              " "\
 echo 'deb [arch=amd64] https://updates.signal.org/desktop/apt xenial main' > /etc/apt/sources.list.d/signal-xenial.list && \
-curl --silent 'https://updates.signal.org/desktop/apt/keys.asc' | apt-key add - && \
+$CURL 'https://updates.signal.org/desktop/apt/keys.asc' | apt-key add - && \
 $AG update && \
 $AGI signal-desktop"
 }
@@ -1520,9 +1547,11 @@ $AGI signal-desktop"
 ## instalation de Stacer
 ##------------------------------------------------------------------------------
 install_stacer() {
+  local tmp_dir="$(mktemp -d)"
   displayandexec "Installation de Stacer                              " "\
-$WGET -P $tmp_dir https://github.com/oguzhaninan/Stacer/releases/download/v"$stacer_version"/stacer_"$stacer_version"_amd64.deb && \
-dpkg -i $tmp_dir/stacer_"$stacer_version"_amd64.deb"
+$WGET -P "$tmp_dir" https://github.com/oguzhaninan/Stacer/releases/download/v"$stacer_version"/stacer_"$stacer_version"_amd64.deb && \
+dpkg -i "$tmp_dir"/stacer_"$stacer_version"_amd64.deb
+rm -rf "$tmp_dir""
 }
 ################################################################################
 
@@ -1539,7 +1568,7 @@ cat> /etc/apt/sources.list.d/asbru-cm_asbru-cm.list << 'EOF'
 deb [arch=amd64] https://packagecloud.io/asbru-cm/asbru-cm/debian/ buster main
 #deb-src https://packagecloud.io/asbru-cm/asbru-cm/debian/ buster main
 EOF
-curl --silent --location 'https://packagecloud.io/asbru-cm/asbru-cm/gpgkey' | apt-key add - && \
+$CURL --location 'https://packagecloud.io/asbru-cm/asbru-cm/gpgkey' | apt-key add - && \
 $AG update && \
 $AGI asbru-cm"
 }
@@ -1549,9 +1578,11 @@ $AGI asbru-cm"
 ## instalation de bat
 ##------------------------------------------------------------------------------
 install_bat() {
+  local tmp_dir="$(mktemp -d)"
   displayandexec "Installation de Bat                                 " "\
-$WGET -P $tmp_dir https://github.com/sharkdp/bat/releases/download/v"$bat_version"/bat_"$bat_version"_amd64.deb && \
-dpkg -i $tmp_dir/bat_"$bat_version"_amd64.deb"
+$WGET -P "$tmp_dir" https://github.com/sharkdp/bat/releases/download/v"$bat_version"/bat_"$bat_version"_amd64.deb && \
+dpkg -i "$tmp_dir"/bat_"$bat_version"_amd64.deb
+rm -rf "$tmp_dir""
 }
 ################################################################################
 
@@ -1579,9 +1610,9 @@ cat> /usr/share/applications/joplin.desktop << EOF
 Comment=Markdown Editor
 Terminal=false
 Name=Joplin
-Exec="$manual_install_dir"/Joplin/Joplin-"$joplin_version".AppImage --no-sandbox
+Exec=$manual_install_dir/Joplin/Joplin-$joplin_version.AppImage --no-sandbox
 Type=Application
-Icon="$manual_install_dir"/Joplin/256x256.png
+Icon=$manual_install_dir/Joplin/256x256.png
 EOF
 }
 ################################################################################
@@ -1597,7 +1628,7 @@ chmod +x "$manual_install_dir"/Krita/krita-"$krita_version"-x86_64.appimage"
 cat> /usr/share/applications/krita.desktop << EOF
 [Desktop Entry]
 Name=Krita
-Exec=="$manual_install_dir"/Krita/krita-"$krita_version"-x86_64.appimage
+Exec=$manual_install_dir/Krita/krita-$krita_version-x86_64.appimage
 GenericName=Digital Painting
 GenericName[fr]=Peinture numérique
 MimeType=application/x-krita;image/openraster;application/x-krita-paintoppreset;
@@ -1619,9 +1650,7 @@ EOF
 install_opensnitch() {
   local tmp_dir="$(mktemp -d)"
   displayandexec "Installation de OpenSnitch                          " "\
-  $AGI python3-pyqt5.qtsql python3-pyinotify && \
-  pip3 install unicode_slugify && \
-  pip3 install grpcio-tools && \
+  $AGI python3-pyqt5.qtsql python3-pyinotify python3-grpcio python3-slugify && \
   $WGET -P "$tmp_dir" "https://github.com/evilsocket/opensnitch/releases/download/v"$opensnitch_latest_version"/python3-opensnitch-ui_"$opensnitch_latest_version"-1_all.deb" && \
   $WGET -P "$tmp_dir" "https://github.com/evilsocket/opensnitch/releases/download/v"$opensnitch_latest_version"/opensnitch_"$opensnitch_latest_version"-1_amd64.deb" && \
   dpkg -i "$tmp_dir"/opensnitch_"$opensnitch_latest_version"-1_amd64.deb && \
@@ -1698,23 +1727,28 @@ aisleriot"
 ################################################################################
 
 #OpenOffice
-#displayandexec "Installation de OpenOffice                          " "$WGET http://sourceforge.net/projects/openofficeorg.mirror/files/$openoffice_version/binaries/fr/Apache_OpenOffice_$openoffice_version\_Linux_x86-64_install-deb_fr.tar.gz && tar xzf Apache_OpenOffice_$openoffice_version\_Linux_x86-64_install-deb_fr.tar.gz && cd fr/DEBS/ && dpkg -i *.deb && cd desktop-integration/ && dpkg -i openoffice4.1-debian-menu*.deb"
+# displayandexec "Installation de OpenOffice                          " "\
+# $WGET http://sourceforge.net/projects/openofficeorg.mirror/files/"$openoffice_version"/binaries/fr/Apache_OpenOffice_"$openoffice_version"_Linux_x86-64_install-deb_fr.tar.gz && \
+# tar xzf Apache_OpenOffice_"$openoffice_version"_Linux_x86-64_install-deb_fr.tar.gz && \
+# cd fr/DEBS/ && \
+# dpkg -i *.deb && cd desktop-integration/ && \
+# dpkg -i openoffice4.1-debian-menu*.deb"
 
 ################################################################################
 ## instalation des Gnome Shell Extension
 ##------------------------------------------------------------------------------
 #Screenshot Tool
 # the UUID is in the metadata.json
-GnomeShellExtUUID='gnome-shell-screenshot@ttll.de'
+# GnomeShellExtUUID='gnome-shell-screenshot@ttll.de'
 # the directory name must be the UUID of the gnome shell extension
-mkdir -p "$GnomeShellExtensionPath"/"$GnomeShellExtUUID"
+# mkdir -p "$GnomeShellExtensionPath"/"$GnomeShellExtUUID"
 #--------------------------------------------------------------------------------------------------------#
 # with official gnome extension site
-$WGET 'https://extensions.gnome.org/extension-data/gnome-shell-screenshotttll.de.v40.shell-extension.zip'
-unzip -q gnome-shell-screenshotttll.de.v40.shell-extension.zip -d "$GnomeShellExtensionPath"/"$GnomeShellExtUUID"
+# $WGET 'https://extensions.gnome.org/extension-data/gnome-shell-screenshotttll.de.v40.shell-extension.zip'
+# unzip -q gnome-shell-screenshotttll.de.v40.shell-extension.zip -d "$GnomeShellExtensionPath"/"$GnomeShellExtUUID"
 #--------------------------------------------------------------------------------------------------------#
 # # with github code source
-# wget https://github.com/OttoAllmendinger/gnome-shell-screenshot/archive/v40.zip
+# $WGET https://github.com/OttoAllmendinger/gnome-shell-screenshot/archive/v40.zip
 # unzip v40.zip
 # cd gnome-shell-screenshot-40
 # make
@@ -1722,8 +1756,38 @@ unzip -q gnome-shell-screenshotttll.de.v40.shell-extension.zip -d "$GnomeShellEx
 # unzip -q gnome-shell-screenshot.zip -d $GnomeShellExtensionPath/$GnomeShellExtUUID
 #--------------------------------------------------------------------------------------------------------#
 # enable the gnome shell extension
-$ExeAsUser gnome-shell-extension-tool -e "$GnomeShellExtUUID"
+# $ExeAsUser gnome-shell-extension-tool -e "$GnomeShellExtUUID"
+# il faudra remplacer gnome-shell-extension-tool -e par gnome-extensions enable pour les prochaines versions de Gnome
 # should restart gdm with Alt+F2+r
+
+#Screenshot Tool
+install_GSH_screenshot_tool() {
+  local GnomeShellExtUUID='gnome-shell-screenshot@ttll.de' && \
+  mkdir -p "$GnomeShellExtensionPath"/"$GnomeShellExtUUID" && \
+  $WGET 'https://extensions.gnome.org/extension-data/gnome-shell-screenshotttll.de.v40.shell-extension.zip' && \
+  unzip -q gnome-shell-screenshotttll.de.v40.shell-extension.zip -d "$GnomeShellExtensionPath"/"$GnomeShellExtUUID" && \
+  $ExeAsUser gnome-shell-extension-tool -e "$GnomeShellExtUUID"
+}
+install_GSH_system_monitor() {
+  $AGI gnome-shell-extension-system-monitor && \
+  $ExeAsUser gnome-shell-extension-tool -e 'system-monitor\@paradoxxx.zero.gmail.com'
+}
+displayandexec "Installation des Gnome Shell Extension              " "\
+"$(install_GSH_screenshot_tool)" && "$(install_GSH_system_monitor)""
+
+# Pour obtenir la liste des extensions installés :
+# dconf read /org/gnome/shell/enabled-extensions
+# a priori avec gnome-extensions, on peut faire gnome-extensions list
+
+# System wide installed gnome-shell extensions are listed with the command
+# ls /usr/share/gnome-shell/extensions/
+
+# Il faut trouver un moyen d'installer l'extesion 'system-monitor@paradoxxx.zero.gmail.com' qui s'intalle normallement depuis gnome-software
+# a priori elle s'install depuis les dépots debian (apt-get install -y gnome-shell-extension-system-monitor)
+
+# potentiellement installer l'extension 'show-ip@sgaraud.github.com'
+# $AGI gnome-shell-extension-show-ip
+# $ExeAsUser gnome-shell-extension-tool -e 'show-ip@sgaraud.github.com'
 ################################################################################
 
 ################################################################################
@@ -1787,7 +1851,7 @@ cat> /opt/sysupdateNG << 'EOF'
 # pour executer les fonctions dans la fonction displayandexec :
 # il faut les mettre sous la forme :
 install_opensnitch() {
-  local opensnitch_version="$(curl --silent 'https://api.github.com/repos/evilsocket/opensnitch/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)" && \
+  local opensnitch_version="$($CURL 'https://api.github.com/repos/evilsocket/opensnitch/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)" && \
   local tmp_dir="$(mktemp -d)"
   displayandexec "Installation de OpenSnitch                          " "\
   $WGET -P "$tmp_dir" https://github.com/evilsocket/opensnitch/releases/download/v"$opensnitch_version"/python3-opensnitch-ui_"$opensnitch_version"-1_all.deb && \
@@ -1808,6 +1872,7 @@ NOIR='\e[0;30m'
 manual_install_dir='/opt/manual_install'
 AG='apt-get'
 WGET='wget -q'
+CURL='curl --silent --show-error'
 Local_User="$(awk -F':' '/1000/{print $1}' /etc/passwd)"
 ExeAsUser="sudo -u "$Local_User""
 now="$(date +"%d-%m-%Y")"
@@ -1824,7 +1889,7 @@ displayandexec() {
   echo ">>> $*" >> "$log_file" 2>&1
   bash -c "$*" >> "$log_file" 2>&1
   local ret=$?
-  if [ $ret -ne 0 ]; then
+  if [ $ret != 0 ]; then
     echo -e "\r $message                ${RED}[ERROR]${RESET} "
   else
     echo -e "\r $message                ${GREEN}[OK]${RESET} "
@@ -1873,79 +1938,79 @@ CheckUpdateShotcut() {
   local v1="$(shotcut --version 2>&1 | cut -c 9- | grep -v 'Gtk-WARNING' | sed '/^$/d')"
   # pour éviter les warnings gtk
   # ref : [Ubuntu – How to stop gedit (and other programs) from outputting GTK warnings and the like in the terminal – iTecTec](https://itectec.com/ubuntu/ubuntu-how-to-stop-gedit-and-other-programs-from-outputting-gtk-warnings-and-the-like-in-the-terminal/)
-  local v2="$(curl --silent 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  local v2="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
 CheckUpdateYoutube-dl() {
   local SoftwareName='youtube-dl'
   local v1="$(youtube-dl --version)"
-  local v2="$(curl --silent 'https://api.github.com/repos/ytdl-org/youtube-dl/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
+  local v2="$($CURL 'https://api.github.com/repos/ytdl-org/youtube-dl/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
 CheckUpdateBoosnote() {
   local SoftwareName='Boostnote'
   local v1="$(grep -Po '"version": "\K.*?(?=")' /usr/lib/boostnote/resources/app/package.json)"
-  local v2="$(curl --silent 'https://api.github.com/repos/BoostIO/boost-releases/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  local v2="$($CURL 'https://api.github.com/repos/BoostIO/boost-releases/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
 CheckUpdateFreefilesync() {
   local SoftwareName='FreeFileSync'
   local v1="$(head "$manual_install_dir"/FreeFileSync/CHANGELOG -n 1 | grep -Po 'FreeFileSync \K(\d+\.+\d+)')"
-  local v2="$(curl --silent 'https://freefilesync.org/download.php' | grep 'Linux.tar.gz' | grep -Po '(FreeFileSync_)\K(\d+\.+\d+)')"
+  local v2="$($CURL 'https://freefilesync.org/download.php' | grep 'Linux.tar.gz' | grep -Po '(FreeFileSync_)\K(\d+\.+\d+)')"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
 CheckUpdateKeepassxc() {
   local SoftwareName='KeePassXC'
   local v1="$(grep -Po '^Exec.*-\K\d+.\d+.\d+' /usr/share/applications/keepassxc.desktop)"
-  local v2="$(curl --silent 'https://api.github.com/repos/keepassxreboot/keepassxc/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
+  local v2="$($CURL 'https://api.github.com/repos/keepassxreboot/keepassxc/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
 CheckUpdateJoplin() {
   local SoftwareName='Joplin'
   local v1="$(grep -Po '^Exec.*-\K\d+.\d+.\d+' /usr/share/applications/joplin.desktop)"
-  local v2="$(curl --silent 'https://api.github.com/repos/laurent22/joplin/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  local v2="$($CURL 'https://api.github.com/repos/laurent22/joplin/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
 CheckUpdateStacer() {
   local SoftwareName='Stacer'
   local v1="$(strings /usr/share/stacer/stacer | grep -Po '(Stacer v)\K(\d+.\d+.\d+.)')"
-  local v2="$(curl --silent 'https://api.github.com/repos/oguzhaninan/Stacer/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  local v2="$($CURL 'https://api.github.com/repos/oguzhaninan/Stacer/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
 CheckUpdateBat() {
   local SoftwareName='Bat'
   local v1="$(bat --version | grep -Po '(bat )\K.*')"
-  local v2="$(curl --silent 'https://api.github.com/repos/sharkdp/bat/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  local v2="$($CURL 'https://api.github.com/repos/sharkdp/bat/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
 CheckUpdateKrita() {
   local SoftwareName='Krita'
   local v1="$(grep -Po '^Exec.*-\K\d+.\d+.\d+' /usr/share/applications/krita.desktop)"
-  local v2="$(curl --silent 'https://krita.org/fr/telechargement/krita-desktop/' | grep 'stable' | grep 'appimage>' | grep -Po '(?<=/stable/krita/)(\d+\.+\d\.\d+)')"
+  local v2="$($CURL 'https://krita.org/fr/telechargement/krita-desktop/' | grep 'stable' | grep 'appimage>' | grep -Po '(?<=/stable/krita/)(\d+\.+\d\.\d+)')"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
 CheckUpdateOpensnitch() {
   local SoftwareName='OpenSnitch'
   local v1="$(opensnitchd --version)"
-  local v2="$(curl --silent 'https://api.github.com/repos/evilsocket/opensnitch/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
-  Pour récupérer la dernière release non-stable : local v2="$(curl --silent 'https://api.github.com/repos/evilsocket/opensnitch/releases' | grep -m 1 -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  local v2="$($CURL 'https://api.github.com/repos/evilsocket/opensnitch/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  Pour récupérer la dernière release non-stable : local v2="$($CURL 'https://api.github.com/repos/evilsocket/opensnitch/releases' | grep -m 1 -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
 ################################################################################
 
 UpdateShotcut() {
-  local shotcut_version="$(curl --silent 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)" && \
-  local shotcut_appimage="$(curl --silent 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"name": "\K.*?(?=")' | grep 'AppImage')" && \
+  local shotcut_version="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)" && \
+  local shotcut_appimage="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"name": "\K.*?(?=")' | grep 'AppImage')" && \
   rm -rf /usr/bin/shotcut && \
   rm -rf "$manual_install_dir"/shotcut/*.AppImage && \
 	$WGET -P "$manual_install_dir"/shotcut/ https://github.com/mltframework/shotcut/releases/download/v"$shotcut_version"/"$shotcut_appimage" && \
@@ -1958,7 +2023,7 @@ UpdateYoutube-dl() {
 }
 
 UpdateBoostnote() {
-  local boostnote_version="$(curl --silent 'https://api.github.com/repos/BoostIO/boost-releases/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)" && \
+  local boostnote_version="$($CURL 'https://api.github.com/repos/BoostIO/boost-releases/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)" && \
   local tmp_dir="$(mktemp -d)" && \
   $WGET -P "$tmp_dir" https://github.com/BoostIO/boost-releases/releases/download/v$boostnote_version/boostnote_"$boostnote_version"_amd64.deb && \
   dpkg -i "$tmp_dir"/boostnote_"$boostnote_version"_amd64.deb
@@ -1966,7 +2031,7 @@ UpdateBoostnote() {
 }
 
 UpdateFreefilesync() {
-  local freefilesync_version="$(curl --silent 'https://freefilesync.org/download.php' | grep 'Linux.tar.gz' | grep -Po "(FreeFileSync_)\K(\d+\.+\d+)")" && \
+  local freefilesync_version="$($CURL 'https://freefilesync.org/download.php' | grep 'Linux.tar.gz' | grep -Po "(FreeFileSync_)\K(\d+\.+\d+)")" && \
   rm -rf "$manual_install_dir"/FreeFileSync && \
   local tmp_dir="$(mktemp -d)" && \
   aria2c -d "$tmp_dir" https://freefilesync.org/download/FreeFileSync_"$freefilesync_version"_Linux.tar.gz -o /FreeFileSync_"$freefilesync_version"_Linux.tar.gz && \
@@ -1975,7 +2040,7 @@ UpdateFreefilesync() {
 }
 
 UpdateKeepassxc() {
-  local keepassxc_version="$(curl --silent 'https://api.github.com/repos/keepassxreboot/keepassxc/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')" && \
+  local keepassxc_version="$($CURL 'https://api.github.com/repos/keepassxreboot/keepassxc/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')" && \
   rm -rf "$manual_install_dir"/KeePassXC/KeePassXC-*.AppImage && \
   $WGET -P "$manual_install_dir"/KeePassXC/ https://github.com/keepassxreboot/keepassxc/releases/download/"$keepassxc_version"/KeePassXC-"$keepassxc_version"-x86_64.AppImage && \
   chmod +x "$manual_install_dir"/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage && \
@@ -1985,7 +2050,7 @@ UpdateKeepassxc() {
 }
 
 UpdateJoplin() {
-  local joplin_version="$(curl --silent 'https://api.github.com/repos/laurent22/joplin/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)" && \
+  local joplin_version="$($CURL 'https://api.github.com/repos/laurent22/joplin/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)" && \
   rm -rf "$manual_install_dir"/Joplin/Joplin-*.AppImage && \
   $WGET -P "$manual_install_dir"/Joplin/ https://github.com/laurent22/joplin/releases/download/v"$joplin_version"/Joplin-"$joplin_version".AppImage && \
   chmod +x "$manual_install_dir"/Joplin/Joplin-"$joplin_version".AppImage && \
@@ -1995,7 +2060,7 @@ UpdateJoplin() {
 }
 
 UpdateStacer() {
-  local stacer_version="$(curl --silent 'https://api.github.com/repos/oguzhaninan/Stacer/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)" && \
+  local stacer_version="$($CURL 'https://api.github.com/repos/oguzhaninan/Stacer/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)" && \
   local tmp_dir="$(mktemp -d)" && \
   $WGET -P "$tmp_dir" https://github.com/oguzhaninan/Stacer/releases/download/v$stacer_version/stacer_"$stacer_version"_amd64.deb && \
   dpkg -i "$tmp_dir"/stacer_"$stacer_version"_amd64.deb
@@ -2003,7 +2068,7 @@ UpdateStacer() {
 }
 
 UpdateBat() {
-  local bat_version="$(curl --silent 'https://api.github.com/repos/sharkdp/bat/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)" && \
+  local bat_version="$($CURL 'https://api.github.com/repos/sharkdp/bat/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)" && \
   local tmp_dir="$(mktemp -d)" && \
   $WGET -P "$tmp_dir" https://github.com/sharkdp/bat/releases/download/v"$bat_version"/bat_"$bat_version"_amd64.deb && \
   dpkg -i "$tmp_dir"/bat_"$bat_version"_amd64.deb
@@ -2011,7 +2076,7 @@ UpdateBat() {
 }
 
 UpdateKrita() {
-  local krita_version="$(curl --silent 'https://krita.org/fr/telechargement/krita-desktop/' | grep 'stable' | grep 'appimage>' | grep -Po '(?<=/stable/krita/)(\d+\.+\d\.\d+)')" && \
+  local krita_version="$($CURL 'https://krita.org/fr/telechargement/krita-desktop/' | grep 'stable' | grep 'appimage>' | grep -Po '(?<=/stable/krita/)(\d+\.+\d\.\d+)')" && \
   rm -rf "$manual_install_dir"/Krita/krita-*.appimage && \
   $WGET -P "$manual_install_dir"/Krita/ https://download.kde.org/stable/krita/"$krita_version"/krita-"$krita_version"-x86_64.appimage && \
   chmod +x "$manual_install_dir"/Krita/krita-"$krita_version"-x86_64.appimage && \
@@ -2019,7 +2084,7 @@ UpdateKrita() {
 }
 
 UpdateOpensnitch() {
-  local opensnitch_version="$(curl --silent 'https://api.github.com/repos/evilsocket/opensnitch/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)" && \
+  local opensnitch_version="$($CURL 'https://api.github.com/repos/evilsocket/opensnitch/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)" && \
   local tmp_dir="$(mktemp -d)" && \
   $WGET -P "$tmp_dir" https://github.com/evilsocket/opensnitch/releases/download/v"$opensnitch_version"/python3-opensnitch-ui_"$opensnitch_version"-1_all.deb && \
   $WGET -P "$tmp_dir" https://github.com/evilsocket/opensnitch/releases/download/v"$opensnitch_version"/opensnitch_"$opensnitch_version"-1_amd64.deb && \
@@ -2054,7 +2119,7 @@ CheckUpdate() {
   if [ "$retval" ]; then
     AddTo_software_that_needs_updating "$retval"
     UpdateShotcut
-    if [ $? != 0 ]; then
+    if [ $? != '0' ]; then
         AddTo_software_update_failed "$retval"
     fi
     unset retval
@@ -2064,7 +2129,7 @@ CheckUpdate() {
   if [ "$retval" ]; then
     AddTo_software_that_needs_updating "$retval"
     UpdateYoutube-dl
-    if [ $? != 0 ]; then
+    if [ $? != '0' ]; then
       AddTo_software_update_failed "$retval"
     fi
     unset retval
@@ -2074,7 +2139,7 @@ CheckUpdate() {
   if [ "$retval" ]; then
     AddTo_software_that_needs_updating "$retval"
     UpdateBoostnote
-    if [ $? != 0 ]; then
+    if [ $? != '0' ]; then
       AddTo_software_update_failed "$retval"
     fi
     unset retval
@@ -2084,7 +2149,7 @@ CheckUpdate() {
   if [ "$retval" ]; then
     AddTo_software_that_needs_updating "$retval"
     UpdateFreefilesync
-    if [ $? != 0 ]; then
+    if [ $? != '0' ]; then
         AddTo_software_update_failed "$retval"
     fi
     unset retval
@@ -2094,7 +2159,7 @@ CheckUpdate() {
   if [ "$retval" ]; then
     AddTo_software_that_needs_updating "$retval"
     UpdateKeepassxc
-    if [ $? != 0 ]; then
+    if [ $? != '0' ]; then
         AddTo_software_update_failed "$retval"
     fi
     unset retval
@@ -2104,7 +2169,7 @@ CheckUpdate() {
   if [ "$retval" ]; then
     AddTo_software_that_needs_updating "$retval"
     UpdateJoplin
-    if [ $? != 0 ]; then
+    if [ $? != '0' ]; then
         AddTo_software_update_failed "$retval"
     fi
     unset retval
@@ -2114,7 +2179,7 @@ CheckUpdate() {
   if [ "$retval" ]; then
     AddTo_software_that_needs_updating "$retval"
     UpdateStacer
-    if [ $? != 0 ]; then
+    if [ $? != '0' ]; then
         AddTo_software_update_failed "$retval"
     fi
     unset retval
@@ -2124,7 +2189,7 @@ CheckUpdate() {
   if [ "$retval" ]; then
     AddTo_software_that_needs_updating "$retval"
     UpdateBat
-    if [ $? != 0 ]; then
+    if [ $? != '0' ]; then
         AddTo_software_update_failed "$retval"
     fi
     unset retval
@@ -2134,7 +2199,7 @@ CheckUpdate() {
   if [ "$retval" ]; then
     AddTo_software_that_needs_updating "$retval"
     UpdateKrita
-    if [ $? != 0 ]; then
+    if [ $? != '0' ]; then
         AddTo_software_update_failed "$retval"
     fi
     unset retval
@@ -2144,7 +2209,7 @@ CheckUpdate() {
   if [ "$retval" ]; then
     AddTo_software_that_needs_updating "$retval"
     UpdateOpensnitch
-    if [ $? != 0 ]; then
+    if [ $? != '0' ]; then
         AddTo_software_update_failed "$retval"
     fi
     unset retval
@@ -2152,7 +2217,7 @@ CheckUpdate() {
 
 # Potentiellement remplacer la forme :
 # UpdateShotcut
-# if [ $? != 0 ]; then
+# if [ $? != '0' ]; then
 #     AddTo_software_update_failed "$retval"
 # fi
 # par UpdateShotcut || AddTo_software_update_failed "$retval"
@@ -2356,7 +2421,6 @@ install_all_perso_script
 ## configuration de SSH
 ##------------------------------------------------------------------------------
 # on change le port par défaut
-SSH_Port='7894'
 sed -i "s/#Port\ 22/Port\ "$SSH_Port"/g" /etc/ssh/sshd_config && \
 sed -E -i '/(^#PermitRootLogin|^PermitRootLogin) (yes|no|without-password|prohibit-password)/{s/yes/no/;t;s/without-password/no/;t;s/prohibit-password/no/;}' /etc/ssh/sshd_config && \
 sed -E -i 's/^#PermitRootLogin/PermitRootLogin/' /etc/ssh/sshd_config
@@ -2435,11 +2499,12 @@ sed -i 's/WEB_CMD=\"\/bin\/false\"/WEB_CMD=\"\"/' /etc/rkhunter.conf
 ## configuration des fichiers template
 ##------------------------------------------------------------------------------
 create_template_for_new_file() {
-  # faire un test pour savoir si c'est un repertoire /Modèle ou /Templates
-  touch "/home/"$Local_User"/Modèles/Fichier Texte.txt" && \
-  touch "/home/"$Local_User"/Modèles/Document ODT.txt" && \
-  unoconv -f odt "/home/"$Local_User"/Modèles/Document ODT.txt" && \
-  rm -f "/home/"$Local_User"/Modèles/Document ODT.txt"
+  [ -d /home/"$Local_User"/Modèles/ ] && template_dir="/home/"$Local_User"/Modèles/"
+  [ -d /home/"$Local_User"/Templates/ ] && template_dir="/home/"$Local_User"/Templates/"
+  touch "/home/"$Local_User"/"$template_dir"/Fichier Texte.txt" && \
+  touch "/home/"$Local_User"/"$template_dir"/Document ODT.txt" && \
+  unoconv -f odt "/home/"$Local_User"/"$template_dir"/Document ODT.txt" && \
+  rm -f "/home/"$Local_User"/"$template_dir"/Document ODT.txt"
 # ref : https://ask.libreoffice.org/en/question/153444/how-to-create-empty-libreoffice-file-in-a-current-directory-on-the-command-line/
 }
 create_template_for_new_file
@@ -2464,6 +2529,7 @@ sed -i --follow-symlinks '/^export LC_ALL/a export GTK_THEME=Adwaita' /usr/bin/l
 # disable java settings in LibreOffice
 # $ExeAsUser sed -i 's%<enabled xsi:nil="false">true</enabled>%<enabled xsi:nil="false">false</enabled>%g' /home/"$Local_User"/.config/libreoffice/4/user/config/javasettings_Linux_X86_64.xml
 # il faut potentiellement le mettre comme ça :
+[ -f /home/"$Local_User"/.config/libreoffice/4/user/config/javasettings_Linux_X86_64.xml ] && \
 $ExeAsUser sed -i 's%<enabled xsi:nil="true"></enabled>%<enabled xsi:nil="false">false</enabled>%g' /home/"$Local_User"/.config/libreoffice/4/user/config/javasettings_Linux_X86_64.xml
 
 # ref : https://ask.libreoffice.org/en/question/167622/how-to-disable-java-in-configuration-files/
@@ -2477,8 +2543,12 @@ sed -i 's/Logo=1/Logo=0/g' /etc/libreoffice/sofficerc
 
 # cette configuration n'existe pas dans le fichier après une install, il faut donc trouver le moyen de l'ajouter en insérant la ligne
 # Pour changer la valeur du niveau de sécurité des macros de Elevé à Très Elevé
+[ -f /home/"$Local_User"/.config/libreoffice/4/user/registrymodifications.xcu ] && \
 $ExeAsUser sed -i 's%<item oor:path="/org.openoffice.Office.Common/Security/Scripting"><prop oor:name="MacroSecurityLevel" oor:op="fuse"><value>2</value></prop></item>%<item oor:path="/org.openoffice.Office.Common/Security/Scripting"><prop oor:name="MacroSecurityLevel" oor:op="fuse"><value>3</value></prop></item>%g' /home/"$Local_User"/.config/libreoffice/4/user/registrymodifications.xcu
+# rajouter || créer le contenu du fichier avec un cat EOF
 
+# Pour insérer la ligne lorsque le fichier existe :
+# sed -i '\%</oor:items>%i <item oor:path="/org.openoffice.Office.Common/Security/Scripting"><prop oor:name="MacroSecurityLevel" oor:op="fuse"><value>3</value></prop></item>' /home/"$Local_User"/.config/libreoffice/4/user/registrymodifications.xcu
 ################################################################################
 
 ################################################################################
@@ -2503,11 +2573,12 @@ $ExeAsUser cat> /home/"$Local_User"/.atom/config.cson  << 'EOF'
   welcome:
     showOnStartup: false
 EOF
+displayandexec "Installation des plugins pour Atom                  " "\
 $ExeAsUser apm install language-cisco && \
 $ExeAsUser apm install language-powershell && \
 $ExeAsUser apm install script && \
 $ExeAsUser apm install vertical-tabs && \
-$ExeAsUser apm install tab-title
+$ExeAsUser apm install tab-title"
 # Les plugins atom en commentaire sont encore en cour de validation
 # apm install autoclose-html-plus
 # apm install atom-beautify
@@ -2624,7 +2695,7 @@ $ExeAsUser cat> /home/"$Local_User"/.config/autostart/keepassxc.desktop << EOF
 [Desktop Entry]
 Name=KeePassXC
 Comment=Password Manager
-Exec="$manual_install_dir"/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage
+Exec=$manual_install_dir/KeePassXC/KeePassXC-$keepassxc_version-x86_64.AppImage
 Type=Application
 Terminal=false
 Hidden=false
@@ -2635,11 +2706,13 @@ $ExeAsUser cat> /home/"$Local_User"/.config/autostart/joplin.desktop << EOF
 [Desktop Entry]
 Name=Joplin
 Comment=Markdown Editor
-Exec="$manual_install_dir"/Joplin/Joplin-"$joplin_version".AppImage --no-sandbox
+Exec=$manual_install_dir/Joplin/Joplin-$joplin_version.AppImage
 Type=Application
 Terminal=false
 Hidden=false
 EOF
+# Il n'est pas impossible qu'il faille rajuter à la fin de la commande Exec --no-sandbox
+# Au début Jolin ne se lançait pas sans se paramètre, depuis cela à l'air d'être corrigé
 ################################################################################
 
 ################################################################################
@@ -2786,7 +2859,7 @@ CustomGnomeShortcut() {
 	local command="$2"
 	local shortcut="$3"
 	local value="$($ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$Local_User_UID"/bus" gsettings get org.gnome.settings-daemon.plugins.media-keys custom-keybindings)"
-	local test="$(echo $value | sed "s/\['//;s/', '/,/g;s/'\]//" - | tr ',' '\n' | grep -oP ".*/custom\K[0-9]*(?=/$)")"
+	local test="$(echo "$value" | sed "s/\['//;s/', '/,/g;s/'\]//" - | tr ',' '\n' | grep -oP ".*/custom\K[0-9]*(?=/$)")"
 
 	if [ "$(echo "$value" | grep -o "@as")" = "@as" ]; then
 		local num=0
@@ -2823,6 +2896,9 @@ CustomGnomeShortcut "désactiver le bluetooth" "/usr/bin/desactivebt" "<Primary>
 #   - the command is not used already in custom shortcuts;
 # - sometimes is uses the very same $num multiple times
 ################################################################################
+
+# Pour obtenir le lien de l'image utilisé commend fond d'écran
+# dconf read /org/gnome/shell/extensions/walkpaper/workspace-wallpapers
 
 ################################################################################
 ## configuration des MIME types
@@ -2962,7 +3038,7 @@ chmod 4755 /opt/drawio/chrome-sandbox
 ## configuration du bashrc
 ##------------------------------------------------------------------------------
 
-# alias user
+# alias for the user
 $ExeAsUser cat>> /home/"$Local_User"/.bashrc <<EOF
 
 # alias perso
@@ -2995,7 +3071,7 @@ alias bitcoin='curl -s "http://api.coindesk.com/v1/bpi/currentprice.json"  | jq 
 HISTTIMEFORMAT="%Y/%m/%d %T   "
 EOF
 
-# alias root
+# alias for root
 cat>> /root/.bashrc <<EOF
 
 # alias perso
@@ -3033,8 +3109,12 @@ chown -R "$Local_User":"$Local_User" /home/"$Local_User"/.config/
 displayandexec "Mise à jour de la base de donnée de rkhunter        " "rkhunter --versioncheck ; rkhunter --update ; rkhunter --propupd"
 ################################################################################
 
+################################################################################
+## Execution d'un scan pour détecter la présence de rootkits
+##------------------------------------------------------------------------------
 # execution de rktscan
 # displayandexec "Execution de rktscan                                " "/usr/bin/rktscan"
+################################################################################
 
 ################################################################################
 ## création d'un fichier de backup du header LUKS
@@ -3080,22 +3160,22 @@ mv /etc/resolv.conf.old /etc/resolv.conf
 # suppression du dossier temporaire pour l'execution du script
 rm -rf "$tmp_dir"
 
-echo "--------------------------------------------------------------------" >> "$log_file"
-echo "" >> "$log_file"
-echo "####################################################################" >> "$log_file"
-echo "#                           Fin du script                          #" >> "$log_file"
-echo "####################################################################" >> "$log_file"
+echo '--------------------------------------------------------------------' >> "$log_file"
+echo '' >> "$log_file"
+echo '####################################################################' >> "$log_file"
+echo '#                           Fin du script                          #' >> "$log_file"
+echo '####################################################################' >> "$log_file"
 
-echo ""
-echo "       ####################################################################"
+echo ''
+echo '       ####################################################################'
 echo "       #                    L'installation est terminée                   #"
-echo "       ####################################################################"
-echo ""
+echo '       ####################################################################'
+echo ''
 
 ################################################################################
 ## calcul du temps d'execution du script
 ##------------------------------------------------------------------------------
-finish_time=$(date +%s)
+finish_time="$(date +%s)"
 finish_time_in_seconde=$(($finish_time - start_time))
 time_secondes=$(($finish_time_in_seconde % 60))
 time_minutes=$((($finish_time_in_seconde / 60) % 60))
@@ -3106,19 +3186,19 @@ echo -e "Temps d'execution du script : "$time_heures"h" $time_minutes"m" $time_s
 ################################################################################
 ## after install options
 ##------------------------------------------------------------------------------
-if [ "$show_log" == "1" ]; then
+if [ "$show_log" == '1' ]; then
     more "$log_file"
 fi
 
-if [ "$show_only_error" == "1" ]; then
+if [ "$show_only_error" == '1' ]; then
     grep -i 'error' "$install_file"
 fi
 
-if [ "$reboot_after_install" == "1" ]; then
+if [ "$reboot_after_install" == '1' ]; then
     reboot
 fi
 
-if [ "$shutdown_after_install" == "1" ]; then
+if [ "$shutdown_after_install" == '1' ]; then
     poweroff
 fi
 ################################################################################
