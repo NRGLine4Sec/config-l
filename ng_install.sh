@@ -1252,7 +1252,7 @@ displayandexec "Installation de zsh                                 " "$AGI zsh"
 displayandexec "Installation de zstd                                " "$AGI zstd"
 install_zfs() {
   sed -i "s%^#deb http://deb.debian.org/debian "$DebianRelease"-backports%deb http://deb.debian.org/debian "$DebianRelease"-backports%" /etc/apt/sources.list
-  displayandexec "Installation de ZFS                               " "\
+  displayandexec "Installation de ZFS                                 " "\
   $AG update && \
   echo 'zfs-dkms	zfs-dkms/stop-build-for-32bit-kernel	boolean	true' | debconf-set-selections && \
   echo 'zfs-dkms	zfs-dkms/note-incompatible-licenses	note' | debconf-set-selections && \
@@ -1671,10 +1671,10 @@ install_opensnitch() {
   local tmp_dir="$(mktemp -d)"
   displayandexec "Installation de OpenSnitch                          " "\
   $AGI python3-pyqt5.qtsql python3-pyinotify python3-grpcio python3-slugify && \
-  $WGET -P "$tmp_dir" "https://github.com/evilsocket/opensnitch/releases/download/v"$opensnitch_latest_version"/python3-opensnitch-ui_"$opensnitch_latest_version"-1_all.deb" && \
-  $WGET -P "$tmp_dir" "https://github.com/evilsocket/opensnitch/releases/download/v"$opensnitch_latest_version"/opensnitch_"$opensnitch_latest_version"-1_amd64.deb" && \
-  dpkg -i "$tmp_dir"/opensnitch_"$opensnitch_latest_version"-1_amd64.deb && \
-  dpkg -i "$tmp_dir"/python3-opensnitch-ui_"$opensnitch_latest_version"-1_all.deb && \
+  $WGET -P "$tmp_dir" "https://github.com/evilsocket/opensnitch/releases/download/v"$opensnitch_latest_version"/python3-opensnitch-ui_"$(sed -e 's/\.//3' -e 's/-/\./' <<< "$opensnitch_latest_version")"-1_all.deb" && \
+  $WGET -P "$tmp_dir" "https://github.com/evilsocket/opensnitch/releases/download/v"$opensnitch_latest_version"/opensnitch_"$(sed -e 's/\.//3' -e 's/-/\./' <<< "$opensnitch_latest_version")"-1_amd64.deb" && \
+  dpkg -i "$tmp_dir"/opensnitch_"$(sed -e 's/\.//3' -e 's/-/\./' <<< "$opensnitch_latest_version")"-1_amd64.deb && \
+  dpkg -i "$tmp_dir"/python3-opensnitch-ui_"$(sed -e 's/\.//3' -e 's/-/\./' <<< "$opensnitch_latest_version")"-1_all.deb && \
   rm -rf "$tmp_dir" && \
   $AG install -f -y"
 }
@@ -1683,6 +1683,11 @@ install_opensnitch() {
 
 # attention lors de l'install de OpenSnitch, il y a eu une érreur de l'install et à priori le paquet libnetfilter-queue1 est requis
 # voir donc comment il se gère qunad OpenSnitch s'installe correctement ou si il faut ajouter ce paquet comme une dépendance à installer avavnt en prérequis
+
+# attention, il y a un soucis dans la gestion de la valeur de la version par rapport au lien qu'il faut utiliser pour téléchrager les .deb
+# il y a un point qui est présent dans la valeur de la version mais qui ne l'est pas dans la deuxième partie de l'URL
+# par exemple avec un numéro de version 1.4.0-rc.2 la deuxième partie qui est utilisé dans l'URL est 1.4.0-rc2
+# c'est pour ça qu'on est obligé d'utiliser "$(sed 's/\.//3' <<< "$opensnitch_latest_version")" pour la deuxième partie de l'URL
 ################################################################################
 
 install_all_manual_install_apps() {
@@ -2528,10 +2533,10 @@ sed -i 's/WEB_CMD=\"\/bin\/false\"/WEB_CMD=\"\"/' /etc/rkhunter.conf
 create_template_for_new_file() {
   [ -d /home/"$Local_User"/Modèles/ ] && template_dir="/home/"$Local_User"/Modèles/"
   [ -d /home/"$Local_User"/Templates/ ] && template_dir="/home/"$Local_User"/Templates/"
-  touch "/home/"$Local_User"/"$template_dir"/Fichier Texte.txt" && \
-  touch "/home/"$Local_User"/"$template_dir"/Document ODT.txt" && \
-  unoconv -f odt "/home/"$Local_User"/"$template_dir"/Document ODT.txt" && \
-  rm -f "/home/"$Local_User"/"$template_dir"/Document ODT.txt"
+  touch ""$template_dir"/Fichier Texte.txt" && \
+  touch ""$template_dir"/Document ODT.txt" && \
+  unoconv -f odt ""$template_dir"/Document ODT.txt" && \
+  rm -f ""$template_dir"/Document ODT.txt"
 # ref : https://ask.libreoffice.org/en/question/153444/how-to-create-empty-libreoffice-file-in-a-current-directory-on-the-command-line/
 }
 create_template_for_new_file
@@ -2669,7 +2674,8 @@ EOF
 [ -d /home/"$Local_User"/.config/ghb/ ] || $ExeAsUser mkdir /home/"$Local_User"/.config/ghb/ && \
 $ExeAsUser sed -E -i '/("UseM4v":) (false|true)/{s/true/false/;}' /home/"$Local_User"/.config/ghb/preferences.json
 # permet de décocher la case "Utiliser l'extension de fichier compatible iPod/iTunes (.m4v) pour MP4" (Fichier -> Préférences -> Général)
-# attention peut être qu'il faudra que Handbrake soit lancé en graphique une première fois pour que les configurations soient enregistrées dans le fichier de conf dans .config/ghb
+# le fichier de conf n'existe pas tant que handbrake n'a pas été lancé
+# donc il faut soit trouver un moyen de lancer handbrake silencieusement soit copier coller la conf entière dans le fichier directement
 # et donc qu'il faille faire le sed qu'une fois que le fichier de configuration de soit présent
 ################################################################################
 
@@ -3060,6 +3066,9 @@ chmod 4755 /opt/Signal/chrome-sandbox
 
 # apparement obligatoire pour executer draw.io
 chmod 4755 /opt/drawio/chrome-sandbox
+
+# apparement obligatoire pour executer balena-etcher
+chmod 4755 /opt/balenaEtcher/chrome-sandbox
 
 ################################################################################
 ## configuration du bashrc
