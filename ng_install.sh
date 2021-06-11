@@ -572,6 +572,7 @@
 # - rajouter sed -i 's/^Checks .*/Checks 1/g' /etc/clamav/freshclam.conf dans la conf clamav
 # - ils ont changer l'install de FreeFileSync avec maintenant un binaire pour l'install (indice : bat -A /opt/manual_install/FreeFileSync_11.6_Install.run | more)
 # - regarder pour installer timeshift (sauvegarde incrémentale de l'OS) (l'installer depuis les releases https://github.com/teejee2008/Timeshift/releases car trop vieux depuis les dépos de debian) (c'est un .deb)
+# - potentiellement intégrer l'installation de l'outil xdotool
 ################################################################################
 
 ################################################################################
@@ -597,6 +598,22 @@ if [ $EUID != '0' ]; then
 fi
 ################################################################################
 
+usage_guide() {
+  cat << EOF
+Usage: $SCRIPT_NAME [OPTIONS]
+Options:
+  -s or --search [STRING]	Interactive search.
+  --yes 			Skip all prompts.
+  --no-install 			Saves the extension(s) in the current directory.
+  -s or --shutdown 			Shutdown the PC when the script terminated.
+  -r or --reboot 		Reboot the PC when the script terminated.
+  -h or --help 			Print this message.
+  -v or --version 			Print the script version.
+  Usage examples:
+  $SCRIPT_NAME -e			# Execute the script and print errors in stdout.
+EOF
+}
+
 ################################################################################
 ## options d'execution du script
 ##------------------------------------------------------------------------------
@@ -606,7 +623,7 @@ for param in "$@"; do
             print_usage ;;
         '-v'|'--version')
             echo "$ScriptVersion" ;;
-        '-s'|'--s')
+        '-s'|'--shutdown')
             shutdown_after_install='1' ;;
         '-pr'|'--pro')
             conf_pro='1' ;;
@@ -620,7 +637,7 @@ for param in "$@"; do
             reboot_after_install='1' ;;
         *)
             # echo 'Invalid option' ;;
-            # print_usage; exit 1 ;;
+            # usage_guide; exit 1 ;;
     esac
 done
 
@@ -667,6 +684,7 @@ cp "$(readlink -f "${BASH_SOURCE[0]}")" "$log_dir"/"$(basename "$0")"
 chmod 600 "$log_dir"/"$(basename "$0")"
 # on copie le contenu du script dans le répertoire $log_dir pour pouvoir savoir plus tard ce qu'il y avait dans le script au moment de son execution
 # le chmod permet de s'assurer qu'il ne sera pas executer par mégarde et qu'il n'est accessible qu'en lecture pour root
+# si le cp ne marche pas, tenter de faire cat "${FSLIST_TMP}" > "${FSLIST}"
 ################################################################################
 
 ################################################################################
@@ -739,6 +757,7 @@ onlyexec() {
 ##------------------------------------------------------------------------------
 check_available_space() {
   available_space="$(df --block-size=G / | awk '(NR>1){print $4}' | sed 's/.$//')"
+  # peut aussi se faire en utilisant une seule redirection : "$(df --block-size=G / | awk '(NR>1){gsub(/.$/,"",$4);print $4}')"
   if [ "$available_space" -lt '10' ]; then
       echo -e "${RED}######################################################################${RESET}" | tee -a "$log_file"
       echo -e "${RED}#${RESET}  Il faut au minimum 10 Go d'espace libre pour executer le script.  ${RED}#${RESET}" | tee -a "$log_file"
@@ -1228,6 +1247,7 @@ displayandexec "Installation de xinput                              " "$AGI xinp
 displayandexec "Installation de yersinia                            " "$AGI yersinia"
 displayandexec "Installation de zenmap                              " "$AGI zenmap" # zenmap n'est pas dispo dans debian testing car python2 est EOL, pour traquer l'avencement du portage du code vers python3 : https://github.com/nmap/nmap/issues/1176  donc il faudra probablement le supprimer du script tant qu'il ne réapparait pas dans les dépot debian
 displayandexec "Installation de zip                                 " "$AGI zip"
+displayandexec "Installation de zutils                              " "$AGI zutils"
 displayandexec "Installation de zsh                                 " "$AGI zsh"
 displayandexec "Installation de zstd                                " "$AGI zstd"
 install_zfs() {
@@ -1739,13 +1759,13 @@ aisleriot"
 ##------------------------------------------------------------------------------
 #Screenshot Tool
 # the UUID is in the metadata.json
-# GnomeShellExtUUID='gnome-shell-screenshot@ttll.de'
+# GnomeShellExtensionUUID='gnome-shell-screenshot@ttll.de'
 # the directory name must be the UUID of the gnome shell extension
-# mkdir -p "$GnomeShellExtensionPath"/"$GnomeShellExtUUID"
+# mkdir -p "$GnomeShellExtensionPath"/"$GnomeShellExtensionUUID"
 #--------------------------------------------------------------------------------------------------------#
 # with official gnome extension site
 # $WGET 'https://extensions.gnome.org/extension-data/gnome-shell-screenshotttll.de.v40.shell-extension.zip'
-# unzip -q gnome-shell-screenshotttll.de.v40.shell-extension.zip -d "$GnomeShellExtensionPath"/"$GnomeShellExtUUID"
+# unzip -q gnome-shell-screenshotttll.de.v40.shell-extension.zip -d "$GnomeShellExtensionPath"/"$GnomeShellExtensionUUID"
 #--------------------------------------------------------------------------------------------------------#
 # # with github code source
 # $WGET https://github.com/OttoAllmendinger/gnome-shell-screenshot/archive/v40.zip
@@ -1753,20 +1773,21 @@ aisleriot"
 # cd gnome-shell-screenshot-40
 # make
 # make install
-# unzip -q gnome-shell-screenshot.zip -d $GnomeShellExtensionPath/$GnomeShellExtUUID
+# unzip -q gnome-shell-screenshot.zip -d $GnomeShellExtensionPath/$GnomeShellExtensionUUID
 #--------------------------------------------------------------------------------------------------------#
 # enable the gnome shell extension
-# $ExeAsUser gnome-shell-extension-tool -e "$GnomeShellExtUUID"
+# $ExeAsUser gnome-shell-extension-tool -e "$GnomeShellExtensionUUID"
 # il faudra remplacer gnome-shell-extension-tool -e par gnome-extensions enable pour les prochaines versions de Gnome
+# gnome-extensions est disponnible a partir de Gnome 34
 # should restart gdm with Alt+F2+r
 
 #Screenshot Tool
 install_GSH_screenshot_tool() {
-  local GnomeShellExtUUID='gnome-shell-screenshot@ttll.de' && \
-  mkdir -p "$GnomeShellExtensionPath"/"$GnomeShellExtUUID" && \
-  $WGET 'https://extensions.gnome.org/extension-data/gnome-shell-screenshotttll.de.v40.shell-extension.zip' && \
-  unzip -q gnome-shell-screenshotttll.de.v40.shell-extension.zip -d "$GnomeShellExtensionPath"/"$GnomeShellExtUUID" && \
-  $ExeAsUser gnome-shell-extension-tool -e "$GnomeShellExtUUID"
+  local GnomeShellExtensionUUID='gnome-shell-screenshot@ttll.de' && \
+  mkdir -p "$GnomeShellExtensionPath"/"$GnomeShellExtensionUUID" && \
+  $WGET -P "$tmp_dir" 'https://extensions.gnome.org/extension-data/gnome-shell-screenshotttll.de.v40.shell-extension.zip' && \
+  unzip -q "$tmp_dir"/gnome-shell-screenshotttll.de.v40.shell-extension.zip -d "$GnomeShellExtensionPath"/"$GnomeShellExtensionUUID" && \
+  $ExeAsUser gnome-shell-extension-tool -e "$GnomeShellExtensionUUID"
 }
 install_GSH_system_monitor() {
   $AGI gnome-shell-extension-system-monitor && \
@@ -1778,6 +1799,7 @@ displayandexec "Installation des Gnome Shell Extension              " "\
 # Pour obtenir la liste des extensions installés :
 # dconf read /org/gnome/shell/enabled-extensions
 # a priori avec gnome-extensions, on peut faire gnome-extensions list
+# on peut aussi lister uniquement les extensions activés avec gnome-extensions list --enabled
 
 # System wide installed gnome-shell extensions are listed with the command
 # ls /usr/share/gnome-shell/extensions/
@@ -1788,6 +1810,10 @@ displayandexec "Installation des Gnome Shell Extension              " "\
 # potentiellement installer l'extension 'show-ip@sgaraud.github.com'
 # $AGI gnome-shell-extension-show-ip
 # $ExeAsUser gnome-shell-extension-tool -e 'show-ip@sgaraud.github.com'
+
+# Pour récupérer l'UUID de l'extension en ligne de commande :
+# Il faut le binaire zutils (apt-get install -y zutils), car le zgrep de gzip ne fonctionne pas en récursif
+# zgrep -a '"uuid":' 'gnome-shell-extension.zip' | awk -F'"' '{print $4}'
 ################################################################################
 
 ################################################################################
@@ -2044,9 +2070,10 @@ UpdateKeepassxc() {
   rm -rf "$manual_install_dir"/KeePassXC/KeePassXC-*.AppImage && \
   $WGET -P "$manual_install_dir"/KeePassXC/ https://github.com/keepassxreboot/keepassxc/releases/download/"$keepassxc_version"/KeePassXC-"$keepassxc_version"-x86_64.AppImage && \
   chmod +x "$manual_install_dir"/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage && \
-  sed -i s,.*Exec=.*,Exec="$manual_install_dir"/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage,g /usr/share/applications/keepassxc.desktop && \
+  sed -i "s,.*Exec=.*,Exec="$manual_install_dir"/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage,g" /usr/share/applications/keepassxc.desktop && \
   [ -f /home/"$Local_User"/.config/autostart/keepassxc.desktop ] && sed -i s,.*Exec=.*,Exec="$manual_install_dir"/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage,g /home/"$Local_User"/.config/autostart/keepassxc.desktop && \
   [ -f "$manual_install_dir"/KeePassXC/keepassxc-logo.svg ] || $WGET -P "$manual_install_dir"/KeePassXC/ 'https://keepassxc.org/images/keepassxc-logo.svg'
+  [ -f /home/"$Local_User"/.config/asbru/asbru.yml ] && sed -i "s,pathcli: /opt/manual_install/KeePassXC/KeePassXC-.*.AppImage,pathcli: "$manual_install_dir"/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage,g" /home/"$Local_User"/.config/asbru/asbru.yml
 }
 
 UpdateJoplin() {
