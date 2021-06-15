@@ -600,7 +600,7 @@ fi
 
 usage_guide() {
   cat << EOF
-Usage: $SCRIPT_NAME [OPTIONS]
+Usage: sudo bash $SCRIPT_NAME [OPTIONS]
 Options:
   -s or --search [STRING]	Interactive search.
   --yes 			Skip all prompts.
@@ -644,15 +644,6 @@ done
 # [Multiple arguments using "case" : bash](https://www.reddit.com/r/bash/comments/brfsf8/multiple_arguments_using_case/)
 ################################################################################
 
-################################################################################
-## création du dossier temporaire pour l'execution du script
-##------------------------------------------------------------------------------
-cd
-tmp_dir='/tmp/install_tmp'
-[ -d "$tmp_dir" ] || mkdir "$tmp_dir"
-cd "$tmp_dir"
-################################################################################
-
 # Définition des varibles de couleur
 GREEN='\e[0;32m'
 RED='\e[0;31m'
@@ -685,6 +676,15 @@ chmod 600 "$log_dir"/"$(basename "$0")"
 # on copie le contenu du script dans le répertoire $log_dir pour pouvoir savoir plus tard ce qu'il y avait dans le script au moment de son execution
 # le chmod permet de s'assurer qu'il ne sera pas executer par mégarde et qu'il n'est accessible qu'en lecture pour root
 # si le cp ne marche pas, tenter de faire cat "${FSLIST_TMP}" > "${FSLIST}"
+################################################################################
+
+################################################################################
+## création du dossier temporaire pour l'execution du script
+##------------------------------------------------------------------------------
+cd
+tmp_dir='/tmp/install_tmp'
+[ -d "$tmp_dir" ] || mkdir "$tmp_dir"
+cd "$tmp_dir"
 ################################################################################
 
 ################################################################################
@@ -1171,6 +1171,7 @@ displayandexec "Installation de ettercap-graphical                  " "$AGI ette
 displayandexec "Installation de evince                              " "$AGI evince"
 displayandexec "Installation de filezilla                           " "$AGI filezilla"
 displayandexec "Installation de firefox-esr-l10n-fr                 " "$AGI firefox-esr-l10n-fr"
+displayandexec "Installation de firejail                            " "$AGI firejail"
 displayandexec "Installation de gcc                                 " "$AGI gcc"
 # displayandexec "Installation de geeqie                              " "$AGI geeqie" # installer geekie depuis le script d'install du github car la version dans les dépots de débian est beaucoup trop vielle
 displayandexec "Installation de gimp                                " "$AGI gimp"
@@ -1300,12 +1301,14 @@ $AGI atom"
 ## instalation de WinSCP
 ##------------------------------------------------------------------------------
 install_winscp() {
+  local tmp_dir="$(mktemp -d)"
   displayandexec "Installation de WinSCP                              " "\
 mkdir "$manual_install_dir"/winscp/ && \
 $WGET -P "$tmp_dir" 'https://winscp.net/download/files/2018112321450c4c95c4f6a1a05e87651a955f47e31f/WinSCP-5.13.5-Portable.zip' && \
 unzip "$tmp_dir"/WinSCP-5.13.5-Portable.zip -d "$manual_install_dir"/winscp/ && \
 echo "wine "$manual_install_dir"/winscp/WinSCP.exe" > /usr/bin/winscp && \
-chmod +x /usr/bin/winscp"
+chmod +x /usr/bin/winscp
+rm -rf "$tmp_dir""
 }
 # WinSCP utilise wine32 pour s'executer
 ################################################################################
@@ -1314,12 +1317,14 @@ chmod +x /usr/bin/winscp"
 ## instalation de Veracrypt
 ##------------------------------------------------------------------------------
 install_veracrypt() {
+  local tmp_dir="$(mktemp -d)"
   displayandexec "Installation de veracrypt                           " "\
 $WGET -P "$tmp_dir" https://launchpad.net/veracrypt/trunk/"$veracrypt_version"/+download/veracrypt-"$veracrypt_version"-setup.tar.bz2 && \
 tar xjf "$tmp_dir"/veracrypt-"$veracrypt_version"-setup.tar.bz2 --directory="$tmp_dir" && \
 "$tmp_dir"/veracrypt-"$veracrypt_version"-setup-gui-x64 --nox11 --noexec --target "$tmp_dir" && \
 tail -n +\$(sed -n 's/.*PACKAGE_START=\([0-9]*\).*/\1/p' "$tmp_dir"/veracrypt_install_gui_x64.sh) "$tmp_dir"/veracrypt_install_gui_x64.sh > "$tmp_dir"/veracrypt_installer.tar && \
-tar -C / --no-overwrite-dir -xpzvf "$tmp_dir"/veracrypt_installer.tar"
+tar -C / --no-overwrite-dir -xpzvf "$tmp_dir"/veracrypt_installer.tar
+rm -rf "$tmp_dir""
 # on backslash le retour de la command sed car elle est executer dans un bash -c
 # https://stackoverflow.com/questions/1711970/i-cant-seem-to-use-the-bash-c-option-with-arguments-after-the-c-option-st
 }
@@ -1357,9 +1362,11 @@ $AGI apt-fast"
 ##------------------------------------------------------------------------------
 install_drawio() {
   displayandexec "Installation des dépendances de drawio              " "$AGI libappindicator3-1"
+  local tmp_dir="$(mktemp -d)"
   displayandexec "Installation de drawio                              " "\
 $WGET -P "$tmp_dir" https://github.com/jgraph/drawio-desktop/releases/download/v"$drawio_version"/drawio-amd64-"$drawio_version".deb && \
-dpkg -i "$tmp_dir"/drawio-amd64-"$drawio_version".deb"
+dpkg -i "$tmp_dir"/drawio-amd64-"$drawio_version".deb
+rm -rf "$tmp_dir""
 }
 ################################################################################
 
@@ -1397,9 +1404,11 @@ EOF
 ##------------------------------------------------------------------------------
 install_boostnote() {
   displayandexec "Installation des dépendances de Boostnote           " "$AGI gconf2 gconf-service"
+  local tmp_dir="$(mktemp -d)"
   displayandexec "Installation de Boostnote                           " "\
 $WGET -P "$tmp_dir" https://github.com/BoostIO/boost-releases/releases/download/v"$boostnote_version"/boostnote_"$boostnote_version"_amd64.deb && \
-dpkg -i "$tmp_dir"/boostnote_"$boostnote_version"_amd64.deb"
+dpkg -i "$tmp_dir"/boostnote_"$boostnote_version"_amd64.deb
+rm -rf "$tmp_dir""
 }
 ################################################################################
 
@@ -1530,8 +1539,8 @@ $AGI mkvtoolnix mkvtoolnix-gui"
 ## instalation de Etcher
 ##------------------------------------------------------------------------------
 install_etcher() {
-  local tmp_dir="$(mktemp -d)"
   displayandexec "Installation des dépendances de Etcher              " "$AGI libappindicator1 libpango1.0-0 libdbusmenu-gtk4 libindicator7 libpangox-1.0-0"
+  local tmp_dir="$(mktemp -d)"
   displayandexec "Installation de Etcher                              " "\
 $WGET -P "$tmp_dir" https://github.com/balena-io/etcher/releases/download/v"$etcher_version"/balena-etcher-electron_"$etcher_version"_amd64.deb && \
 dpkg -i "$tmp_dir"/balena-etcher-electron_"$etcher_version"_amd64.deb
@@ -3105,6 +3114,7 @@ alias free='free -ht'
 alias showshortcut='dconf dump /org/gnome/settings-daemon/plugins/media-keys/'
 alias bitcoin='curl -s "http://api.coindesk.com/v1/bpi/currentprice.json"  | jq ".bpi.EUR.rate" | tr -d \"'
 HISTTIMEFORMAT="%Y/%m/%d %T   "
+is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/$1 ;}
 EOF
 
 # alias for root
