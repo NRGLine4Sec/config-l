@@ -2042,7 +2042,7 @@ CheckUpdateOpensnitch() {
   local SoftwareName='OpenSnitch'
   local v1="$(opensnitchd --version)"
   local v2="$($CURL 'https://api.github.com/repos/evilsocket/opensnitch/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
-  Pour récupérer la dernière release non-stable : local v2="$($CURL 'https://api.github.com/repos/evilsocket/opensnitch/releases' | grep -m 1 -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  # Pour récupérer la dernière release non-stable : local v2="$($CURL 'https://api.github.com/repos/evilsocket/opensnitch/releases' | grep -m 1 -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
