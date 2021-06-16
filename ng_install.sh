@@ -1295,6 +1295,14 @@ echo 'deb [arch=amd64] https://packagecloud.io/AtomEditor/atom/any/ any main' > 
 $AG update && \
 $AGI atom"
 }
+install_atom_bullseye() {
+  displayandexec "Installation des dépendances de atom                " "$AGI libgconf-2-4 gvfs-bin gconf2-common"
+  displayandexec "Installation de atom                                " "\
+$WGET --output-document - 'https://packagecloud.io/AtomEditor/atom/gpgkey' | gpg --dearmor --output /usr/share/keyrings/atom-archive-keyring.gpg && \
+echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/atom-archive-keyring.gpg] https://packagecloud.io/AtomEditor/atom/any/ any main' > /etc/apt/sources.list.d/atom.list && \
+$AG update && \
+$AGI atom"
+}
 ################################################################################
 
 ################################################################################
