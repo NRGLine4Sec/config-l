@@ -565,7 +565,6 @@
 # - essayer de comprendre pouquoi il y a parfois un certain nombre de fichier qui devrait appartenir à l'utilisaeur et qui appartiennet pourtant à l'utilisateur root, parfois, c'est des rerpertoire entier qui appartiennent à root dans .config/
 # Peut être un problème dans l'utilisation de ExeAsUser ?, essayer de monitorer avec des tests.
 # Si vraiment on arrive pas à comprendre pourquoi ni comment résoudre le problème simplement, alors peut être faire un chown -R $USER:$USER /home/$USER/.config/ à la fin du script
-# - trouver comment faire pour modifier les différentes options disponnibles d'un clic droit pour en supprimer certaines notamment
 # - regarder de près concernant l'intéret de d'installer le librairie du wivedine de google dans le chromium de debian
 # - ajouter le theme du gnome-terminal (https://github.com/denysdovhan/one-gnome-terminal) pour obtenir la même palette de couleur que atom
 # - rajouter une variable qui contient l'usage du script pour afficher de quel manière l'utiliser lorsque d'un des arguments n'est pas correct (l'équivalent d'un --help)
@@ -584,7 +583,7 @@ set -x
 ################################################################################
 
 #juste pour vérifier que la fonction de calcul du temps d'execution fonctionne correctement, essayer ensuite de trouver une meilleur solution et de supprimer cette ligne
-systemctl restart systemd-timesyncd.service >/dev/null
+systemctl restart systemd-timesyncd.service > /dev/null
 # utilisé à des fin de stats pour l'éxecution du script
 start_time="$(date +%s)"
 # pose problème lorsque la date et l'heure ne sont pas à jour, il faudrait récuperer le start_time une fois la resyncro éffectué, sinon la valeur du temps d'éexecution du script est abérante
@@ -850,7 +849,7 @@ check_latest_version_manual_install_apps() {
     if [ $? != '0' ] || [ -z "$freefilesync_version" ]; then
         freefilesync_version='11.3'
     fi
-    # check version : https://freefilesync.org/download.ph"
+    # check version : https://freefilesync.org/download.php"
 
     boostnote_version="$($CURL 'https://api.github.com/repos/BoostIO/boost-releases/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
     if [ $? != '0' ] || [ -z "$boostnote_version" ]; then
@@ -990,20 +989,35 @@ AGI='apt-get install -y'
 AG='apt-get'
 WGET='wget -q'
 ComputerProcArchitecture="$(uname -r | grep -Po '.*-\K.*')" # peut aussi se faire avec : "$(uname -r | /usr/bin/cut -d '-' -f 3)"
-NomIntReseau="$(ip a | grep 'UP' | cut -d " " -f 2 | cut -d ":" -f 1 | grep 'en')"
+NomIntReseau="$(ip addr | grep 'UP' | cut -d " " -f 2 | cut -d ":" -f 1 | grep 'en')"
+# peut potentillement se faire aussi avec ip addr | awk -F':' '/UP/ && / en/ {sub(/[[:blank:]]/,""); print $2}'
 AddressIPv4Local="$(ip -o -4 addr list "$NomIntReseau" | awk '{print $4}' | cut -d/ -f1)"
 AdressIPv4Ext="$(GET http://ipinfo.io/ip)"
+#autres méthodes :
+#AdressIPv4Ext=$($AG install -y curl > /dev/null && curl -s http://ipinfo.io/ip)
+#wget -q http://ipinfo.io/ip && AdressIPv4Ext=$(cat ip)
 AddressIPv6Local="$(ip -o -6 addr list "$NomIntReseau" | grep 'fe80' | awk '{print $4}' | cut -d/ -f1)"
 AddressIPv6Ext="$(ip -o -6 addr list "$NomIntReseau" | grep -v 'noprefixroute' | awk '{print $4}' | cut -d/ -f1)"
 ComputerRAM="$(grep 'MemTotal' /proc/meminfo | awk '{printf("%.0f", $2/1024/1024+1);}')"
 # grep "MemTotal" /proc/meminfo | awk '{print $2}' | sed -r 's/.{3}$//'
+# potentiellement à remplacer avec free -g | awk '/^Mem:/{print $2}'
 ComputerProc="$(grep -c '^processor' /proc/cpuinfo)"
 ComputerProcModelName="$(grep -Po -m 1 '^model name.*: \K.*' /proc/cpuinfo)"
 ComputerProcVendorId="$(grep -Po -m 1 '(^vendor_id\s: )\K(.*)' /proc/cpuinfo)"
-DebianRelease='buster'
-#autres méthodes :
-#AdressIPv4Ext=$($AG install -y curl > /dev/null && curl -s http://ipinfo.io/ip)
-#wget -q http://ipinfo.io/ip && AdressIPv4Ext=$(cat ip)
+DebianRelease="$(lsb_release -sc)"
+# peut aussi se faire avec la commande : awk -F'=' '/VERSION_CODENAME=/{print $2}' /etc/os-release
+
+# on active le mode case insensitive de bash
+shopt -s nocasematch
+if [[ "$DebianRelease" =~ 'buster' ]]; then
+    buster='1'
+fi
+if [[ "$DebianRelease" =~ 'bullseye' ]]; then
+    bullseye='1'
+fi
+# on déscactive le mode case insensitive de bash
+shopt -u nocasematch
+
 
 ################################################################################
 ## désactivation de la mise en veille automatique pendant l'installation
@@ -1060,6 +1074,7 @@ displayandexec "Suppression du CDROM dans sources.list              " "sed -i '/
 # /etc/init.d/unattended-upgrades stop
 
 # remise au propre de /etc/apt/sources.list
+make_apt_source_list_clean_buster() {
 cat> /etc/apt/sources.list << EOF
 deb http://deb.debian.org/debian/ $DebianRelease main contrib non-free
 deb-src http://deb.debian.org/debian/ $DebianRelease main contrib non-free
@@ -1067,14 +1082,40 @@ deb-src http://deb.debian.org/debian/ $DebianRelease main contrib non-free
 deb http://security.debian.org/debian-security $DebianRelease/updates main contrib
 deb-src http://security.debian.org/debian-security $DebianRelease/updates main contrib
 
-# buster-updates, previously known as 'volatile'
+# "$DebianRelease"-updates, previously known as 'volatile'
 deb http://deb.debian.org/debian/ $DebianRelease-updates main contrib
 deb-src http://deb.debian.org/debian/ $DebianRelease-updates main contrib
 
 #backport
 #deb http://deb.debian.org/debian $DebianRelease-backports main contrib non-free
 EOF
+}
 # ne pas mettre les variable entre guillemet
+
+make_apt_source_list_clean_bullseye() {
+cat> /etc/apt/sources.list << EOF
+deb http://deb.debian.org/debian $DebianRelease main contrib non-free
+deb-src http://deb.debian.org/debian/ $DebianRelease main contrib non-free
+
+deb http://security.debian.org/debian-security $DebianRelease-security main contrib
+deb-src http://security.debian.org/debian-security $DebianRelease-security main contrib
+
+# "$DebianRelease"-updates, previously known as 'volatile'
+deb http://deb.debian.org/debian $DebianRelease-updates main contrib
+deb-src http://deb.debian.org/debian $DebianRelease-updates main contrib
+
+#backport
+#deb http://deb.debian.org/debian $DebianRelease-backports main contrib non-free
+EOF
+}
+# ne pas mettre les variable entre guillemet
+
+if [ "$buster" == 1 ]; then
+ make_apt_source_list_clean_buster
+fi
+if [ "$bullseye" == 1 ]; then
+  make_apt_source_list_clean_bullseye
+fi
 
 echo ''
 echo '       ################################################################'
@@ -1116,7 +1157,7 @@ configure_debconf() {
 
   # Solution : installer les paquets manuellement avec les bonnes config. Ensuite installer debconf-utils et faire
   # debconf-get-selections | grep nom_du_paquet
-  # récupérer les infos obtenus et les injecter dans debconf-set-selections comme suit echo "INFO" | debconf-set-selections
+  # récupérer les infos obtenus et les injecter dans debconf-set-selections comme suit echo 'INFO' | debconf-set-selections
 }
 configure_debconf
 ################################################################################
@@ -1162,6 +1203,7 @@ displayandexec "Installation de clamav                              " "$AGI clam
 displayandexec "Installation de colordiff                           " "$AGI colordiff"
 displayandexec "Installation de cups                                " "$AGI cups"
 displayandexec "Installation de curl                                " "$AGI curl"
+displayandexec "Installation de debconf-utils                       " "$AGI debconf-utils"
 displayandexec "Installation de dmidecode                           " "$AGI dmidecode"
 displayandexec "Installation de dmitry                              " "$AGI dmitry"
 displayandexec "Installation de dnsutils                            " "$AGI dnsutils"
@@ -1172,6 +1214,7 @@ displayandexec "Installation de evince                              " "$AGI evin
 displayandexec "Installation de filezilla                           " "$AGI filezilla"
 displayandexec "Installation de firefox-esr-l10n-fr                 " "$AGI firefox-esr-l10n-fr"
 displayandexec "Installation de firejail                            " "$AGI firejail"
+displayandexec "Installation de freerdp2-wayland                    " "$AGI freerdp2-wayland"
 displayandexec "Installation de gcc                                 " "$AGI gcc"
 # displayandexec "Installation de geeqie                              " "$AGI geeqie" # installer geekie depuis le script d'install du github car la version dans les dépots de débian est beaucoup trop vielle
 displayandexec "Installation de gimp                                " "$AGI gimp"
@@ -1251,7 +1294,7 @@ displayandexec "Installation de zip                                 " "$AGI zip"
 displayandexec "Installation de zutils                              " "$AGI zutils"
 displayandexec "Installation de zsh                                 " "$AGI zsh"
 displayandexec "Installation de zstd                                " "$AGI zstd"
-install_zfs() {
+install_zfs_buster() {
   sed -i "s%^#deb http://deb.debian.org/debian "$DebianRelease"-backports%deb http://deb.debian.org/debian "$DebianRelease"-backports%" /etc/apt/sources.list
   displayandexec "Installation de ZFS                                 " "\
   $AG update && \
@@ -1263,7 +1306,26 @@ install_zfs() {
   sed -i "s%^deb http://deb.debian.org/debian "$DebianRelease"-backports%#deb http://deb.debian.org/debian "$DebianRelease"-backports%" /etc/apt/sources.list && \
   $AG update
 }
-install_zfs
+install_zfs_buster
+
+install_zfs_bullseye() {
+  displayandexec "Installation de ZFS                                 " "\
+  echo 'zfs-dkms	zfs-dkms/stop-build-for-32bit-kernel	boolean	true' | debconf-set-selections && \
+  echo 'zfs-dkms	zfs-dkms/note-incompatible-licenses	note' | debconf-set-selections && \
+  echo 'zfs-dkms	zfs-dkms/stop-build-for-unknown-kernel	boolean	true'| debconf-set-selections && \
+  $AGI zfsutils-linux zfs-dkms zfs-zed && \
+  modprobe zfs"
+}
+install_zfs_bullseye
+
+if [ "$buster" == 1 ]; then
+ install_zfs_buster
+fi
+if [ "$bullseye" == 1 ]; then
+  install_zfs_bullseye
+fi
+
+
 # regarder si on peut intégrer l'appel à la fonction install_zfs dans la fonction displayandexec
 
 # la version de mkvtoolnix dans les dépots officiel est trop vielle -> install manuel
@@ -1345,6 +1407,13 @@ install_spotify(){
   displayandexec "Installation de spotify                             " "\
 $CURL 'https://download.spotify.com/debian/pubkey_0D811D58.gpg' | apt-key add - && \
 echo 'deb http://repository.spotify.com stable non-free' > /etc/apt/sources.list.d/spotify.list && \
+$AG update && \
+$AGI spotify-client"
+}
+install_spotify_bullseye() {
+  displayandexec "Installation de spotify                             " "\
+$CURL 'https://download.spotify.com/debian/pubkey_0D811D58.gpg' | gpg --dearmor --output /usr/share/keyrings/spotify-archive-keyring.gpg && \
+echo 'deb [signed-by=/usr/share/keyrings/spotify-archive-keyring.gpg] http://repository.spotify.com stable non-free' > /etc/apt/sources.list.d/spotify.list && \
 $AG update && \
 $AGI spotify-client"
 }
@@ -1433,6 +1502,16 @@ $WGET --output-document - 'https://typora.io/linux/public-key.asc' | apt-key add
 $AG update && \
 $AGI typora"
 }
+install_typora_bullseye() {
+  displayandexec "Installation des dépendances de Typora              " "\
+cat> /etc/apt/sources.list.d/typora.list << 'EOF'
+deb [signed-by=/usr/share/keyrings/typora-archive-keyring.gpg] https://typora.io/linux ./
+# deb-src https://typora.io/linux ./
+EOF
+$WGET --output-document - 'https://typora.io/linux/public-key.asc' | gpg --dearmor --output /usr/share/keyrings/typora-archive-keyring.gpg && \
+$AG update && \
+$AGI typora"
+}
 ################################################################################
 
 ################################################################################
@@ -1444,6 +1523,71 @@ install_virtualbox() {
 echo 'deb https://download.virtualbox.org/virtualbox/debian buster contrib' > /etc/apt/sources.list.d/virtualbox.list && \
 $WGET --output-document - 'https://www.virtualbox.org/download/oracle_vbox_2016.asc' | apt-key add - && \
 $WGET --output-document - 'https://www.virtualbox.org/download/oracle_vbox.asc' | apt-key add - && \
+$AG update && \
+$AGI virtualbox-6.1"
+  # virtualbox_version=$(virtualbox --help | grep v[0-9] | cut -c 35-) # ancienne version
+  virtualbox_version="$(virtualbox --help | grep -Po ' v\K\d+.\d+.\d+')"
+  displayandexec "Installation de VM VirtualBox Extension Pack        " "\
+$WGET -P "$tmp_dir" https://download.virtualbox.org/virtualbox/"$virtualbox_version"/Oracle_VM_VirtualBox_Extension_Pack-"$virtualbox_version".vbox-extpack && \
+echo y | /usr/bin/VBoxManage extpack install --replace "$tmp_dir"/Oracle_VM_VirtualBox_Extension_Pack-"$virtualbox_version".vbox-extpack"
+  # Une solution qui devrait marché mais il faut avoir le hachage de la licence pour pouvoir l'executer et on obtient le hachage qu'en lançant une première fois la commande
+  # VBoxManage extpack install --replace Oracle_VM_VirtualBox_Extension_Pack-$virtualbox_version.vbox-extpack --accept-license --accept-license=56be48f923303c8cababb0bb4c478284b688ed23f16d775d729b89a2e8e5f9eb
+  # https://www.virtualbox.org/ticket/16674
+  # Pour lister les extensions virutlabox une fois l'installation terminé : VBoxManage list extpacks
+  # VBoxManage list extpacks
+
+  configure_SecureBoot_params() {
+      # création du dossier qui contiendra les signatures pour le SecureBoot
+      mkdir /usr/share/manual_sign_kernel_module
+      # création du script qui permet de signer les modules vboxdrv vboxnetflt vboxnetadp vboxpci pour VirtualBox
+      cat> /opt/sign_virtualbox_kernel_module.sh << 'EOF'
+#!/bin/bash
+
+# Test que le script est lancer en root
+if [ $EUID != 0 ]; then
+    echo "Le script doit être executer en root: # sudo $0" 1>&2
+    exit 1
+fi
+
+UNAMER="$(uname -r)"
+mkdir -p /usr/share/manual_sign_kernel_module/virtualbox
+cd /usr/share/manual_sign_kernel_module/virtualbox
+openssl req -new -x509 -newkey rsa:2048 -keyout vboxdrv.priv -outform DER -out vboxdrv.der -nodes -days 36500 -subj "/CN=vboxdrv/"
+/usr/src/linux-headers-$UNAMER/scripts/sign-file sha256 ./vboxdrv.priv ./vboxdrv.der /lib/modules/$UNAMER/misc/vboxdrv.ko
+openssl req -new -x509 -newkey rsa:2048 -keyout vboxnetflt.priv -outform DER -out vboxnetflt.der -nodes -days 36500 -subj "/CN=vboxnetflt/"
+/usr/src/linux-headers-$UNAMER/scripts/sign-file sha256 ./vboxnetflt.priv ./vboxnetflt.der /lib/modules/$UNAMER/misc/vboxnetflt.ko
+openssl req -new -x509 -newkey rsa:2048 -keyout vboxnetadp.priv -outform DER -out vboxnetadp.der -nodes -days 36500 -subj "/CN=vboxnetadp/"
+/usr/src/linux-headers-$UNAMER/scripts/sign-file sha256 ./vboxnetadp.priv ./vboxnetadp.der /lib/modules/$UNAMER/misc/vboxnetadp.ko
+openssl req -new -x509 -newkey rsa:2048 -keyout vboxpci.priv -outform DER -out vboxpci.der -nodes -days 36500 -subj "/CN=vboxpci/"
+/usr/src/linux-headers-$UNAMER/scripts/sign-file sha256 ./vboxpci.priv ./vboxpci.der /lib/modules/$UNAMER/misc/vboxpci.ko
+mokutil --import vboxdrv.der
+mokutil --import vboxnetflt.der
+mokutil --import vboxnetadp.der
+mokutil --import vboxpci.der
+# normallement on peut faire le mokutil avec l'import de plusieurs fichiers en même temps, il faudra tester si c'est possible avant d'intégrer la ligne suivante dans le script
+#mokutil --import vboxdrv.der vboxnetflt.der vboxnetadp.der vboxpci.der
+reboot
+EOF
+      chmod +x /opt/sign_virtualbox_kernel_module.sh
+  }
+  # ref : [Debian, SecureBoot et les modules noyaux DKMS - Where is it?](https://medspx.fr/blog/Debian/secure_boot_dkms/)
+
+  # test qui vérifie l'activation du SecureBoot
+  which mokutil > /dev/null
+  if [ $? == '0' ]; then
+      test_secure_boot="$(mokutil --sb-state | grep 'SecureBoot')"
+      if [ "$test_secure_boot" == 'SecureBoot enabled' ]; then
+          configure_SecureBoot_params
+          # displayandexec "Install du script pour signer module (SecureBoot)   " "$AGI dkms"
+      fi
+  fi
+}
+
+install_virtualbox_bullseye() {
+  displayandexec "Installation des dépendances de VirtualBox          " "$AGI dkms"
+  displayandexec "Installation de VirtualBox                          " "\
+echo 'deb [signed-by=/usr/share/keyrings/virtualbox-archive-keyring.gpg] https://download.virtualbox.org/virtualbox/debian buster contrib' > /etc/apt/sources.list.d/virtualbox.list && \
+$WGET --output-document - 'https://www.virtualbox.org/download/oracle_vbox.asc' | gpg --dearmor --output /usr/share/keyrings/virtualbox-archive-keyring.gpg && \
 $AG update && \
 $AGI virtualbox-6.1"
   # virtualbox_version=$(virtualbox --help | grep v[0-9] | cut -c 35-) # ancienne version
@@ -1541,6 +1685,16 @@ $WGET --output-document - 'https://mkvtoolnix.download/gpg-pub-moritzbunkus.txt'
 $AG update && \
 $AGI mkvtoolnix mkvtoolnix-gui"
 }
+install_mkvtoolnix_bullseye() {
+  displayandexec "Installation de MKVToolNix                          " "\
+cat> /etc/apt/sources.list.d/mkvtoolnix.download.list << 'EOF'
+deb [signed-by=/usr/share/keyrings/mkvtoolnix-archive-keyring.gpg] https://mkvtoolnix.download/debian/ buster main
+#deb-src https://mkvtoolnix.download/debian/ buster main
+EOF
+$WGET --output-document - 'https://mkvtoolnix.download/gpg-pub-moritzbunkus.txt' | gpg --dearmor --output /usr/share/keyrings/mkvtoolnix-archive-keyring.gpg && \
+$AG update && \
+$AGI mkvtoolnix mkvtoolnix-gui"
+}
 ################################################################################
 
 ################################################################################
@@ -1575,6 +1729,13 @@ install_signal() {
   displayandexec "Installation de Signal                              " "\
 echo 'deb [arch=amd64] https://updates.signal.org/desktop/apt xenial main' > /etc/apt/sources.list.d/signal-xenial.list && \
 $CURL 'https://updates.signal.org/desktop/apt/keys.asc' | apt-key add - && \
+$AG update && \
+$AGI signal-desktop"
+}
+install_signal_bullseye() {
+  displayandexec "Installation de Signal                              " "\
+echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/signal-archive-keyring.gpg] https://updates.signal.org/desktop/apt xenial main' > /etc/apt/sources.list.d/signal-xenial.list && \
+$CURL 'https://updates.signal.org/desktop/apt/keys.asc' | gpg --dearmor --output /usr/share/keyrings/signal-archive-keyring.gpg && \
 $AG update && \
 $AGI signal-desktop"
 }
@@ -2096,6 +2257,7 @@ UpdateKeepassxc() {
   [ -f /home/"$Local_User"/.config/autostart/keepassxc.desktop ] && sed -i s,.*Exec=.*,Exec="$manual_install_dir"/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage,g /home/"$Local_User"/.config/autostart/keepassxc.desktop && \
   [ -f "$manual_install_dir"/KeePassXC/keepassxc-logo.svg ] || $WGET -P "$manual_install_dir"/KeePassXC/ 'https://keepassxc.org/images/keepassxc-logo.svg'
   [ -f /home/"$Local_User"/.config/asbru/asbru.yml ] && sed -i "s,pathcli: /opt/manual_install/KeePassXC/KeePassXC-.*.AppImage,pathcli: "$manual_install_dir"/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage,g" /home/"$Local_User"/.config/asbru/asbru.yml
+  # bon a priori la commande précendante ne fonctionne pas, elle change bien la version dans le fichier de conf de asbru, mais cette modification ne permet pas de changer réellement la conf de asbru
 }
 
 UpdateJoplin() {
@@ -2299,6 +2461,33 @@ ln -s /opt/sysupdateNG /usr/bin/sysupdateNG"
 ################################################################################
 
 ################################################################################
+## install du scrip check_backport_update
+##------------------------------------------------------------------------------
+install_check_backport_update() {
+cat> /usr/bin/check_backport_update << 'EOF'
+#!/bin/bash
+
+DebianRelease="$(lsb_release -sc)"
+list_backport="$(dpkg-query -W | awk '/~bpo/{print $1}')"
+
+sudo sed -i "s%^#deb http://deb.debian.org/debian "$DebianRelease"-backports%deb http://deb.debian.org/debian "$DebianRelease"-backports%" /etc/apt/sources.list
+sudo apt-get update > /dev/null
+
+while read package; do
+  sudo apt-get upgrade -s -t "$DebianRelease"-backports "$package" | grep 'est déjà la version la plus récente'
+done <<< "$list_backport"
+
+sudo sed -i "s%^deb http://deb.debian.org/debian "$DebianRelease"-backports%#deb http://deb.debian.org/debian "$DebianRelease"-backports%" /etc/apt/sources.list
+sudo apt-get update > /dev/null
+
+exit 0
+EOF
+displayandexec "Installation du script check_backport_update        " "\
+chmod +x /usr/bin/check_backport_update"
+}
+################################################################################
+
+################################################################################
 ## install du scrip wsudo
 ##------------------------------------------------------------------------------
 install_wsudo() {
@@ -2451,6 +2640,7 @@ displayandexec "Installation du script desactivebt                  " "chmod +x 
 install_all_perso_script() {
   install_gitupdate
   install_sysupdateng
+  install_check_backport_update
   install_wsudo
   install_launch_url_file
   install_scanmyhome
@@ -2893,7 +3083,7 @@ button-layout='appmenu:minimize,maximize,close'
 
 [gnome/shell]
 app-picker-view=uint32 1
-favorite-apps=['chromium.desktop', 'org.gnome.Terminal.desktop', 'org.gnome.Nautilus.desktop', 'signal-desktop.desktop', 'firefox-esr.desktop', 'keepassxc.desktop', 'boostnote.desktop', 'atom.desktop', 'stacer.desktop', 'veracrypt.desktop', 'virtualbox.desktop', 'rhythmbox.desktop', 'wireshark.desktop', 'libreoffice-writer.desktop']
+favorite-apps=['chromium.desktop', 'org.gnome.Terminal.desktop', 'org.gnome.Nautilus.desktop', 'signal-desktop.desktop', 'joplin.desktop', 'firefox-esr.desktop', 'boostnote.desktop', 'atom.desktop', 'org.gnome.Todo.desktop', 'veracrypt.desktop', 'spotify.desktop', 'libreoffice-writer.desktop', 'asbru-cm.desktop']
 had-bluetooth-devices-setup=false
 
 [gtk/settings/file-chooser]
@@ -2995,6 +3185,20 @@ x-scheme-handler/unknown=chromium.desktop
 EOF
 ################################################################################
 
+################################################################################
+## configuration de nautilus
+##------------------------------------------------------------------------------
+# a priori, il n'est pas possible de modifier ou de supprimer les options du click droit de nautilus, il est simplement possible d'en ajouter de nouveaux
+# une manière de contourner les problème est de supprimer l'extension rajouter lors de l'installation d'un paquet dans le répertoire /usr/lib/x86_64-linux-gnu/nautilus/extensions-3.0/
+# ref : [gnome - Edit/Remove existing File Manager (right-click/context menu) actions - Ask Ubuntu](https://askubuntu.com/questions/1300049/edit-remove-existing-file-manager-right-click-context-menu-actions/1300079#1300079)
+# par exemple le paquet nautilus-wipe rajoute des entrés dans le clic droit assez dangereuses comme "Ecraser" et "Ecraser l'espace disque disponnible"
+# pour supprimer ces entrées des options de clic droit de nautilus, il faut soit désinstaller le paquet, soit supprimer le .so correspondant dans le répertoire des extensions de nautilus
+mv /usr/lib/x86_64-linux-gnu/nautilus/extensions-3.0/libnautilus-wipe.so /usr/lib/x86_64-linux-gnu/nautilus/extensions-3.0/libnautilus-wipe.so.backup
+
+# pour supprimer des options internes à nautilus, il faudrait modifier son code source et le recompiler
+# ref : [Comment supprimer Change Desktop Background du clic droit?](https://qastack.fr/ubuntu/34803/how-to-remove-change-desktop-background-from-right-click)
+################################################################################
+
 
 #[desktop/interface]
 #gtk-theme='Bubble-Dark-Blue'
@@ -3005,6 +3209,8 @@ EOF
 ##------------------------------------------------------------------------------
 displayandexec "Désactivation du microphone                         " "$ExeAsUser amixer set Capture nocap"
 displayandexec "Réglage du volume audio à 10%                       " "$ExeAsUser amixer set Master 10%"
+# Les deux commandes amixer ne fonctionnenet pas dans une install sur bullseye. A priori le problème serrait lié au fait qu'elles sont lancés depuis des sudo -u user.
+# Les commande fonctionnement parfaitement si elles sont lancés depuis le user dans un terminal.
 ################################################################################
 
 
@@ -3026,8 +3232,9 @@ configure_for_pro() {
     # echo 'javaws https://$1/admin/public/asdm.jnlp' > /usr/bin/asdm
     # chmod +x /usr/bin/asdm
     # référence : https://community.cisco.com/t5/network-security/asdm-on-ubuntu/td-p/3067651
+    # Exec=/usr/java/jre1.8.0_261/bin/javaws
 }
-if [ "$conf_pro" == '1' ]; then
+if [ "$conf_pro" == 1 ]; then
     configure_for_pro
 fi
 ################################################################################
@@ -3073,7 +3280,7 @@ configure_for_perso() {
   CustomGnomeShortcut "eteindre l ecran" "/usr/bin/eteindreecran" "<Primary><Shift>y"
   CustomGnomeShortcut "réactiver l écran du PC avec les paramètres à gauche de l écran principal" "/usr/bin/redemarerecran" "<Primary><Shift>h"
 }
-if [ "$conf_perso" == '1' ]; then
+if [ "$conf_perso" == 1 ]; then
     configure_for_perso
 fi
 ################################################################################
