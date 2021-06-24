@@ -298,7 +298,7 @@
 ##
 ## Pour faire l'install du script avec apt-fast à place de apt-get
 ## On vérifie que aria1 est installé, si il ne l'ait pas, on l'install
-# if ! dpkg-query --show aria2 >/dev/null 2>&1; then
+# if ! dpkg-query --show aria2 > /dev/null 2>&1; then
 #     apt-get update
 #     apt-get install -y aria2
 #   fi
@@ -375,7 +375,7 @@
 # use xinput list-props 11 | grep "Device Node" to get event id
 # Pour obtenir le numéro du bouton : xev | grep -A3 ButtonPress
 
-# cat> /home/$Local_User/.xbindkeysrc << 'EOF'
+# cat> /home/$local_user/.xbindkeysrc << 'EOF'
 # # backward button => volume down
 # "xte 'key XF86AudioLowerVolume'"
 #    b:8
@@ -391,7 +391,7 @@
 # ref : [Linux: xbindkeys Tutorial](http://xahlee.info/linux/linux_xbindkeys_tutorial.html)
 
 # si jamais il y a besoin :
-# cat> /home/$Local_User/.config/autostart/xbindkeys.desktop << 'EOF'
+# cat> /home/$local_user/.config/autostart/xbindkeys.desktop << 'EOF'
 # [Desktop Entry]
 # Name=xbindkeys
 # Comment=xbindkeys
@@ -477,12 +477,12 @@
 ## sudo nsntrace -d enp -o result.pcap -u $USER signal-desktop
 
 # pour avoir des infos lspci via udevadm
-# while read item; do echo -e "${item} valeur=$(strings $item 2>/dev/null)"; udevadm info -q all -p "$item" 2>/dev/null ; done  < <(find /sys/devices -regex "/sys/devices/.*01:00\.0\/.*")
+# while read item; do echo -e "${item} valeur=$(strings $item 2> /dev/null)"; udevadm info -q all -p "$item" 2> /dev/null ; done  < <(find /sys/devices -regex "/sys/devices/.*01:00\.0\/.*")
 # où par exemple lspci -s 01:00.0   (...)
 # lspci -nn | awk 'BEGIN {FPAT="[[:xdigit:]]{4}"}; {print "Contrôleur Type",$1,":",$0}'
 
 #  vérifier aussi le paramètre msi de la carte mère
-# for item in /sys/module/*/parameters/**; do if [ -f "$item" ]; then echo -e "$(cut -f4 -d"/" <<<"$item") $(basename $item)=$(cat $item 2>/dev/null)"; fi;  done | egrep -i 'pcie|aspm|msi|aer|8723be'
+# for item in /sys/module/*/parameters/**; do if [ -f "$item" ]; then echo -e "$(cut -f4 -d"/" <<<"$item") $(basename $item)=$(cat $item 2> /dev/null)"; fi;  done | egrep -i 'pcie|aspm|msi|aer|8723be'
 
 
 # sudo lspci -nnkv | grep -iB13 pcieport
@@ -591,7 +591,7 @@ start_time="$(date +%s)"
 ################################################################################
 ## Test que le script est lancer en root
 ##------------------------------------------------------------------------------
-if [ $EUID != '0' ]; then
+if [ $EUID != 0 ]; then
     echo "Le script doit être executer en tant que root: # sudo $0" 1>&2
     exit 1
 fi
@@ -621,7 +621,7 @@ for param in "$@"; do
         '-h'|'--help')
             print_usage ;;
         '-v'|'--version')
-            echo "$ScriptVersion" ;;
+            echo "$script_version" ;;
         '-s'|'--shutdown')
             shutdown_after_install='1' ;;
         '-pr'|'--pro')
@@ -706,7 +706,7 @@ displayandexec() {
     echo ">>> $*" >> "$log_file" 2>&1
     bash -c "$*" >> "$log_file" 2>&1
     local ret=$?
-    if [ $ret != '0' ]; then
+    if [ $ret != 0 ]; then
         echo -e "\r $message                ${RED}[ERROR]${RESET} " && echo -e "\r $message                ${RED}[ERROR]${RESET} " >> "$install_file"
     else
         echo -e "\r $message                ${GREEN}[OK]${RESET} " && echo -e "\r $message                ${GREEN}[OK]${RESET} " >> "$install_file"
@@ -739,7 +739,7 @@ onlyexec() {
     echo ">>> $*" >> "$log_file" 2>&1
     bash -c "$*" >> "$log_file" 2>&1
     local ret=$?
-    if [ $ret != '0' ]; then
+    if [ $ret != 0 ]; then
         echo -e "\r\e[0;30m $message                ${RED}[ERROR]${RESET} " >> $install_file
     else
         echo -e "\r\e[0;30m $message                ${GREEN}[OK]${RESET} " >> $install_file
@@ -788,7 +788,7 @@ force_dns_for_install
 ##------------------------------------------------------------------------------
 check_internet_access() {
   displayandexec "Vérification de la connection internet              " "ping -c 1 www.google.com"
-  if [ $? != '0' ]; then
+  if [ $? != 0 ]; then
       echo -e "${RED}######################################################################${RESET}" | tee -a "$log_file"
       echo -e "${RED}#${RESET} Pour executer ce script, il faut disposer d'une connexion Internet ${RED}#${RESET}" | tee -a "$log_file"
       echo -e "${RED}######################################################################${RESET}" | tee -a "$log_file"
@@ -809,7 +809,7 @@ displayandexec "Synchronisation de l'heure et de la time zone       " "systemctl
 uname -a | grep 'debian\|Debian' &> /dev/null
 # autre version
 # grep "^NAME=" /etc/os-release | grep "debian\|Debian" &> /dev/null
-if [ $? == '0' ]; then
+if [ $? == 0 ]; then
     version_linux='Debian'
 else
     echo -e "${RED}######################################################################${RESET}" | tee -a "$log_file"
@@ -817,8 +817,8 @@ else
     echo -e "${RED}######################################################################${RESET}" | tee -a "$log_file"
     exit 1
 fi
-ScriptVersion='2.0'
-version_system="$(cat /etc/debian_version)"
+script_version='2.0'
+system_version="$(cat /etc/debian_version)"
 CURL='curl --silent --show-error'
 
 # https://github.com/shiftkey/desktop/releases
@@ -828,95 +828,95 @@ CURL='curl --silent --show-error'
 ##------------------------------------------------------------------------------
 check_latest_version_manual_install_apps() {
     veracrypt_version="$($CURL 'https://www.veracrypt.fr/en/Downloads.html' | grep 'tar.bz2' | grep -v '.sig\|x86\|Source\|freebsd' | grep -Po '(?<=veracrypt-)(\d+\.+\d+)+\d+")')"
-    if [ $? != '0' ] || [ -z "$veracrypt_version" ]; then
+    if [ $? != 0 ] || [ -z "$veracrypt_version" ]; then
         veracrypt_version='1.24'
     fi
     # check version : https://www.veracrypt.fr/en/Downloads.html
 
     drawio_version="$($CURL 'https://api.github.com/repos/jgraph/drawio-desktop/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
-    if [ $? != '0' ] || [ -z "$drawio_version" ]; then
+    if [ $? != 0 ] || [ -z "$drawio_version" ]; then
         drawio_version='11.3.0'
     fi
     # check version : https://github.com/jgraph/drawio-desktop/releases
 
     # openoffice_version=$($CURL 'https://www.openoffice.org/fr/Telecharger/' | awk '/Linux/ && /deb/ && /x86-64/' | grep -Po '(?<=OpenOffice_)(\d+\.+)+\d+')
-    # if [ $? != '0' ] || [ -z $openoffice_version ]; then
+    # if [ $? != 0 ] || [ -z $openoffice_version ]; then
     #     openoffice_version='4.1.10'
     # fi
     # check version : https://www.openoffice.org/fr/Telecharger/
 
     freefilesync_version="$($CURL 'https://freefilesync.org/download.php' | grep 'Linux.tar.gz' | grep -Po '(?<=FreeFileSync_)(\d+\.+\d+)')"
-    if [ $? != '0' ] || [ -z "$freefilesync_version" ]; then
+    if [ $? != 0 ] || [ -z "$freefilesync_version" ]; then
         freefilesync_version='11.3'
     fi
     # check version : https://freefilesync.org/download.php"
 
     boostnote_version="$($CURL 'https://api.github.com/repos/BoostIO/boost-releases/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
-    if [ $? != '0' ] || [ -z "$boostnote_version" ]; then
+    if [ $? != 0 ] || [ -z "$boostnote_version" ]; then
         boostnote_version='0.12.1'
     fi
     # check version : https://github.com/BoostIO/boost-releases/releases/
 
     etcher_version="$($CURL 'https://api.github.com/repos/balena-io/etcher/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
-    if [ $? != '0' ] || [ -z "$etcher_version" ]; then
+    if [ $? != 0 ] || [ -z "$etcher_version" ]; then
         etcher_version='1.5.112'
     fi
     # check version : https://github.com/balena-io/etcher/releases/
 
     shotcut_version="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
-    if [ $? != '0' ] || [ -z "$shotcut_version" ]; then
+    if [ $? != 0 ] || [ -z "$shotcut_version" ]; then
         shotcut_version='20.11.28'
     fi
     shotcut_appimage="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"name": "\K.*?(?=")' | grep 'AppImage')"
-    if [ $? != '0' ] || [ -z "$shotcut_appimage" ]; then
+    if [ $? != 0 ] || [ -z "$shotcut_appimage" ]; then
         shotcut_appimage='shotcut-linux-x86_64-201128.AppImage'
     fi
     # check version : https://github.com/mltframework/shotcut/releases/
 
     stacer_version="$($CURL 'https://api.github.com/repos/oguzhaninan/Stacer/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
-    if [ $? != '0' ] || [ -z "$stacer_version" ]; then
+    if [ $? != 0 ] || [ -z "$stacer_version" ]; then
         stacer_version='1.1.0'
     fi
     # check version : https://github.com/oguzhaninan/Stacer/releases/
 
     keepassxc_version="$($CURL 'https://api.github.com/repos/keepassxreboot/keepassxc/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
-    if [ $? != '0' ] || [ -z "$keepassxc_version" ]; then
+    if [ $? != 0 ] || [ -z "$keepassxc_version" ]; then
         keepassxc_version='2.6.2'
     fi
     # check version : https://github.com/keepassxreboot/keepassxc/releases/
 
     bat_version="$($CURL 'https://api.github.com/repos/sharkdp/bat/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
-    if [ $? != '0' ] || [ -z "$bat_version" ]; then
+    if [ $? != 0 ] || [ -z "$bat_version" ]; then
         bat_version='0.17.1'
     fi
     # check version : https://github.com/sharkdp/bat/releases/
 
     youtubedl_version="$($CURL 'https://api.github.com/repos/ytdl-org/youtube-dl/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
-    if [ $? != '0' ] || [ -z "$youtubedl_version" ]; then
+    if [ $? != 0 ] || [ -z "$youtubedl_version" ]; then
         youtubedl_version='2020.12.14'
     fi
     # check version : https://github.com/ytdl-org/youtube-dl/releases/
 
     joplin_version="$($CURL 'https://api.github.com/repos/laurent22/joplin/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
-    if [ $? != '0' ] || [ -z "$joplin_version" ]; then
+    if [ $? != 0 ] || [ -z "$joplin_version" ]; then
         joplin_version='1.4.19'
     fi
     # check version : https://github.com/laurent22/joplin/releases/
 
     krita_version="$($CURL 'https://krita.org/fr/telechargement/krita-desktop/' | grep 'stable' | grep 'appimage>' | grep -Po '(?<=/stable/krita/)(\d+\.+\d\.\d+)')"
-    if [ $? != '0' ] || [ -z "$krita_version" ]; then
+    if [ $? != 0 ] || [ -z "$krita_version" ]; then
         krita_version='4.4.1'
     fi
     # check version : https://krita.org/fr/telechargement/krita-desktop/
 
     opensnitch_stable_version="$($CURL 'https://api.github.com/repos/evilsocket/opensnitch/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
-    if [ $? != '0' ] || [ -z "$opensnitch_stable_version" ]; then
+    if [ $? != 0 ] || [ -z "$opensnitch_stable_version" ]; then
         opensnitch_stable_version='1.3.6'
     fi
     # check version : https://github.com/evilsocket/opensnitch/releases/
 
     opensnitch_latest_version="$($CURL 'https://api.github.com/repos/evilsocket/opensnitch/releases' | grep -m 1 -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
-    if [ $? != '0' ] || [ -z "$opensnitch_latest_version" ]; then
+    if [ $? != 0 ] || [ -z "$opensnitch_latest_version" ]; then
         opensnitch_latest_version='1.4.0-rc.2'
     fi
     # check version : https://github.com/evilsocket/opensnitch/releases/
@@ -979,40 +979,40 @@ manual_check_latest_version() {
 # manual_check_latest_version
 ################################################################################
 
-Local_User="$(awk -F':' '/1000/{print $1}' /etc/passwd)"
+local_user="$(awk -F':' '/1000/{print $1}' /etc/passwd)"
 # peut aussi se faire avec "$(grep '1000' /etc/passwd | cut -d: -f 1)"
 # autre méthode pour obtenir le user, lorsqu'il est à l'origine de la session en cour : "$(who | awk 'FNR == 1 {print $1}')"
-Local_User_UID="$(id -u "$Local_User")"
-GnomeShellExtensionPath="/home/"$Local_User"/.local/share/gnome-shell/extensions"
-ExeAsUser="sudo -u "$Local_User""
+local_user_UID="$(id -u "$local_user")"
+gnome_shell_extension_path="/home/"$local_user"/.local/share/gnome-shell/extensions"
+ExeAsUser="sudo -u "$local_user""
 AGI='apt-get install -y'
 AG='apt-get'
 WGET='wget -q'
-ComputerProcArchitecture="$(uname -r | grep -Po '.*-\K.*')" # peut aussi se faire avec : "$(uname -r | /usr/bin/cut -d '-' -f 3)"
-NomIntReseau="$(ip addr | grep 'UP' | cut -d " " -f 2 | cut -d ":" -f 1 | grep 'en')"
+computer_proc_architecture="$(uname -r | grep -Po '.*-\K.*')" # peut aussi se faire avec : "$(uname -r | /usr/bin/cut -d '-' -f 3)"
+network_int_name="$(ip addr | grep 'UP' | cut -d " " -f 2 | cut -d ":" -f 1 | grep 'en')"
 # peut potentillement se faire aussi avec ip addr | awk -F':' '/UP/ && / en/ {sub(/[[:blank:]]/,""); print $2}'
-AddressIPv4Local="$(ip -o -4 addr list "$NomIntReseau" | awk '{print $4}' | cut -d/ -f1)"
-AdressIPv4Ext="$(GET http://ipinfo.io/ip)"
+IPv4_local_address="$(ip -o -4 addr list "$network_int_name" | awk '{print $4}' | cut -d/ -f1)"
+IPv4_external_address="$(GET http://ipinfo.io/ip)"
 #autres méthodes :
-#AdressIPv4Ext=$($AG install -y curl > /dev/null && curl -s http://ipinfo.io/ip)
-#wget -q http://ipinfo.io/ip && AdressIPv4Ext=$(cat ip)
-AddressIPv6Local="$(ip -o -6 addr list "$NomIntReseau" | grep 'fe80' | awk '{print $4}' | cut -d/ -f1)"
-AddressIPv6Ext="$(ip -o -6 addr list "$NomIntReseau" | grep -v 'noprefixroute' | awk '{print $4}' | cut -d/ -f1)"
-ComputerRAM="$(grep 'MemTotal' /proc/meminfo | awk '{printf("%.0f", $2/1024/1024+1);}')"
+#IPv4_external_address=$($AG install -y curl > /dev/null && curl -s http://ipinfo.io/ip)
+#wget -q http://ipinfo.io/ip && IPv4_external_address=$(cat ip)
+IPv6_local_address="$(ip -o -6 addr list "$network_int_name" | grep 'fe80' | awk '{print $4}' | cut -d/ -f1)"
+IPv6_external_address="$(ip -o -6 addr list "$network_int_name" | grep -v 'noprefixroute' | awk '{print $4}' | cut -d/ -f1)"
+computer_RAM="$(grep 'MemTotal' /proc/meminfo | awk '{printf("%.0f", $2/1024/1024+1);}')"
 # grep "MemTotal" /proc/meminfo | awk '{print $2}' | sed -r 's/.{3}$//'
 # potentiellement à remplacer avec free -g | awk '/^Mem:/{print $2}'
-ComputerProc="$(grep -c '^processor' /proc/cpuinfo)"
-ComputerProcModelName="$(grep -Po -m 1 '^model name.*: \K.*' /proc/cpuinfo)"
-ComputerProcVendorId="$(grep -Po -m 1 '(^vendor_id\s: )\K(.*)' /proc/cpuinfo)"
-DebianRelease="$(lsb_release -sc)"
+computer_proc="$(grep -c '^processor' /proc/cpuinfo)"
+computer_proc_model_name="$(grep -Po -m 1 '^model name.*: \K.*' /proc/cpuinfo)"
+computer_proc_vendor_ID="$(grep -Po -m 1 '(^vendor_id\s: )\K(.*)' /proc/cpuinfo)"
+debian_release="$(lsb_release -sc)"
 # peut aussi se faire avec la commande : awk -F'=' '/VERSION_CODENAME=/{print $2}' /etc/os-release
 
 # on active le mode case insensitive de bash
 shopt -s nocasematch
-if [[ "$DebianRelease" =~ 'buster' ]]; then
+if [[ "$debian_release" =~ 'buster' ]]; then
     buster='1'
 fi
-if [[ "$DebianRelease" =~ 'bullseye' ]]; then
+if [[ "$debian_release" =~ 'bullseye' ]]; then
     bullseye='1'
 fi
 # on déscactive le mode case insensitive de bash
@@ -1023,11 +1023,11 @@ shopt -u nocasematch
 ## désactivation de la mise en veille automatique pendant l'installation
 ##------------------------------------------------------------------------------
 # désactivation de l'écran noir
-$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$Local_User_UID"/bus" dconf write /org/gnome/desktop/session/idle-delay "'uint32 0'"
+$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" dconf write /org/gnome/desktop/session/idle-delay "'uint32 0'"
 # désactivation de la mise en veille automatique sur batterie
-$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$Local_User_UID"/bus" dconf write /org/gnome/settings-daemon/plugins/power/sleep-inactive-battery-type "'nothing'"
+$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" dconf write /org/gnome/settings-daemon/plugins/power/sleep-inactive-battery-type "'nothing'"
 # désactivation de la mise en veille automatique sur cable
-$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$Local_User_UID"/bus" dconf write /org/gnome/settings-daemon/plugins/power/sleep-inactive-ac-type "'nothing'"
+$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" dconf write /org/gnome/settings-daemon/plugins/power/sleep-inactive-ac-type "'nothing'"
 ################################################################################
 
 clear
@@ -1042,18 +1042,18 @@ echo '       ================================================================'
 echo ''
 echo '                   nom du script       : DEBIAN_POSTINSTALL            '
 echo '                   auteur              : NRGLine4Sec                   '
-echo '                   version             : '"$ScriptVersion"
+echo '                   version             : '"$script_version"
 echo '                   lancement du script : sudo bash ng_install.sh       '
-echo '                   version du système  : '"$version_linux" "$version_system"
-echo '                   architecture CPU    : '"$ComputerProcArchitecture"
-echo '                   nombre de coeur CPU : '"$ComputerProc"
-echo '                   adresse IPv4 local  : '"$AddressIPv4Local"
-echo '                   adresse IPv4 extern : '"$AdressIPv4Ext"
-if [ "$AddressIPv6Local" ]; then
-    echo '                   adresse IPv6 local  : '"$AddressIPv6Local"
+echo '                   version du système  : '"$version_linux" "$system_version"
+echo '                   architecture CPU    : '"$computer_proc_architecture"
+echo '                   nombre de coeur CPU : '"$computer_proc"
+echo '                   adresse IPv4 local  : '"$IPv4_local_address"
+echo '                   adresse IPv4 extern : '"$IPv4_external_address"
+if [ "$IPv6_local_address" ]; then
+    echo '                   adresse IPv6 local  : '"$IPv6_local_address"
 fi
-if [ "$AddressIPv6Ext" ]; then
-    echo '                   adresse IPv6 extern : '"$AddressIPv6Ext"
+if [ "$IPv6_external_address" ]; then
+    echo '                   adresse IPv6 extern : '"$IPv6_external_address"
 fi
 echo ''
 echo '       ================================================================'
@@ -1067,7 +1067,8 @@ echo ''
 ## application des mises à jour et modification du sources.list
 ##------------------------------------------------------------------------------
 # suppression du CDROM dans sources.list
-displayandexec "Suppression du CDROM dans sources.list              " "sed -i '/cdrom/d' /etc/apt/sources.list"
+# displayandexec "Suppression du CDROM dans sources.list              " "sed -i '/cdrom/d' /etc/apt/sources.list"
+# cette commande n'est plus nécessaire à partir du moment ou on remet au propre le contenu de /apt/souces.list
 
 # à regarder pour désactiver la recherche de mise à jour qui provoque le lock de pdkg
 # /etc/init.d/unattended-upgrades status
@@ -1076,36 +1077,36 @@ displayandexec "Suppression du CDROM dans sources.list              " "sed -i '/
 # remise au propre de /etc/apt/sources.list
 make_apt_source_list_clean_buster() {
 cat> /etc/apt/sources.list << EOF
-deb http://deb.debian.org/debian/ $DebianRelease main contrib non-free
-deb-src http://deb.debian.org/debian/ $DebianRelease main contrib non-free
+deb http://deb.debian.org/debian/ $debian_release main contrib non-free
+deb-src http://deb.debian.org/debian/ $debian_release main contrib non-free
 
-deb http://security.debian.org/debian-security $DebianRelease/updates main contrib
-deb-src http://security.debian.org/debian-security $DebianRelease/updates main contrib
+deb http://security.debian.org/debian-security $debian_release/updates main contrib
+deb-src http://security.debian.org/debian-security $debian_release/updates main contrib
 
-# "$DebianRelease"-updates, previously known as 'volatile'
-deb http://deb.debian.org/debian/ $DebianRelease-updates main contrib
-deb-src http://deb.debian.org/debian/ $DebianRelease-updates main contrib
+# "$debian_release"-updates, previously known as 'volatile'
+deb http://deb.debian.org/debian/ $debian_release-updates main contrib
+deb-src http://deb.debian.org/debian/ $debian_release-updates main contrib
 
 #backport
-#deb http://deb.debian.org/debian $DebianRelease-backports main contrib non-free
+#deb http://deb.debian.org/debian $debian_release-backports main contrib non-free
 EOF
 }
 # ne pas mettre les variable entre guillemet
 
 make_apt_source_list_clean_bullseye() {
 cat> /etc/apt/sources.list << EOF
-deb http://deb.debian.org/debian $DebianRelease main contrib non-free
-deb-src http://deb.debian.org/debian/ $DebianRelease main contrib non-free
+deb http://deb.debian.org/debian $debian_release main contrib non-free
+deb-src http://deb.debian.org/debian/ $debian_release main contrib non-free
 
-deb http://security.debian.org/debian-security $DebianRelease-security main contrib
-deb-src http://security.debian.org/debian-security $DebianRelease-security main contrib
+deb http://security.debian.org/debian-security $debian_release-security main contrib
+deb-src http://security.debian.org/debian-security $debian_release-security main contrib
 
-# "$DebianRelease"-updates, previously known as 'volatile'
-deb http://deb.debian.org/debian $DebianRelease-updates main contrib
-deb-src http://deb.debian.org/debian $DebianRelease-updates main contrib
+# "$debian_release"-updates, previously known as 'volatile'
+deb http://deb.debian.org/debian $debian_release-updates main contrib
+deb-src http://deb.debian.org/debian $debian_release-updates main contrib
 
 #backport
-#deb http://deb.debian.org/debian $DebianRelease-backports main contrib non-free
+#deb http://deb.debian.org/debian $debian_release-backports main contrib non-free
 EOF
 }
 # ne pas mettre les variable entre guillemet
@@ -1173,16 +1174,16 @@ echo ''
 
 # si besoin de iwlwifi
 lspci -nn | grep 'Network' | grep 'Intel' &> /dev/null
-if [ $? == '0' ]; then
+if [ $? == 0 ]; then
    displayandexec "Installation de firmware-iwlwifi                    " "$AGI firmware-iwlwifi"
 fi
 
 # on active le mode case insensitive de bash
 shopt -s nocasematch
-if [[ "$ComputerProcVendorId" =~ 'amd' ]]; then
+if [[ "$computer_proc_vendor_ID" =~ 'amd' ]]; then
     displayandexec "Installation de amd64-microcode                     " "$AGI amd64-microcode"
 fi
-if [[ "$ComputerProcVendorId" =~ 'intel' ]]; then
+if [[ "$computer_proc_vendor_ID" =~ 'intel' ]]; then
     displayandexec "Installation de intel-microcode                     " "$AGI intel-microcode"
 fi
 # on déscactive le mode case insensitive de bash
@@ -1295,15 +1296,15 @@ displayandexec "Installation de zutils                              " "$AGI zuti
 displayandexec "Installation de zsh                                 " "$AGI zsh"
 displayandexec "Installation de zstd                                " "$AGI zstd"
 install_zfs_buster() {
-  sed -i "s%^#deb http://deb.debian.org/debian "$DebianRelease"-backports%deb http://deb.debian.org/debian "$DebianRelease"-backports%" /etc/apt/sources.list
+  sed -i "s%^#deb http://deb.debian.org/debian "$debian_release"-backports%deb http://deb.debian.org/debian "$debian_release"-backports%" /etc/apt/sources.list
   displayandexec "Installation de ZFS                                 " "\
   $AG update && \
   echo 'zfs-dkms	zfs-dkms/stop-build-for-32bit-kernel	boolean	true' | debconf-set-selections && \
   echo 'zfs-dkms	zfs-dkms/note-incompatible-licenses	note' | debconf-set-selections && \
   echo 'zfs-dkms	zfs-dkms/stop-build-for-unknown-kernel	boolean	true'| debconf-set-selections && \
-  $AG -t "$DebianRelease"-backports install -y zfsutils-linux zfs-dkms zfs-zed && \
+  $AG -t "$debian_release"-backports install -y zfsutils-linux zfs-dkms zfs-zed && \
   modprobe zfs"
-  sed -i "s%^deb http://deb.debian.org/debian "$DebianRelease"-backports%#deb http://deb.debian.org/debian "$DebianRelease"-backports%" /etc/apt/sources.list && \
+  sed -i "s%^deb http://deb.debian.org/debian "$debian_release"-backports%#deb http://deb.debian.org/debian "$debian_release"-backports%" /etc/apt/sources.list && \
   $AG update
 }
 install_zfs_buster
@@ -1471,9 +1472,9 @@ EOF
 }
 # Pour faire les nouvelles install avec freefilesynx :
 # tar xvf "$tmp_dir"/FreeFileSync_"$freefilesync_version"_Linux.tar.gz --directory "$tmp_dir" && \
-# Pour l'instant on est obligé de faire un chown -R $Local_User:$Local_User "$manual_install_dir"/FreeFileSync sinon le bianire ne s'installe pas
+# Pour l'instant on est obligé de faire un chown -R $local_user:$local_user "$manual_install_dir"/FreeFileSync sinon le bianire ne s'installe pas
 # $ExeAsUser "$tmp_dir"/FreeFileSync_11.10_Install.run --accept-license --skip-overview --for-all-users false --directory "$manual_install_dir"/FreeFileSync
-# il faudra potentiellemnt supprimer /home/$Local_User/.profile qui est créé lors de l'install de FreeFileSync et qui permet  priori de renseigner le path pour l'execution des commande qui lancent les binaires de FreeFileSync (/home/$Local_User/.local/bin)
+# il faudra potentiellemnt supprimer /home/$local_user/.profile qui est créé lors de l'install de FreeFileSync et qui permet  priori de renseigner le path pour l'execution des commande qui lancent les binaires de FreeFileSync (/home/$local_user/.local/bin)
 ################################################################################
 
 ################################################################################
@@ -1492,7 +1493,7 @@ rm -rf "$tmp_dir""
 ################################################################################
 ## instalation de Typora
 ##------------------------------------------------------------------------------
-install_typora() {
+install_typora_buster() {
   displayandexec "Installation des dépendances de Typora              " "\
 cat> /etc/apt/sources.list.d/typora.list << 'EOF'
 deb https://typora.io/linux ./
@@ -1574,7 +1575,7 @@ EOF
 
   # test qui vérifie l'activation du SecureBoot
   which mokutil > /dev/null
-  if [ $? == '0' ]; then
+  if [ $? == 0 ]; then
       test_secure_boot="$(mokutil --sb-state | grep 'SecureBoot')"
       if [ "$test_secure_boot" == 'SecureBoot enabled' ]; then
           configure_SecureBoot_params
@@ -1639,7 +1640,7 @@ EOF
 
   # test qui vérifie l'activation du SecureBoot
   which mokutil > /dev/null
-  if [ $? == '0' ]; then
+  if [ $? == 0 ]; then
       test_secure_boot="$(mokutil --sb-state | grep 'SecureBoot')"
       if [ "$test_secure_boot" == 'SecureBoot enabled' ]; then
           configure_SecureBoot_params
@@ -1770,6 +1771,20 @@ $CURL --location 'https://packagecloud.io/asbru-cm/asbru-cm/gpgkey' | apt-key ad
 $AG update && \
 $AGI asbru-cm"
 }
+install_asbru_bullseye() {
+  displayandexec "Installation des dépendances de Asbru               " "$AGI perl libvte-2.91-0 libcairo-perl libglib-perl libpango-perl libsocket6-perl libexpect-perl libnet-proxy-perl libyaml-perl libcrypt-cbc-perl libcrypt-blowfish-perl libgtk3-perl libnet-arp-perl libossp-uuid-perl openssh-client telnet ftp libcrypt-rijndael-perl libxml-parser-perl libcanberra-gtk-module dbus-x11 libx11-guitest-perl libgtk3-simplelist-perl gir1.2-wnck-3.0 gir1.2-vte-2.91"
+  displayandexec "Installation de Asbru                               " "\
+cat> /etc/apt/sources.list.d/asbru-cm_asbru-cm.list << 'EOF'
+# this file was generated by packagecloud.io for
+# the repository at https://packagecloud.io/asbru-cm/asbru-cm
+
+deb [arch=amd64 signed-by=/usr/share/keyrings/asbru-archive-keyring.gpg] https://packagecloud.io/asbru-cm/asbru-cm/debian/ buster main
+#deb-src https://packagecloud.io/asbru-cm/asbru-cm/debian/ buster main
+EOF
+$CURL --location 'https://packagecloud.io/asbru-cm/asbru-cm/gpgkey' | gpg --dearmor --output /usr/share/keyrings/asbru-archive-keyring.gpg && \
+$AG update && \
+$AGI asbru-cm"
+}
 ################################################################################
 
 ################################################################################
@@ -1868,7 +1883,9 @@ install_opensnitch() {
 # c'est pour ça qu'on est obligé d'utiliser "$(sed 's/\.//3' <<< "$opensnitch_latest_version")" pour la deuxième partie de l'URL
 ################################################################################
 
-install_all_manual_install_apps() {
+check_latest_version_manual_install_apps
+
+install_all_manual_install_apps_buster() {
   install_atom
   install_winscp
   install_veracrypt
@@ -1877,7 +1894,7 @@ install_all_manual_install_apps() {
   install_drawio
   install_freefilesync
   install_boostnote
-  install_typora
+  install_typora_buster
   install_virtualbox
   install_keepassxc
   install_mkvtoolnix
@@ -1892,8 +1909,37 @@ install_all_manual_install_apps() {
   install_krita
   install_opensnitch
 }
-check_latest_version_manual_install_apps
-install_all_manual_install_apps
+install_all_manual_install_apps_bullseye() {
+  install_atom
+  install_winscp
+  install_veracrypt
+  install_spotify
+  install_apt-fast
+  install_drawio
+  install_freefilesync
+  install_boostnote
+  install_typora_bullseye
+  install_virtualbox
+  install_keepassxc
+  install_mkvtoolnix
+  install_etcher
+  install_shotcut
+  install_signal
+  install_stacer
+  install_asbru
+  install_bat
+  install_youtubedl
+  install_joplin
+  install_krita
+  install_opensnitch
+}
+
+if [ "$buster" == 1 ]; then
+ install_all_manual_install_apps_buster
+fi
+if [ "$bullseye" == 1 ]; then
+  install_all_manual_install_apps_bullseye
+fi
 ################################################################################
 
 ################################################################################
@@ -1944,11 +1990,11 @@ aisleriot"
 # the UUID is in the metadata.json
 # GnomeShellExtensionUUID='gnome-shell-screenshot@ttll.de'
 # the directory name must be the UUID of the gnome shell extension
-# mkdir -p "$GnomeShellExtensionPath"/"$GnomeShellExtensionUUID"
+# mkdir -p "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID"
 #--------------------------------------------------------------------------------------------------------#
 # with official gnome extension site
 # $WGET 'https://extensions.gnome.org/extension-data/gnome-shell-screenshotttll.de.v40.shell-extension.zip'
-# unzip -q gnome-shell-screenshotttll.de.v40.shell-extension.zip -d "$GnomeShellExtensionPath"/"$GnomeShellExtensionUUID"
+# unzip -q gnome-shell-screenshotttll.de.v40.shell-extension.zip -d "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID"
 #--------------------------------------------------------------------------------------------------------#
 # # with github code source
 # $WGET https://github.com/OttoAllmendinger/gnome-shell-screenshot/archive/v40.zip
@@ -1956,7 +2002,7 @@ aisleriot"
 # cd gnome-shell-screenshot-40
 # make
 # make install
-# unzip -q gnome-shell-screenshot.zip -d $GnomeShellExtensionPath/$GnomeShellExtensionUUID
+# unzip -q gnome-shell-screenshot.zip -d $gnome_shell_extension_path/$GnomeShellExtensionUUID
 #--------------------------------------------------------------------------------------------------------#
 # enable the gnome shell extension
 # $ExeAsUser gnome-shell-extension-tool -e "$GnomeShellExtensionUUID"
@@ -1967,9 +2013,9 @@ aisleriot"
 #Screenshot Tool
 install_GSH_screenshot_tool() {
   local GnomeShellExtensionUUID='gnome-shell-screenshot@ttll.de' && \
-  mkdir -p "$GnomeShellExtensionPath"/"$GnomeShellExtensionUUID" && \
+  mkdir -p "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
   $WGET -P "$tmp_dir" 'https://extensions.gnome.org/extension-data/gnome-shell-screenshotttll.de.v40.shell-extension.zip' && \
-  unzip -q "$tmp_dir"/gnome-shell-screenshotttll.de.v40.shell-extension.zip -d "$GnomeShellExtensionPath"/"$GnomeShellExtensionUUID" && \
+  unzip -q "$tmp_dir"/gnome-shell-screenshotttll.de.v40.shell-extension.zip -d "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
   $ExeAsUser gnome-shell-extension-tool -e "$GnomeShellExtensionUUID"
 }
 install_GSH_system_monitor() {
@@ -2082,8 +2128,8 @@ manual_install_dir='/opt/manual_install'
 AG='apt-get'
 WGET='wget -q'
 CURL='curl --silent --show-error'
-Local_User="$(awk -F':' '/1000/{print $1}' /etc/passwd)"
-ExeAsUser="sudo -u "$Local_User""
+local_user="$(awk -F':' '/1000/{print $1}' /etc/passwd)"
+ExeAsUser="sudo -u "$local_user""
 now="$(date +"%d-%m-%Y")"
 [ -d /var/log/sysupdate ] || mkdir /var/log/sysupdate
 log_file="/var/log/sysupdate/update-"$now".log"
@@ -2244,7 +2290,7 @@ UpdateFreefilesync() {
   rm -rf "$manual_install_dir"/FreeFileSync && \
   local tmp_dir="$(mktemp -d)" && \
   aria2c -d "$tmp_dir" https://freefilesync.org/download/FreeFileSync_"$freefilesync_version"_Linux.tar.gz -o /FreeFileSync_"$freefilesync_version"_Linux.tar.gz && \
-  tar xvf "$tmp_dir"/FreeFileSync_"$freefilesync_version"_Linux.tar.gz --directory "$manual_install_dir" >/dev/null
+  tar xvf "$tmp_dir"/FreeFileSync_"$freefilesync_version"_Linux.tar.gz --directory "$manual_install_dir" > /dev/null
   # rm -rf "$tmp_dir"
 }
 
@@ -2254,9 +2300,9 @@ UpdateKeepassxc() {
   $WGET -P "$manual_install_dir"/KeePassXC/ https://github.com/keepassxreboot/keepassxc/releases/download/"$keepassxc_version"/KeePassXC-"$keepassxc_version"-x86_64.AppImage && \
   chmod +x "$manual_install_dir"/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage && \
   sed -i "s,.*Exec=.*,Exec="$manual_install_dir"/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage,g" /usr/share/applications/keepassxc.desktop && \
-  [ -f /home/"$Local_User"/.config/autostart/keepassxc.desktop ] && sed -i s,.*Exec=.*,Exec="$manual_install_dir"/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage,g /home/"$Local_User"/.config/autostart/keepassxc.desktop && \
+  [ -f /home/"$local_user"/.config/autostart/keepassxc.desktop ] && sed -i s,.*Exec=.*,Exec="$manual_install_dir"/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage,g /home/"$local_user"/.config/autostart/keepassxc.desktop && \
   [ -f "$manual_install_dir"/KeePassXC/keepassxc-logo.svg ] || $WGET -P "$manual_install_dir"/KeePassXC/ 'https://keepassxc.org/images/keepassxc-logo.svg'
-  [ -f /home/"$Local_User"/.config/asbru/asbru.yml ] && sed -i "s,pathcli: /opt/manual_install/KeePassXC/KeePassXC-.*.AppImage,pathcli: "$manual_install_dir"/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage,g" /home/"$Local_User"/.config/asbru/asbru.yml
+  [ -f /home/"$local_user"/.config/asbru/asbru.yml ] && sed -i "s,pathcli: /opt/manual_install/KeePassXC/KeePassXC-.*.AppImage,pathcli: "$manual_install_dir"/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage,g" /home/"$local_user"/.config/asbru/asbru.yml
   # bon a priori la commande précendante ne fonctionne pas, elle change bien la version dans le fichier de conf de asbru, mais cette modification ne permet pas de changer réellement la conf de asbru
 }
 
@@ -2266,7 +2312,7 @@ UpdateJoplin() {
   $WGET -P "$manual_install_dir"/Joplin/ https://github.com/laurent22/joplin/releases/download/v"$joplin_version"/Joplin-"$joplin_version".AppImage && \
   chmod +x "$manual_install_dir"/Joplin/Joplin-"$joplin_version".AppImage && \
   sed -i "s,^Exec=.*,Exec="$manual_install_dir"/Joplin/Joplin-"$joplin_version".AppImage --no-sandbox,g" /usr/share/applications/joplin.desktop && \
-  [ -f /home/"$Local_User"/.config/autostart/joplin.desktop ] && sed -i "s,^Exec=.*,Exec="$manual_install_dir"/Joplin/Joplin-"$joplin_version".AppImage --no-sandbox,g" /home/"$Local_User"/.config/autostart/joplin.desktop && \
+  [ -f /home/"$local_user"/.config/autostart/joplin.desktop ] && sed -i "s,^Exec=.*,Exec="$manual_install_dir"/Joplin/Joplin-"$joplin_version".AppImage --no-sandbox,g" /home/"$local_user"/.config/autostart/joplin.desktop && \
   [ -f "$manual_install_dir"/Joplin/256x256.png ] || $WGET -P "$manual_install_dir"/Joplin/ 'https://raw.githubusercontent.com/laurent22/joplin/master/Assets/LinuxIcons/256x256.png'
 }
 
@@ -2330,7 +2376,7 @@ CheckUpdate() {
   if [ "$retval" ]; then
     AddTo_software_that_needs_updating "$retval"
     UpdateShotcut
-    if [ $? != '0' ]; then
+    if [ $? != 0 ]; then
         AddTo_software_update_failed "$retval"
     fi
     unset retval
@@ -2340,7 +2386,7 @@ CheckUpdate() {
   if [ "$retval" ]; then
     AddTo_software_that_needs_updating "$retval"
     UpdateYoutube-dl
-    if [ $? != '0' ]; then
+    if [ $? != 0 ]; then
       AddTo_software_update_failed "$retval"
     fi
     unset retval
@@ -2350,7 +2396,7 @@ CheckUpdate() {
   if [ "$retval" ]; then
     AddTo_software_that_needs_updating "$retval"
     UpdateBoostnote
-    if [ $? != '0' ]; then
+    if [ $? != 0 ]; then
       AddTo_software_update_failed "$retval"
     fi
     unset retval
@@ -2360,7 +2406,7 @@ CheckUpdate() {
   if [ "$retval" ]; then
     AddTo_software_that_needs_updating "$retval"
     UpdateFreefilesync
-    if [ $? != '0' ]; then
+    if [ $? != 0 ]; then
         AddTo_software_update_failed "$retval"
     fi
     unset retval
@@ -2370,7 +2416,7 @@ CheckUpdate() {
   if [ "$retval" ]; then
     AddTo_software_that_needs_updating "$retval"
     UpdateKeepassxc
-    if [ $? != '0' ]; then
+    if [ $? != 0 ]; then
         AddTo_software_update_failed "$retval"
     fi
     unset retval
@@ -2380,7 +2426,7 @@ CheckUpdate() {
   if [ "$retval" ]; then
     AddTo_software_that_needs_updating "$retval"
     UpdateJoplin
-    if [ $? != '0' ]; then
+    if [ $? != 0 ]; then
         AddTo_software_update_failed "$retval"
     fi
     unset retval
@@ -2390,7 +2436,7 @@ CheckUpdate() {
   if [ "$retval" ]; then
     AddTo_software_that_needs_updating "$retval"
     UpdateStacer
-    if [ $? != '0' ]; then
+    if [ $? != 0 ]; then
         AddTo_software_update_failed "$retval"
     fi
     unset retval
@@ -2400,7 +2446,7 @@ CheckUpdate() {
   if [ "$retval" ]; then
     AddTo_software_that_needs_updating "$retval"
     UpdateBat
-    if [ $? != '0' ]; then
+    if [ $? != 0 ]; then
         AddTo_software_update_failed "$retval"
     fi
     unset retval
@@ -2410,7 +2456,7 @@ CheckUpdate() {
   if [ "$retval" ]; then
     AddTo_software_that_needs_updating "$retval"
     UpdateKrita
-    if [ $? != '0' ]; then
+    if [ $? != 0 ]; then
         AddTo_software_update_failed "$retval"
     fi
     unset retval
@@ -2420,7 +2466,7 @@ CheckUpdate() {
   if [ "$retval" ]; then
     AddTo_software_that_needs_updating "$retval"
     UpdateOpensnitch
-    if [ $? != '0' ]; then
+    if [ $? != 0 ]; then
         AddTo_software_update_failed "$retval"
     fi
     unset retval
@@ -2428,7 +2474,7 @@ CheckUpdate() {
 
 # Potentiellement remplacer la forme :
 # UpdateShotcut
-# if [ $? != '0' ]; then
+# if [ $? != 0 ]; then
 #     AddTo_software_update_failed "$retval"
 # fi
 # par UpdateShotcut || AddTo_software_update_failed "$retval"
@@ -2441,7 +2487,7 @@ else
   echo 'Les logciels suivants nécessitent une mise à jour :' "${software_that_needs_updating[*]}"
 fi
 
-if [ "${#software_update_failed[*]}" != '0' ]; then
+if [ "${#software_update_failed[*]}" != 0 ]; then
   echo 'Les logiciels suivants ne se sont pas mis à jour correctement :' "${software_update_failed[*]}"
 else
   echo 'Les logiciels se sont mis à jour correctement.'
@@ -2467,17 +2513,17 @@ install_check_backport_update() {
 cat> /usr/bin/check_backport_update << 'EOF'
 #!/bin/bash
 
-DebianRelease="$(lsb_release -sc)"
+debian_release="$(lsb_release -sc)"
 list_backport="$(dpkg-query -W | awk '/~bpo/{print $1}')"
 
-sudo sed -i "s%^#deb http://deb.debian.org/debian "$DebianRelease"-backports%deb http://deb.debian.org/debian "$DebianRelease"-backports%" /etc/apt/sources.list
+sudo sed -i "s%^#deb http://deb.debian.org/debian "$debian_release"-backports%deb http://deb.debian.org/debian "$debian_release"-backports%" /etc/apt/sources.list
 sudo apt-get update > /dev/null
 
 while read package; do
-  sudo apt-get upgrade -s -t "$DebianRelease"-backports "$package" | grep 'est déjà la version la plus récente'
+  sudo apt-get upgrade -s -t "$debian_release"-backports "$package" | grep 'est déjà la version la plus récente'
 done <<< "$list_backport"
 
-sudo sed -i "s%^deb http://deb.debian.org/debian "$DebianRelease"-backports%#deb http://deb.debian.org/debian "$DebianRelease"-backports%" /etc/apt/sources.list
+sudo sed -i "s%^deb http://deb.debian.org/debian "$debian_release"-backports%#deb http://deb.debian.org/debian "$debian_release"-backports%" /etc/apt/sources.list
 sudo apt-get update > /dev/null
 
 exit 0
@@ -2566,11 +2612,11 @@ chmod +x /usr/bin/spyme"
 ##------------------------------------------------------------------------------
 install_appairmebt() {
 cat> /usr/bin/appairmebt  << 'EOF'
-gdbus call --session --dest org.gnome.SettingsDaemon.Rfkill --object-path /org/gnome/SettingsDaemon/Rfkill --method org.freedesktop.DBus.Properties.Set "org.gnome.SettingsDaemon.Rfkill" "BluetoothAirplaneMode" "<false>" >/dev/null
-bluetoothctl select AA:AA:AA:AA:AA:AA >/dev/null
-bluetoothctl power on >/dev/null
-bluetoothctl trust BB:BB:BB:BB:BB:BB >/dev/null
-bluetoothctl connect BB:BB:BB:BB:BB:BB >/dev/null
+gdbus call --session --dest org.gnome.SettingsDaemon.Rfkill --object-path /org/gnome/SettingsDaemon/Rfkill --method org.freedesktop.DBus.Properties.Set "org.gnome.SettingsDaemon.Rfkill" "BluetoothAirplaneMode" "<false>" > /dev/null
+bluetoothctl select AA:AA:AA:AA:AA:AA > /dev/null
+bluetoothctl power on > /dev/null
+bluetoothctl trust BB:BB:BB:BB:BB:BB > /dev/null
+bluetoothctl connect BB:BB:BB:BB:BB:BB > /dev/null
 EOF
 displayandexec "Installation du script appairmebt                   " "chmod +x /usr/bin/appairmebt"
 
@@ -2631,7 +2677,7 @@ displayandexec "Installation du script appairmebt                   " "chmod +x 
 ##------------------------------------------------------------------------------
 install_desactivebt() {
 cat> /usr/bin/desactivebt  << 'EOF'
-gdbus call --session --dest org.gnome.SettingsDaemon.Rfkill --object-path /org/gnome/SettingsDaemon/Rfkill --method org.freedesktop.DBus.Properties.Set "org.gnome.SettingsDaemon.Rfkill" "BluetoothAirplaneMode" "<true>" >/dev/null
+gdbus call --session --dest org.gnome.SettingsDaemon.Rfkill --object-path /org/gnome/SettingsDaemon/Rfkill --method org.freedesktop.DBus.Properties.Set "org.gnome.SettingsDaemon.Rfkill" "BluetoothAirplaneMode" "<true>" > /dev/null
 EOF
 displayandexec "Installation du script desactivebt                  " "chmod +x /usr/bin/desactivebt"
 }
@@ -2677,7 +2723,7 @@ sed -E -i 's/^#PermitRootLogin/PermitRootLogin/' /etc/ssh/sshd_config
 ## configuration de SSHFS
 ##------------------------------------------------------------------------------
 # création du répertoire qui servira de point de montage pour SSHFS
-[ -d /home/"$Local_User"/.mnt/sshfs/ ] || $ExeAsUser mkdir -p /home/"$Local_User"/.mnt/sshfs/
+[ -d /home/"$local_user"/.mnt/sshfs/ ] || $ExeAsUser mkdir -p /home/"$local_user"/.mnt/sshfs/
 ################################################################################
 
 ################################################################################
@@ -2702,19 +2748,26 @@ echo '
 ################################################################################
 
 ################################################################################
+## configuration de /etc/inputrc
+##------------------------------------------------------------------------------
+# # do not bell on tab-completion
+sed -i 's/#set bell-style none/set bell-style none/' /etc/inputrc
+################################################################################
+
+################################################################################
 ## configuration de stacer
 ##------------------------------------------------------------------------------
-[ -d /home/"$Local_User"/.config/stacer/ ] || $ExeAsUser mkdir /home/"$Local_User"/.config/stacer/ && \
+[ -d /home/"$local_user"/.config/stacer/ ] || $ExeAsUser mkdir /home/"$local_user"/.config/stacer/ && \
 $ExeAsUser echo '[General]
 AppQuitDialogDontAsk=true
-Language=fr' > /home/"$Local_User"/.config/stacer/settings.ini
+Language=fr' > /home/"$local_user"/.config/stacer/settings.ini
 ################################################################################
 
 ################################################################################
 ## configuration de Etcher
 ##------------------------------------------------------------------------------
-[ -d /home/"$Local_User"/.config/balena-etcher-electron/ ] || $ExeAsUser mkdir /home/"$Local_User"/.config/balena-etcher-electron/ && \
-$ExeAsUser cat> /home/"$Local_User"/.config/balena-etcher-electron/config.json  << 'EOF'
+[ -d /home/"$local_user"/.config/balena-etcher-electron/ ] || $ExeAsUser mkdir /home/"$local_user"/.config/balena-etcher-electron/ && \
+$ExeAsUser cat> /home/"$local_user"/.config/balena-etcher-electron/config.json  << 'EOF'
 {
   "errorReporting": false,
   "updatesEnabled": false,
@@ -2738,8 +2791,8 @@ sed -i 's/WEB_CMD=\"\/bin\/false\"/WEB_CMD=\"\"/' /etc/rkhunter.conf
 ## configuration des fichiers template
 ##------------------------------------------------------------------------------
 create_template_for_new_file() {
-  [ -d /home/"$Local_User"/Modèles/ ] && template_dir="/home/"$Local_User"/Modèles/"
-  [ -d /home/"$Local_User"/Templates/ ] && template_dir="/home/"$Local_User"/Templates/"
+  [ -d /home/"$local_user"/Modèles/ ] && template_dir="/home/"$local_user"/Modèles/"
+  [ -d /home/"$local_user"/Templates/ ] && template_dir="/home/"$local_user"/Templates/"
   touch ""$template_dir"/Fichier Texte.txt" && \
   touch ""$template_dir"/Document ODT.txt" && \
   unoconv -f odt ""$template_dir"/Document ODT.txt" && \
@@ -2766,10 +2819,10 @@ sed -i --follow-symlinks '/^export LC_ALL/a export GTK_THEME=Adwaita' /usr/bin/l
 # Exec=env GTK_THEME=Adwaita:light libreoffice --writer
 
 # disable java settings in LibreOffice
-# $ExeAsUser sed -i 's%<enabled xsi:nil="false">true</enabled>%<enabled xsi:nil="false">false</enabled>%g' /home/"$Local_User"/.config/libreoffice/4/user/config/javasettings_Linux_X86_64.xml
+# $ExeAsUser sed -i 's%<enabled xsi:nil="false">true</enabled>%<enabled xsi:nil="false">false</enabled>%g' /home/"$local_user"/.config/libreoffice/4/user/config/javasettings_Linux_X86_64.xml
 # il faut potentiellement le mettre comme ça :
-[ -f /home/"$Local_User"/.config/libreoffice/4/user/config/javasettings_Linux_X86_64.xml ] && \
-$ExeAsUser sed -i 's%<enabled xsi:nil="true"></enabled>%<enabled xsi:nil="false">false</enabled>%g' /home/"$Local_User"/.config/libreoffice/4/user/config/javasettings_Linux_X86_64.xml
+[ -f /home/"$local_user"/.config/libreoffice/4/user/config/javasettings_Linux_X86_64.xml ] && \
+$ExeAsUser sed -i 's%<enabled xsi:nil="true"></enabled>%<enabled xsi:nil="false">false</enabled>%g' /home/"$local_user"/.config/libreoffice/4/user/config/javasettings_Linux_X86_64.xml
 
 # ref : https://ask.libreoffice.org/en/question/167622/how-to-disable-java-in-configuration-files/
 # Pour aider à chercher les fichiers concernés par la modification de la configuration
@@ -2782,12 +2835,12 @@ sed -i 's/Logo=1/Logo=0/g' /etc/libreoffice/sofficerc
 
 # cette configuration n'existe pas dans le fichier après une install, il faut donc trouver le moyen de l'ajouter en insérant la ligne
 # Pour changer la valeur du niveau de sécurité des macros de Elevé à Très Elevé
-[ -f /home/"$Local_User"/.config/libreoffice/4/user/registrymodifications.xcu ] && \
-$ExeAsUser sed -i 's%<item oor:path="/org.openoffice.Office.Common/Security/Scripting"><prop oor:name="MacroSecurityLevel" oor:op="fuse"><value>2</value></prop></item>%<item oor:path="/org.openoffice.Office.Common/Security/Scripting"><prop oor:name="MacroSecurityLevel" oor:op="fuse"><value>3</value></prop></item>%g' /home/"$Local_User"/.config/libreoffice/4/user/registrymodifications.xcu
+[ -f /home/"$local_user"/.config/libreoffice/4/user/registrymodifications.xcu ] && \
+$ExeAsUser sed -i 's%<item oor:path="/org.openoffice.Office.Common/Security/Scripting"><prop oor:name="MacroSecurityLevel" oor:op="fuse"><value>2</value></prop></item>%<item oor:path="/org.openoffice.Office.Common/Security/Scripting"><prop oor:name="MacroSecurityLevel" oor:op="fuse"><value>3</value></prop></item>%g' /home/"$local_user"/.config/libreoffice/4/user/registrymodifications.xcu
 # rajouter || créer le contenu du fichier avec un cat EOF
 
 # Pour insérer la ligne lorsque le fichier existe :
-# sed -i '\%</oor:items>%i <item oor:path="/org.openoffice.Office.Common/Security/Scripting"><prop oor:name="MacroSecurityLevel" oor:op="fuse"><value>3</value></prop></item>' /home/"$Local_User"/.config/libreoffice/4/user/registrymodifications.xcu
+# sed -i '\%</oor:items>%i <item oor:path="/org.openoffice.Office.Common/Security/Scripting"><prop oor:name="MacroSecurityLevel" oor:op="fuse"><value>3</value></prop></item>' /home/"$local_user"/.config/libreoffice/4/user/registrymodifications.xcu
 ################################################################################
 
 ################################################################################
@@ -2800,8 +2853,8 @@ sed -i 's/# set linenumbers/set linenumbers/g' /etc/nanorc
 ################################################################################
 ## configuration de atom
 ##------------------------------------------------------------------------------
-[ -d /home/"$Local_User"/.atom/ ] || $ExeAsUser mkdir /home/"$Local_User"/.atom/ && \
-$ExeAsUser cat> /home/"$Local_User"/.atom/config.cson  << 'EOF'
+[ -d /home/"$local_user"/.atom/ ] || $ExeAsUser mkdir /home/"$local_user"/.atom/ && \
+$ExeAsUser cat> /home/"$local_user"/.atom/config.cson  << 'EOF'
 "*":
   autosave:
     enabled: true
@@ -2830,9 +2883,9 @@ $ExeAsUser apm install tab-title"
 ################################################################################
 ## configuration de typora
 ##------------------------------------------------------------------------------
-[ -d /home/"$Local_User"/.config/Typora/ ] || $ExeAsUser mkdir /home/"$Local_User"/.config/Typora/ && \
-$ExeAsUser echo '7b22696e697469616c697a655f766572223a22302e392e3738222c226c696e655f656e64696e675f63726c66223a66616c73652c227072654c696e65627265616b4f6e4578706f7274223a747275652c2275756964223a2237346265383439362d343239372d343362382d616633632d336439343463646432376439222c227374726963745f6d6f6465223a747275652c22636f70795f6d61726b646f776e5f62795f64656661756c74223a747275652c226261636b67726f756e64436f6c6f72223a2223333633423430222c227468656d65223a226e696768742e637373222c22736964656261725f746162223a22222c2273656e645f75736167655f696e666f223a66616c73652c22656e61626c654175746f53617665223a747275652c226c617374436c6f736564426f756e6473223a7b2266756c6c73637265656e223a66616c73652c226d6178696d697a6564223a747275657d7d' > /home/"$Local_User"/.config/Typora/profile.data
-# la configuration des préférences de Typora ne peut se faire que graphiquement le seul moyen de contourner ce problème est de configurer graphiquement les préférences et de récupérer le contenu du fichier /home/$Local_User/.config/Typora/profile.data
+[ -d /home/"$local_user"/.config/Typora/ ] || $ExeAsUser mkdir /home/"$local_user"/.config/Typora/ && \
+$ExeAsUser echo '7b22696e697469616c697a655f766572223a22302e392e3738222c226c696e655f656e64696e675f63726c66223a66616c73652c227072654c696e65627265616b4f6e4578706f7274223a747275652c2275756964223a2237346265383439362d343239372d343362382d616633632d336439343463646432376439222c227374726963745f6d6f6465223a747275652c22636f70795f6d61726b646f776e5f62795f64656661756c74223a747275652c226261636b67726f756e64436f6c6f72223a2223333633423430222c227468656d65223a226e696768742e637373222c22736964656261725f746162223a22222c2273656e645f75736167655f696e666f223a66616c73652c22656e61626c654175746f53617665223a747275652c226c617374436c6f736564426f756e6473223a7b2266756c6c73637265656e223a66616c73652c226d6178696d697a6564223a747275657d7d' > /home/"$local_user"/.config/Typora/profile.data
+# la configuration des préférences de Typora ne peut se faire que graphiquement le seul moyen de contourner ce problème est de configurer graphiquement les préférences et de récupérer le contenu du fichier /home/$local_user/.config/Typora/profile.data
 ################################################################################
 
 ################################################################################
@@ -2851,7 +2904,7 @@ $ExeAsUser echo '7b22696e697469616c697a655f766572223a22302e392e3738222c226c696e6
 # ---
 # >         <LastOnlineCheck>51715</LastOnlineCheck>
 # ensuite on fait un sed pour changer avec la valeur qui permet de désactiver la recherche des mises à jours une fois par semaine
-# $ExeAsUser sed -i 's/.*\<LastOnlineCheck\>.*/        \<LastOnlineCheck\>51715\<\/LastOnlineCheck\>/g' /home/$Local_User/.config/FreeFileSync/GlobalSettings.xml
+# $ExeAsUser sed -i 's/.*\<LastOnlineCheck\>.*/        \<LastOnlineCheck\>51715\<\/LastOnlineCheck\>/g' /home/$local_user/.config/FreeFileSync/GlobalSettings.xml
 # Le fait de remplacer la valeur par 0 ne change rien, en tout cas cela ne décoche pas le case du check des mises à jour
 # l'action de sed ne peut se faire qu'apèrs que FreeFileSync ne se soit executer en moins une fois, car le fichier de configuration nh'existe pas avant cela
 ################################################################################
@@ -2862,8 +2915,8 @@ $ExeAsUser echo '7b22696e697469616c697a655f766572223a22302e392e3738222c226c696e6
 # début de réflexion pour faire des confs sur des apps qui utilise une base de donnée pour stocker la conf
 # apt-get install -y sqlite3 && sqlite3 .config/joplin-desktop/database.sqlite "select * from settings"
 
-[ -d /home/$Local_User/.config/Joplin/ ] || $ExeAsUser mkdir /home/$Local_User/.config/Joplin/ && \
-$ExeAsUser cat> /home/$Local_User/.config/Joplin/Preferences << 'EOF'
+[ -d /home/$local_user/.config/Joplin/ ] || $ExeAsUser mkdir /home/$local_user/.config/Joplin/ && \
+$ExeAsUser cat> /home/$local_user/.config/Joplin/Preferences << 'EOF'
 {"spellcheck":{"dictionaries":["fr"],"dictionary":""}}
 EOF
 ################################################################################
@@ -2871,15 +2924,15 @@ EOF
 ################################################################################
 ## configuration de asbru
 ##------------------------------------------------------------------------------
-# La configuration de asbru est situé dans /home/$Local_User/.config/asbru/asbru.yml
+# La configuration de asbru est situé dans /home/$local_user/.config/asbru/asbru.yml
 # La configuration est beaucoup trop longue et sensible pour pouvoir la mettre dans ce script, il vaut mieux faire un import/export de la conf
 ################################################################################
 
 ################################################################################
 ## configuration de Handbrake
 ##------------------------------------------------------------------------------
-[ -d /home/"$Local_User"/.config/ghb/ ] || $ExeAsUser mkdir /home/"$Local_User"/.config/ghb/ && \
-$ExeAsUser sed -E -i '/("UseM4v":) (false|true)/{s/true/false/;}' /home/"$Local_User"/.config/ghb/preferences.json
+[ -d /home/"$local_user"/.config/ghb/ ] || $ExeAsUser mkdir /home/"$local_user"/.config/ghb/ && \
+$ExeAsUser sed -E -i '/("UseM4v":) (false|true)/{s/true/false/;}' /home/"$local_user"/.config/ghb/preferences.json
 # permet de décocher la case "Utiliser l'extension de fichier compatible iPod/iTunes (.m4v) pour MP4" (Fichier -> Préférences -> Général)
 # le fichier de conf n'existe pas tant que handbrake n'a pas été lancé
 # donc il faut soit trouver un moyen de lancer handbrake silencieusement soit copier coller la conf entière dans le fichier directement
@@ -2887,16 +2940,16 @@ $ExeAsUser sed -E -i '/("UseM4v":) (false|true)/{s/true/false/;}' /home/"$Local_
 ################################################################################
 
 # ajout du dossier partagé pour VirtualBox
-[ -d /home/"$Local_User"/dossier_partage_VM/ ] || $ExeAsUser mkdir /home/"$Local_User"/dossier_partage_VM/
+[ -d /home/"$local_user"/dossier_partage_VM/ ] || $ExeAsUser mkdir /home/"$local_user"/dossier_partage_VM/
 
 # ajout du dossier autostart pour les apps qui se lance au démarage
-[ -d /home/"$Local_User"/.config/autostart/ ] || $ExeAsUser mkdir /home/"$Local_User"/.config/autostart/
+[ -d /home/"$local_user"/.config/autostart/ ] || $ExeAsUser mkdir /home/"$local_user"/.config/autostart/
 
 ################################################################################
 ## configuration des applis qui doivent se lancer au démarage
 ##------------------------------------------------------------------------------
 #signal
-$ExeAsUser cat> /home/"$Local_User"/.config/autostart/signal.desktop << 'EOF'
+$ExeAsUser cat> /home/"$local_user"/.config/autostart/signal.desktop << 'EOF'
 [Desktop Entry]
 Name=Signal
 Comment=Private messaging from your desktop
@@ -2909,7 +2962,7 @@ Categories=Network;InstantMessaging;Chat;
 EOF
 
 #terminal
-$ExeAsUser cat>  /home/"$Local_User"/.config/autostart/terminal.desktop << 'EOF'
+$ExeAsUser cat>  /home/"$local_user"/.config/autostart/terminal.desktop << 'EOF'
 [Desktop Entry]
 Name=Terminal
 Comment=lancement du terminal au démarage
@@ -2920,7 +2973,7 @@ Hidden=false
 EOF
 
 # boostnote
-# $ExeAsUser cat>  /home/"$Local_User"/.config/autostart/boostnote.desktop << 'EOF'
+# $ExeAsUser cat>  /home/"$local_user"/.config/autostart/boostnote.desktop << 'EOF'
 # [Desktop Entry]
 # Name=Boostnote
 # Comment=lancement de Boostnote au démarage
@@ -2931,7 +2984,7 @@ EOF
 # EOF
 
 #keepassxc
-$ExeAsUser cat> /home/"$Local_User"/.config/autostart/keepassxc.desktop << EOF
+$ExeAsUser cat> /home/"$local_user"/.config/autostart/keepassxc.desktop << EOF
 [Desktop Entry]
 Name=KeePassXC
 Comment=Password Manager
@@ -2942,7 +2995,7 @@ Hidden=false
 EOF
 
 #joplin
-$ExeAsUser cat> /home/"$Local_User"/.config/autostart/joplin.desktop << EOF
+$ExeAsUser cat> /home/"$local_user"/.config/autostart/joplin.desktop << EOF
 [Desktop Entry]
 Name=Joplin
 Comment=Markdown Editor
@@ -2958,8 +3011,8 @@ EOF
 ################################################################################
 ## configuration de KeePassXC
 ##------------------------------------------------------------------------------
-[ -d /home/"$Local_User"/.config/keepassxc/ ] || $ExeAsUser mkdir /home/"$Local_User"/.config/keepassxc/ && \
-$ExeAsUser cat> /home/"$Local_User"/.config/keepassxc/keepassxc.ini << 'EOF'
+[ -d /home/"$local_user"/.config/keepassxc/ ] || $ExeAsUser mkdir /home/"$local_user"/.config/keepassxc/ && \
+$ExeAsUser cat> /home/"$local_user"/.config/keepassxc/keepassxc.ini << 'EOF'
 [General]
 AutoReloadOnChange=true
 AutoSaveAfterEveryChange=true
@@ -3032,9 +3085,9 @@ EOF
 ################################################################################
 ## configuration de audacity
 ##------------------------------------------------------------------------------
-# sed -i '/Enabled=1/a [GUI]' /home/$Local_User/.audacity-data/audacity.cfg
-# sed -i '/[GUI]/a ShowSplashScreen=0' /home/$Local_User/.audacity-data/audacity.cfg
-# on est obligé de lancer audacity pour que le repertoire /home/$Local_User/.audacity-data/ soit créé ainsi que les fichiers qu'il contient
+# sed -i '/Enabled=1/a [GUI]' /home/$local_user/.audacity-data/audacity.cfg
+# sed -i '/[GUI]/a ShowSplashScreen=0' /home/$local_user/.audacity-data/audacity.cfg
+# on est obligé de lancer audacity pour que le repertoire /home/$local_user/.audacity-data/ soit créé ainsi que les fichiers qu'il contient
 # une solution pourrait être d'utiliser la commande suivante :
 # timeout 10 bash -c "audacity"
 # normallement 10 secondes, c'est suffisant pour que audacity se lance complétement
@@ -3090,7 +3143,7 @@ had-bluetooth-devices-setup=false
 sort-directories-first=true
 show-hidden=true
 EOF
-$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$Local_User_UID"/bus" dconf load /org/ < tmp_conf_dconf
+$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" dconf load /org/ < tmp_conf_dconf
 # ref : https://superuser.com/questions/726550/use-dconf-or-comparable-to-set-configs-for-another-user/1265786#1265786
 
 
@@ -3098,7 +3151,7 @@ CustomGnomeShortcut() {
 	local name="$1"
 	local command="$2"
 	local shortcut="$3"
-	local value="$($ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$Local_User_UID"/bus" gsettings get org.gnome.settings-daemon.plugins.media-keys custom-keybindings)"
+	local value="$($ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gsettings get org.gnome.settings-daemon.plugins.media-keys custom-keybindings)"
 	local test="$(echo "$value" | sed "s/\['//;s/', '/,/g;s/'\]//" - | tr ',' '\n' | grep -oP ".*/custom\K[0-9]*(?=/$)")"
 
 	if [ "$(echo "$value" | grep -o "@as")" = "@as" ]; then
@@ -3112,17 +3165,17 @@ CustomGnomeShortcut() {
 			fi
 			i=$(echo 1+$i | bc);
 		done
-		local value_new="$($ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$Local_User_UID"/bus" gsettings get org.gnome.settings-daemon.plugins.media-keys custom-keybindings | sed "s#']\$#', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom${num}/']#" -)"
+		local value_new="$($ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gsettings get org.gnome.settings-daemon.plugins.media-keys custom-keybindings | sed "s#']\$#', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom${num}/']#" -)"
 	fi
 
-	$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$Local_User_UID"/bus" gsettings set org.gnome.settings-daemon.plugins.media-keys custom-keybindings "$value_new"
-	$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$Local_User_UID"/bus" gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom${num}/ name "$name"
-	$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$Local_User_UID"/bus" gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom${num}/ command "$command"
-	$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$Local_User_UID"/bus" gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom${num}/ binding "$shortcut"
+	$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gsettings set org.gnome.settings-daemon.plugins.media-keys custom-keybindings "$value_new"
+	$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom${num}/ name "$name"
+	$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom${num}/ command "$command"
+	$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom${num}/ binding "$shortcut"
 }
 
 CustomGnomeShortcut "Ouvrir le terminal" "gnome-terminal" "<Super>r"
-CustomGnomeShortcut "Ouvrir l explorateur de fichier" "nautilus -w /home/$Local_User/" "<Super>e"
+CustomGnomeShortcut "Ouvrir l explorateur de fichier" "nautilus -w /home/$local_user/" "<Super>e"
 CustomGnomeShortcut "Appairer automatiquement avec le peripherique bluetooth" "/usr/bin/appairmebt" "<Super><Alt>b"
 CustomGnomeShortcut "désactiver le bluetooth" "/usr/bin/desactivebt" "<Primary><Alt>b"
 
@@ -3144,7 +3197,7 @@ CustomGnomeShortcut "désactiver le bluetooth" "/usr/bin/desactivebt" "<Primary>
 ## configuration des MIME types
 ##------------------------------------------------------------------------------
 # bien faire attention au point virgule, présent dans "Added Associations" mais pas dans "Default Applications"
-$ExeAsUser cat> /home/"$Local_User"/.config/mimeapps.list  << 'EOF'
+$ExeAsUser cat> /home/"$local_user"/.config/mimeapps.list  << 'EOF'
 [Added Associations]
 application/octet-stream=atom.desktop;
 application/vnd.jgraph.mxfile=drawio.desktop;
@@ -3256,7 +3309,7 @@ configure_for_perso() {
 # command='/usr/bin/redemarerecran'
 # name="réactiver l écran du PC avec les paramètres à gauche de l écran principal"
 # EOF
-#     $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$Local_User_UID/bus" dconf load /org/ < tmp_conf_dconf_perso
+#     $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$local_user_UID/bus" dconf load /org/ < tmp_conf_dconf_perso
 
   install_redemarerecran() {
   #redemarerecran
@@ -3299,7 +3352,7 @@ chmod 4755 /opt/balenaEtcher/chrome-sandbox
 ##------------------------------------------------------------------------------
 
 # alias for the user
-$ExeAsUser cat>> /home/"$Local_User"/.bashrc <<EOF
+$ExeAsUser cat>> /home/"$local_user"/.bashrc <<EOF
 
 # alias perso
 alias ll='ls --color=always -l -h'
@@ -3358,11 +3411,11 @@ alias bat='bat -pp'
 alias free='free -ht'
 HISTTIMEFORMAT=\"%Y/%m/%d %T   \"
 EOF
-displayandexec "Configuration du bashrc                             " "stat /root/.bashrc && stat /home/$Local_User/.bashrc"
+displayandexec "Configuration du bashrc                             " "stat /root/.bashrc && stat /home/$local_user/.bashrc"
 ################################################################################
 
 # Commande temporaire pour éviter que des fichiers de /home/user/.config n'appartienent à root lors de l'install, sans qu'on comprenne bien pourquoi (executé par ExeAsUser)
-chown -R "$Local_User":"$Local_User" /home/"$Local_User"/.config/
+chown -R "$local_user":"$local_user" /home/"$local_user"/.config/
 
 ################################################################################
 ## Mise à jour de la base de donnée de rkhunter
@@ -3383,8 +3436,8 @@ displayandexec "Mise à jour de la base de donnée de rkhunter        " "rkhunte
 backup_LUKS_header() {
 luks_partition="$(lsblk --fs --list | grep 'crypto_LUKS' | awk '{print $1}')"
 # peut aussi se faire en une commande : lsblk --fs --list | awk '/crypto_LUKS/{print $1}'
-$ExeAsUser mkdir --parents /home/"$Local_User"/backup/
-cryptsetup luksHeaderBackup /dev/"$luks_partition" --header-backup-file /home/"$Local_User"/backup/LUKS_Header_Backup.img
+$ExeAsUser mkdir --parents /home/"$local_user"/backup/
+cryptsetup luksHeaderBackup /dev/"$luks_partition" --header-backup-file /home/"$local_user"/backup/LUKS_Header_Backup.img
 }
 backup_LUKS_header
 ################################################################################
@@ -3411,8 +3464,8 @@ ufw --force enable"
 ################################################################################
 
 #réapplication de la cond par défaut pour la mise en veille automatique
-$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$Local_User_UID"/bus" dconf write /org/gnome/settings-daemon/plugins/power/sleep-inactive-battery-type "'suspend'"
-$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$Local_User_UID"/bus" dconf write /org/gnome/settings-daemon/plugins/power/sleep-inactive-ac-type "'suspend'"
+$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" dconf write /org/gnome/settings-daemon/plugins/power/sleep-inactive-battery-type "'suspend'"
+$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" dconf write /org/gnome/settings-daemon/plugins/power/sleep-inactive-ac-type "'suspend'"
 
 # remise au propre du fichier de configuration DNS
 rm -rf /etc/resolv.conf
