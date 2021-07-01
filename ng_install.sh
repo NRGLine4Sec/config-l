@@ -572,6 +572,8 @@
 # - ils ont changer l'install de FreeFileSync avec maintenant un binaire pour l'install (indice : bat -A /opt/manual_install/FreeFileSync_11.6_Install.run | more)
 # - regarder pour installer timeshift (sauvegarde incrémentale de l'OS) (l'installer depuis les releases https://github.com/teejee2008/Timeshift/releases car trop vieux depuis les dépos de debian) (c'est un .deb)
 # - potentiellement intégrer l'installation de l'outil xdotool
+# - potentiellement instaler le paquet sysstat
+# - potentiellement installer le paquet iozone3
 ################################################################################
 
 ################################################################################
@@ -989,8 +991,12 @@ AGI='apt-get install -y'
 AG='apt-get'
 WGET='wget -q'
 computer_proc_architecture="$(uname -r | grep -Po '.*-\K.*')" # peut aussi se faire avec : "$(uname -r | /usr/bin/cut -d '-' -f 3)"
-network_int_name="$(ip addr | grep 'UP' | cut -d " " -f 2 | cut -d ":" -f 1 | grep 'en')"
+network_int_name="$(awk 'NR==1,/default/ {print $5}' <(ip route))"
+# on remplace l'ancienne commande par celle qui prend le retour de ip route car celle ci permet d'éviter les cas ou il y a plusieurs interfaces qui commencent par en et de prendre en priorité celle qui est utilisé pour se connecter à la default gateway, en admettant donc que ce sois l'interface principale. Cela permet aussi de récupérer le nom de l'interface lorsque c'est une interface wifi
+# ancienne commande qui faisait le travail : $(ip addr | grep 'UP' | cut -d " " -f 2 | cut -d ":" -f 1 | grep 'en')
 # peut potentillement se faire aussi avec ip addr | awk -F':' '/UP/ && / en/ {sub(/[[:blank:]]/,""); print $2}'
+# une autre commande qui permet de se passer de la commande ip en utilisant uniquement les infos lspci et depuis /sys
+# pci=`lspci  | awk '/Ethernet/{print $1}'`; find /sys/class/net ! -type d | xargs --max-args=1 realpath  | awk -v pciid=$pci -F\/ '{if($0 ~ pciid){print $NF}}'
 IPv4_local_address="$(ip -o -4 addr list "$network_int_name" | awk '{print $4}' | cut -d/ -f1)"
 IPv4_external_address="$(GET http://ipinfo.io/ip)"
 #autres méthodes :
@@ -1289,6 +1295,7 @@ displayandexec "Installation de wine32                              " "dpkg --ad
 displayandexec "Installation de wipe                                " "$AGI wipe"
 displayandexec "Installation de wireshark                           " "$AGI wireshark"
 displayandexec "Installation de xinput                              " "$AGI xinput"
+displayandexec "Installation de xorriso                             " "$AGI xorriso"
 displayandexec "Installation de yersinia                            " "$AGI yersinia"
 displayandexec "Installation de zenmap                              " "$AGI zenmap" # zenmap n'est pas dispo dans debian testing car python2 est EOL, pour traquer l'avencement du portage du code vers python3 : https://github.com/nmap/nmap/issues/1176  donc il faudra probablement le supprimer du script tant qu'il ne réapparait pas dans les dépot debian
 displayandexec "Installation de zip                                 " "$AGI zip"
@@ -2510,6 +2517,8 @@ ln -s /opt/sysupdateNG /usr/bin/sysupdateNG"
 ## install du scrip check_backport_update
 ##------------------------------------------------------------------------------
 install_check_backport_update() {
+  # porbablement qu'il vaudrait lister les paquets qui peuvent être mis à jours avec sudo apt-get update && sudo apt list --upgradable
+  # c'est beaucoup plus rapide
 cat> /usr/bin/check_backport_update << 'EOF'
 #!/bin/bash
 
@@ -2608,6 +2617,38 @@ chmod +x /usr/bin/spyme"
 ################################################################################
 
 ################################################################################
+## install du scrip check_domain_creation_date
+##------------------------------------------------------------------------------
+install_check_domain_creation_date() {
+cat> /usr/bin/check_domain_creation_date  << 'EOF'
+#!/bin/bash
+
+domain_creation_date="$(whois "$1" | grep -Po -m 1 '(Creation Date:[[:space:]])\K(\d+-\d+-\d+)')"
+
+if [[ -z "$domain_creation_date" ]]; then
+	domain_creation_date="$(whois "$1" | grep -Po -m 1 '(created:[[:space:]]+)\K(\d+-\d+-\d+)')"
+fi
+
+domain_creation_date_at_timestamp="$(date -d "$domain_creation_date" +%s)"
+
+two_months_in_timestamp='5184000'
+# ref : [Timestamp list (recent dates, upcoming dates, months, years)](https://www.epochconverter.com/timestamp-list)
+
+now_at_timestamp="$(date +%s)"
+now_min_2_months=$(( $now_at_timestamp - $two_months_in_timestamp ))
+
+if (( "$domain_creation_date_at_timestamp" > "$now_min_2_months" )); then
+    echo "Ce domaine est suspect !"
+    echo "Le domaine "$1" a été enregistré il y a moins de deux mois ("$domain_creation_date")."
+else
+    echo "Le domaine "$1" a été enregistré il y a plus de deux mois ("$domain_creation_date")."
+fi
+
+exit 0
+displayandexec "Installation du script check_domain_creation_date   " "chmod +x /usr/bin/check_domain_creation_date"
+################################################################################
+
+################################################################################
 ## install du scrip appairmebt
 ##------------------------------------------------------------------------------
 install_appairmebt() {
@@ -2627,6 +2668,9 @@ displayandexec "Installation du script appairmebt                   " "chmod +x 
 #
 # Normalement nous devons utiliser rfkill pour ré-autoriser l'activation du bluetooth, mais celui-ci demande des permissions root. Cela donnerais alors la commande suivante :
 # sudo rfkill unblock bluetooth && bluetoothctl select AA:AA:AA:AA:AA:AA && bluetoothctl power on && bluetoothctl trust BB:BB:BB:BB:BB:BB && bluetoothctl connect BB:BB:BB:BB:BB:BB
+#
+# Pour obtenir l'adresse MAC du périphérique bluetooth du PC :
+# bluetoothctl show | awk '/Controller/ {print $2}'
 #
 # Pour éteindre le bluetooth de la même façon que lorsqu'on met le bouton à Off dans les Gnome Settings :
 # gdbus call \
@@ -2692,6 +2736,7 @@ install_all_perso_script() {
   install_scanmyhome
   install_rktscan
   install_spyme
+  install_check_domain_creation_date
   install_appairmebt
   install_desactivebt
 }
