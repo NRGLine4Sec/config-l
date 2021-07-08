@@ -421,8 +421,7 @@
 # problématique de pouvoir désactiver ou activer le bluetooth depuis l'interface graphique sans avoir de permission root alors qu'il semble qu'il y ait besoin des permissions root pour puvoir le faire en ligne de commande, notamment à l'aide de la commande rfkill
 # [rfkill permissions · Issue #75 · linuxmint/blueberry](https://github.com/linuxmint/blueberry/issues/75)
 
-# get rfkill list without permission :
-# for i in /sys/class/rfkill/rfkill*; do echo Device; echo -n " Name: "; cat $i/name; echo -n " Type: "; cat $i/type; echo -n " Soft blocked: ";cat $i/soft; echo -n " Hard blocked: ";cat $i/hard; done
+
 
 # PRESEED
 # [DebianInstaller/Preseed - Debian Wiki](https://wiki.debian.org/DebianInstaller/Preseed)
@@ -460,8 +459,6 @@
 ## copier leur système d'affiche pour l'usage : [Remove Elasticsearch indices that older than a given date.](https://gist.github.com/yumminhuang/ec03bcacbbc6434412b82ca0c34e7a18)
 
 ## a regarder pour installer setools-gui
-
-## probablement qu'il faut aussi remplacer la valeur de la version de keepass dans le fichier de conf de asrbu après une mise à jour (bat ./.config/asbru/asbru.yml | grep -i -A 5 "keepass:")
 
 ## commande à garder dans un coin : sudo lshw -class memory
 
@@ -510,11 +507,7 @@
 
 ## Pour ne lire que l'audio sans la vidéo avec mpv : mpv --no-video <input-file> OU mpv --no-video <URL>
 
-## regarder si on peut faire comme avec le morceau de code suivant pour tlécharger tous les repos d'une organisation en .zip
-# Download Teamlock packages
-# wget https://github.com/VultureProject/archive/<VERSION>.zip
-# unzip <VERSION>.zip
-# Par exemple wget https://github.com/NRGLine4Sec/config-p/archive/main.zip
+
 
 ## regarder pour ajouter une nouvelle fonction pour ne faire que les executions et envoyer les commandes ainsi que leur résultat dans le fichier de log
 ## debut du commencement de réflexion :
@@ -591,7 +584,7 @@ start_time="$(date +%s)"
 # pose problème lorsque la date et l'heure ne sont pas à jour, il faudrait récuperer le start_time une fois la resyncro éffectué, sinon la valeur du temps d'éexecution du script est abérante
 
 ################################################################################
-## Test que le script est lancer en root
+## Test que le script est executé en tant que root
 ##------------------------------------------------------------------------------
 if [ $EUID != 0 ]; then
     echo "Le script doit être executer en tant que root: # sudo $0" 1>&2
@@ -603,13 +596,13 @@ usage_guide() {
   cat << EOF
 Usage: sudo bash $SCRIPT_NAME [OPTIONS]
 Options:
-  -s or --search [STRING]	Interactive search.
-  --yes 			Skip all prompts.
-  --no-install 			Saves the extension(s) in the current directory.
+  -l or --log 			Print the log file when the script terminated.
   -s or --shutdown 			Shutdown the PC when the script terminated.
   -r or --reboot 		Reboot the PC when the script terminated.
   -h or --help 			Print this message.
   -v or --version 			Print the script version.
+  -pr or --pro 			Configure the PC with the PRO configuration.
+  -pe or --perso 			Configure the PC with the PERSO configuration.
   Usage examples:
   $SCRIPT_NAME -e			# Execute the script and print errors in stdout.
 EOF
@@ -1186,10 +1179,10 @@ fi
 
 # on active le mode case insensitive de bash
 shopt -s nocasematch
-if [[ "$computer_proc_vendor_ID" =~ 'amd' ]]; then
+if [[ "$computer_proc_vendor_ID" =~ amd ]]; then
     displayandexec "Installation de amd64-microcode                     " "$AGI amd64-microcode"
 fi
-if [[ "$computer_proc_vendor_ID" =~ 'intel' ]]; then
+if [[ "$computer_proc_vendor_ID" =~ intel ]]; then
     displayandexec "Installation de intel-microcode                     " "$AGI intel-microcode"
 fi
 # on déscactive le mode case insensitive de bash
@@ -2382,113 +2375,77 @@ CheckUpdate() {
 	CheckUpdateShotcut
   if [ "$retval" ]; then
     AddTo_software_that_needs_updating "$retval"
-    UpdateShotcut
-    if [ $? != 0 ]; then
-        AddTo_software_update_failed "$retval"
-    fi
+    UpdateShotcut || AddTo_software_update_failed "$retval"
     unset retval
   fi
 
   CheckUpdateYoutube-dl
   if [ "$retval" ]; then
     AddTo_software_that_needs_updating "$retval"
-    UpdateYoutube-dl
-    if [ $? != 0 ]; then
-      AddTo_software_update_failed "$retval"
-    fi
+    UpdateYoutube-dl || AddTo_software_update_failed "$retval"
     unset retval
   fi
 
   CheckUpdateBoosnote
   if [ "$retval" ]; then
     AddTo_software_that_needs_updating "$retval"
-    UpdateBoostnote
-    if [ $? != 0 ]; then
-      AddTo_software_update_failed "$retval"
-    fi
+    UpdateBoostnote || AddTo_software_update_failed "$retval"
     unset retval
   fi
 
   CheckUpdateFreefilesync
   if [ "$retval" ]; then
     AddTo_software_that_needs_updating "$retval"
-    UpdateFreefilesync
-    if [ $? != 0 ]; then
-        AddTo_software_update_failed "$retval"
-    fi
+    UpdateFreefilesync || AddTo_software_update_failed "$retval"
     unset retval
   fi
 
   CheckUpdateKeepassxc
   if [ "$retval" ]; then
     AddTo_software_that_needs_updating "$retval"
-    UpdateKeepassxc
-    if [ $? != 0 ]; then
-        AddTo_software_update_failed "$retval"
-    fi
+    UpdateKeepassxc || AddTo_software_update_failed "$retval"
     unset retval
   fi
 
   CheckUpdateJoplin
   if [ "$retval" ]; then
     AddTo_software_that_needs_updating "$retval"
-    UpdateJoplin
-    if [ $? != 0 ]; then
-        AddTo_software_update_failed "$retval"
-    fi
+    UpdateJoplin || AddTo_software_update_failed "$retval"
     unset retval
   fi
 
   CheckUpdateStacer
   if [ "$retval" ]; then
     AddTo_software_that_needs_updating "$retval"
-    UpdateStacer
-    if [ $? != 0 ]; then
-        AddTo_software_update_failed "$retval"
-    fi
+    UpdateStacer || AddTo_software_update_failed "$retval"
     unset retval
   fi
 
   CheckUpdateBat
   if [ "$retval" ]; then
     AddTo_software_that_needs_updating "$retval"
-    UpdateBat
-    if [ $? != 0 ]; then
-        AddTo_software_update_failed "$retval"
-    fi
+    UpdateBat || AddTo_software_update_failed "$retval"
     unset retval
   fi
 
   CheckUpdateKrita
   if [ "$retval" ]; then
     AddTo_software_that_needs_updating "$retval"
-    UpdateKrita
-    if [ $? != 0 ]; then
-        AddTo_software_update_failed "$retval"
-    fi
+    UpdateKrita || AddTo_software_update_failed "$retval"
     unset retval
   fi
 
   CheckUpdateOpensnitch
   if [ "$retval" ]; then
     AddTo_software_that_needs_updating "$retval"
-    UpdateOpensnitch
-    if [ $? != 0 ]; then
-        AddTo_software_update_failed "$retval"
-    fi
+    UpdateOpensnitch || AddTo_software_update_failed "$retval"
     unset retval
   fi
 
-# Potentiellement remplacer la forme :
-# UpdateShotcut
-# if [ $? != 0 ]; then
-#     AddTo_software_update_failed "$retval"
-# fi
-# par UpdateShotcut || AddTo_software_update_failed "$retval"
 
   # echo ${software_that_needs_updating[*]}
 
-if [ "${#software_that_needs_updating[*]}" == '0' ]; then
+if [ "${#software_that_needs_updating[*]}" == 0 ]; then
   echo 'Tous les logiciels sont à jour.'
 else
   echo 'Les logciels suivants nécessitent une mise à jour :' "${software_that_needs_updating[*]}"
@@ -2660,7 +2617,7 @@ bluetoothctl trust BB:BB:BB:BB:BB:BB > /dev/null
 bluetoothctl connect BB:BB:BB:BB:BB:BB > /dev/null
 EOF
 displayandexec "Installation du script appairmebt                   " "chmod +x /usr/bin/appairmebt"
-
+}
 # script permettant de démarrer le bluetooth et d’appairer automatiquement avec le périphérique qu'on souhaite
 #
 # changer AA:AA:AA:AA:AA:AA par l'adress MAC du périphérique bluetooth du PC
@@ -2713,17 +2670,28 @@ displayandexec "Installation du script appairmebt                   " "chmod +x 
 # EOF
 # #and then reload the rules :
 # udevadm control --reload-rules
-}
 ################################################################################
 
 ################################################################################
-## install du scrip desactivebt
+## install du script desactivebt
 ##------------------------------------------------------------------------------
 install_desactivebt() {
 cat> /usr/bin/desactivebt  << 'EOF'
 gdbus call --session --dest org.gnome.SettingsDaemon.Rfkill --object-path /org/gnome/SettingsDaemon/Rfkill --method org.freedesktop.DBus.Properties.Set "org.gnome.SettingsDaemon.Rfkill" "BluetoothAirplaneMode" "<true>" > /dev/null
 EOF
 displayandexec "Installation du script desactivebt                  " "chmod +x /usr/bin/desactivebt"
+}
+################################################################################
+
+################################################################################
+## install du script play_pause_chromium
+##------------------------------------------------------------------------------
+install_play_pause_chromium() {
+  cat> /usr/bin/play_pause_chromium  << 'EOF'
+dbus_dest_org="$(dbus-send --session --dest=org.freedesktop.DBus --type=method_call --print-reply /org/freedesktop/DBus org.freedesktop.DBus.ListNames | awk '/org.mpris.MediaPlayer2.chromium/ {gsub(/\"/,"");print $2}')" && \
+dbus-send --print-reply --dest=$dbus_dest_org /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player.PlayPause > /dev/null
+EOF
+displayandexec "Installation du script play_pause_chromium          " "chmod +x /usr/bin/play_pause_chromium"
 }
 ################################################################################
 
@@ -2739,6 +2707,7 @@ install_all_perso_script() {
   install_check_domain_creation_date
   install_appairmebt
   install_desactivebt
+  install_play_pause_chromium
 }
 install_all_perso_script
 ################################################################################
@@ -2981,7 +2950,7 @@ $ExeAsUser sed -E -i '/("UseM4v":) (false|true)/{s/true/false/;}' /home/"$local_
 # permet de décocher la case "Utiliser l'extension de fichier compatible iPod/iTunes (.m4v) pour MP4" (Fichier -> Préférences -> Général)
 # le fichier de conf n'existe pas tant que handbrake n'a pas été lancé
 # donc il faut soit trouver un moyen de lancer handbrake silencieusement soit copier coller la conf entière dans le fichier directement
-# et donc qu'il faille faire le sed qu'une fois que le fichier de configuration de soit présent
+# et donc qu'il faille faire le sed qu'une fois que le fichier de configuration ne soit présent
 ################################################################################
 
 # ajout du dossier partagé pour VirtualBox
@@ -3308,7 +3277,7 @@ mv /usr/lib/x86_64-linux-gnu/nautilus/extensions-3.0/libnautilus-wipe.so /usr/li
 displayandexec "Désactivation du microphone                         " "$ExeAsUser amixer set Capture nocap"
 displayandexec "Réglage du volume audio à 10%                       " "$ExeAsUser amixer set Master 10%"
 # Les deux commandes amixer ne fonctionnenet pas dans une install sur bullseye. A priori le problème serrait lié au fait qu'elles sont lancés depuis des sudo -u user.
-# Les commande fonctionnement parfaitement si elles sont lancés depuis le user dans un terminal.
+# Les commandes fonctionnement parfaitement si elles sont lancés depuis le user dans un terminal.
 ################################################################################
 
 
@@ -3493,6 +3462,7 @@ backup_LUKS_header
 # /etc/init.d/knockd stop
 # /etc/init.d/fail2ban stop
 displayandexec "Redémarage du service SSH                           " "systemctl restart ssh.service"
+displayandexec "Désactivation du service exim4                      " "systemctl stop exim4 && systemctl disable exim4"
 ################################################################################
 
 ################################################################################
@@ -3513,7 +3483,7 @@ $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" 
 $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" dconf write /org/gnome/settings-daemon/plugins/power/sleep-inactive-ac-type "'suspend'"
 
 # remise au propre du fichier de configuration DNS
-rm -rf /etc/resolv.conf
+rm -f /etc/resolv.conf
 mv /etc/resolv.conf.old /etc/resolv.conf
 
 # suppression du dossier temporaire pour l'execution du script
@@ -3545,19 +3515,19 @@ echo -e "Temps d'execution du script : "$time_heures"h" $time_minutes"m" $time_s
 ################################################################################
 ## after install options
 ##------------------------------------------------------------------------------
-if [ "$show_log" == '1' ]; then
+if [ "$show_log" == 1 ]; then
     more "$log_file"
 fi
 
-if [ "$show_only_error" == '1' ]; then
+if [ "$show_only_error" == 1 ]; then
     grep -i 'error' "$install_file"
 fi
 
-if [ "$reboot_after_install" == '1' ]; then
+if [ "$reboot_after_install" == 1 ]; then
     reboot
 fi
 
-if [ "$shutdown_after_install" == '1' ]; then
+if [ "$shutdown_after_install" == 1 ]; then
     poweroff
 fi
 ################################################################################
