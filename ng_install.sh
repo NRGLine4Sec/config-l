@@ -618,17 +618,17 @@ for param in "$@"; do
         '-v'|'--version')
             echo "$script_version" ;;
         '-s'|'--shutdown')
-            shutdown_after_install='1' ;;
+            shutdown_after_install=1 ;;
         '-pr'|'--pro')
-            conf_pro='1' ;;
+            conf_pro=1 ;;
         '-pe'|'--perso')
-            conf_perso='1' ;;
+            conf_perso=1 ;;
         '-l'|'--log')
-            show_log='1' ;;
+            show_log=1 ;;
         '-e'|'--error')
-            show_only_error='1' ;;
+            show_only_error=1 ;;
         '-r'|'--reboot')
-            reboot_after_install='1' ;;
+            reboot_after_install=1 ;;
         *)
             # echo 'Invalid option' ;;
             # usage_guide; exit 1 ;;
@@ -752,7 +752,7 @@ onlyexec() {
 check_available_space() {
   available_space="$(df --block-size=G / | awk '(NR>1){print $4}' | sed 's/.$//')"
   # peut aussi se faire en utilisant une seule redirection : "$(df --block-size=G / | awk '(NR>1){gsub(/.$/,"",$4);print $4}')"
-  if [ "$available_space" -lt '10' ]; then
+  if [ "$available_space" -lt 10 ]; then
       echo -e "${RED}######################################################################${RESET}" | tee -a "$log_file"
       echo -e "${RED}#${RESET}  Il faut au minimum 10 Go d'espace libre pour executer le script.  ${RED}#${RESET}" | tee -a "$log_file"
       echo -e "${RED}######################################################################${RESET}" | tee -a "$log_file"
@@ -1008,11 +1008,11 @@ debian_release="$(lsb_release -sc)"
 
 # on active le mode case insensitive de bash
 shopt -s nocasematch
-if [[ "$debian_release" =~ 'buster' ]]; then
-    buster='1'
+if [[ "$debian_release" =~ buster ]]; then
+    buster=1
 fi
-if [[ "$debian_release" =~ 'bullseye' ]]; then
-    bullseye='1'
+if [[ "$debian_release" =~ bullseye ]]; then
+    bullseye=1
 fi
 # on déscactive le mode case insensitive de bash
 shopt -u nocasematch
@@ -1220,7 +1220,6 @@ displayandexec "Installation de gcc                                 " "$AGI gcc"
 displayandexec "Installation de gimp                                " "$AGI gimp"
 displayandexec "Installation de git                                 " "$AGI git"
 displayandexec "Installation de gitk                                " "$AGI gitk"
-# displayandexec "Installation de gufw                                " "$AGI gufw" #probablement que ce paquet ne sera plus nécessaire dans les prochaines versions du script
 displayandexec "Installation de gparted                             " "$AGI gparted"
 displayandexec "Installation de gsmartcontrol                       " "$AGI gsmartcontrol"
 displayandexec "Installation de hashcat                             " "$AGI hashcat"
@@ -1350,7 +1349,7 @@ mkdir "$manual_install_dir"
 ################################################################################
 ## instalation de atom
 ##------------------------------------------------------------------------------
-install_atom() {
+install_atom_buster() {
   displayandexec "Installation des dépendances de atom                " "$AGI libgconf-2-4 gvfs-bin gconf2-common"
   displayandexec "Installation de atom                                " "\
 $WGET --output-document - 'https://packagecloud.io/AtomEditor/atom/gpgkey' | apt-key add - && \
@@ -1382,6 +1381,7 @@ chmod +x /usr/bin/winscp
 rm -rf "$tmp_dir""
 }
 # WinSCP utilise wine32 pour s'executer
+# vérifier si la dernière version de WinSCP a besoin spécifiquement de wine32
 ################################################################################
 
 ################################################################################
@@ -1404,7 +1404,7 @@ rm -rf "$tmp_dir""
 ################################################################################
 ## instalation de Spotify
 ##------------------------------------------------------------------------------
-install_spotify(){
+install_spotify_buster(){
   displayandexec "Installation de spotify                             " "\
 $CURL 'https://download.spotify.com/debian/pubkey_0D811D58.gpg' | apt-key add - && \
 echo 'deb http://repository.spotify.com stable non-free' > /etc/apt/sources.list.d/spotify.list && \
@@ -1518,7 +1518,7 @@ $AGI typora"
 ################################################################################
 ## instalation de VirtualBox
 ##------------------------------------------------------------------------------
-install_virtualbox() {
+install_virtualbox_buster() {
   displayandexec "Installation des dépendances de VirtualBox          " "$AGI dkms"
   displayandexec "Installation de VirtualBox                          " "\
 echo 'deb https://download.virtualbox.org/virtualbox/debian buster contrib' > /etc/apt/sources.list.d/virtualbox.list && \
@@ -1676,7 +1676,7 @@ EOF
 ################################################################################
 ## instalation de MKVToolNix
 ##------------------------------------------------------------------------------
-install_mkvtoolnix() {
+install_mkvtoolnix_buster() {
   displayandexec "Installation de MKVToolNix                          " "\
 cat> /etc/apt/sources.list.d/mkvtoolnix.download.list << 'EOF'
 deb https://mkvtoolnix.download/debian/ buster main
@@ -1726,7 +1726,7 @@ ln -s "$manual_install_dir"/shotcut/"$shotcut_appimage" /usr/bin/shotcut"
 ################################################################################
 ## instalation de Signal
 ##------------------------------------------------------------------------------
-install_signal() {
+install_signal_buster() {
   displayandexec "Installation de Signal                              " "\
 echo 'deb [arch=amd64] https://updates.signal.org/desktop/apt xenial main' > /etc/apt/sources.list.d/signal-xenial.list && \
 $CURL 'https://updates.signal.org/desktop/apt/keys.asc' | apt-key add - && \
@@ -1757,7 +1757,7 @@ rm -rf "$tmp_dir""
 ################################################################################
 ## instalation de asbru
 ##------------------------------------------------------------------------------
-install_asbru() {
+install_asbru_buster() {
   displayandexec "Installation des dépendances de Asbru               " "$AGI perl libvte-2.91-0 libcairo-perl libglib-perl libpango-perl libsocket6-perl libexpect-perl libnet-proxy-perl libyaml-perl libcrypt-cbc-perl libcrypt-blowfish-perl libgtk3-perl libnet-arp-perl libossp-uuid-perl openssh-client telnet ftp libcrypt-rijndael-perl libxml-parser-perl libcanberra-gtk-module dbus-x11 libx11-guitest-perl libgtk3-simplelist-perl gir1.2-wnck-3.0 gir1.2-vte-2.91"
   displayandexec "Installation de Asbru                               " "\
 cat> /etc/apt/sources.list.d/asbru-cm_asbru-cm.list << 'EOF'
@@ -1970,6 +1970,9 @@ quadrapassel \
 swell-foop \
 tali \
 aisleriot"
+
+#exim4
+displayandexec "Désinstalation de exim4                             " "$AG remove -y exim4-base exim4-config exim4-daemon-light"
 
 #libreoffice
 #displayandexec "désinstalation de libreoffice                       " "$AG remove libreoffice* -y"
@@ -2731,6 +2734,13 @@ sed -E -i 's/^#PermitRootLogin/PermitRootLogin/' /etc/ssh/sshd_config
 # sed -E -i 's/(^#PermitRootLogin|^PermitRootLogin).*/PermitRootLogin no/' /etc/ssh/sshd_config
 # Pour autoriser root sur Kali :
 # sed -E -i '/(^#PermitRootLogin|^PermitRootLogin) (yes|no|without-password|prohibit-password)/{s/no/yes/;t;s/without-password/yes/;t;s/prohibit-password/yes/;}' /etc/ssh/sshd_config && sed -E -i 's/^#PermitRootLogin/PermitRootLogin/' /etc/ssh/sshd_config
+
+cat>> /etc/ssh/sshd_config << 'EOF'
+
+# "Disables all forwarding features, including X11, ssh-agent(1), TCP and StreamLocal. This option overrides all other forwarding-related options and may simplify restricted configurations."
+# ref : https://manpages.debian.org/unstable/openssh-server/sshd_config.5.en.html#DisableForwarding
+DisableForwarding yes
+EOF
 ################################################################################
 
 ################################################################################
@@ -3462,7 +3472,6 @@ backup_LUKS_header
 # /etc/init.d/knockd stop
 # /etc/init.d/fail2ban stop
 displayandexec "Redémarage du service SSH                           " "systemctl restart ssh.service"
-displayandexec "Désactivation du service exim4                      " "systemctl stop exim4 && systemctl disable exim4"
 ################################################################################
 
 ################################################################################
