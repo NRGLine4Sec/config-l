@@ -505,8 +505,12 @@
 # regarder https://osqa-ask.wireshark.org/answer_link/50481/
 
 
-## Pour ne lire que l'audio sans la vidéo avec mpv : mpv --no-video <input-file> OU mpv --no-video <URL>
 
+# script à regarder de plus près pour voir comment intégrer un affichage des tirets et des hashtags en fonction de la longueur du terminal et du message a afficher
+# declare -ag COL_LEN=($(wget -qO- http://bit.ly/cpu_flags | awk -F\| 'BEGIN { NR==1;getline; H1=$1; H2=$2; H3=$3 } { for (i=1; i<=NF; i++) { max[i] = length($i) > max[i] ? length($i) : max[i] ;ncols = i > ncols ? i : ncols }} END { {print H2":"max[2]"\n"H3":"max[3]"\n"H1":"max[1]"\n"}}'))
+# export LS='─'
+# (printf "%s\n" ${COL_LEN[@]%%:*} | paste -sd\| && printf "%s\n" ${COL_LEN[@]##*:} | xargs -n1 bash -c 'eval printf "%.3s" ${LS}{1..${0}};echo' | paste -sd"|"
+# wget -qO- http://bit.ly/cpu_flags | awk -F\| '!/^CLASS/{print $2"|"$3"|"$1}') | column -nexts '|' | sed '1,2s/.*$/'$(printf "\e[1m")'&'$(printf "\e[0m")'/'
 
 
 ## regarder pour ajouter une nouvelle fonction pour ne faire que les executions et envoyer les commandes ainsi que leur résultat dans le fichier de log
@@ -1294,6 +1298,7 @@ displayandexec "Installation de zip                                 " "$AGI zip"
 displayandexec "Installation de zutils                              " "$AGI zutils"
 displayandexec "Installation de zsh                                 " "$AGI zsh"
 displayandexec "Installation de zstd                                " "$AGI zstd"
+displayandexec "Installation de whois                               " "$AGI whois"
 install_zfs_buster() {
   sed -i "s%^#deb http://deb.debian.org/debian "$debian_release"-backports%deb http://deb.debian.org/debian "$debian_release"-backports%" /etc/apt/sources.list
   displayandexec "Installation de ZFS                                 " "\
@@ -1883,55 +1888,76 @@ install_opensnitch() {
 # c'est pour ça qu'on est obligé d'utiliser "$(sed 's/\.//3' <<< "$opensnitch_latest_version")" pour la deuxième partie de l'URL
 ################################################################################
 
+################################################################################
+## instalation de Ansible
+##------------------------------------------------------------------------------
+install_ansible_buster() {
+  displayandexec "Installation de Ansible                             " "\
+echo 'deb [arch=amd64] http://ppa.launchpad.net/ansible/ansible-4/ubuntu bionic main' > /etc/apt/sources.list.d/ansible.list && \
+apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 93C4A3FD7BB9C367 && \
+$AG update && \
+$AGI ansible"
+}
+install_ansible_bullseye() {
+  displayandexec "Installation de Ansible                             " "\
+echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/ansible-archive-keyring.gpg] deb http://ppa.launchpad.net/ansible/ansible-4/ubuntu bionic main' > /etc/apt/sources.list.d/ansible.list && \
+$CURL 'https://updates.signal.org/desktop/apt/keys.asc' | gpg --dearmor --output /usr/share/keyrings/ansible-archive-keyring.gpg && \
+$AG update && \
+$AGI ansible"
+}
+################################################################################
+
 check_latest_version_manual_install_apps
 
 install_all_manual_install_apps_buster() {
-  install_atom
+  install_atom_buster
   install_winscp
   install_veracrypt
-  install_spotify
+  install_spotify_buster
   install_apt-fast
   install_drawio
   install_freefilesync
   install_boostnote
   install_typora_buster
-  install_virtualbox
+  install_virtualbox_buster
   install_keepassxc
-  install_mkvtoolnix
+  install_mkvtoolnix_buster
   install_etcher
   install_shotcut
-  install_signal
+  install_signal_buster
   install_stacer
-  install_asbru
+  install_asbru_buster
   install_bat
   install_youtubedl
   install_joplin
   install_krita
   install_opensnitch
+  install_ansible_buster
 }
 install_all_manual_install_apps_bullseye() {
-  install_atom
+  install_atom_bullseye
   install_winscp
   install_veracrypt
-  install_spotify
+  install_spotify_bullseye
   install_apt-fast
   install_drawio
   install_freefilesync
   install_boostnote
   install_typora_bullseye
-  install_virtualbox
+  install_virtualbox_bullseye
   install_keepassxc
-  install_mkvtoolnix
+  install_mkvtoolnix_bullseye
   install_etcher
   install_shotcut
-  install_signal
+  install_signal_bullseye
   install_stacer
-  install_asbru
+  install_asbru_bullseye
   install_bat
   install_youtubedl
   install_joplin
   install_krita
   install_opensnitch
+  install_ansible_bullseye
 }
 
 if [ "$buster" == 1 ]; then
@@ -2735,11 +2761,14 @@ sed -E -i 's/^#PermitRootLogin/PermitRootLogin/' /etc/ssh/sshd_config
 # Pour autoriser root sur Kali :
 # sed -E -i '/(^#PermitRootLogin|^PermitRootLogin) (yes|no|without-password|prohibit-password)/{s/no/yes/;t;s/without-password/yes/;t;s/prohibit-password/yes/;}' /etc/ssh/sshd_config && sed -E -i 's/^#PermitRootLogin/PermitRootLogin/' /etc/ssh/sshd_config
 
-cat>> /etc/ssh/sshd_config << 'EOF'
+cat>> /etc/ssh/sshd_config << EOF
 
 # "Disables all forwarding features, including X11, ssh-agent(1), TCP and StreamLocal. This option overrides all other forwarding-related options and may simplify restricted configurations."
 # ref : https://manpages.debian.org/unstable/openssh-server/sshd_config.5.en.html#DisableForwarding
 DisableForwarding yes
+
+# only allow this user ("$local_user") to connect to SSH
+AllowUsers "$local_user"
 EOF
 ################################################################################
 
@@ -3458,8 +3487,7 @@ displayandexec "Mise à jour de la base de donnée de rkhunter        " "rkhunte
 ## création d'un fichier de backup du header LUKS
 ##------------------------------------------------------------------------------
 backup_LUKS_header() {
-luks_partition="$(lsblk --fs --list | grep 'crypto_LUKS' | awk '{print $1}')"
-# peut aussi se faire en une commande : lsblk --fs --list | awk '/crypto_LUKS/{print $1}'
+luks_partition="$(lsblk --fs --list | awk '/crypto_LUKS/{print $1}')"
 $ExeAsUser mkdir --parents /home/"$local_user"/backup/
 cryptsetup luksHeaderBackup /dev/"$luks_partition" --header-backup-file /home/"$local_user"/backup/LUKS_Header_Backup.img
 }
