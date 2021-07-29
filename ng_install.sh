@@ -1216,6 +1216,7 @@ displayandexec "Installation de apparmor-profiles                   " "$AGI appa
 displayandexec "Installation de apparmor-profiles-extra             " "$AGI apparmor-profiles-extra"
 displayandexec "Installation de binwalk                             " "$AGI binwalk"
 displayandexec "Installation de bwm-ng                              " "$AGI bwm-ng"
+displayandexec "Installation de cadaver                             " "$AGI cadaver"
 displayandexec "Installation de calibre                             " "$AGI calibre"
 displayandexec "Installation de chkrootkit                          " "$AGI chkrootkit"
 displayandexec "Installation de chromium                            " "$AGI chromium-l10n"
@@ -1287,7 +1288,6 @@ displayandexec "Installation de shotwell                            " "$AGI shot
 displayandexec "Installation de sqlitebrowser                       " "$AGI sqlitebrowser"
 displayandexec "Installation de ssh                                 " "$AGI ssh"
 displayandexec "Installation de sshfs                               " "$AGI sshfs"
-displayandexec "Installation de sshuttle                            " "$AGI sshuttle" # probablement passer a une install basé sur pip3 pour avoir une version plus récente (pip3 install sshuttle)
 displayandexec "Installation de strace                              " "$AGI strace"
 displayandexec "Installation de sudo                                " "$AGI sudo"
 displayandexec "Installation de tcpdump                             " "$AGI tcpdump"
@@ -1949,6 +1949,17 @@ install_hashcat() {
 }
 ################################################################################
 
+################################################################################
+## instalation de sshuttle
+##------------------------------------------------------------------------------
+install_sshuttle() {
+  displayandexec "Installation de sshuttle                            " "\
+  $ExeAsUser pip3 install sshuttle && \
+  pip3 install sshuttle"
+}
+# ref : [sshuttle · PyPI](https://pypi.org/project/sshuttle/)
+################################################################################
+
 check_latest_version_manual_install_apps
 
 install_all_manual_install_apps_buster() {
@@ -1976,6 +1987,7 @@ install_all_manual_install_apps_buster() {
   install_opensnitch
   # install_ansible_buster
   # install_hashcat
+  install_sshuttle
 }
 install_all_manual_install_apps_bullseye() {
   install_atom_bullseye
@@ -2002,6 +2014,7 @@ install_all_manual_install_apps_bullseye() {
   install_opensnitch
   # install_ansible_bullseye
   # install_hashcat
+  install_sshuttle
 }
 
 if [ "$buster" == 1 ]; then
@@ -3480,6 +3493,9 @@ alias showshortcut='dconf dump /org/gnome/settings-daemon/plugins/media-keys/'
 alias bitcoin='curl -s "http://api.coindesk.com/v1/bpi/currentprice.json"  | jq ".bpi.EUR.rate" | tr -d \"'
 HISTTIMEFORMAT="%Y/%m/%d %T   "
 is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/$1 ;}
+
+# for python binnary
+export PATH="\$PATH:/home/"$local_user"/.local/bin"
 EOF
 
 # alias for root
