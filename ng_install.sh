@@ -1954,10 +1954,10 @@ install_hashcat() {
 ##------------------------------------------------------------------------------
 install_sshuttle() {
   displayandexec "Installation de sshuttle                            " "\
-  $ExeAsUser pip3 install sshuttle && \
   pip3 install sshuttle"
 }
 # ref : [sshuttle · PyPI](https://pypi.org/project/sshuttle/)
+# on l'install pour l'utilisateur root car sshuttle sera executer en sudo
 ################################################################################
 
 check_latest_version_manual_install_apps
@@ -3491,8 +3491,12 @@ alias bat='bat -pp'
 alias free='free -ht'
 alias showshortcut='dconf dump /org/gnome/settings-daemon/plugins/media-keys/'
 alias bitcoin='curl -s "http://api.coindesk.com/v1/bpi/currentprice.json"  | jq ".bpi.EUR.rate" | tr -d \"'
+alias sshuttle='sudo sshuttle'
 HISTTIMEFORMAT="%Y/%m/%d %T   "
 is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/$1 ;}
+
+# for Ansible vault editor
+export EDITOR=nano
 
 # for python binnary
 export PATH="\$PATH:/home/"$local_user"/.local/bin"
