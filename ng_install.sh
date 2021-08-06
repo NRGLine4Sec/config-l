@@ -367,6 +367,8 @@
 ## regarder pour installer solaar (pour les gestions des périphériques logytech) : https://pwr-solaar.github.io/Solaar/installation    https://github.com/pwr-Solaar/Solaar    (normalement il suffit juste de faire un pip3 install solaar) et si il ne se lance pas, utiliser la commande : python3 ./.local/lib/python3.7/site-packages/solaar/gtk.py
 # bat ~/.config/solaar/config.json
 # solaar show
+# pour voir uniquement les infos concernant la souris : solaar show mouse
+# solaar -dd show
 # cat /proc/bus/input/devices
 # xinput | grep "Logitech MX Vertical"
 # xinput list-props 11
@@ -389,6 +391,7 @@
 
 # ref : [Configurer sa souris Logitech MX Master sous Linux (Ubuntu) – Miximum](https://www.miximum.fr/blog/configurer-sa-souris-logitech-mx-master-sous-linux-ubuntu/)
 # ref : [Linux: xbindkeys Tutorial](http://xahlee.info/linux/linux_xbindkeys_tutorial.html)
+# ref : [How to start a service automatically when Arch Linux boots? - Super User](https://superuser.com/questions/755937/how-to-start-a-service-automatically-when-arch-linux-boots)
 
 # si jamais il y a besoin :
 # cat> /home/$local_user/.config/autostart/xbindkeys.desktop << 'EOF'
@@ -739,9 +742,9 @@ onlyexec() {
     bash -c "$*" >> "$log_file" 2>&1
     local ret=$?
     if [ $ret != 0 ]; then
-        echo -e "\r\e[0;30m $message                ${RED}[ERROR]${RESET} " >> $install_file
+        echo -e "\r $message                ${RED}[ERROR]${RESET} " >> $install_file
     else
-        echo -e "\r\e[0;30m $message                ${GREEN}[OK]${RESET} " >> $install_file
+        echo -e "\r $message                ${GREEN}[OK]${RESET} " >> $install_file
     fi
     return $ret
 }
@@ -1002,7 +1005,7 @@ IPv4_external_address="$(GET http://ipinfo.io/ip)"
 #wget -q http://ipinfo.io/ip && IPv4_external_address=$(cat ip)
 IPv6_local_address="$(ip -o -6 addr list "$network_int_name" | grep 'fe80' | awk '{print $4}' | cut -d/ -f1)"
 IPv6_external_address="$(ip -o -6 addr list "$network_int_name" | grep -v 'noprefixroute' | awk '{print $4}' | cut -d/ -f1)"
-computer_RAM="$(grep 'MemTotal' /proc/meminfo | awk '{printf("%.0f", $2/1024/1024+1);}')"
+computer_RAM="$(awk '/MemTotal/{printf("%.0f", $2/1024/1024+1);}' /proc/meminfo)"
 # grep "MemTotal" /proc/meminfo | awk '{print $2}' | sed -r 's/.{3}$//'
 # potentiellement à remplacer avec free -g | awk '/^Mem:/{print $2}'
 computer_proc="$(grep -c '^processor' /proc/cpuinfo)"
@@ -1189,7 +1192,7 @@ fi
 # awk '!/^[[:blank:]]/ && /^8086/' /usr/share/misc/pci.ids
 #
 # # Pour obtenir tous les ID en fonction du fabricant
-# grep -E "^[[:xdigit:]]{4}" /usr/share/misc/pci.ids
+# grep -E "^[[:xdigit:]]{4}[[:blank:]]" /usr/share/misc/pci.ids
 
 # ancienne commande utilisée (avec lspci) :
 # lspci -nn | grep 'Network' | grep 'Intel' &> /dev/null
@@ -1235,6 +1238,7 @@ displayandexec "Installation de evince                              " "$AGI evin
 displayandexec "Installation de filezilla                           " "$AGI filezilla"
 displayandexec "Installation de firefox-esr-l10n-fr                 " "$AGI firefox-esr-l10n-fr"
 displayandexec "Installation de firejail                            " "$AGI firejail"
+displayandexec "Installation de flameshot                           " "$AGI flameshot"
 displayandexec "Installation de freerdp2-wayland                    " "$AGI freerdp2-wayland"
 displayandexec "Installation de gcc                                 " "$AGI gcc"
 # displayandexec "Installation de geeqie                              " "$AGI geeqie" # installer geekie depuis le script d'install du github car la version dans les dépots de débian est beaucoup trop vielle
@@ -3804,12 +3808,6 @@ displayandexec "Réglage du volume audio à 10%                       " "$ExeAsU
 ##------------------------------------------------------------------------------
 configure_for_pro() {
     echo "conf pro"
-    ## Pour l'install de l'ASDM :
-    # apt-get install -y icedtea-netx
-    # echo 'javaws https://$1/admin/public/asdm.jnlp' > /usr/bin/asdm
-    # chmod +x /usr/bin/asdm
-    # référence : https://community.cisco.com/t5/network-security/asdm-on-ubuntu/td-p/3067651
-    # Exec=/usr/java/jre1.8.0_261/bin/javaws
 }
 if [ "$conf_pro" == 1 ]; then
     configure_for_pro
@@ -3907,7 +3905,7 @@ alias showshortcut='dconf dump /org/gnome/settings-daemon/plugins/media-keys/'
 alias bitcoin='curl -s "http://api.coindesk.com/v1/bpi/currentprice.json"  | jq ".bpi.EUR.rate" | tr -d \"'
 alias sshuttle='sudo sshuttle'
 HISTTIMEFORMAT="%Y/%m/%d %T   "
-is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/$1 ;}
+is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/\$1 ;}
 
 # for Ansible vault editor
 export EDITOR=nano
@@ -4081,10 +4079,6 @@ exit 0
 
 
 
-#lister tous les services du système
-#service --status-all
-
-
 
 
 
@@ -4099,9 +4093,6 @@ exit 0
 
 
 
-
-# no return message of apt
-#export DEBIAN_FRONTEND=noninteractive
 
 ##!/bin/sh
 #
@@ -4119,17 +4110,12 @@ exit 0
 #	echo "/bin/sh est exécutable. C'est bien."
 #else
 #	echo "/bin/sh n'est pas exécutable."
-#	echo "Votre système n'est pas normal."
 #fi
 #OU [ -x /bin/sh ] || echo "/bin/sh n'est pas exécutable."
 
 
 
 
-
-#Faire la différence entre les paquets installé  de base et les nouveaux paquets
-#comm -3 <(sort /home/liste_paquet_installe.txt) <(sort /home/liste_paquet_installe_postscriptinstall.txt)
-#cat -n /home/liste_paquet_installe_postscriptinstall.txt
 
 
 
@@ -4143,14 +4129,6 @@ exit 0
 #fi
 
 
-
-## JEUX
-#apt-get install 0ad
-
-#if [ $? -ne 0 ]; then
-#  logguer "Processus ${PS} not started"
-#  start
-#fi
 
 
 
