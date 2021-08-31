@@ -574,6 +574,7 @@
 # - potentiellement intégrer l'installation de l'outil xdotool
 # - potentiellement instaler le paquet sysstat
 # - potentiellement installer le paquet iozone3
+# - remplacer la valeur buster par bullseye dans install_virtualbox_bullseye lorsque VirtualBox mettera à dispo les binaires pour cette release (pour checker : https://download.virtualbox.org/virtualbox/debian/pool/contrib/v/virtualbox-6.1/)
 ################################################################################
 
 ################################################################################
@@ -1713,8 +1714,8 @@ $AGI mkvtoolnix mkvtoolnix-gui"
 install_mkvtoolnix_bullseye() {
   displayandexec "Installation de MKVToolNix                          " "\
 cat> /etc/apt/sources.list.d/mkvtoolnix.download.list << 'EOF'
-deb [signed-by=/usr/share/keyrings/mkvtoolnix-archive-keyring.gpg] https://mkvtoolnix.download/debian/ buster main
-#deb-src https://mkvtoolnix.download/debian/ buster main
+deb [signed-by=/usr/share/keyrings/mkvtoolnix-archive-keyring.gpg] https://mkvtoolnix.download/debian/ bullseye main
+#deb-src https://mkvtoolnix.download/debian/ bullseye main
 EOF
 $WGET --output-document - 'https://mkvtoolnix.download/gpg-pub-moritzbunkus.txt' | gpg --dearmor --output /usr/share/keyrings/mkvtoolnix-archive-keyring.gpg && \
 $AG update && \
