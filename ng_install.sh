@@ -648,9 +648,14 @@ CURL='curl --silent --show-error'
 ## fonction qui permet de checker automatiquement les versions des logiciels qui s'installent manuellement, de façon automatique
 ##------------------------------------------------------------------------------
 check_latest_version_manual_install_apps() {
-    veracrypt_version="$($CURL 'https://www.veracrypt.fr/en/Downloads.html' | grep 'tar.bz2' | grep -v '.sig\|x86\|Source\|freebsd' | grep -Po '(?<=veracrypt-)(\d+\.+\d+)+\d+")')"
+    veracrypt_version="$($CURL 'https://www.veracrypt.fr/en/Downloads.html' | grep 'tar.bz2' | grep -v '.sig\|x86\|Source\|freebsd' | grep -Po '(?<=veracrypt-)([[:digit:]]+\.+[[:digit:]]+)(?=-setup)')"
+    # permet de récupérer la version lorsque la release est du type 'veracrypt-1.24-setup.tar.bz2'
     if [ $? != 0 ] || [ -z "$veracrypt_version" ]; then
-        veracrypt_version='1.24'
+      veracrypt_version="$($CURL 'https://www.veracrypt.fr/en/Downloads.html' grep 'tar.bz2' | grep -v '.sig\|x86\|Source\|freebsd' | grep -Po '(?<=veracrypt-)([[:digit:]]+\.+[[:digit:]]+-[[:alnum:]]+)(?=-setup)')"
+      # permet de récupérer la version lorsque la release est du type 'veracrypt-1.24-Update7-setup.tar.bz2'
+      if [ $? != 0 ] || [ -z "$veracrypt_version" ]; then
+          veracrypt_version='1.24-Update7'
+      fi
     fi
     # check version : https://www.veracrypt.fr/en/Downloads.html
 
@@ -741,6 +746,12 @@ check_latest_version_manual_install_apps() {
         opensnitch_latest_version='1.4.0-rc.2'
     fi
     # check version : https://github.com/evilsocket/opensnitch/releases/
+
+    hashcat_version="$($CURL 'https://api.github.com/repos/hashcat/hashcat/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+    if [ $? != 0 ] || [ -z "$hashcat_version" ]; then
+        hashcat_version='6.2.4'
+    fi
+    # check version : https://github.com/hashcat/hashcat/releases/
 }
 
 # tester la commande ci-dessous pour aller chercher les dernière versions directement depuis Github
@@ -796,6 +807,8 @@ manual_check_latest_version() {
   echo 'OpenSnitch stable '"$opensnitch_stable_version"
   opensnitch_latest_version="$($CURL 'https://api.github.com/repos/evilsocket/opensnitch/releases' | grep -m 1 -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   echo 'OpenSnitch latest (dev) '"$opensnitch_latest_version"
+  hashcat_version="$($CURL 'https://api.github.com/repos/hashcat/hashcat/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  echo 'hashcat '"$hashcat_version"
 }
 # manual_check_latest_version
 ################################################################################
@@ -1280,18 +1293,6 @@ $AGI apt-fast"
 ################################################################################
 ## instalation de drawio
 ##------------------------------------------------------------------------------
-# install_drawio() {
-#   displayandexec "Installation des dépendances de drawio              " "$AGI libappindicator3-1"
-#   local tmp_dir="$(mktemp -d)"
-#   displayandexec "Installation de drawio                              " "\
-# $WGET -P "$tmp_dir" https://github.com/jgraph/drawio-desktop/releases/download/v"$drawio_version"/drawio-amd64-"$drawio_version".deb && \
-# dpkg -i "$tmp_dir"/drawio-amd64-"$drawio_version".deb
-# rm -rf "$tmp_dir""
-# }
-################################################################################
-################################################################################
-## instalation de drawio
-##------------------------------------------------------------------------------
 install_drawio() {
   displayandexec "Installation de drawio                              " "\
 mkdir "$manual_install_dir"/drawio/ && \
@@ -1304,15 +1305,13 @@ Name=draw.io
 Exec=$manual_install_dir/drawio/drawio-x86_64-"$drawio_version".AppImage
 Terminal=false
 Type=Application
-Icon=drawio
+Icon=$manual_install_dir/drawio/drawlogo256.png
 StartupWMClass=draw.io
 Comment=diagrams.net desktop
 MimeType=application/vnd.jgraph.mxfile;application/vnd.visio;
 Categories=Graphics;
 EOF
 }
-# si jamais l'icone ne fonctionne pas juste en métant Icon=drawio
-# mettre Icon=$manual_install_dir/drawio/drawlogo256.png
 ################################################################################
 
 ################################################################################
@@ -1569,12 +1568,23 @@ $AGI mkvtoolnix mkvtoolnix-gui"
 ## instalation de Etcher
 ##------------------------------------------------------------------------------
 install_etcher() {
-  displayandexec "Installation des dépendances de Etcher              " "$AGI libappindicator1 libpango1.0-0 libdbusmenu-gtk4 libindicator7 libpangox-1.0-0"
-  local tmp_dir="$(mktemp -d)"
-  displayandexec "Installation de Etcher                              " "\
-$WGET -P "$tmp_dir" https://github.com/balena-io/etcher/releases/download/v"$etcher_version"/balena-etcher-electron_"$etcher_version"_amd64.deb && \
-dpkg -i "$tmp_dir"/balena-etcher-electron_"$etcher_version"_amd64.deb
-rm -rf "$tmp_dir""
+  displayandexec "Installation des dépendances de Etcher              " "\
+mkdir "$manual_install_dir"/balenaEtcher/ && \
+$WGET -P "$manual_install_dir"/balenaEtcher/ https://github.com/balena-io/etcher/releases/download/v"$etcher_version"/balenaEtcher-"$etcher_version"-x64.AppImage && \
+$WGET -P "$manual_install_dir"/balenaEtcher/ 'https://github.com/balena-io/etcher/raw/master/assets/icon.png' && \
+chmod +x "$manual_install_dir"/balenaEtcher/balenaEtcher-"$etcher_version"-x64.AppImage"
+cat> /usr/share/applications/balena-etcher-electron.desktop << EOF
+[Desktop Entry]
+Name=balenaEtcher
+Exec=$manual_install_dir/balenaEtcher/balenaEtcher-$etcher_version-x64.AppImage
+Terminal=false
+Type=Application
+Icon=$manual_install_dir/balenaEtcher/icon.png
+StartupWMClass=balenaEtcher
+Comment=Flash OS images to SD cards and USB drives, safely and easily.
+MimeType=x-scheme-handler/etcher;
+Categories=Utility;
+EOF
 }
 ################################################################################
 
@@ -1729,10 +1739,11 @@ EOF
 ##------------------------------------------------------------------------------
 install_opensnitch() {
   local tmp_dir="$(mktemp -d)"
+  displayandexec "Installation des dépendances de OpenSnitch          " "$AGI libnetfilter-queue1"
   displayandexec "Installation de OpenSnitch                          " "\
   $AGI python3-pyqt5.qtsql python3-pyinotify python3-grpcio python3-slugify && \
-  $WGET -P "$tmp_dir" "https://github.com/evilsocket/opensnitch/releases/download/v"$opensnitch_latest_version"/python3-opensnitch-ui_"$(sed -e 's/\.//3' -e 's/-/\./' <<< "$opensnitch_latest_version")"-1_all.deb" && \
-  $WGET -P "$tmp_dir" "https://github.com/evilsocket/opensnitch/releases/download/v"$opensnitch_latest_version"/opensnitch_"$(sed -e 's/\.//3' -e 's/-/\./' <<< "$opensnitch_latest_version")"-1_amd64.deb" && \
+  $WGET -P "$tmp_dir" https://github.com/evilsocket/opensnitch/releases/download/v"$opensnitch_latest_version"/python3-opensnitch-ui_"$(sed -e 's/\.//3' -e 's/-/\./' <<< "$opensnitch_latest_version")"-1_all.deb && \
+  $WGET -P "$tmp_dir" https://github.com/evilsocket/opensnitch/releases/download/v"$opensnitch_latest_version"/opensnitch_"$(sed -e 's/\.//3' -e 's/-/\./' <<< "$opensnitch_latest_version")"-1_amd64.deb && \
   dpkg -i "$tmp_dir"/opensnitch_"$(sed -e 's/\.//3' -e 's/-/\./' <<< "$opensnitch_latest_version")"-1_amd64.deb && \
   dpkg -i "$tmp_dir"/python3-opensnitch-ui_"$(sed -e 's/\.//3' -e 's/-/\./' <<< "$opensnitch_latest_version")"-1_all.deb && \
   $AG install -f -y
@@ -1740,9 +1751,6 @@ install_opensnitch() {
 }
 # l'installation de OpenSnitch est intérecatif mais n'utilise pas d'entrés dans debconf-set-selections
 # potentiellement qu'on peut corriger le problème avec debian non-interractive
-
-# attention lors de l'install de OpenSnitch, il y a eu une érreur de l'install et à priori le paquet libnetfilter-queue1 est requis
-# voir donc comment il se gère qunad OpenSnitch s'installe correctement ou si il faut ajouter ce paquet comme une dépendance à installer avavnt en prérequis
 
 # attention, il y a un soucis dans la gestion de la valeur de la version par rapport au lien qu'il faut utiliser pour téléchrager les .deb
 # il y a un point qui est présent dans la valeur de la version mais qui ne l'est pas dans la deuxième partie de l'URL
@@ -1767,8 +1775,8 @@ EOF
 }
 install_ansible_bullseye() {
   displayandexec "Installation de Ansible                             " "\
-echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/ansible-archive-keyring.gpg] deb http://ppa.launchpad.net/ansible/ansible-4/ubuntu bionic main' > /etc/apt/sources.list.d/ansible.list && \
-$CURL 'https://updates.signal.org/desktop/apt/keys.asc' | gpg --dearmor --output /usr/share/keyrings/ansible-archive-keyring.gpg && \
+echo 'deb [arch=amd64] deb http://ppa.launchpad.net/ansible/ansible-4/ubuntu focal main' > /etc/apt/sources.list.d/ansible.list && \
+apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 93C4A3FD7BB9C367 && \
 $AG update && \
 $AGI ansible"
 $ExeAsUser cat>> /home/"$local_user"/.bashrc << 'EOF'
@@ -1777,22 +1785,23 @@ $ExeAsUser cat>> /home/"$local_user"/.bashrc << 'EOF'
 export EDITOR=nano
 EOF
 }
+# echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/ansible-archive-keyring.gpg] deb http://ppa.launchpad.net/ansible/ansible-4/ubuntu focal main' > /etc/apt/sources.list.d/ansible.list && \
+# $CURL '' | gpg --dearmor --output /usr/share/keyrings/ansible-archive-keyring.gpg && \
 ################################################################################
 
 ################################################################################
 ## instalation de Hashcat
 ##------------------------------------------------------------------------------
 install_hashcat() {
+  local tmp_dir="$(mktemp -d)"
   displayandexec "Installation de Hashcat                             " "\
-  local tmp_dir="$(mktemp -d)" && \
-  hashcat_version
-  $WGET -P "$tmp_dir" https://github.com/hashcat/hashcat/releases/download/v"$hashcat_version"/hashcat-"$hashcat_version".7z && \
-  mkdir "$manual_install_dir"/hashcat && \
-  7z z "$tmp_dir"/hashcat-"$hashcat_version".7z -o"$manual_install_dir"/hashcat && \
-  chown -R "$local_user":"$local_user" "$manual_install_dir"/hashcat && \
-  # hashcat a besoin d'être capable d'écrire dans son répertoire, il faut donc soit associ le répertoire à l'utilisateur soit le lancer en sudo
-  ln -s "$manual_install_dir"/hashcat/hashcat-"$hashcat_version"/hashcat.bin /usr/bin/hashcat && \
-  rm -rf "$tmp_dir""
+$WGET -P "$tmp_dir" https://github.com/hashcat/hashcat/releases/download/v"$hashcat_version"/hashcat-"$hashcat_version".7z && \
+mkdir "$manual_install_dir"/hashcat && \
+7z z "$tmp_dir"/hashcat-"$hashcat_version".7z -o"$manual_install_dir"/hashcat && \
+chown -R "$local_user":"$local_user" "$manual_install_dir"/hashcat && \
+# hashcat a besoin d'être capable d'écrire dans son répertoire, il faut donc soit associ le répertoire à l'utilisateur soit le lancer en sudo
+ln -s "$manual_install_dir"/hashcat/hashcat-"$hashcat_version"/hashcat.bin /usr/bin/hashcat && \
+rm -rf "$tmp_dir""
 }
 ################################################################################
 
@@ -3717,9 +3726,6 @@ fi
 
 # apparement obligatoire pour executer Signal
 chmod 4755 /opt/Signal/chrome-sandbox
-
-# apparement obligatoire pour executer draw.io
-# chmod 4755 /opt/drawio/chrome-sandbox
 
 # apparement obligatoire pour executer balena-etcher
 chmod 4755 /opt/balenaEtcher/chrome-sandbox
