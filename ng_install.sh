@@ -49,10 +49,6 @@
 
 ## les paramètres du lancement de chromium sont stocker danc ce fichier bat /etc/chromium.d/default-flags
 
-# sudo systemctl stop clamav-freshclam.service
-#
-# Pour réduire le nombre de
-# sed -i 's/Checks .*/Checks 3/g' /etc/clamav/freshclam.conf
 
 
 # exemple de contenu du .zshrc (provient d'une Kali)
@@ -374,13 +370,12 @@
 # - regarder de près concernant l'intéret de d'installer le librairie du wivedine de google dans le chromium de debian
 # - ajouter le theme du gnome-terminal (https://github.com/denysdovhan/one-gnome-terminal) pour obtenir la même palette de couleur que atom
 # - rajouter une variable qui contient l'usage du script pour afficher de quel manière l'utiliser lorsque d'un des arguments n'est pas correct (l'équivalent d'un --help)
-# - rajouter sed -i 's/^Checks .*/Checks 1/g' /etc/clamav/freshclam.conf dans la conf clamav
 # - ils ont changer l'install de FreeFileSync avec maintenant un binaire pour l'install (indice : bat -A /opt/manual_install/FreeFileSync_11.6_Install.run | more)
 # - regarder pour installer timeshift (sauvegarde incrémentale de l'OS) (l'installer depuis les releases https://github.com/teejee2008/Timeshift/releases car trop vieux depuis les dépos de debian) (c'est un .deb)
 # - potentiellement intégrer l'installation de l'outil xdotool
 # - potentiellement instaler le paquet sysstat
 # - potentiellement installer le paquet iozone3
-# - remplacer la valeur buster par bullseye dans install_virtualbox_bullseye lorsque VirtualBox mettera à dispo les binaires pour cette release (pour checker : https://download.virtualbox.org/virtualbox/debian/pool/contrib/v/virtualbox-6.1/)
+# - rajouter dans le script sysupdateNG la mise à jour de drawio
 ################################################################################
 
 ################################################################################
@@ -563,9 +558,9 @@ onlyexec() {
 ################################################################################
 ## vérification de l'espace disponnible minimum sur /
 ##------------------------------------------------------------------------------
-check_available_space() {
+check_available_space_in_root() {
   available_space="$(df --block-size=G / | awk '(NR>1){print $4}' | sed 's/.$//')"
-  # peut aussi se faire en utilisant une seule redirection : "$(df --block-size=G / | awk '(NR>1){gsub(/.$/,"",$4);print $4}')"
+  # peut aussi se faire en utilisant une seule redirection : "$(df --block-size=G / | awk '(NR>1){gsub(/.$/,"",$4); print $4}')"
   if [ "$available_space" -lt 10 ]; then
       echo -e "${RED}######################################################################${RESET}" | tee -a "$log_file"
       echo -e "${RED}#${RESET}  Il faut au minimum 10 Go d'espace libre pour executer le script.  ${RED}#${RESET}" | tee -a "$log_file"
@@ -573,8 +568,25 @@ check_available_space() {
       exit 1
   fi
 }
-check_available_space
+check_available_space_in_root
 # On vérifie qu'il y a au minimum 10 Go de disponnible sur /
+################################################################################
+
+################################################################################
+## vérification de l'espace disponnible minimum sur /var
+##------------------------------------------------------------------------------
+check_available_space_in_var() {
+  available_space="$(df --block-size=G /var | awk '(NR>1){print $4}' | sed 's/.$//')"
+  # peut aussi se faire en utilisant une seule redirection : "$(df --block-size=G /var | awk '(NR>1){gsub(/.$/,"",$4); print $4}')"
+  if [ "$available_space" -lt 5 ]; then
+      echo -e "${RED}######################################################################${RESET}" | tee -a "$log_file"
+      echo -e "${RED}#${RESET}  Il faut au minimum 5 Go d'espace libre pour executer le script.   ${RED}#${RESET}" | tee -a "$log_file"
+      echo -e "${RED}######################################################################${RESET}" | tee -a "$log_file"
+      exit 1
+  fi
+}
+check_available_space_in_var
+# On vérifie qu'il y a au minimum 10 Go de disponnible sur /var
 ################################################################################
 
 ################################################################################
@@ -720,7 +732,7 @@ check_latest_version_manual_install_apps() {
 
     opensnitch_stable_version="$($CURL 'https://api.github.com/repos/evilsocket/opensnitch/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
     if [ $? != 0 ] || [ -z "$opensnitch_stable_version" ]; then
-        opensnitch_stable_version='1.3.6'
+        opensnitch_stable_version='1.4.0'
     fi
     # check version : https://github.com/evilsocket/opensnitch/releases/
 
@@ -897,7 +909,7 @@ deb-src http://deb.debian.org/debian/ $debian_release main contrib non-free
 deb http://security.debian.org/debian-security $debian_release/updates main contrib
 deb-src http://security.debian.org/debian-security $debian_release/updates main contrib
 
-# "$debian_release"-updates, previously known as 'volatile'
+# \$debian_release-updates, previously known as 'volatile'
 deb http://deb.debian.org/debian/ $debian_release-updates main contrib
 deb-src http://deb.debian.org/debian/ $debian_release-updates main contrib
 
@@ -915,7 +927,7 @@ deb-src http://deb.debian.org/debian/ $debian_release main contrib non-free
 deb http://security.debian.org/debian-security $debian_release-security main contrib
 deb-src http://security.debian.org/debian-security $debian_release-security main contrib
 
-# "$debian_release"-updates, previously known as 'volatile'
+# \$debian_release-updates, previously known as 'volatile'
 deb http://deb.debian.org/debian/ $debian_release-updates main contrib non-free
 deb-src http://deb.debian.org/debian/ $debian_release-updates main contrib non-free
 
@@ -1021,6 +1033,7 @@ shopt -u nocasematch
 displayandexec "Installation de ascii                               " "$AGI ascii"
 displayandexec "Installation de aria2                               " "$AGI aria2"
 displayandexec "Installation de arping                              " "$AGI arping"
+displayandexec "Installation de auditd                              " "$AGI auditd"
 displayandexec "Installation de audacity                            " "$AGI audacity"
 displayandexec "Installation de apparmor-profiles                   " "$AGI apparmor-profiles"
 displayandexec "Installation de apparmor-profiles-extra             " "$AGI apparmor-profiles-extra"
@@ -1119,7 +1132,7 @@ displayandexec "Installation de wireshark                           " "$AGI wire
 displayandexec "Installation de xinput                              " "$AGI xinput"
 displayandexec "Installation de xorriso                             " "$AGI xorriso"
 displayandexec "Installation de yersinia                            " "$AGI yersinia"
-displayandexec "Installation de zenmap                              " "$AGI zenmap" # zenmap n'est pas dispo dans debian testing car python2 est EOL, pour traquer l'avencement du portage du code vers python3 : https://github.com/nmap/nmap/issues/1176  donc il faudra probablement le supprimer du script tant qu'il ne réapparait pas dans les dépot debian
+displayandexec "Installation de zenmap                              " "$AGI zenmap" # zenmap n'est pas dispo dans debian bullseye car python2 est EOL, pour traquer l'avencement du portage du code vers python3 : https://github.com/nmap/nmap/issues/1176  donc il faudra probablement le supprimer du script tant qu'il ne réapparait pas dans les dépot debian
 displayandexec "Installation de zip                                 " "$AGI zip"
 displayandexec "Installation de zutils                              " "$AGI zutils"
 displayandexec "Installation de zsh                                 " "$AGI zsh"
@@ -1137,7 +1150,6 @@ install_zfs_buster() {
   sed -i "s%^deb http://deb.debian.org/debian "$debian_release"-backports%#deb http://deb.debian.org/debian "$debian_release"-backports%" /etc/apt/sources.list && \
   $AG update
 }
-install_zfs_buster
 
 install_zfs_bullseye() {
   displayandexec "Installation de ZFS                                 " "\
@@ -1147,7 +1159,6 @@ install_zfs_bullseye() {
   $AGI zfsutils-linux zfs-dkms zfs-zed && \
   modprobe zfs"
 }
-install_zfs_bullseye
 
 if [ "$buster" == 1 ]; then
  install_zfs_buster
@@ -1269,14 +1280,39 @@ $AGI apt-fast"
 ################################################################################
 ## instalation de drawio
 ##------------------------------------------------------------------------------
+# install_drawio() {
+#   displayandexec "Installation des dépendances de drawio              " "$AGI libappindicator3-1"
+#   local tmp_dir="$(mktemp -d)"
+#   displayandexec "Installation de drawio                              " "\
+# $WGET -P "$tmp_dir" https://github.com/jgraph/drawio-desktop/releases/download/v"$drawio_version"/drawio-amd64-"$drawio_version".deb && \
+# dpkg -i "$tmp_dir"/drawio-amd64-"$drawio_version".deb
+# rm -rf "$tmp_dir""
+# }
+################################################################################
+################################################################################
+## instalation de drawio
+##------------------------------------------------------------------------------
 install_drawio() {
-  displayandexec "Installation des dépendances de drawio              " "$AGI libappindicator3-1"
-  local tmp_dir="$(mktemp -d)"
   displayandexec "Installation de drawio                              " "\
-$WGET -P "$tmp_dir" https://github.com/jgraph/drawio-desktop/releases/download/v"$drawio_version"/drawio-amd64-"$drawio_version".deb && \
-dpkg -i "$tmp_dir"/drawio-amd64-"$drawio_version".deb
-rm -rf "$tmp_dir""
+mkdir "$manual_install_dir"/drawio/ && \
+$WGET -P "$manual_install_dir"/drawio/ https://github.com/jgraph/drawio-desktop/releases/download/v"$drawio_version"/drawio-x86_64-"$drawio_version".AppImage && \
+chmod +x "$manual_install_dir"/drawio/drawio-x86_64-"$drawio_version".AppImage && \
+$WGET -P "$manual_install_dir"/drawio/ 'https://raw.githubusercontent.com/jgraph/drawio/master/src/main/webapp/images/drawlogo256.png'"
+cat> /usr/share/applications/drawio.desktop << EOF
+[Desktop Entry]
+Name=draw.io
+Exec=$manual_install_dir/drawio/drawio-x86_64-"$drawio_version".AppImage
+Terminal=false
+Type=Application
+Icon=drawio
+StartupWMClass=draw.io
+Comment=diagrams.net desktop
+MimeType=application/vnd.jgraph.mxfile;application/vnd.visio;
+Categories=Graphics;
+EOF
 }
+# si jamais l'icone ne fonctionne pas juste en métant Icon=drawio
+# mettre Icon=$manual_install_dir/drawio/drawlogo256.png
 ################################################################################
 
 ################################################################################
@@ -1418,8 +1454,8 @@ EOF
 install_virtualbox_bullseye() {
   displayandexec "Installation des dépendances de VirtualBox          " "$AGI dkms"
   displayandexec "Installation de VirtualBox                          " "\
-echo 'deb [signed-by=/usr/share/keyrings/virtualbox-archive-keyring.gpg] https://download.virtualbox.org/virtualbox/debian buster contrib' > /etc/apt/sources.list.d/virtualbox.list && \
-$WGET --output-document - 'https://www.virtualbox.org/download/oracle_vbox.asc' | gpg --dearmor --output /usr/share/keyrings/virtualbox-archive-keyring.gpg && \
+echo 'deb [signed-by=/usr/share/keyrings/virtualbox-archive-keyring.gpg] https://download.virtualbox.org/virtualbox/debian bullseye contrib' > /etc/apt/sources.list.d/virtualbox.list && \
+$WGET --output-document - 'https://www.virtualbox.org/download/oracle_vbox_2016.asc' | gpg --dearmor --output /usr/share/keyrings/virtualbox-archive-keyring.gpg && \
 $AG update && \
 $AGI virtualbox-6.1"
   # virtualbox_version=$(virtualbox --help | grep v[0-9] | cut -c 35-) # ancienne version
@@ -1609,8 +1645,8 @@ cat> /etc/apt/sources.list.d/asbru-cm_asbru-cm.list << 'EOF'
 # this file was generated by packagecloud.io for
 # the repository at https://packagecloud.io/asbru-cm/asbru-cm
 
-deb [arch=amd64 signed-by=/usr/share/keyrings/asbru-archive-keyring.gpg] https://packagecloud.io/asbru-cm/asbru-cm/debian/ bullseye main
-#deb-src https://packagecloud.io/asbru-cm/asbru-cm/debian/ bullseye main
+deb [arch=amd64 signed-by=/usr/share/keyrings/asbru-archive-keyring.gpg] https://packagecloud.io/asbru-cm/asbru-cm/debian/ buster main
+#deb-src https://packagecloud.io/asbru-cm/asbru-cm/debian/ buster main
 EOF
 $CURL --location 'https://packagecloud.io/asbru-cm/asbru-cm/gpgkey' | gpg --dearmor --output /usr/share/keyrings/asbru-archive-keyring.gpg && \
 $AG update && \
@@ -1723,7 +1759,7 @@ echo 'deb [arch=amd64] http://ppa.launchpad.net/ansible/ansible-4/ubuntu bionic 
 apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 93C4A3FD7BB9C367 && \
 $AG update && \
 $AGI ansible"
-$ExeAsUser cat>> /home/"$local_user"/.bashrc  << 'EOF'
+$ExeAsUser cat>> /home/"$local_user"/.bashrc << 'EOF'
 
 # for Ansible vault editor
 export EDITOR=nano
@@ -1735,7 +1771,7 @@ echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/ansible-archive-keyring.gpg]
 $CURL 'https://updates.signal.org/desktop/apt/keys.asc' | gpg --dearmor --output /usr/share/keyrings/ansible-archive-keyring.gpg && \
 $AG update && \
 $AGI ansible"
-$ExeAsUser cat>> /home/"$local_user"/.bashrc  << 'EOF'
+$ExeAsUser cat>> /home/"$local_user"/.bashrc << 'EOF'
 
 # for Ansible vault editor
 export EDITOR=nano
@@ -1823,8 +1859,8 @@ install_all_manual_install_apps_bullseye() {
   install_joplin
   install_krita
   install_opensnitch
-  # install_ansible_bullseye
-  # install_hashcat
+  install_ansible_bullseye
+  install_hashcat
   install_sshuttle
 }
 
@@ -2449,7 +2485,7 @@ chmod +x /usr/bin/scanmyhome"
 ## install du scrip rktscan
 ##------------------------------------------------------------------------------
 install_rktscan() {
-cat> /usr/bin/rktscan  << 'EOF'
+cat> /usr/bin/rktscan << 'EOF'
 echo "scan de rootkit avec rkhunter"
 sudo rkhunter --checkall --report-warnings-only
 echo "--------------------------------------------------------------------------------"
@@ -2475,7 +2511,7 @@ chmod +x /usr/bin/spyme"
 ## install du scrip check_domain_creation_date
 ##------------------------------------------------------------------------------
 install_check_domain_creation_date() {
-cat> /usr/bin/check_domain_creation_date  << 'EOF'
+cat> /usr/bin/check_domain_creation_date << 'EOF'
 #!/bin/bash
 
 domain_creation_date="$(whois "$1" | grep -Po -m 1 '(Creation Date:[[:space:]])\K(\d+-\d+-\d+)')"
@@ -2500,6 +2536,7 @@ else
 fi
 
 exit 0
+EOF
 displayandexec "Installation du script check_domain_creation_date   " "chmod +x /usr/bin/check_domain_creation_date"
 ################################################################################
 
@@ -2507,7 +2544,7 @@ displayandexec "Installation du script check_domain_creation_date   " "chmod +x 
 ## install du scrip appairmebt
 ##------------------------------------------------------------------------------
 install_appairmebt() {
-cat> /usr/bin/appairmebt  << 'EOF'
+cat> /usr/bin/appairmebt << 'EOF'
 gdbus call --session --dest org.gnome.SettingsDaemon.Rfkill --object-path /org/gnome/SettingsDaemon/Rfkill --method org.freedesktop.DBus.Properties.Set "org.gnome.SettingsDaemon.Rfkill" "BluetoothAirplaneMode" "<false>" > /dev/null
 bluetoothctl select AA:AA:AA:AA:AA:AA > /dev/null
 bluetoothctl power on > /dev/null
@@ -2574,7 +2611,7 @@ displayandexec "Installation du script appairmebt                   " "chmod +x 
 ## install du script desactivebt
 ##------------------------------------------------------------------------------
 install_desactivebt() {
-cat> /usr/bin/desactivebt  << 'EOF'
+cat> /usr/bin/desactivebt << 'EOF'
 gdbus call --session --dest org.gnome.SettingsDaemon.Rfkill --object-path /org/gnome/SettingsDaemon/Rfkill --method org.freedesktop.DBus.Properties.Set "org.gnome.SettingsDaemon.Rfkill" "BluetoothAirplaneMode" "<true>" > /dev/null
 EOF
 displayandexec "Installation du script desactivebt                  " "chmod +x /usr/bin/desactivebt"
@@ -2585,7 +2622,7 @@ displayandexec "Installation du script desactivebt                  " "chmod +x 
 ## install du script play_pause_chromium
 ##------------------------------------------------------------------------------
 install_play_pause_chromium() {
-  cat> /usr/bin/play_pause_chromium  << 'EOF'
+  cat> /usr/bin/play_pause_chromium << 'EOF'
 dbus_dest_org="$(dbus-send --session --dest=org.freedesktop.DBus --type=method_call --print-reply /org/freedesktop/DBus org.freedesktop.DBus.ListNames | awk '/org.mpris.MediaPlayer2.chromium/ {gsub(/\"/,"");print $2}')" && \
 dbus-send --print-reply --dest=$dbus_dest_org /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player.PlayPause > /dev/null
 EOF
@@ -3097,7 +3134,16 @@ systemctl restart auditd
 ## configuration de /etc/inputrc
 ##------------------------------------------------------------------------------
 # # do not bell on tab-completion
-sed -i 's/#set bell-style none/set bell-style none/' /etc/inputrc
+sed -i 's/# set bell-style none/set bell-style none/' /etc/inputrc
+################################################################################
+
+################################################################################
+## configuration de freshclam (clamav)
+##------------------------------------------------------------------------------
+sed -E -i 's/^Checks [[:digit:]]+/Checks 1/g' /etc/clamav/freshclam.conf
+# Check for new database 1 times a day (insteed of 24)
+# les logs de freshclam sont dans /var/log/clamav/freshclam.log
+# c'est le service clamav-freshclam qui fait tourner freshclam
 ################################################################################
 
 ################################################################################
@@ -3113,7 +3159,7 @@ Language=fr' > /home/"$local_user"/.config/stacer/settings.ini
 ## configuration de Etcher
 ##------------------------------------------------------------------------------
 [ -d /home/"$local_user"/.config/balena-etcher-electron/ ] || $ExeAsUser mkdir /home/"$local_user"/.config/balena-etcher-electron/ && \
-$ExeAsUser cat> /home/"$local_user"/.config/balena-etcher-electron/config.json  << 'EOF'
+$ExeAsUser cat> /home/"$local_user"/.config/balena-etcher-electron/config.json << 'EOF'
 {
   "errorReporting": false,
   "updatesEnabled": false,
@@ -3139,9 +3185,9 @@ sed -i 's/WEB_CMD=\"\/bin\/false\"/WEB_CMD=\"\"/' /etc/rkhunter.conf
 create_template_for_new_file() {
   [ -d /home/"$local_user"/Modèles/ ] && template_dir="/home/"$local_user"/Modèles/"
   [ -d /home/"$local_user"/Templates/ ] && template_dir="/home/"$local_user"/Templates/"
-  touch ""$template_dir"/Fichier Texte.txt" && \
-  touch ""$template_dir"/Document ODT.txt" && \
-  unoconv -f odt ""$template_dir"/Document ODT.txt" && \
+  $ExeAsUser touch ""$template_dir"/Fichier Texte.txt" && \
+  $ExeAsUser touch ""$template_dir"/Document ODT.txt" && \
+  $ExeAsUser unoconv -f odt ""$template_dir"/Document ODT.txt" && \
   rm -f ""$template_dir"/Document ODT.txt"
 # ref : https://ask.libreoffice.org/en/question/153444/how-to-create-empty-libreoffice-file-in-a-current-directory-on-the-command-line/
 }
@@ -3200,7 +3246,7 @@ sed -i 's/# set linenumbers/set linenumbers/g' /etc/nanorc
 ## configuration de atom
 ##------------------------------------------------------------------------------
 [ -d /home/"$local_user"/.atom/ ] || $ExeAsUser mkdir /home/"$local_user"/.atom/ && \
-$ExeAsUser cat> /home/"$local_user"/.atom/config.cson  << 'EOF'
+$ExeAsUser cat> /home/"$local_user"/.atom/config.cson << 'EOF'
 "*":
   autosave:
     enabled: true
@@ -3224,6 +3270,8 @@ $ExeAsUser apm install tab-title"
 # apm install markdown-pdf
 # apm install atom-marp
 # regarder pour faire du collaboratif avec atom : https://atom.io/packages/teletype
+
+# pour voir la liste des plugins installés : apm ls
 ################################################################################
 
 ################################################################################
@@ -3261,8 +3309,8 @@ $ExeAsUser echo '7b22696e697469616c697a655f766572223a22302e392e3738222c226c696e6
 # début de réflexion pour faire des confs sur des apps qui utilise une base de donnée pour stocker la conf
 # apt-get install -y sqlite3 && sqlite3 .config/joplin-desktop/database.sqlite "select * from settings"
 
-[ -d /home/$local_user/.config/Joplin/ ] || $ExeAsUser mkdir /home/$local_user/.config/Joplin/ && \
-$ExeAsUser cat> /home/$local_user/.config/Joplin/Preferences << 'EOF'
+[ -d /home/"$local_user"/.config/Joplin/ ] || $ExeAsUser mkdir /home/"$local_user"/.config/Joplin/ && \
+$ExeAsUser cat> /home/"$local_user"/.config/Joplin/Preferences << 'EOF'
 {"spellcheck":{"dictionaries":["fr"],"dictionary":""}}
 EOF
 ################################################################################
@@ -3532,7 +3580,7 @@ CustomGnomeShortcut "désactiver le bluetooth" "/usr/bin/desactivebt" "<Primary>
 ## configuration des MIME types
 ##------------------------------------------------------------------------------
 # bien faire attention au point virgule, présent dans "Added Associations" mais pas dans "Default Applications"
-$ExeAsUser cat> /home/"$local_user"/.config/mimeapps.list  << 'EOF'
+$ExeAsUser cat> /home/"$local_user"/.config/mimeapps.list << 'EOF'
 [Added Associations]
 application/octet-stream=atom.desktop;
 application/vnd.jgraph.mxfile=drawio.desktop;
@@ -3671,7 +3719,7 @@ fi
 chmod 4755 /opt/Signal/chrome-sandbox
 
 # apparement obligatoire pour executer draw.io
-chmod 4755 /opt/drawio/chrome-sandbox
+# chmod 4755 /opt/drawio/chrome-sandbox
 
 # apparement obligatoire pour executer balena-etcher
 chmod 4755 /opt/balenaEtcher/chrome-sandbox
@@ -3681,7 +3729,7 @@ chmod 4755 /opt/balenaEtcher/chrome-sandbox
 ##------------------------------------------------------------------------------
 
 # alias for the user
-$ExeAsUser cat>> /home/"$local_user"/.bashrc <<EOF
+$ExeAsUser cat>> /home/"$local_user"/.bashrc << EOF
 
 # alias perso
 alias ll='ls --color=always -l -h'
@@ -3718,11 +3766,11 @@ is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/\$1 ;}
 export EDITOR=nano
 
 # for python binnary
-export PATH="\$PATH:/home/"$local_user"/.local/bin"
+export PATH="\$PATH:/home/$local_user/.local/bin"
 EOF
 
 # alias for root
-cat>> /root/.bashrc <<EOF
+cat>> /root/.bashrc << EOF
 
 # alias perso
 alias ll='ls --color=always -l -h'
@@ -3750,7 +3798,7 @@ EOF
 displayandexec "Configuration du bashrc                             " "stat /root/.bashrc && stat /home/$local_user/.bashrc"
 
 
-$ExeAsUser cat>> /home/"$local_user"/.zshrc <<'EOF'
+$ExeAsUser cat>> /home/"$local_user"/.zshrc << 'EOF'
 setopt autocd              # change directory just by typing its name
 #setopt correct            # auto correct mistakes
 setopt interactivecomments # allow comments in interactive mode
@@ -3942,7 +3990,9 @@ if [ -f /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh ]; then
     ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=#999'
 fi
 EOF
-displayandexec "Configuration du zshrc                             " "stat /root/.zshrc && stat /home/$local_user/.zshrc"
+displayandexec "Configuration du zshrc                             " "stat /home/"$local_user"/.zshrc"
+# rajouter stat /root/.zshrc &&
+# si on  met aussi la conf zsh pour root
 ################################################################################
 
 # Commande temporaire pour éviter que des fichiers de /home/user/.config n'appartienent à root lors de l'install, sans qu'on comprenne bien pourquoi (executé par ExeAsUser)
@@ -3983,7 +4033,7 @@ $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" 
 ##------------------------------------------------------------------------------
 # /etc/init.d/knockd stop
 # /etc/init.d/fail2ban stop
-displayandexec "Redémarage du service SSH                           " "systemctl restart ssh.service"
+displayandexec "Redémarage du service SSH                           " "systemctl restart ssh"
 ################################################################################
 
 ################################################################################
