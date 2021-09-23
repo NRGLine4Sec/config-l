@@ -1974,8 +1974,10 @@ install_GSH_system_monitor() {
   $AGI gnome-shell-extension-system-monitor && \
   $ExeAsUser gnome-shell-extension-tool -e 'system-monitor@paradoxxx.zero.gmail.com'
 }
-displayandexec "Installation des Gnome Shell Extension              " "\
-"$(install_GSH_screenshot_tool)" && "$(install_GSH_system_monitor)""
+#displayandexec "Installation des Gnome Shell Extension              " "\
+#"
+install_GSH_screenshot_tool
+install_GSH_system_monitor
 }
 
 install_GSH_bullseye() {
@@ -1992,8 +1994,10 @@ install_GSH_system_monitor() {
   $AGI gnome-shell-extension-system-monitor && \
   $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'system-monitor@paradoxxx.zero.gmail.com'
 }
-displayandexec "Installation des Gnome Shell Extension              " "\
-$(install_GSH_screenshot_tool) && $(install_GSH_system_monitor)"
+#displayandexec "Installation des Gnome Shell Extension              " "\
+#"
+install_GSH_screenshot_tool
+install_GSH_system_monitor
 }
 
 if [ "$buster" == 1 ]; then
