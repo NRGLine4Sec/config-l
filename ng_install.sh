@@ -752,6 +752,12 @@ check_latest_version_manual_install_apps() {
         hashcat_version='6.2.4'
     fi
     # check version : https://github.com/hashcat/hashcat/releases/
+
+    winscp_version="$($CURL 'https://winscp.net/eng/downloads.php' | grep 'Portable.zip' | grep -Po '(?<=WinSCP-)([[:digit:]]+\.+[[:digit:]]+\.[[:digit:]]+)(?=-Portable.zip")')"
+    if [ $? != 0 ] || [ -z "$winscp_version" ]; then
+        winscp_version='5.19.2'
+    fi
+    # check version : https://winscp.net/eng/downloads.php
 }
 
 # tester la commande ci-dessous pour aller chercher les dernière versions directement depuis Github
@@ -809,6 +815,8 @@ manual_check_latest_version() {
   echo 'OpenSnitch latest (dev) '"$opensnitch_latest_version"
   hashcat_version="$($CURL 'https://api.github.com/repos/hashcat/hashcat/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   echo 'hashcat '"$hashcat_version"
+  winscp_version="$($CURL 'https://winscp.net/eng/downloads.php' | grep 'Portable.zip' | grep -Po '(?<=WinSCP-)([[:digit:]]+\.+[[:digit:]]+\.[[:digit:]]+)(?=-Portable.zip")')"
+  echo 'WinSCP '"$winscp_version"
 }
 # manual_check_latest_version
 ################################################################################
@@ -1225,12 +1233,29 @@ $AGI atom"
 ################################################################################
 ## instalation de WinSCP
 ##------------------------------------------------------------------------------
+# install_winscp() {
+#   local tmp_dir="$(mktemp -d)"
+#   displayandexec "Installation de WinSCP                              " "\
+# mkdir "$manual_install_dir"/winscp/ && \
+# $WGET -P "$tmp_dir" 'https://winscp.net/download/files/2018112321450c4c95c4f6a1a05e87651a955f47e31f/WinSCP-5.13.5-Portable.zip' && \
+# unzip "$tmp_dir"/WinSCP-5.13.5-Portable.zip -d "$manual_install_dir"/winscp/ && \
+# echo "wine "$manual_install_dir"/winscp/WinSCP.exe" > /usr/bin/winscp && \
+# chmod +x /usr/bin/winscp
+# rm -rf "$tmp_dir""
+# }
+# WinSCP utilise wine32 pour s'executer
+# vérifier si la dernière version de WinSCP a besoin spécifiquement de wine32
+################################################################################
+
+################################################################################
+## instalation de WinSCP
+##------------------------------------------------------------------------------
 install_winscp() {
   local tmp_dir="$(mktemp -d)"
   displayandexec "Installation de WinSCP                              " "\
 mkdir "$manual_install_dir"/winscp/ && \
-$WGET -P "$tmp_dir" 'https://winscp.net/download/files/2018112321450c4c95c4f6a1a05e87651a955f47e31f/WinSCP-5.13.5-Portable.zip' && \
-unzip "$tmp_dir"/WinSCP-5.13.5-Portable.zip -d "$manual_install_dir"/winscp/ && \
+$WGET -P "$tmp_dir" https://winscp.net/download/WinSCP-"$winscp_version"-Portable.zip && \
+unzip "$tmp_dir"/WinSCP-"$winscp_version"-Portable.zip -d "$manual_install_dir"/winscp/ && \
 echo "wine "$manual_install_dir"/winscp/WinSCP.exe" > /usr/bin/winscp && \
 chmod +x /usr/bin/winscp
 rm -rf "$tmp_dir""
@@ -1245,7 +1270,7 @@ rm -rf "$tmp_dir""
 install_veracrypt() {
   local tmp_dir="$(mktemp -d)"
   displayandexec "Installation de veracrypt                           " "\
-$WGET -P "$tmp_dir" https://launchpad.net/veracrypt/trunk/"$veracrypt_version"/+download/veracrypt-"$veracrypt_version"-setup.tar.bz2 && \
+$WGET -P "$tmp_dir" https://launchpad.net/veracrypt/trunk/"$(tr '[:upper:]' '[:lower:]' <<< "$veracrypt_version")"/+download/veracrypt-"$veracrypt_version"-setup.tar.bz2 && \
 tar xjf "$tmp_dir"/veracrypt-"$veracrypt_version"-setup.tar.bz2 --directory="$tmp_dir" && \
 "$tmp_dir"/veracrypt-"$veracrypt_version"-setup-gui-x64 --nox11 --noexec --target "$tmp_dir" && \
 tail -n +\$(sed -n 's/.*PACKAGE_START=\([0-9]*\).*/\1/p' "$tmp_dir"/veracrypt_install_gui_x64.sh) "$tmp_dir"/veracrypt_install_gui_x64.sh > "$tmp_dir"/veracrypt_installer.tar && \
@@ -1253,6 +1278,11 @@ tar -C / --no-overwrite-dir -xpzvf "$tmp_dir"/veracrypt_installer.tar
 rm -rf "$tmp_dir""
 # on backslash le retour de la command sed car elle est executer dans un bash -c
 # https://stackoverflow.com/questions/1711970/i-cant-seem-to-use-the-bash-c-option-with-arguments-after-the-c-option-st
+
+# ancienne version de l'URL (fonctione très bien quand la version est sous la forme 1.24)
+# $WGET -P "$tmp_dir" https://launchpad.net/veracrypt/trunk/"$veracrypt_version"/+download/veracrypt-"$veracrypt_version"-setup.tar.bz2 && \
+# "$(tr '[:upper:]' '[:lower:]' <<< "$veracrypt_version")" permet de corriger l'URL lorsque la version est sous la forme 1.24-Update7 car l'URL de téléchargement est comme ceci (u en lower) :
+# https://launchpad.net/veracrypt/trunk/1.24-update7/+download/veracrypt-1.24-Update7-setup.tar.bz2
 }
 ################################################################################
 
@@ -1370,7 +1400,7 @@ $AG update && \
 $AGI typora"
 }
 install_typora_bullseye() {
-  displayandexec "Installation des dépendances de Typora              " "\
+  displayandexec "Installation de Typora                              " "\
 cat> /etc/apt/sources.list.d/typora.list << 'EOF'
 deb [signed-by=/usr/share/keyrings/typora-archive-keyring.gpg] https://typora.io/linux ./
 # deb-src https://typora.io/linux ./
@@ -1568,7 +1598,7 @@ $AGI mkvtoolnix mkvtoolnix-gui"
 ## instalation de Etcher
 ##------------------------------------------------------------------------------
 install_etcher() {
-  displayandexec "Installation des dépendances de Etcher              " "\
+  displayandexec "Installation de Etcher                              " "\
 mkdir "$manual_install_dir"/balenaEtcher/ && \
 $WGET -P "$manual_install_dir"/balenaEtcher/ https://github.com/balena-io/etcher/releases/download/v"$etcher_version"/balenaEtcher-"$etcher_version"-x64.AppImage && \
 $WGET -P "$manual_install_dir"/balenaEtcher/ 'https://github.com/balena-io/etcher/raw/master/assets/icon.png' && \
@@ -1775,7 +1805,7 @@ EOF
 }
 install_ansible_bullseye() {
   displayandexec "Installation de Ansible                             " "\
-echo 'deb [arch=amd64] deb http://ppa.launchpad.net/ansible/ansible-4/ubuntu focal main' > /etc/apt/sources.list.d/ansible.list && \
+echo 'deb [arch=amd64] http://ppa.launchpad.net/ansible/ansible-4/ubuntu focal main' > /etc/apt/sources.list.d/ansible.list && \
 apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 93C4A3FD7BB9C367 && \
 $AG update && \
 $AGI ansible"
@@ -1797,11 +1827,11 @@ install_hashcat() {
   displayandexec "Installation de Hashcat                             " "\
 $WGET -P "$tmp_dir" https://github.com/hashcat/hashcat/releases/download/v"$hashcat_version"/hashcat-"$hashcat_version".7z && \
 mkdir "$manual_install_dir"/hashcat && \
-7z z "$tmp_dir"/hashcat-"$hashcat_version".7z -o"$manual_install_dir"/hashcat && \
+7z x "$tmp_dir"/hashcat-"$hashcat_version".7z -o"$manual_install_dir"/hashcat && \
 chown -R "$local_user":"$local_user" "$manual_install_dir"/hashcat && \
-# hashcat a besoin d'être capable d'écrire dans son répertoire, il faut donc soit associ le répertoire à l'utilisateur soit le lancer en sudo
 ln -s "$manual_install_dir"/hashcat/hashcat-"$hashcat_version"/hashcat.bin /usr/bin/hashcat && \
 rm -rf "$tmp_dir""
+# hashcat a besoin d'être capable d'écrire dans son répertoire, il faut donc soit associ le répertoire à l'utilisateur soit le lancer en sudo
 }
 ################################################################################
 
@@ -1952,6 +1982,7 @@ displayandexec "Désinstalation de exim4                             " "$AG remo
 # gnome-extensions est disponnible a partir de Gnome 34
 # should restart gdm with Alt+F2+r
 
+install_GSH_buster() {
 #Screenshot Tool
 install_GSH_screenshot_tool() {
   local GnomeShellExtensionUUID='gnome-shell-screenshot@ttll.de' && \
@@ -1960,23 +1991,47 @@ install_GSH_screenshot_tool() {
   unzip -q "$tmp_dir"/gnome-shell-screenshotttll.de.v40.shell-extension.zip -d "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
   $ExeAsUser gnome-shell-extension-tool -e "$GnomeShellExtensionUUID"
 }
+#system-monitor
 install_GSH_system_monitor() {
   $AGI gnome-shell-extension-system-monitor && \
-  $ExeAsUser gnome-shell-extension-tool -e 'system-monitor\@paradoxxx.zero.gmail.com'
+  $ExeAsUser gnome-shell-extension-tool -e 'system-monitor@paradoxxx.zero.gmail.com'
 }
 displayandexec "Installation des Gnome Shell Extension              " "\
 "$(install_GSH_screenshot_tool)" && "$(install_GSH_system_monitor)""
+}
+
+install_GSH_bullseye() {
+#Screenshot Tool
+install_GSH_screenshot_tool() {
+  local GnomeShellExtensionUUID='gnome-shell-screenshot@ttll.de' && \
+  mkdir -p "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
+  $WGET -P "$tmp_dir" 'https://extensions.gnome.org/extension-data/gnome-shell-screenshotttll.de.v40.shell-extension.zip' && \
+  unzip -q "$tmp_dir"/gnome-shell-screenshotttll.de.v40.shell-extension.zip -d "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
+  $ExeAsUser gnome-extensions enable "$GnomeShellExtensionUUID"
+}
+#system-monitor
+install_GSH_system_monitor() {
+  $AGI gnome-shell-extension-system-monitor && \
+  $ExeAsUser gnome-extensions enable 'system-monitor@paradoxxx.zero.gmail.com'
+}
+displayandexec "Installation des Gnome Shell Extension              " "\
+"$(install_GSH_screenshot_tool)" && "$(install_GSH_system_monitor)""
+}
+
+if [ "$buster" == 1 ]; then
+ install_GSH_buster
+fi
+if [ "$bullseye" == 1 ]; then
+  install_GSH_bullseye
+fi
 
 # Pour obtenir la liste des extensions installés :
 # dconf read /org/gnome/shell/enabled-extensions
-# a priori avec gnome-extensions, on peut faire gnome-extensions list
+# avec gnome-extensions, on peut faire gnome-extensions list
 # on peut aussi lister uniquement les extensions activés avec gnome-extensions list --enabled
 
 # System wide installed gnome-shell extensions are listed with the command
 # ls /usr/share/gnome-shell/extensions/
-
-# Il faut trouver un moyen d'installer l'extesion 'system-monitor@paradoxxx.zero.gmail.com' qui s'intalle normallement depuis gnome-software
-# a priori elle s'install depuis les dépots debian (apt-get install -y gnome-shell-extension-system-monitor)
 
 # potentiellement installer l'extension 'show-ip@sgaraud.github.com'
 # $AGI gnome-shell-extension-show-ip
