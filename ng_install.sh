@@ -3,9 +3,6 @@
 ## Made by NRGLine4Sec
 ##
 
-########################################################
-# Les infos à savoir
-########################################################
 ## Les .desktop créés par alacarte sont dans .local/share/applications
 
 ## Pour retrouver la date d'installation d'un paquet avec apt-get : sudo zgrep "linux-image" /var/log/dpkg.log* | grep " install\| installed "
@@ -129,13 +126,7 @@
 ##
 ##
 #
-# conf de libreoffice
-# https://forum.manjaro.org/t/tutorial-force-libreoffice6-to-use-specific-gtk-theme/40632
-# sudo nano /usr/lib/libreoffice/program/soffice
-# au début du fichier, après la ligne suivante :
-# export LC_ALL
-# rajouter la ligne suivante et enregistrer les modifs
-# export GTK_THEME=Adwaita
+
 #
 #
 # ----
@@ -318,20 +309,6 @@
 # wget -qO- http://bit.ly/cpu_flags | awk -F\| '!/^CLASS/{print $2"|"$3"|"$1}') | column -nexts '|' | sed '1,2s/.*$/'$(printf "\e[1m")'&'$(printf "\e[0m")'/'
 
 
-## regarder pour ajouter une nouvelle fonction pour ne faire que les executions et envoyer les commandes ainsi que leur résultat dans le fichier de log
-## debut du commencement de réflexion :
-# onlyexec() {
-#     echo ">>> $*" >> $log_file 2>&1
-#     bash -c "$*" >> $log_file 2>&1
-#     local ret=$?
-#     if [ $ret != 0 ]; then
-#         echo -e "\r\e[0;30m $message                ${RED}[ERROR]${RESET} " >> $install_file
-#     else
-#         echo -e "\r\e[0;30m $message                ${GREEN}[OK]${RESET} " >> $install_file
-#     fi
-#     return $ret
-# }
-
 
 # gestioin des mots de passe stockés
 # gnome-key - seahorse
@@ -363,7 +340,6 @@
 # regarder par exemple : [ubuntu - How do I get apt-get to ignore some dependencies? - Server Fault](https://serverfault.com/questions/250224/how-do-i-get-apt-get-to-ignore-some-dependencies#:~:text=You%20can%20try%20the%20%2D%2D,the%20option%20%2D%2Dignore%2Ddepends%20.&text=You%20can%20download%20the%20package,would%20like%20to%20be%20ignored.)
 # Une autre façon de faire serrait de le laisser s'installer normallement et de faire un apt-get remove youtube-dl après l'install de mpv, normalment, ça ne casse pas les dépendances de apt.
 # apt-cache depends mpv
-# - corriger une erreur dans le fonctionnement du script sysupdateNG : La fonction qui permet d'avoir le retour des logiciels installés nous retourne les logiciels qui ont besoin d'une mise à jour et non ceux qui ont vraiment été mise à jour, les mises à jours avec des erreurs sont donc notés comme des mises à jour réussi. Peut être qu'il faudrait construire un tableau en parallele qui contient uniquement les mises à jours qui ont réussi et qui affichent celles qui ont échouer par soustraction du tableau qui contient les logiciels avec une mise à jour de disponnible.
 # - essayer de comprendre pouquoi il y a parfois un certain nombre de fichier qui devrait appartenir à l'utilisaeur et qui appartiennet pourtant à l'utilisateur root, parfois, c'est des rerpertoire entier qui appartiennent à root dans .config/
 # Peut être un problème dans l'utilisation de ExeAsUser ?, essayer de monitorer avec des tests.
 # Si vraiment on arrive pas à comprendre pourquoi ni comment résoudre le problème simplement, alors peut être faire un chown -R $USER:$USER /home/$USER/.config/ à la fin du script
@@ -375,7 +351,6 @@
 # - potentiellement intégrer l'installation de l'outil xdotool
 # - potentiellement instaler le paquet sysstat
 # - potentiellement installer le paquet iozone3
-# - rajouter dans le script sysupdateNG la mise à jour de drawio
 ################################################################################
 
 ################################################################################
@@ -387,7 +362,7 @@ set -x
 ################################################################################
 
 #juste pour vérifier que la fonction de calcul du temps d'execution fonctionne correctement, essayer ensuite de trouver une meilleur solution et de supprimer cette ligne
-systemctl restart systemd-timesyncd.service > /dev/null
+systemctl restart systemd-timesyncd > /dev/null
 # utilisé à des fin de stats pour l'éxecution du script
 start_time="$(date +%s)"
 # pose problème lorsque la date et l'heure ne sont pas à jour, il faudrait récuperer le start_time une fois la resyncro éffectué, sinon la valeur du temps d'éexecution du script est abérante
@@ -651,7 +626,7 @@ check_latest_version_manual_install_apps() {
     veracrypt_version="$($CURL 'https://www.veracrypt.fr/en/Downloads.html' | grep 'tar.bz2' | grep -v '.sig\|x86\|Source\|freebsd' | grep -Po '(?<=veracrypt-)([[:digit:]]+\.+[[:digit:]]+)(?=-setup)')"
     # permet de récupérer la version lorsque la release est du type 'veracrypt-1.24-setup.tar.bz2'
     if [ $? != 0 ] || [ -z "$veracrypt_version" ]; then
-      veracrypt_version="$($CURL 'https://www.veracrypt.fr/en/Downloads.html' grep 'tar.bz2' | grep -v '.sig\|x86\|Source\|freebsd' | grep -Po '(?<=veracrypt-)([[:digit:]]+\.+[[:digit:]]+-[[:alnum:]]+)(?=-setup)')"
+      veracrypt_version="$($CURL 'https://www.veracrypt.fr/en/Downloads.html' | grep 'tar.bz2' | grep -v '.sig\|x86\|Source\|freebsd' | grep -Po '(?<=veracrypt-)([[:digit:]]+\.+[[:digit:]]+-[[:alnum:]]+)(?=-setup)')"
       # permet de récupérer la version lorsque la release est du type 'veracrypt-1.24-Update7-setup.tar.bz2'
       if [ $? != 0 ] || [ -z "$veracrypt_version" ]; then
           veracrypt_version='1.24-Update7'
@@ -661,7 +636,7 @@ check_latest_version_manual_install_apps() {
 
     drawio_version="$($CURL 'https://api.github.com/repos/jgraph/drawio-desktop/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
     if [ $? != 0 ] || [ -z "$drawio_version" ]; then
-        drawio_version='11.3.0'
+        drawio_version='15.2.7'
     fi
     # check version : https://github.com/jgraph/drawio-desktop/releases
 
@@ -673,13 +648,13 @@ check_latest_version_manual_install_apps() {
 
     freefilesync_version="$($CURL 'https://freefilesync.org/download.php' | grep 'Linux.tar.gz' | grep -Po '(?<=FreeFileSync_)(\d+\.+\d+)')"
     if [ $? != 0 ] || [ -z "$freefilesync_version" ]; then
-        freefilesync_version='11.3'
+        freefilesync_version='11.14'
     fi
     # check version : https://freefilesync.org/download.php"
 
     boostnote_version="$($CURL 'https://api.github.com/repos/BoostIO/boost-releases/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
     if [ $? != 0 ] || [ -z "$boostnote_version" ]; then
-        boostnote_version='0.12.1'
+        boostnote_version='0.16.1'
     fi
     # check version : https://github.com/BoostIO/boost-releases/releases/
 
@@ -691,11 +666,11 @@ check_latest_version_manual_install_apps() {
 
     shotcut_version="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
     if [ $? != 0 ] || [ -z "$shotcut_version" ]; then
-        shotcut_version='20.11.28'
+        shotcut_version='21.09.20'
     fi
     shotcut_appimage="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"name": "\K.*?(?=")' | grep 'AppImage')"
     if [ $? != 0 ] || [ -z "$shotcut_appimage" ]; then
-        shotcut_appimage='shotcut-linux-x86_64-201128.AppImage'
+        shotcut_appimage='shotcut-linux-x86_64-210920.AppImage'
     fi
     # check version : https://github.com/mltframework/shotcut/releases/
 
@@ -707,31 +682,31 @@ check_latest_version_manual_install_apps() {
 
     keepassxc_version="$($CURL 'https://api.github.com/repos/keepassxreboot/keepassxc/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
     if [ $? != 0 ] || [ -z "$keepassxc_version" ]; then
-        keepassxc_version='2.6.2'
+        keepassxc_version='2.6.6'
     fi
     # check version : https://github.com/keepassxreboot/keepassxc/releases/
 
     bat_version="$($CURL 'https://api.github.com/repos/sharkdp/bat/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
     if [ $? != 0 ] || [ -z "$bat_version" ]; then
-        bat_version='0.17.1'
+        bat_version='0.18.3'
     fi
     # check version : https://github.com/sharkdp/bat/releases/
 
     youtubedl_version="$($CURL 'https://api.github.com/repos/ytdl-org/youtube-dl/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
     if [ $? != 0 ] || [ -z "$youtubedl_version" ]; then
-        youtubedl_version='2020.12.14'
+        youtubedl_version='2021.06.06'
     fi
     # check version : https://github.com/ytdl-org/youtube-dl/releases/
 
     joplin_version="$($CURL 'https://api.github.com/repos/laurent22/joplin/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
     if [ $? != 0 ] || [ -z "$joplin_version" ]; then
-        joplin_version='1.4.19'
+        joplin_version='2.3.5'
     fi
     # check version : https://github.com/laurent22/joplin/releases/
 
     krita_version="$($CURL 'https://krita.org/fr/telechargement/krita-desktop/' | grep 'stable' | grep 'appimage>' | grep -Po '(?<=/stable/krita/)(\d+\.+\d\.\d+)')"
     if [ $? != 0 ] || [ -z "$krita_version" ]; then
-        krita_version='4.4.1'
+        krita_version='4.4.8'
     fi
     # check version : https://krita.org/fr/telechargement/krita-desktop/
 
@@ -783,7 +758,11 @@ check_latest_version_manual_install_apps() {
 ##------------------------------------------------------------------------------
 CURL='curl --silent --show-error'
 manual_check_latest_version() {
-  veracrypt_version="$($CURL 'https://www.veracrypt.fr/en/Downloads.html' | grep 'tar.bz2' | grep -v '.sig\|x86\|Source\|freebsd' | grep -Po '(?<=veracrypt-)(\d+\.+\d+)+\d+')"
+  veracrypt_version="$($CURL 'https://www.veracrypt.fr/en/Downloads.html' | grep 'tar.bz2' | grep -v '.sig\|x86\|Source\|freebsd' | grep -Po '(?<=veracrypt-)([[:digit:]]+\.+[[:digit:]]+)(?=-setup)')"
+  # permet de récupérer la version lorsque la release est du type 'veracrypt-1.24-setup.tar.bz2'
+  if [ $? != 0 ] || [ -z "$veracrypt_version" ]; then
+    veracrypt_version="$($CURL 'https://www.veracrypt.fr/en/Downloads.html' | grep 'tar.bz2' | grep -v '.sig\|x86\|Source\|freebsd' | grep -Po '(?<=veracrypt-)([[:digit:]]+\.+[[:digit:]]+-[[:alnum:]]+)(?=-setup)')"
+  fi
   echo 'VeraCrypt '"$veracrypt_version"
   drawio_version="$($CURL 'https://api.github.com/repos/jgraph/drawio-desktop/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   echo 'drawio '"$drawio_version"
@@ -1471,9 +1450,8 @@ EOF
   # ref : [Debian, SecureBoot et les modules noyaux DKMS - Where is it?](https://medspx.fr/blog/Debian/secure_boot_dkms/)
 
   # test qui vérifie l'activation du SecureBoot
-  which mokutil > /dev/null
-  if [ $? == 0 ]; then
-      test_secure_boot="$(mokutil --sb-state | grep 'SecureBoot')"
+  if command -v mokutil > /dev/null; then
+      test_secure_boot="$(mokutil --sb-state 2> /dev/null | grep 'SecureBoot')"
       if [ "$test_secure_boot" == 'SecureBoot enabled' ]; then
           configure_SecureBoot_params
           # displayandexec "Install du script pour signer module (SecureBoot)   " "$AGI dkms"
@@ -1536,9 +1514,8 @@ EOF
   # ref : [Debian, SecureBoot et les modules noyaux DKMS - Where is it?](https://medspx.fr/blog/Debian/secure_boot_dkms/)
 
   # test qui vérifie l'activation du SecureBoot
-  which mokutil > /dev/null
-  if [ $? == 0 ]; then
-      test_secure_boot="$(mokutil --sb-state | grep 'SecureBoot')"
+  if command -v mokutil > /dev/null; then
+      test_secure_boot="$(mokutil --sb-state 2> /dev/null | grep 'SecureBoot')"
       if [ "$test_secure_boot" == 'SecureBoot enabled' ]; then
           configure_SecureBoot_params
           # displayandexec "Install du script pour signer module (SecureBoot)   " "$AGI dkms"
@@ -2259,13 +2236,27 @@ CheckUpdateOpensnitch() {
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
+CheckUpdateDrawio() {
+  local SoftwareName='Drawio'
+  local v1="$()"
+  local v2="$($CURL 'https://api.github.com/repos/jgraph/drawio-desktop/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
+}
+
+UpdateEtcher() {
+  local SoftwareName='Etcher'
+  local v1="$()"
+  local v2="$($CURL 'https://api.github.com/repos/balena-io/etcher/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
+}
+
 ################################################################################
 
 UpdateShotcut() {
   local shotcut_version="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)" && \
   local shotcut_appimage="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"name": "\K.*?(?=")' | grep 'AppImage')" && \
-  rm -rf /usr/bin/shotcut && \
-  rm -rf "$manual_install_dir"/shotcut/*.AppImage && \
+  rm -f /usr/bin/shotcut && \
+  rm -f "$manual_install_dir"/shotcut/*.AppImage && \
 	$WGET -P "$manual_install_dir"/shotcut/ https://github.com/mltframework/shotcut/releases/download/v"$shotcut_version"/"$shotcut_appimage" && \
 	chmod +x "$manual_install_dir"/shotcut/"$shotcut_appimage" && \
   ln -s "$manual_install_dir"/shotcut/"$shotcut_appimage" /usr/bin/shotcut
@@ -2306,7 +2297,7 @@ UpdateKeepassxc() {
 
 UpdateJoplin() {
   local joplin_version="$($CURL 'https://api.github.com/repos/laurent22/joplin/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)" && \
-  rm -rf "$manual_install_dir"/Joplin/Joplin-*.AppImage && \
+  rm -f "$manual_install_dir"/Joplin/Joplin-*.AppImage && \
   $WGET -P "$manual_install_dir"/Joplin/ https://github.com/laurent22/joplin/releases/download/v"$joplin_version"/Joplin-"$joplin_version".AppImage && \
   chmod +x "$manual_install_dir"/Joplin/Joplin-"$joplin_version".AppImage && \
   sed -i "s,^Exec=.*,Exec="$manual_install_dir"/Joplin/Joplin-"$joplin_version".AppImage --no-sandbox,g" /usr/share/applications/joplin.desktop && \
@@ -2332,7 +2323,7 @@ UpdateBat() {
 
 UpdateKrita() {
   local krita_version="$($CURL 'https://krita.org/fr/telechargement/krita-desktop/' | grep 'stable' | grep 'appimage>' | grep -Po '(?<=/stable/krita/)(\d+\.+\d\.\d+)')" && \
-  rm -rf "$manual_install_dir"/Krita/krita-*.appimage && \
+  rm -f "$manual_install_dir"/Krita/krita-*.appimage && \
   $WGET -P "$manual_install_dir"/Krita/ https://download.kde.org/stable/krita/"$krita_version"/krita-"$krita_version"-x86_64.appimage && \
   chmod +x "$manual_install_dir"/Krita/krita-"$krita_version"-x86_64.appimage && \
   sed -i "s,^Exec=.*,Exec="$manual_install_dir"/Krita/krita-"$krita_version"-x86_64.appimage,g" /usr/share/applications/krita.desktop
@@ -2347,6 +2338,24 @@ UpdateOpensnitch() {
   dpkg -i "$tmp_dir"/python3-opensnitch-ui_"$opensnitch_version"-1_all.deb && \
   rm -rf "$tmp_dir" && \
   $AG install -f -y
+}
+
+UpdateDrawio() {
+  local drawio_version="$($CURL 'https://api.github.com/repos/jgraph/drawio-desktop/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)" && \
+  rm -f "$manual_install_dir"/drawio/drawio-*.AppImage && \
+  $WGET -P "$manual_install_dir"/drawio/ https://github.com/jgraph/drawio-desktop/releases/download/v"$drawio_version"/drawio-x86_64-"$drawio_version".AppImage && \
+  chmod +x "$manual_install_dir"/drawio/drawio-x86_64-"$drawio_version".AppImage && \
+  sed -i "s,^Exec=.*,Exec=$manual_install_dir/drawio/drawio-x86_64-"$drawio_version".AppImage,g" /usr/share/applications/drawio.desktop
+  [ -f "$manual_install_dir"/drawio/drawlogo256.png ] || $WGET -P "$manual_install_dir"/drawio/ 'https://raw.githubusercontent.com/jgraph/drawio/master/src/main/webapp/images/drawlogo256.png'
+}
+
+UpdateEtcher() {
+  local etcher_version="$($CURL 'https://api.github.com/repos/balena-io/etcher/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)" && \
+  rm -f "$manual_install_dir"/balenaEtcher/balenaEtcher-*.AppImage && \
+  $WGET -P "$manual_install_dir"/balenaEtcher/ https://github.com/balena-io/etcher/releases/download/v"$etcher_version"/balenaEtcher-"$etcher_version"-x64.AppImage && \
+  chmod +x "$manual_install_dir"/balenaEtcher/balenaEtcher-"$etcher_version"-x64.AppImage && \
+  sed -i "s,^Exec=.*,Exec=$manual_install_dir/balenaEtcher/balenaEtcher-"$etcher_version"-x64.AppImage,g" /usr/share/applications/balena-etcher-electron.desktop
+  [ -f "$manual_install_dir"/balenaEtcher/icon.png ] || $WGET -P "$manual_install_dir"/balenaEtcher/ 'https://github.com/balena-io/etcher/raw/master/assets/icon.png'
 }
 
 ################################################################################
@@ -2379,7 +2388,9 @@ Joplin
 Stacer
 Bat
 Krita
-Opensnitch'
+Opensnitch
+Drawio
+Etcher'
 
 CheckUpdate() {
 for software in $software_list; do
