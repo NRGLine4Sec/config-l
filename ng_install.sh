@@ -930,7 +930,7 @@ deb-src http://deb.debian.org/debian/ $debian_release main contrib non-free
 deb http://security.debian.org/debian-security $debian_release/updates main contrib
 deb-src http://security.debian.org/debian-security $debian_release/updates main contrib
 
-# \$debian_release-updates, previously known as 'volatile'
+# $debian_release-updates, previously known as 'volatile'
 deb http://deb.debian.org/debian/ $debian_release-updates main contrib
 deb-src http://deb.debian.org/debian/ $debian_release-updates main contrib
 
@@ -948,7 +948,7 @@ deb-src http://deb.debian.org/debian/ $debian_release main contrib non-free
 deb http://security.debian.org/debian-security $debian_release-security main contrib
 deb-src http://security.debian.org/debian-security $debian_release-security main contrib
 
-# \$debian_release-updates, previously known as 'volatile'
+# $debian_release-updates, previously known as 'volatile'
 deb http://deb.debian.org/debian/ $debian_release-updates main contrib non-free
 deb-src http://deb.debian.org/debian/ $debian_release-updates main contrib non-free
 
@@ -1153,7 +1153,8 @@ displayandexec "Installation de wireshark                           " "$AGI wire
 displayandexec "Installation de xinput                              " "$AGI xinput"
 displayandexec "Installation de xorriso                             " "$AGI xorriso"
 displayandexec "Installation de yersinia                            " "$AGI yersinia"
-displayandexec "Installation de zenmap                              " "$AGI zenmap" # zenmap n'est pas dispo dans debian bullseye car python2 est EOL, pour traquer l'avencement du portage du code vers python3 : https://github.com/nmap/nmap/issues/1176  donc il faudra probablement le supprimer du script tant qu'il ne réapparait pas dans les dépot debian
+# displayandexec "Installation de zenmap                              " "$AGI zenmap"
+# zenmap n'est pas dispo dans debian bullseye car python2 est EOL, pour traquer l'avencement du portage du code vers python3 : https://github.com/nmap/nmap/issues/1176
 displayandexec "Installation de zip                                 " "$AGI zip"
 displayandexec "Installation de zutils                              " "$AGI zutils"
 displayandexec "Installation de zsh                                 " "$AGI zsh"
@@ -1871,8 +1872,8 @@ install_all_manual_install_apps_buster() {
   install_joplin
   install_krita
   install_opensnitch
-  # install_ansible_buster
-  # install_hashcat
+  install_ansible_buster
+  install_hashcat
   install_sshuttle
 }
 install_all_manual_install_apps_bullseye() {
@@ -2007,15 +2008,15 @@ install_GSH_screenshot_tool() {
   mkdir -p "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
   $WGET -P "$tmp_dir" 'https://extensions.gnome.org/extension-data/gnome-shell-screenshotttll.de.v40.shell-extension.zip' && \
   unzip -q "$tmp_dir"/gnome-shell-screenshotttll.de.v40.shell-extension.zip -d "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
-  $ExeAsUser gnome-extensions enable "$GnomeShellExtensionUUID"
+  $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable "$GnomeShellExtensionUUID"
 }
 #system-monitor
 install_GSH_system_monitor() {
   $AGI gnome-shell-extension-system-monitor && \
-  $ExeAsUser gnome-extensions enable 'system-monitor@paradoxxx.zero.gmail.com'
+  $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'system-monitor@paradoxxx.zero.gmail.com'
 }
 displayandexec "Installation des Gnome Shell Extension              " "\
-"$(install_GSH_screenshot_tool)" && "$(install_GSH_system_monitor)""
+$(install_GSH_screenshot_tool) && $(install_GSH_system_monitor)"
 }
 
 if [ "$buster" == 1 ]; then
@@ -2201,7 +2202,7 @@ CheckUpdateYoutube-dl() {
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
-CheckUpdateBoosnote() {
+CheckUpdateBoostnote() {
   local SoftwareName='Boostnote'
   local v1="$(grep -Po '"version": "\K.*?(?=")' /usr/lib/boostnote/resources/app/package.json)"
   local v2="$($CURL 'https://api.github.com/repos/BoostIO/boost-releases/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
@@ -2368,77 +2369,27 @@ AddTo_software_update_failed() {
 
 ################################################################################
 
+software_list='
+Shotcut
+Youtube-dl
+Boostnote
+Freefilesync
+Keepassxc
+Joplin
+Stacer
+Bat
+Krita
+Opensnitch'
+
 CheckUpdate() {
-	CheckUpdateShotcut
-  if [ "$retval" ]; then
-    AddTo_software_that_needs_updating "$retval"
-    UpdateShotcut || AddTo_software_update_failed "$retval"
-    unset retval
-  fi
-
-  CheckUpdateYoutube-dl
-  if [ "$retval" ]; then
-    AddTo_software_that_needs_updating "$retval"
-    UpdateYoutube-dl || AddTo_software_update_failed "$retval"
-    unset retval
-  fi
-
-  CheckUpdateBoosnote
-  if [ "$retval" ]; then
-    AddTo_software_that_needs_updating "$retval"
-    UpdateBoostnote || AddTo_software_update_failed "$retval"
-    unset retval
-  fi
-
-  CheckUpdateFreefilesync
-  if [ "$retval" ]; then
-    AddTo_software_that_needs_updating "$retval"
-    UpdateFreefilesync || AddTo_software_update_failed "$retval"
-    unset retval
-  fi
-
-  CheckUpdateKeepassxc
-  if [ "$retval" ]; then
-    AddTo_software_that_needs_updating "$retval"
-    UpdateKeepassxc || AddTo_software_update_failed "$retval"
-    unset retval
-  fi
-
-  CheckUpdateJoplin
-  if [ "$retval" ]; then
-    AddTo_software_that_needs_updating "$retval"
-    UpdateJoplin || AddTo_software_update_failed "$retval"
-    unset retval
-  fi
-
-  CheckUpdateStacer
-  if [ "$retval" ]; then
-    AddTo_software_that_needs_updating "$retval"
-    UpdateStacer || AddTo_software_update_failed "$retval"
-    unset retval
-  fi
-
-  CheckUpdateBat
-  if [ "$retval" ]; then
-    AddTo_software_that_needs_updating "$retval"
-    UpdateBat || AddTo_software_update_failed "$retval"
-    unset retval
-  fi
-
-  CheckUpdateKrita
-  if [ "$retval" ]; then
-    AddTo_software_that_needs_updating "$retval"
-    UpdateKrita || AddTo_software_update_failed "$retval"
-    unset retval
-  fi
-
-  CheckUpdateOpensnitch
-  if [ "$retval" ]; then
-    AddTo_software_that_needs_updating "$retval"
-    UpdateOpensnitch || AddTo_software_update_failed "$retval"
-    unset retval
-  fi
-
+for software in $software_list; do
+	CheckUpdate"$software"
+	if [ "$retval" ]; then
+		AddTo_software_that_needs_updating "$retval"
+		Update"$software" || AddTo_software_update_failed "$retval"
+		unset retval
+	fi
+done
 
   # echo ${software_that_needs_updating[*]}
 
@@ -3204,7 +3155,8 @@ sed -i 's/# set bell-style none/set bell-style none/' /etc/inputrc
 ################################################################################
 ## configuration de freshclam (clamav)
 ##------------------------------------------------------------------------------
-sed -E -i 's/^Checks [[:digit:]]+/Checks 1/g' /etc/clamav/freshclam.conf
+# sed -E -i 's/^Checks [[:digit:]]+/Checks 1/g' /etc/clamav/freshclam.conf
+onlyexec "sed -E -i 's/^Checks [[:digit:]]+/Checks 1/g' /etc/clamav/freshclam.conf"
 # Check for new database 1 times a day (insteed of 24)
 # les logs de freshclam sont dans /var/log/clamav/freshclam.log
 # c'est le service clamav-freshclam qui fait tourner freshclam
