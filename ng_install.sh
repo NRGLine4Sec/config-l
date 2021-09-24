@@ -1212,23 +1212,6 @@ $AGI atom"
 ################################################################################
 ## instalation de WinSCP
 ##------------------------------------------------------------------------------
-# install_winscp() {
-#   local tmp_dir="$(mktemp -d)"
-#   displayandexec "Installation de WinSCP                              " "\
-# mkdir "$manual_install_dir"/winscp/ && \
-# $WGET -P "$tmp_dir" 'https://winscp.net/download/files/2018112321450c4c95c4f6a1a05e87651a955f47e31f/WinSCP-5.13.5-Portable.zip' && \
-# unzip "$tmp_dir"/WinSCP-5.13.5-Portable.zip -d "$manual_install_dir"/winscp/ && \
-# echo "wine "$manual_install_dir"/winscp/WinSCP.exe" > /usr/bin/winscp && \
-# chmod +x /usr/bin/winscp
-# rm -rf "$tmp_dir""
-# }
-# WinSCP utilise wine32 pour s'executer
-# vérifier si la dernière version de WinSCP a besoin spécifiquement de wine32
-################################################################################
-
-################################################################################
-## instalation de WinSCP
-##------------------------------------------------------------------------------
 install_winscp() {
   local tmp_dir="$(mktemp -d)"
   displayandexec "Installation de WinSCP                              " "\
@@ -1290,8 +1273,8 @@ $AGI spotify-client"
 install_apt-fast() {
   displayandexec "Installation de apt-fast                            " "\
 cat> /etc/apt/sources.list.d/apt-fast.list << 'EOF'
-deb [arch=amd64] http://ppa.launchpad.net/apt-fast/stable/ubuntu bionic main
-#deb-src http://ppa.launchpad.net/apt-fast/stable/ubuntu bionic main
+deb [arch=amd64] http://ppa.launchpad.net/apt-fast/stable/ubuntu focal main
+#deb-src http://ppa.launchpad.net/apt-fast/stable/ubuntu focal main
 EOF
 apt-key adv --keyserver keyserver.ubuntu.com --recv-keys A2166B8DE8BDC3367D1901C11EE2FF37CA8DA16B
 $AG update
@@ -1959,9 +1942,9 @@ displayandexec "Désinstalation de exim4                             " "$AG remo
 # gnome-extensions est disponnible a partir de Gnome 34
 # should restart gdm with Alt+F2+r
 
-install_GSH_buster() {
+install_GSE_buster() {
 #Screenshot Tool
-install_GSH_screenshot_tool() {
+install_GSE_screenshot_tool() {
   local GnomeShellExtensionUUID='gnome-shell-screenshot@ttll.de' && \
   mkdir -p "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
   $WGET -P "$tmp_dir" 'https://extensions.gnome.org/extension-data/gnome-shell-screenshotttll.de.v40.shell-extension.zip' && \
@@ -1969,41 +1952,41 @@ install_GSH_screenshot_tool() {
   $ExeAsUser gnome-shell-extension-tool -e "$GnomeShellExtensionUUID"
 }
 #system-monitor
-install_GSH_system_monitor() {
+install_GSE_system_monitor() {
   $AGI gnome-shell-extension-system-monitor && \
   $ExeAsUser gnome-shell-extension-tool -e 'system-monitor@paradoxxx.zero.gmail.com'
 }
 #displayandexec "Installation des Gnome Shell Extension              " "\
 #"
-install_GSH_screenshot_tool
-install_GSH_system_monitor
+install_GSE_screenshot_tool
+install_GSE_system_monitor
 }
 
-install_GSH_bullseye() {
+install_GSE_bullseye() {
 #Screenshot Tool
-install_GSH_screenshot_tool() {
+install_GSE_screenshot_tool() {
   local GnomeShellExtensionUUID='gnome-shell-screenshot@ttll.de' && \
   mkdir -p "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
-  $WGET -P "$tmp_dir" 'https://extensions.gnome.org/extension-data/gnome-shell-screenshotttll.de.v40.shell-extension.zip' && \
-  unzip -q "$tmp_dir"/gnome-shell-screenshotttll.de.v40.shell-extension.zip -d "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
+  $WGET -P "$tmp_dir" 'https://extensions.gnome.org/extension-data/gnome-shell-screenshotttll.de.v56.shell-extension.zip' && \
+  unzip -q "$tmp_dir"/gnome-shell-screenshotttll.de.v56.shell-extension.zip -d "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
   $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable "$GnomeShellExtensionUUID"
 }
 #system-monitor
-install_GSH_system_monitor() {
+install_GSE_system_monitor() {
   $AGI gnome-shell-extension-system-monitor && \
   $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'system-monitor@paradoxxx.zero.gmail.com'
 }
 #displayandexec "Installation des Gnome Shell Extension              " "\
 #"
-install_GSH_screenshot_tool
-install_GSH_system_monitor
+install_GSE_screenshot_tool
+install_GSE_system_monitor
 }
 
 if [ "$buster" == 1 ]; then
- install_GSH_buster
+ install_GSE_buster
 fi
 if [ "$bullseye" == 1 ]; then
-  install_GSH_bullseye
+  install_GSE_bullseye
 fi
 
 # Pour obtenir la liste des extensions installés :
@@ -2020,7 +2003,12 @@ fi
 
 # Pour récupérer l'UUID de l'extension en ligne de commande :
 # Il faut le binaire zutils (apt-get install -y zutils), car le zgrep de gzip ne fonctionne pas en récursif
-# zgrep -a '"uuid":' 'gnome-shell-extension.zip' | awk -F'"' '{print $4}'
+# zgrep -a '"uuid":' /tmp/gnome-shell-screenshotttll.de.v56.shell-extension.zip | grep -Po '(?<="uuid": ")\K(.*)(?=",)'
+
+# regarder si on peut faire du debug sur l'install des Gnome Shell Extension avec journalctl --user /usr/bin/gnome-shell --follow
+
+# regarder l'interêt d'installer cette extension la : https://extensions.gnome.org/extension/906/sound-output-device-chooser/
+# "Shows a list of sound output and input devices (similar to gnome sound settings) in the status menu below the volume slider."
 ################################################################################
 
 ################################################################################
@@ -2238,21 +2226,21 @@ CheckUpdateOpensnitch() {
   # Pour récupérer la dernière release non-stable : local v2="$($CURL 'https://api.github.com/repos/evilsocket/opensnitch/releases' | grep -m 1 -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
-
+grep -Po '^Exec.*-\K\d+.\d+.\d+' /usr/share/applications/krita.desktop
 CheckUpdateDrawio() {
   local SoftwareName='Drawio'
   local v1="$()"
   local v2="$($CURL 'https://api.github.com/repos/jgraph/drawio-desktop/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
-
+grep -Po '^Exec.*-\K[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+' /usr/share/applications/drawio.desktop
 UpdateEtcher() {
   local SoftwareName='Etcher'
   local v1="$()"
   local v2="$($CURL 'https://api.github.com/repos/balena-io/etcher/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
-
+grep -Po '^Exec.*-\K[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+' /usr/share/applications/balena-etcher-electron.desktop
 ################################################################################
 
 UpdateShotcut() {
