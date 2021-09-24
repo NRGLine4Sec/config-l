@@ -2030,7 +2030,7 @@ fi
 displayandexec "Installation des dépendances manquantes             " "$AG install -f -y"
 displayandexec "Désinstalation des paquets qui ne sont plus utilisés" "$AG autoremove -y"
 displayandexec "Mise à jour des paquets                             " "$AG update && $AG upgrade -y"
-# displayandexec "Suppression du cache de apt-get                     " "$AG clean"
+displayandexec "Suppression du cache de apt-get                     " "$AG clean"
 ################################################################################
 
 #//////////////////////////////////////////////////////////////////////////////#
@@ -2568,6 +2568,7 @@ fi
 exit 0
 EOF
 displayandexec "Installation du script check_domain_creation_date   " "chmod +x /usr/bin/check_domain_creation_date"
+}
 ################################################################################
 
 ################################################################################
@@ -3155,7 +3156,7 @@ cat> /etc/audit/rules.d/audit.rules << 'EOF'
 
 ##-e 2
 EOF
-systemctl restart auditd
+displayandexec "Configuration de auditd                             " "systemctl restart auditd"
 # rules based on https://github.com/Neo23x0/auditd/blob/master/audit.rules
 # les règles vont être généré (lors du restart) à l'aide de augenrules et seront ensuite dans le fichier /etc/audit/audit.rules
 ################################################################################
@@ -3164,7 +3165,7 @@ systemctl restart auditd
 ## configuration de /etc/inputrc
 ##------------------------------------------------------------------------------
 # # do not bell on tab-completion
-sed -i 's/# set bell-style none/set bell-style none/' /etc/inputrc
+onlyexec "sed -i 's/# set bell-style none/set bell-style none/' /etc/inputrc"
 ################################################################################
 
 ################################################################################
@@ -3205,9 +3206,9 @@ EOF
 ## configuration de rkhunter
 ##------------------------------------------------------------------------------
 # suite aux infos de ce site : https://forum.cabane-libre.org/topic/239/invalid-web_cmd-configuration-option-relative-pathname-bin-false
-sed -i "s/UPDATE_MIRRORS=0/UPDATE_MIRRORS=1/" /etc/rkhunter.conf && \
-sed -i "s/MIRRORS_MODE=1/MIRRORS_MODE=0/" /etc/rkhunter.conf && \
-sed -i 's/WEB_CMD=\"\/bin\/false\"/WEB_CMD=\"\"/' /etc/rkhunter.conf
+onlyexec "sed -i 's/UPDATE_MIRRORS=0/UPDATE_MIRRORS=1/' /etc/rkhunter.conf && \
+sed -i 's/MIRRORS_MODE=1/MIRRORS_MODE=0/' /etc/rkhunter.conf && \
+sed -i 's/WEB_CMD=\"\/bin\/false\"/WEB_CMD=\"\"/' /etc/rkhunter.conf"
 ################################################################################
 
 ################################################################################
@@ -3230,7 +3231,7 @@ create_template_for_new_file
 ## configuration de Libreoffice
 ##------------------------------------------------------------------------------
 # conf de Libreoffice
-sed -i --follow-symlinks '/^export LC_ALL/a export GTK_THEME=Adwaita' /usr/bin/libreoffice
+onlyexec "sed -i --follow-symlinks '/^export LC_ALL/a export GTK_THEME=Adwaita' /usr/bin/libreoffice"
 # variante avec awk :
 # awk '1;/^export LC_ALL/{print "export GTK_THEME=Adwaita"}' /usr/bin/libreoffice
 # avec awk, on ne peut pas écrire directement dans le fichier, mais ce hack permet d'obtenir le même résultat
@@ -3253,7 +3254,7 @@ $ExeAsUser sed -i 's%<enabled xsi:nil="true"></enabled>%<enabled xsi:nil="false"
 # find /usr/lib/libreoffice/share/ -type f -mmin -5 -exec grep -l "java" {} \;
 
 # Disable startup logo
-sed -i 's/Logo=1/Logo=0/g' /etc/libreoffice/sofficerc
+onlyexec "sed -i 's/Logo=1/Logo=0/g' /etc/libreoffice/sofficerc"
 # ref : https://wiki.archlinux.org/title/LibreOffice#Disable_startup_logo
 
 # cette configuration n'existe pas dans le fichier après une install, il faut donc trouver le moyen de l'ajouter en insérant la ligne
@@ -3270,7 +3271,7 @@ $ExeAsUser sed -i 's%<item oor:path="/org.openoffice.Office.Common/Security/Scri
 ## configuration de nano
 ##------------------------------------------------------------------------------
 # la configuration de nano s'effectue dans le fichier /etc/nanorc
-sed -i 's/# set linenumbers/set linenumbers/g' /etc/nanorc
+onlyexec "sed -i 's/# set linenumbers/set linenumbers/g' /etc/nanorc"
 ################################################################################
 
 ################################################################################
@@ -3357,7 +3358,7 @@ EOF
 ## configuration de Handbrake
 ##------------------------------------------------------------------------------
 [ -d /home/"$local_user"/.config/ghb/ ] || $ExeAsUser mkdir /home/"$local_user"/.config/ghb/ && \
-$ExeAsUser sed -E -i '/("UseM4v":) (false|true)/{s/true/false/;}' /home/"$local_user"/.config/ghb/preferences.json
+[ -f /home/"$local_user"/.config/ghb/preferences.json ] && $ExeAsUser sed -E -i '/("UseM4v":) (false|true)/{s/true/false/;}' /home/"$local_user"/.config/ghb/preferences.json
 # permet de décocher la case "Utiliser l'extension de fichier compatible iPod/iTunes (.m4v) pour MP4" (Fichier -> Préférences -> Général)
 # le fichier de conf n'existe pas tant que handbrake n'a pas été lancé
 # donc il faut soit trouver un moyen de lancer handbrake silencieusement soit copier coller la conf entière dans le fichier directement
@@ -3660,7 +3661,7 @@ EOF
 # ref : [gnome - Edit/Remove existing File Manager (right-click/context menu) actions - Ask Ubuntu](https://askubuntu.com/questions/1300049/edit-remove-existing-file-manager-right-click-context-menu-actions/1300079#1300079)
 # par exemple le paquet nautilus-wipe rajoute des entrés dans le clic droit assez dangereuses comme "Ecraser" et "Ecraser l'espace disque disponnible"
 # pour supprimer ces entrées des options de clic droit de nautilus, il faut soit désinstaller le paquet, soit supprimer le .so correspondant dans le répertoire des extensions de nautilus
-mv /usr/lib/x86_64-linux-gnu/nautilus/extensions-3.0/libnautilus-wipe.so /usr/lib/x86_64-linux-gnu/nautilus/extensions-3.0/libnautilus-wipe.so.backup
+onlyexec "mv /usr/lib/x86_64-linux-gnu/nautilus/extensions-3.0/libnautilus-wipe.so /usr/lib/x86_64-linux-gnu/nautilus/extensions-3.0/libnautilus-wipe.so.backup"
 
 # pour supprimer des options internes à nautilus, il faudrait modifier son code source et le recompiler
 # ref : [Comment supprimer Change Desktop Background du clic droit?](https://qastack.fr/ubuntu/34803/how-to-remove-change-desktop-background-from-right-click)
@@ -4015,13 +4016,13 @@ if [ -f /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh ]; then
     ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=#999'
 fi
 EOF
-displayandexec "Configuration du zshrc                             " "stat /home/"$local_user"/.zshrc"
+displayandexec "Configuration du zshrc                              " "stat /home/"$local_user"/.zshrc"
 # rajouter stat /root/.zshrc &&
 # si on  met aussi la conf zsh pour root
 ################################################################################
 
 # Commande temporaire pour éviter que des fichiers de /home/user/.config n'appartienent à root lors de l'install, sans qu'on comprenne bien pourquoi (executé par ExeAsUser)
-chown -R "$local_user":"$local_user" /home/"$local_user"/.config/
+onlyexec "chown -R "$local_user":"$local_user" /home/"$local_user"/.config/"
 
 ################################################################################
 ## Mise à jour de la base de donnée de rkhunter
@@ -4079,11 +4080,11 @@ $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" 
 $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" dconf write /org/gnome/settings-daemon/plugins/power/sleep-inactive-ac-type "'suspend'"
 
 # remise au propre du fichier de configuration DNS
-rm -f /etc/resolv.conf
-mv /etc/resolv.conf.old /etc/resolv.conf
+onlyexec "rm -f /etc/resolv.conf"
+onlyexec "mv /etc/resolv.conf.old /etc/resolv.conf"
 
 # suppression du dossier temporaire pour l'execution du script
-rm -rf "$tmp_dir"
+onlyexec "rm -rf "$tmp_dir""
 
 echo '--------------------------------------------------------------------' >> "$log_file"
 echo '' >> "$log_file"
