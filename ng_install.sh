@@ -837,7 +837,7 @@ debian_release="$(lsb_release -sc)"
 # peut aussi se faire avec la commande : awk -F'=' '/VERSION_CODENAME=/{print $2}' /etc/os-release
 
 # on active le mode case insensitive de bash
-shopt -s nocasematch
+execandlog "shopt -s nocasematch"
 if [[ "$debian_release" =~ buster ]]; then
     buster=1
 fi
@@ -845,7 +845,7 @@ if [[ "$debian_release" =~ bullseye ]]; then
     bullseye=1
 fi
 # on déscactive le mode case insensitive de bash
-shopt -u nocasematch
+execandlog "shopt -u nocasematch"
 
 
 ################################################################################
@@ -956,7 +956,7 @@ echo ''
 displayandexec "Mise à jour des certificats racine                  " "update-ca-certificates"
 
 # make debian non-interactive
-export DEBIAN_FRONTEND='noninteractive'
+execandlog "export DEBIAN_FRONTEND='noninteractive'"
 
 displayandexec "Mise à jour du system                               " "$AG update && $AG upgrade -y"
 ################################################################################
@@ -1023,7 +1023,7 @@ fi
 # fi
 
 # on active le mode case insensitive de bash
-shopt -s nocasematch
+execandlog "shopt -s nocasematch"
 if [[ "$computer_proc_vendor_ID" =~ amd ]]; then
     displayandexec "Installation de amd64-microcode                     " "$AGI amd64-microcode"
 fi
@@ -1031,7 +1031,7 @@ if [[ "$computer_proc_vendor_ID" =~ intel ]]; then
     displayandexec "Installation de intel-microcode                     " "$AGI intel-microcode"
 fi
 # on déscactive le mode case insensitive de bash
-shopt -u nocasematch
+execandlog "shopt -u nocasematch"
 
 displayandexec "Installation de ascii                               " "$AGI ascii"
 displayandexec "Installation de aria2                               " "$AGI aria2"
@@ -1190,7 +1190,7 @@ echo '###### instalation des logiciels avec une instalation special ######'
 
 # création du répertoire qui contiendra les logiciels avec une installation spéciale
 manual_install_dir='/opt/manual_install'
-mkdir "$manual_install_dir"
+[ -d "$manual_install_dir" ] || mkdir "$manual_install_dir"
 
 ################################################################################
 ## instalation de atom
@@ -1217,9 +1217,9 @@ $AGI atom"
 ## instalation de WinSCP
 ##------------------------------------------------------------------------------
 install_winscp() {
-  local tmp_dir="$(mktemp -d)"
+  execandlog "local tmp_dir="$(mktemp -d)""
   displayandexec "Installation de WinSCP                              " "\
-mkdir "$manual_install_dir"/winscp/ && \
+[ -d "$manual_install_dir"/winscp/ ] || mkdir "$manual_install_dir"/winscp/ && \
 $WGET -P "$tmp_dir" https://winscp.net/download/WinSCP-"$winscp_version"-Portable.zip && \
 unzip "$tmp_dir"/WinSCP-"$winscp_version"-Portable.zip -d "$manual_install_dir"/winscp/ && \
 echo "wine "$manual_install_dir"/winscp/WinSCP.exe" > /usr/bin/winscp && \
@@ -1234,7 +1234,7 @@ rm -rf "$tmp_dir""
 ## instalation de Veracrypt
 ##------------------------------------------------------------------------------
 install_veracrypt() {
-  local tmp_dir="$(mktemp -d)"
+  execandlog "local tmp_dir="$(mktemp -d)""
   displayandexec "Installation de veracrypt                           " "\
 $WGET -P "$tmp_dir" https://launchpad.net/veracrypt/trunk/"$(tr '[:upper:]' '[:lower:]' <<< "$veracrypt_version")"/+download/veracrypt-"$veracrypt_version"-setup.tar.bz2 && \
 tar xjf "$tmp_dir"/veracrypt-"$veracrypt_version"-setup.tar.bz2 --directory="$tmp_dir" && \
@@ -1291,7 +1291,7 @@ $AGI apt-fast"
 ##------------------------------------------------------------------------------
 install_drawio() {
   displayandexec "Installation de drawio                              " "\
-mkdir "$manual_install_dir"/drawio/ && \
+[ -d "$manual_install_dir"/drawio/ ] || mkdir "$manual_install_dir"/drawio/ && \
 $WGET -P "$manual_install_dir"/drawio/ https://github.com/jgraph/drawio-desktop/releases/download/v"$drawio_version"/drawio-x86_64-"$drawio_version".AppImage && \
 chmod +x "$manual_install_dir"/drawio/drawio-x86_64-"$drawio_version".AppImage && \
 $WGET -P "$manual_install_dir"/drawio/ 'https://raw.githubusercontent.com/jgraph/drawio/master/src/main/webapp/images/drawlogo256.png'"
@@ -1344,7 +1344,7 @@ EOF
 ##------------------------------------------------------------------------------
 install_boostnote() {
   displayandexec "Installation des dépendances de Boostnote           " "$AGI gconf2 gconf-service"
-  local tmp_dir="$(mktemp -d)"
+  execandlog "local tmp_dir="$(mktemp -d)""
   displayandexec "Installation de Boostnote                           " "\
 $WGET -P "$tmp_dir" https://github.com/BoostIO/boost-releases/releases/download/v"$boostnote_version"/boostnote_"$boostnote_version"_amd64.deb && \
 dpkg -i "$tmp_dir"/boostnote_"$boostnote_version"_amd64.deb
@@ -1388,9 +1388,9 @@ $WGET --output-document - 'https://www.virtualbox.org/download/oracle_vbox_2016.
 $WGET --output-document - 'https://www.virtualbox.org/download/oracle_vbox.asc' | apt-key add - && \
 $AG update && \
 $AGI virtualbox-6.1"
-  # virtualbox_version=$(virtualbox --help | grep v[0-9] | cut -c 35-) # ancienne version
-  virtualbox_version="$(virtualbox --help | grep -Po ' v\K\d+.\d+.\d+')"
-  displayandexec "Installation de VM VirtualBox Extension Pack        " "\
+# virtualbox_version=$(virtualbox --help | grep v[0-9] | cut -c 35-) # ancienne version
+virtualbox_version="$(virtualbox --help | grep -Po ' v\K\d+.\d+.\d+')"
+displayandexec "Installation de VM VirtualBox Extension Pack        " "\
 $WGET -P "$tmp_dir" https://download.virtualbox.org/virtualbox/"$virtualbox_version"/Oracle_VM_VirtualBox_Extension_Pack-"$virtualbox_version".vbox-extpack && \
 echo y | /usr/bin/VBoxManage extpack install --replace "$tmp_dir"/Oracle_VM_VirtualBox_Extension_Pack-"$virtualbox_version".vbox-extpack"
   # Une solution qui devrait marché mais il faut avoir le hachage de la licence pour pouvoir l'executer et on obtient le hachage qu'en lançant une première fois la commande
@@ -1400,10 +1400,10 @@ echo y | /usr/bin/VBoxManage extpack install --replace "$tmp_dir"/Oracle_VM_Virt
   # VBoxManage list extpacks
 
   configure_SecureBoot_params() {
-      # création du dossier qui contiendra les signatures pour le SecureBoot
-      mkdir /usr/share/manual_sign_kernel_module
-      # création du script qui permet de signer les modules vboxdrv vboxnetflt vboxnetadp vboxpci pour VirtualBox
-      cat> /opt/sign_virtualbox_kernel_module.sh << 'EOF'
+# création du dossier qui contiendra les signatures pour le SecureBoot
+[ -d /usr/share/manual_sign_kernel_module ] || mkdir /usr/share/manual_sign_kernel_module
+# création du script qui permet de signer les modules vboxdrv vboxnetflt vboxnetadp vboxpci pour VirtualBox
+cat> /opt/sign_virtualbox_kernel_module.sh << 'EOF'
 #!/bin/bash
 
 # Test que le script est lancer en root
@@ -1452,9 +1452,9 @@ echo 'deb [signed-by=/usr/share/keyrings/virtualbox-archive-keyring.gpg] https:/
 $WGET --output-document - 'https://www.virtualbox.org/download/oracle_vbox_2016.asc' | gpg --dearmor --output /usr/share/keyrings/virtualbox-archive-keyring.gpg && \
 $AG update && \
 $AGI virtualbox-6.1"
-  # virtualbox_version=$(virtualbox --help | grep v[0-9] | cut -c 35-) # ancienne version
-  virtualbox_version="$(virtualbox --help | grep -Po ' v\K\d+.\d+.\d+')"
-  displayandexec "Installation de VM VirtualBox Extension Pack        " "\
+# virtualbox_version=$(virtualbox --help | grep v[0-9] | cut -c 35-) # ancienne version
+virtualbox_version="$(virtualbox --help | grep -Po ' v\K\d+.\d+.\d+')"
+displayandexec "Installation de VM VirtualBox Extension Pack        " "\
 $WGET -P "$tmp_dir" https://download.virtualbox.org/virtualbox/"$virtualbox_version"/Oracle_VM_VirtualBox_Extension_Pack-"$virtualbox_version".vbox-extpack && \
 echo y | /usr/bin/VBoxManage extpack install --replace "$tmp_dir"/Oracle_VM_VirtualBox_Extension_Pack-"$virtualbox_version".vbox-extpack"
   # Une solution qui devrait marché mais il faut avoir le hachage de la licence pour pouvoir l'executer et on obtient le hachage qu'en lançant une première fois la commande
@@ -1464,10 +1464,10 @@ echo y | /usr/bin/VBoxManage extpack install --replace "$tmp_dir"/Oracle_VM_Virt
   # VBoxManage list extpacks
 
   configure_SecureBoot_params() {
-      # création du dossier qui contiendra les signatures pour le SecureBoot
-      mkdir /usr/share/manual_sign_kernel_module
-      # création du script qui permet de signer les modules vboxdrv vboxnetflt vboxnetadp vboxpci pour VirtualBox
-      cat> /opt/sign_virtualbox_kernel_module.sh << 'EOF'
+# création du dossier qui contiendra les signatures pour le SecureBoot
+[ -d /usr/share/manual_sign_kernel_module ] || mkdir /usr/share/manual_sign_kernel_module
+# création du script qui permet de signer les modules vboxdrv vboxnetflt vboxnetadp vboxpci pour VirtualBox
+cat> /opt/sign_virtualbox_kernel_module.sh << 'EOF'
 #!/bin/bash
 
 # Test que le script est lancer en root
@@ -1515,6 +1515,7 @@ EOF
 ##------------------------------------------------------------------------------
 install_keepassxc() {
   displayandexec "Installation de KeePassXC                           " "\
+[ -d "$manual_install_dir"/KeePassXC/ ] || mkdir "$manual_install_dir"/KeePassXC/
 $WGET -P "$manual_install_dir"/KeePassXC/ https://github.com/keepassxreboot/keepassxc/releases/download/"$keepassxc_version"/KeePassXC-"$keepassxc_version"-x86_64.AppImage && \
 $WGET -P "$manual_install_dir"/KeePassXC/ 'https://keepassxc.org/images/keepassxc-logo.svg' && \
 chmod +x "$manual_install_dir"/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage"
@@ -1563,7 +1564,7 @@ $AGI mkvtoolnix mkvtoolnix-gui"
 ##------------------------------------------------------------------------------
 install_etcher() {
   displayandexec "Installation de Etcher                              " "\
-mkdir "$manual_install_dir"/balenaEtcher/ && \
+[ -d "$manual_install_dir"/balenaEtcher/ ] || mkdir "$manual_install_dir"/balenaEtcher/ && \
 $WGET -P "$manual_install_dir"/balenaEtcher/ https://github.com/balena-io/etcher/releases/download/v"$etcher_version"/balenaEtcher-"$etcher_version"-x64.AppImage && \
 $WGET -P "$manual_install_dir"/balenaEtcher/ 'https://github.com/balena-io/etcher/raw/master/assets/icon.png' && \
 chmod +x "$manual_install_dir"/balenaEtcher/balenaEtcher-"$etcher_version"-x64.AppImage"
@@ -1587,7 +1588,7 @@ EOF
 ##------------------------------------------------------------------------------
 install_shotcut() {
   displayandexec "Installation de Shotcut                             " "\
-mkdir "$manual_install_dir"/shotcut/ && \
+[ -d "$manual_install_dir"/shotcut/ ] || mkdir "$manual_install_dir"/shotcut/ && \
 $WGET -P "$manual_install_dir"/shotcut/ https://github.com/mltframework/shotcut/releases/download/v"$shotcut_version"/"$shotcut_appimage" && \
 chmod +x "$manual_install_dir"/shotcut/"$shotcut_appimage" && \
 ln -s "$manual_install_dir"/shotcut/"$shotcut_appimage" /usr/bin/shotcut"
@@ -1617,7 +1618,7 @@ $AGI signal-desktop"
 ## instalation de Stacer
 ##------------------------------------------------------------------------------
 install_stacer() {
-  local tmp_dir="$(mktemp -d)"
+  execandlog "local tmp_dir="$(mktemp -d)""
   displayandexec "Installation de Stacer                              " "\
 $WGET -P "$tmp_dir" https://github.com/oguzhaninan/Stacer/releases/download/v"$stacer_version"/stacer_"$stacer_version"_amd64.deb && \
 dpkg -i "$tmp_dir"/stacer_"$stacer_version"_amd64.deb
@@ -1662,7 +1663,7 @@ $AGI asbru-cm"
 ## instalation de bat
 ##------------------------------------------------------------------------------
 install_bat() {
-  local tmp_dir="$(mktemp -d)"
+  execandlog "local tmp_dir="$(mktemp -d)""
   displayandexec "Installation de Bat                                 " "\
 $WGET -P "$tmp_dir" https://github.com/sharkdp/bat/releases/download/v"$bat_version"/bat_"$bat_version"_amd64.deb && \
 dpkg -i "$tmp_dir"/bat_"$bat_version"_amd64.deb
@@ -1685,7 +1686,7 @@ chmod +x /usr/bin/youtube-dl"
 ##------------------------------------------------------------------------------
 install_joplin() {
   displayandexec "Installation de joplin                              " "\
-mkdir "$manual_install_dir"/Joplin/ && \
+[ -d "$manual_install_dir"/Joplin/ ] || mkdir "$manual_install_dir"/Joplin/ && \
 $WGET -P "$manual_install_dir"/Joplin/ https://github.com/laurent22/joplin/releases/download/v"$joplin_version"/Joplin-"$joplin_version".AppImage && \
 chmod +x "$manual_install_dir"/Joplin/Joplin-"$joplin_version".AppImage && \
 $WGET -P "$manual_install_dir"/Joplin/ 'https://raw.githubusercontent.com/laurent22/joplin/master/Assets/LinuxIcons/256x256.png'"
@@ -1706,7 +1707,7 @@ EOF
 ##------------------------------------------------------------------------------
 install_krita() {
   displayandexec "Installation de Krita                               " "\
-mkdir "$manual_install_dir"/Krita/ && \
+[ -d "$manual_install_dir"/Krita/ ] || mkdir "$manual_install_dir"/Krita/ && \
 $WGET -P "$manual_install_dir"/Krita/ https://download.kde.org/stable/krita/"$krita_version"/krita-"$krita_version"-x86_64.appimage && \
 chmod +x "$manual_install_dir"/Krita/krita-"$krita_version"-x86_64.appimage"
 cat> /usr/share/applications/krita.desktop << EOF
@@ -1732,7 +1733,7 @@ EOF
 ## instalation de OpenSnitch
 ##------------------------------------------------------------------------------
 install_opensnitch() {
-  local tmp_dir="$(mktemp -d)"
+  execandlog "local tmp_dir="$(mktemp -d)""
   displayandexec "Installation des dépendances de OpenSnitch          " "$AGI libnetfilter-queue1"
   displayandexec "Installation de OpenSnitch                          " "\
   $AGI python3-pyqt5.qtsql python3-pyinotify python3-grpcio python3-slugify && \
@@ -1787,10 +1788,10 @@ EOF
 ## instalation de Hashcat
 ##------------------------------------------------------------------------------
 install_hashcat() {
-  local tmp_dir="$(mktemp -d)"
+  execandlog "local tmp_dir="$(mktemp -d)""
   displayandexec "Installation de Hashcat                             " "\
 $WGET -P "$tmp_dir" https://github.com/hashcat/hashcat/releases/download/v"$hashcat_version"/hashcat-"$hashcat_version".7z && \
-mkdir "$manual_install_dir"/hashcat && \
+[ -d "$manual_install_dir"/hashcat/ ] || mkdir "$manual_install_dir"/hashcat/ && \
 7z x "$tmp_dir"/hashcat-"$hashcat_version".7z -o"$manual_install_dir"/hashcat && \
 chown -R "$local_user":"$local_user" "$manual_install_dir"/hashcat && \
 ln -s "$manual_install_dir"/hashcat/hashcat-"$hashcat_version"/hashcat.bin /usr/bin/hashcat && \
@@ -1815,7 +1816,7 @@ install_sshuttle() {
 ##------------------------------------------------------------------------------
 install_geeqie_bullseye() {
   displayandexec "Installation de Geeqie                              " "\
-mkdir "$manual_install_dir"/Geeqie/ && \
+[ -d "$manual_install_dir"/Geeqie/ ] || mkdir "$manual_install_dir"/Geeqie/ && \
 geeqie_download_link="$($CURL 'https://www.geeqie.org/AppImage/index.html' | grep -i 'appimage' | grep -Po 'href=\K[^"]*')" && \
 $WGET -P "$manual_install_dir"/Geeqie/ "$geeqie_download_link"Geeqie-v"$geeqie_version".AppImage && \
 $WGET -P "$manual_install_dir"/Geeqie/ 'https://github.com/geeqie/geeqie.github.io/raw/master/geeqie.svg' && \
@@ -1986,11 +1987,14 @@ displayandexec "Désinstalation de exim4                             " "$AG remo
 install_GSE_buster() {
 #Screenshot Tool
 install_GSE_screenshot_tool() {
+  local tmp_dir="$(mktemp -d)"
   local GnomeShellExtensionUUID='gnome-shell-screenshot@ttll.de' && \
-  mkdir -p "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
+  [ -d "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" ] || mkdir -p "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
   $WGET -P "$tmp_dir" 'https://extensions.gnome.org/extension-data/gnome-shell-screenshotttll.de.v40.shell-extension.zip' && \
   unzip -q "$tmp_dir"/gnome-shell-screenshotttll.de.v40.shell-extension.zip -d "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
+  chown -R "$local_user":"$local_user" "$gnome_shell_extension_path" && \
   $ExeAsUser gnome-shell-extension-tool -e "$GnomeShellExtensionUUID"
+  rm -rf "$tmp_dir"
 }
 #system-monitor
 install_GSE_system_monitor() {
@@ -2006,16 +2010,19 @@ install_GSE_system_monitor
 install_GSE_bullseye() {
 #Screenshot Tool
 install_GSE_screenshot_tool() {
+  local tmp_dir="$(mktemp -d)"
   local GnomeShellExtensionUUID='gnome-shell-screenshot@ttll.de' && \
-  mkdir -p "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
+  [ -d "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" ] || mkdir -p "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
   $WGET -P "$tmp_dir" 'https://extensions.gnome.org/extension-data/gnome-shell-screenshotttll.de.v56.shell-extension.zip' && \
   unzip -q "$tmp_dir"/gnome-shell-screenshotttll.de.v56.shell-extension.zip -d "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
-  $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable "$GnomeShellExtensionUUID"
+  chown -R "$local_user":"$local_user" "$gnome_shell_extension_path" && \
+  $ExeAsUser gnome-extensions enable "$GnomeShellExtensionUUID"
+  rm -rf "$tmp_dir"
 }
 #system-monitor
 install_GSE_system_monitor() {
   $AGI gnome-shell-extension-system-monitor && \
-  $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'system-monitor@paradoxxx.zero.gmail.com'
+  $ExeAsUser gnome-extensions enable 'system-monitor@paradoxxx.zero.gmail.com'
 }
 #displayandexec "Installation des Gnome Shell Extension              " "\
 #"
@@ -2534,7 +2541,7 @@ displayandexec "Installation du script wsudo                        " "chmod +x 
 ## install du scrip launch_url_file
 ##------------------------------------------------------------------------------
 install_launch_url_file() {
-echo 'chromium `tail -n 1 "$@" | cut -c 5-`' > /usr/bin/launch_url_file
+echo 'chromium "$(tail -n 1 "$@" | cut -c 5-)"' > /usr/bin/launch_url_file
 displayandexec "Installation du script launch_url_file              " "chmod +x /usr/bin/launch_url_file"
 # création du fichier launch_url_file.desktop qui permet d'utiliser le script launch_url_file comme une application
 cat> /usr/share/applications/launch_url_file.desktop << 'EOF'
@@ -2703,7 +2710,7 @@ displayandexec "Installation du script desactivebt                  " "chmod +x 
 ## install du script play_pause_chromium
 ##------------------------------------------------------------------------------
 install_play_pause_chromium() {
-  cat> /usr/bin/play_pause_chromium << 'EOF'
+cat> /usr/bin/play_pause_chromium << 'EOF'
 dbus_dest_org="$(dbus-send --session --dest=org.freedesktop.DBus --type=method_call --print-reply /org/freedesktop/DBus org.freedesktop.DBus.ListNames | awk '/org.mpris.MediaPlayer2.chromium/ {gsub(/\"/,"");print $2}')" && \
 dbus-send --print-reply --dest=$dbus_dest_org /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player.PlayPause > /dev/null
 EOF
@@ -3267,10 +3274,10 @@ sed -i 's%WEB_CMD="/bin/false"%WEB_CMD=""%' /etc/rkhunter.conf"
 create_template_for_new_file() {
   [ -d /home/"$local_user"/Modèles/ ] && template_dir="/home/"$local_user"/Modèles/"
   [ -d /home/"$local_user"/Templates/ ] && template_dir="/home/"$local_user"/Templates/"
-  $ExeAsUser touch ""$template_dir"/Fichier Texte.txt" && \
-  $ExeAsUser touch ""$template_dir"/Document ODT.txt" && \
-  $ExeAsUser unoconv -f odt ""$template_dir"/Document ODT.txt" && \
-  rm -f ""$template_dir"/Document ODT.txt"
+execandlog "$ExeAsUser touch ""$template_dir"/Fichier Texte.txt" && \
+$ExeAsUser touch ""$template_dir"/Document ODT.txt" && \
+$ExeAsUser unoconv -f odt ""$template_dir"/Document ODT.txt" && \
+rm -f ""$template_dir"/Document ODT.txt""
 # ref : https://ask.libreoffice.org/en/question/153444/how-to-create-empty-libreoffice-file-in-a-current-directory-on-the-command-line/
 }
 create_template_for_new_file
@@ -3296,7 +3303,7 @@ execandlog "sed -i --follow-symlinks '/^export LC_ALL/a export GTK_THEME=Adwaita
 # $ExeAsUser sed -i 's%<enabled xsi:nil="false">true</enabled>%<enabled xsi:nil="false">false</enabled>%g' /home/"$local_user"/.config/libreoffice/4/user/config/javasettings_Linux_X86_64.xml
 # il faut potentiellement le mettre comme ça :
 [ -f /home/"$local_user"/.config/libreoffice/4/user/config/javasettings_Linux_X86_64.xml ] && \
-$ExeAsUser sed -i 's%<enabled xsi:nil="true"></enabled>%<enabled xsi:nil="false">false</enabled>%g' /home/"$local_user"/.config/libreoffice/4/user/config/javasettings_Linux_X86_64.xml
+execandlog "$ExeAsUser sed -i 's%<enabled xsi:nil="true"></enabled>%<enabled xsi:nil="false">false</enabled>%g' /home/"$local_user"/.config/libreoffice/4/user/config/javasettings_Linux_X86_64.xml"
 
 # ref : https://ask.libreoffice.org/en/question/167622/how-to-disable-java-in-configuration-files/
 # Pour aider à chercher les fichiers concernés par la modification de la configuration
@@ -3310,7 +3317,7 @@ execandlog "sed -i 's/Logo=1/Logo=0/g' /etc/libreoffice/sofficerc"
 # cette configuration n'existe pas dans le fichier après une install, il faut donc trouver le moyen de l'ajouter en insérant la ligne
 # Pour changer la valeur du niveau de sécurité des macros de Elevé à Très Elevé
 [ -f /home/"$local_user"/.config/libreoffice/4/user/registrymodifications.xcu ] && \
-$ExeAsUser sed -i 's%<item oor:path="/org.openoffice.Office.Common/Security/Scripting"><prop oor:name="MacroSecurityLevel" oor:op="fuse"><value>2</value></prop></item>%<item oor:path="/org.openoffice.Office.Common/Security/Scripting"><prop oor:name="MacroSecurityLevel" oor:op="fuse"><value>3</value></prop></item>%g' /home/"$local_user"/.config/libreoffice/4/user/registrymodifications.xcu
+execandlog "$ExeAsUser sed -i 's%<item oor:path="/org.openoffice.Office.Common/Security/Scripting"><prop oor:name="MacroSecurityLevel" oor:op="fuse"><value>2</value></prop></item>%<item oor:path="/org.openoffice.Office.Common/Security/Scripting"><prop oor:name="MacroSecurityLevel" oor:op="fuse"><value>3</value></prop></item>%g' /home/"$local_user"/.config/libreoffice/4/user/registrymodifications.xcu"
 # rajouter || créer le contenu du fichier avec un cat EOF
 
 # Pour insérer la ligne lorsque le fichier existe :
@@ -3359,8 +3366,8 @@ $ExeAsUser apm install tab-title"
 ################################################################################
 ## configuration de typora
 ##------------------------------------------------------------------------------
-[ -d /home/"$local_user"/.config/Typora/ ] || $ExeAsUser mkdir /home/"$local_user"/.config/Typora/ && \
-$ExeAsUser echo '7b22696e697469616c697a655f766572223a22302e392e3738222c226c696e655f656e64696e675f63726c66223a66616c73652c227072654c696e65627265616b4f6e4578706f7274223a747275652c2275756964223a2237346265383439362d343239372d343362382d616633632d336439343463646432376439222c227374726963745f6d6f6465223a747275652c22636f70795f6d61726b646f776e5f62795f64656661756c74223a747275652c226261636b67726f756e64436f6c6f72223a2223333633423430222c227468656d65223a226e696768742e637373222c22736964656261725f746162223a22222c2273656e645f75736167655f696e666f223a66616c73652c22656e61626c654175746f53617665223a747275652c226c617374436c6f736564426f756e6473223a7b2266756c6c73637265656e223a66616c73652c226d6178696d697a6564223a747275657d7d' > /home/"$local_user"/.config/Typora/profile.data
+execandlog "[ -d /home/"$local_user"/.config/Typora/ ] || $ExeAsUser mkdir /home/"$local_user"/.config/Typora/ && \
+$ExeAsUser echo '7b22696e697469616c697a655f766572223a22302e392e3738222c226c696e655f656e64696e675f63726c66223a66616c73652c227072654c696e65627265616b4f6e4578706f7274223a747275652c2275756964223a2237346265383439362d343239372d343362382d616633632d336439343463646432376439222c227374726963745f6d6f6465223a747275652c22636f70795f6d61726b646f776e5f62795f64656661756c74223a747275652c226261636b67726f756e64436f6c6f72223a2223333633423430222c227468656d65223a226e696768742e637373222c22736964656261725f746162223a22222c2273656e645f75736167655f696e666f223a66616c73652c22656e61626c654175746f53617665223a747275652c226c617374436c6f736564426f756e6473223a7b2266756c6c73637265656e223a66616c73652c226d6178696d697a6564223a747275657d7d' > /home/"$local_user"/.config/Typora/profile.data"
 # la configuration des préférences de Typora ne peut se faire que graphiquement le seul moyen de contourner ce problème est de configurer graphiquement les préférences et de récupérer le contenu du fichier /home/$local_user/.config/Typora/profile.data
 ################################################################################
 
@@ -3407,8 +3414,8 @@ EOF
 ################################################################################
 ## configuration de Handbrake
 ##------------------------------------------------------------------------------
-[ -d /home/"$local_user"/.config/ghb/ ] || $ExeAsUser mkdir /home/"$local_user"/.config/ghb/ && \
-[ -f /home/"$local_user"/.config/ghb/preferences.json ] && $ExeAsUser sed -E -i '/("UseM4v":) (false|true)/{s/true/false/;}' /home/"$local_user"/.config/ghb/preferences.json
+execandlog "[ -d /home/"$local_user"/.config/ghb/ ] || $ExeAsUser mkdir /home/"$local_user"/.config/ghb/ && \
+[ -f /home/"$local_user"/.config/ghb/preferences.json ] && $ExeAsUser sed -E -i '/("UseM4v":) (false|true)/{s/true/false/;}' /home/"$local_user"/.config/ghb/preferences.json"
 # permet de décocher la case "Utiliser l'extension de fichier compatible iPod/iTunes (.m4v) pour MP4" (Fichier -> Préférences -> Général)
 # le fichier de conf n'existe pas tant que handbrake n'a pas été lancé
 # donc il faut soit trouver un moyen de lancer handbrake silencieusement soit copier coller la conf entière dans le fichier directement
@@ -3416,10 +3423,10 @@ EOF
 ################################################################################
 
 # ajout du dossier partagé pour VirtualBox
-[ -d /home/"$local_user"/dossier_partage_VM/ ] || $ExeAsUser mkdir /home/"$local_user"/dossier_partage_VM/
+execandlog "[ -d /home/"$local_user"/dossier_partage_VM/ ] || $ExeAsUser mkdir /home/"$local_user"/dossier_partage_VM/"
 
 # ajout du dossier autostart pour les apps qui se lance au démarage
-[ -d /home/"$local_user"/.config/autostart/ ] || $ExeAsUser mkdir /home/"$local_user"/.config/autostart/
+execandlog "[ -d /home/"$local_user"/.config/autostart/ ] || $ExeAsUser mkdir /home/"$local_user"/.config/autostart/"
 
 ################################################################################
 ## configuration des applis qui doivent se lancer au démarage
@@ -3798,7 +3805,7 @@ fi
 ################################################################################
 
 # apparement obligatoire pour executer Signal
-chmod 4755 /opt/Signal/chrome-sandbox
+execandlog "chmod 4755 /opt/Signal/chrome-sandbox"
 
 ################################################################################
 ## configuration du bashrc et du zsh
@@ -4101,7 +4108,7 @@ backup_LUKS_header
 ################################################################################
 ## désactivation du bluetooth
 ##------------------------------------------------------------------------------
-$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gdbus call --session --dest org.gnome.SettingsDaemon.Rfkill --object-path /org/gnome/SettingsDaemon/Rfkill --method org.freedesktop.DBus.Properties.Set "org.gnome.SettingsDaemon.Rfkill" "BluetoothAirplaneMode" "<true>" > /dev/null
+execandlog "$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gdbus call --session --dest org.gnome.SettingsDaemon.Rfkill --object-path /org/gnome/SettingsDaemon/Rfkill --method org.freedesktop.DBus.Properties.Set "org.gnome.SettingsDaemon.Rfkill" "BluetoothAirplaneMode" "<true>" > /dev/null"
 ################################################################################
 
 ################################################################################
@@ -4126,8 +4133,8 @@ ufw --force enable"
 ################################################################################
 
 #réapplication de la cond par défaut pour la mise en veille automatique
-$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" dconf write /org/gnome/settings-daemon/plugins/power/sleep-inactive-battery-type "'suspend'"
-$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" dconf write /org/gnome/settings-daemon/plugins/power/sleep-inactive-ac-type "'suspend'"
+execandlog "$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" dconf write /org/gnome/settings-daemon/plugins/power/sleep-inactive-battery-type "'suspend'""
+execandlog "$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" dconf write /org/gnome/settings-daemon/plugins/power/sleep-inactive-ac-type "'suspend'""
 
 # remise au propre du fichier de configuration DNS
 execandlog "rm -f /etc/resolv.conf"
