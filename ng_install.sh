@@ -508,13 +508,12 @@ displayandexec() {
 ################################################################################
 
 ################################################################################
-## fonction d'éxecution et de redirection dans le fichier de log onlyexec
+## fonction d'éxecution et de redirection dans le fichier de log execandlog
 ##------------------------------------------------------------------------------
 # Premier parametre: MESSAGE
 # Autres parametres: COMMAND
-# regarder pour ajouter une nouvelle fonction pour ne faire que les executions et envoyer les commandes ainsi que leur résultat dans le fichier de log
-# debut du commencement de réflexion :
-onlyexec() {
+# fonction pour ne faire que les executions et envoyer les commandes ainsi que leur résultat dans le fichier de log
+execandlog() {
     echo ">>> $*" >> "$log_file" 2>&1
     bash -c "$*" >> "$log_file" 2>&1
     local ret=$?
@@ -597,7 +596,7 @@ check_internet_access
 ################################################################################
 ## synchronisation de l'heure et de la time zone
 ##------------------------------------------------------------------------------
-displayandexec "Synchronisation de l'heure et de la time zone       " "systemctl restart systemd-timesyncd.service"
+displayandexec "Synchronisation de l'heure et de la time zone       " "systemctl restart systemd-timesyncd"
 # voir comment faire lorsque la machine n'est pas à la bonne date et qu'elle a créer le fichier de log en se basant sur la date à laquelle elle était. regarder concernant le bon moment pour executer la commande car elle a besoin de displayandexec qui utilise notamment le fait qu'un fichier de log soit créé
 ################################################################################
 
@@ -3165,14 +3164,14 @@ displayandexec "Configuration de auditd                             " "systemctl
 ## configuration de /etc/inputrc
 ##------------------------------------------------------------------------------
 # # do not bell on tab-completion
-onlyexec "sed -i 's/# set bell-style none/set bell-style none/' /etc/inputrc"
+execandlog "sed -i 's/# set bell-style none/set bell-style none/' /etc/inputrc"
 ################################################################################
 
 ################################################################################
 ## configuration de freshclam (clamav)
 ##------------------------------------------------------------------------------
 # sed -E -i 's/^Checks [[:digit:]]+/Checks 1/g' /etc/clamav/freshclam.conf
-onlyexec "sed -E -i 's/^Checks [[:digit:]]+/Checks 1/g' /etc/clamav/freshclam.conf"
+execandlog "sed -E -i 's/^Checks [[:digit:]]+/Checks 1/g' /etc/clamav/freshclam.conf"
 # Check for new database 1 times a day (insteed of 24)
 # les logs de freshclam sont dans /var/log/clamav/freshclam.log
 # c'est le service clamav-freshclam qui fait tourner freshclam
@@ -3206,7 +3205,7 @@ EOF
 ## configuration de rkhunter
 ##------------------------------------------------------------------------------
 # suite aux infos de ce site : https://forum.cabane-libre.org/topic/239/invalid-web_cmd-configuration-option-relative-pathname-bin-false
-onlyexec "sed -i 's/UPDATE_MIRRORS=0/UPDATE_MIRRORS=1/' /etc/rkhunter.conf && \
+execandlog "sed -i 's/UPDATE_MIRRORS=0/UPDATE_MIRRORS=1/' /etc/rkhunter.conf && \
 sed -i 's/MIRRORS_MODE=1/MIRRORS_MODE=0/' /etc/rkhunter.conf && \
 sed -i 's/WEB_CMD=\"\/bin\/false\"/WEB_CMD=\"\"/' /etc/rkhunter.conf"
 ################################################################################
@@ -3231,7 +3230,7 @@ create_template_for_new_file
 ## configuration de Libreoffice
 ##------------------------------------------------------------------------------
 # conf de Libreoffice
-onlyexec "sed -i --follow-symlinks '/^export LC_ALL/a export GTK_THEME=Adwaita' /usr/bin/libreoffice"
+execandlog "sed -i --follow-symlinks '/^export LC_ALL/a export GTK_THEME=Adwaita' /usr/bin/libreoffice"
 # variante avec awk :
 # awk '1;/^export LC_ALL/{print "export GTK_THEME=Adwaita"}' /usr/bin/libreoffice
 # avec awk, on ne peut pas écrire directement dans le fichier, mais ce hack permet d'obtenir le même résultat
@@ -3254,7 +3253,7 @@ $ExeAsUser sed -i 's%<enabled xsi:nil="true"></enabled>%<enabled xsi:nil="false"
 # find /usr/lib/libreoffice/share/ -type f -mmin -5 -exec grep -l "java" {} \;
 
 # Disable startup logo
-onlyexec "sed -i 's/Logo=1/Logo=0/g' /etc/libreoffice/sofficerc"
+execandlog "sed -i 's/Logo=1/Logo=0/g' /etc/libreoffice/sofficerc"
 # ref : https://wiki.archlinux.org/title/LibreOffice#Disable_startup_logo
 
 # cette configuration n'existe pas dans le fichier après une install, il faut donc trouver le moyen de l'ajouter en insérant la ligne
@@ -3271,7 +3270,7 @@ $ExeAsUser sed -i 's%<item oor:path="/org.openoffice.Office.Common/Security/Scri
 ## configuration de nano
 ##------------------------------------------------------------------------------
 # la configuration de nano s'effectue dans le fichier /etc/nanorc
-onlyexec "sed -i 's/# set linenumbers/set linenumbers/g' /etc/nanorc"
+execandlog "sed -i 's/# set linenumbers/set linenumbers/g' /etc/nanorc"
 ################################################################################
 
 ################################################################################
@@ -3661,7 +3660,7 @@ EOF
 # ref : [gnome - Edit/Remove existing File Manager (right-click/context menu) actions - Ask Ubuntu](https://askubuntu.com/questions/1300049/edit-remove-existing-file-manager-right-click-context-menu-actions/1300079#1300079)
 # par exemple le paquet nautilus-wipe rajoute des entrés dans le clic droit assez dangereuses comme "Ecraser" et "Ecraser l'espace disque disponnible"
 # pour supprimer ces entrées des options de clic droit de nautilus, il faut soit désinstaller le paquet, soit supprimer le .so correspondant dans le répertoire des extensions de nautilus
-onlyexec "mv /usr/lib/x86_64-linux-gnu/nautilus/extensions-3.0/libnautilus-wipe.so /usr/lib/x86_64-linux-gnu/nautilus/extensions-3.0/libnautilus-wipe.so.backup"
+execandlog "mv /usr/lib/x86_64-linux-gnu/nautilus/extensions-3.0/libnautilus-wipe.so /usr/lib/x86_64-linux-gnu/nautilus/extensions-3.0/libnautilus-wipe.so.backup"
 
 # pour supprimer des options internes à nautilus, il faudrait modifier son code source et le recompiler
 # ref : [Comment supprimer Change Desktop Background du clic droit?](https://qastack.fr/ubuntu/34803/how-to-remove-change-desktop-background-from-right-click)
@@ -4022,7 +4021,7 @@ displayandexec "Configuration du zshrc                              " "stat /hom
 ################################################################################
 
 # Commande temporaire pour éviter que des fichiers de /home/user/.config n'appartienent à root lors de l'install, sans qu'on comprenne bien pourquoi (executé par ExeAsUser)
-onlyexec "chown -R "$local_user":"$local_user" /home/"$local_user"/.config/"
+execandlog "chown -R "$local_user":"$local_user" /home/"$local_user"/.config/"
 
 ################################################################################
 ## Mise à jour de la base de donnée de rkhunter
@@ -4080,11 +4079,11 @@ $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" 
 $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" dconf write /org/gnome/settings-daemon/plugins/power/sleep-inactive-ac-type "'suspend'"
 
 # remise au propre du fichier de configuration DNS
-onlyexec "rm -f /etc/resolv.conf"
-onlyexec "mv /etc/resolv.conf.old /etc/resolv.conf"
+execandlog "rm -f /etc/resolv.conf"
+execandlog "mv /etc/resolv.conf.old /etc/resolv.conf"
 
 # suppression du dossier temporaire pour l'execution du script
-onlyexec "rm -rf "$tmp_dir""
+execandlog "rm -rf "$tmp_dir""
 
 echo '--------------------------------------------------------------------' >> "$log_file"
 echo '' >> "$log_file"
