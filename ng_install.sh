@@ -517,11 +517,6 @@ execandlog() {
     echo ">>> $*" >> "$log_file" 2>&1
     bash -c "$*" >> "$log_file" 2>&1
     local ret=$?
-    if [ $ret != 0 ]; then
-        echo -e "\r $message                ${RED}[ERROR]${RESET} " >> $install_file
-    else
-        echo -e "\r $message                ${GREEN}[OK]${RESET} " >> $install_file
-    fi
     return $ret
 }
 ################################################################################
@@ -732,6 +727,13 @@ check_latest_version_manual_install_apps() {
         winscp_version='5.19.2'
     fi
     # check version : https://winscp.net/eng/downloads.php
+
+    geeqie_version="$($CURL 'https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/AppImage/appimages.txt' | head -n1 | grep -Po '(?<=Geeqie-v)([[:digit:]]\.[[:digit:]]+\+[[:digit:]]+)(?=.AppImage)')"
+    if [ $? != 0 ] || [ -z "$geeqie_version" ]; then
+        geeqie_version='1.6+20210924'
+    fi
+    # check version : https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/AppImage/appimages.txt
+
 }
 
 # tester la commande ci-dessous pour aller chercher les dernière versions directement depuis Github
@@ -795,6 +797,8 @@ manual_check_latest_version() {
   echo 'hashcat '"$hashcat_version"
   winscp_version="$($CURL 'https://winscp.net/eng/downloads.php' | grep 'Portable.zip' | grep -Po '(?<=WinSCP-)([[:digit:]]+\.+[[:digit:]]+\.[[:digit:]]+)(?=-Portable.zip")')"
   echo 'WinSCP '"$winscp_version"
+  geeqie_version="$($CURL 'https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/AppImage/appimages.txt' | head -n1 | grep -Po '(?<=Geeqie-v)([[:digit:]]\.[[:digit:]]+\+[[:digit:]]+)(?=.AppImage)')"
+  echo 'Geeqie '"$geeqie_version"
 }
 # manual_check_latest_version
 ################################################################################
@@ -1294,7 +1298,7 @@ $WGET -P "$manual_install_dir"/drawio/ 'https://raw.githubusercontent.com/jgraph
 cat> /usr/share/applications/drawio.desktop << EOF
 [Desktop Entry]
 Name=draw.io
-Exec=$manual_install_dir/drawio/drawio-x86_64-"$drawio_version".AppImage
+Exec=$manual_install_dir/drawio/drawio-x86_64-$drawio_version.AppImage
 Terminal=false
 Type=Application
 Icon=$manual_install_dir/drawio/drawlogo256.png
@@ -1806,6 +1810,42 @@ install_sshuttle() {
 # on l'install pour l'utilisateur root car sshuttle sera executer en sudo
 ################################################################################
 
+################################################################################
+## instalation de Geeqie
+##------------------------------------------------------------------------------
+install_geeqie_bullseye() {
+  displayandexec "Installation de Geeqie                              " "\
+mkdir "$manual_install_dir"/Geeqie/ && \
+geeqie_download_link="$($CURL 'https://www.geeqie.org/AppImage/index.html' | grep -i 'appimage' | grep -Po 'href=\K[^"]*')" && \
+$WGET -P "$manual_install_dir"/Geeqie/ "$geeqie_download_link"Geeqie-v"$geeqie_version".AppImage && \
+$WGET -P "$manual_install_dir"/Geeqie/ 'https://github.com/geeqie/geeqie.github.io/raw/master/geeqie.svg' && \
+chmod +x "$manual_install_dir"/Geeqie/Geeqie-v"$geeqie_version".AppImage"
+cat> /usr/share/applications/geeqie.desktop << EOF
+[Desktop Entry]
+Name=Geeqie
+GenericName=Image Viewer
+GenericName[fr]=Visualisateur d'images
+Comment=View and manage images
+Comment[fr]=Voir et gérer des images
+Exec=$manual_install_dir/Geeqie/Geeqie-v$geeqie_version.AppImage
+Icon=geeqie
+Type=Application
+Terminal=false
+# Startup notification disabled, since the remote -r switch may not open a new window...
+#StartupNotify=false
+#StartupWMClass=geeqie
+NotShowIn=X-Geeqie;
+Categories=Graphics;Viewer;
+MimeType=application/x-navi-animation;image/bmp;image/x-bmp;image/x-MS-bmp;image/gif;image/x-icon;image/jpeg;image/png;image/x-portable-anymap;image/x-portable-bitmap;image/x-portable-graymap;image/x-portable-pixmap;image/x-tga;image/tiff;image/x-xbitmap;image/x-xpixmap;image/svg;image/svg+xml;image/x-png;image/xpm;image/x-ico;
+EOF
+}
+# le contenu du .desktop est basé sur celui-ci : https://github.com/geeqie/geeqie.github.io/blob/master/geeqie.desktop
+# si jamais l'icone ne fonctionne pas avec Icon=geeqie
+# mettre Icon=$manual_install_dir/Geeqie/geeqie.svg
+# même la plus ancienne version de geekie en appimage 'Geeqie-v1.6+20210613.AppImage' au moment de la création de la fonction d'install de geekie ne fonctionne pas pour Buster
+################################################################################
+
+# apelle à la fonction qui permet de récupérer toutes les versions des logiciels qui s'installent manuellement
 check_latest_version_manual_install_apps
 
 install_all_manual_install_apps_buster() {
@@ -1861,6 +1901,7 @@ install_all_manual_install_apps_bullseye() {
   install_ansible_bullseye
   install_hashcat
   install_sshuttle
+  install_geeqie_bullseye
 }
 
 if [ "$buster" == 1 ]; then
@@ -2226,21 +2267,30 @@ CheckUpdateOpensnitch() {
   # Pour récupérer la dernière release non-stable : local v2="$($CURL 'https://api.github.com/repos/evilsocket/opensnitch/releases' | grep -m 1 -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
-grep -Po '^Exec.*-\K\d+.\d+.\d+' /usr/share/applications/krita.desktop
+
 CheckUpdateDrawio() {
   local SoftwareName='Drawio'
-  local v1="$()"
+  local v1="$(grep -Po '^Exec.*-\K[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+' /usr/share/applications/drawio.desktop)"
   local v2="$($CURL 'https://api.github.com/repos/jgraph/drawio-desktop/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
-grep -Po '^Exec.*-\K[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+' /usr/share/applications/drawio.desktop
-UpdateEtcher() {
+
+CheckUpdateEtcher() {
   local SoftwareName='Etcher'
-  local v1="$()"
+  local v1="$(grep -Po '^Exec.*-\K[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+' /usr/share/applications/balena-etcher-electron.desktop)"
   local v2="$($CURL 'https://api.github.com/repos/balena-io/etcher/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
-grep -Po '^Exec.*-\K[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+' /usr/share/applications/balena-etcher-electron.desktop
+
+CheckUpdateGeeqie() {
+  local SoftwareName='Geeqie'
+  local v1="$(grep -Po '^Exec.*-\K[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+' /usr/share/applications/geeqie.desktop)"
+  local v2="$($CURL 'https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/AppImage/appimages.txt' | head -n1 | grep -Po '(?<=Geeqie-v)([[:digit:]]\.[[:digit:]]+\+[[:digit:]]+)(?=.AppImage)')"
+  CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
+}
+
+  local v1="$(grep -Po '^Exec.*-\K[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+' /usr/share/applications/geeqie.desktop)"
+
 ################################################################################
 
 UpdateShotcut() {
@@ -2276,7 +2326,7 @@ UpdateFreefilesync() {
 
 UpdateKeepassxc() {
   local keepassxc_version="$($CURL 'https://api.github.com/repos/keepassxreboot/keepassxc/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')" && \
-  rm -rf "$manual_install_dir"/KeePassXC/KeePassXC-*.AppImage && \
+  rm -f "$manual_install_dir"/KeePassXC/KeePassXC-*.AppImage && \
   $WGET -P "$manual_install_dir"/KeePassXC/ https://github.com/keepassxreboot/keepassxc/releases/download/"$keepassxc_version"/KeePassXC-"$keepassxc_version"-x86_64.AppImage && \
   chmod +x "$manual_install_dir"/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage && \
   sed -i "s,.*Exec=.*,Exec="$manual_install_dir"/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage,g" /usr/share/applications/keepassxc.desktop && \
@@ -2349,6 +2399,18 @@ UpdateEtcher() {
   [ -f "$manual_install_dir"/balenaEtcher/icon.png ] || $WGET -P "$manual_install_dir"/balenaEtcher/ 'https://github.com/balena-io/etcher/raw/master/assets/icon.png'
 }
 
+UpdateGeeqie() {
+  local geeqie_version="$($CURL 'https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/AppImage/appimages.txt' | head -n1 | grep -Po '(?<=Geeqie-v)([[:digit:]]\.[[:digit:]]+\+[[:digit:]]+)(?=.AppImage)')" && \
+  rm -f "$manual_install_dir"/Geeqie/Geeqie-v*.AppImage && \
+  geeqie_download_link="$($CURL 'https://www.geeqie.org/AppImage/index.html' | grep -i 'appimage' | grep -Po 'href=\K[^"]*')" && \
+  $WGET -P "$manual_install_dir"/Geeqie/ "$geeqie_download_link"Geeqie-v"$geeqie_version".AppImage && \
+  chmod +x "$manual_install_dir"/Geeqie/Geeqie-v"$geeqie_version".AppImage && \
+  sed -i "s,^Exec=.*,Exec=$manual_install_dir/Geeqie/Geeqie-v"$geeqie_version".AppImage,g" /usr/share/applications/geeqie.desktop
+  [ -f "$manual_install_dir"/Geeqie/geeqie.svg ] || $WGET -P "$manual_install_dir"/Geeqie/ 'https://github.com/geeqie/geeqie.github.io/raw/master/geeqie.svg'
+
+}
+
+
 ################################################################################
 
 # on déclare le tableau qui contiendra les logiciels qui ont besoin d'être mis à jour
@@ -2381,7 +2443,8 @@ Bat
 Krita
 Opensnitch
 Drawio
-Etcher'
+Etcher
+Geeqie'
 
 CheckUpdate() {
 for software in $software_list; do
@@ -3195,7 +3258,7 @@ EOF
 # suite aux infos de ce site : https://forum.cabane-libre.org/topic/239/invalid-web_cmd-configuration-option-relative-pathname-bin-false
 execandlog "sed -i 's/UPDATE_MIRRORS=0/UPDATE_MIRRORS=1/' /etc/rkhunter.conf && \
 sed -i 's/MIRRORS_MODE=1/MIRRORS_MODE=0/' /etc/rkhunter.conf && \
-sed -i 's/WEB_CMD=\"\/bin\/false\"/WEB_CMD=\"\"/' /etc/rkhunter.conf"
+sed -i 's%WEB_CMD="/bin/false"%WEB_CMD=""%' /etc/rkhunter.conf"
 ################################################################################
 
 ################################################################################
