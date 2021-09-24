@@ -2030,7 +2030,7 @@ fi
 displayandexec "Installation des dépendances manquantes             " "$AG install -f -y"
 displayandexec "Désinstalation des paquets qui ne sont plus utilisés" "$AG autoremove -y"
 displayandexec "Mise à jour des paquets                             " "$AG update && $AG upgrade -y"
-displayandexec "Suppression du cache de apt-get                     " "$AG clean"
+# displayandexec "Suppression du cache de apt-get                     " "$AG clean"
 ################################################################################
 
 #//////////////////////////////////////////////////////////////////////////////#
@@ -2703,8 +2703,8 @@ cat>> /etc/ssh/sshd_config << EOF
 # ref : https://manpages.debian.org/unstable/openssh-server/sshd_config.5.en.html#DisableForwarding
 DisableForwarding yes
 
-# only allow this user ("$local_user") to connect to SSH
-AllowUsers "$local_user"
+# only allow this user ($local_user) to connect to SSH
+AllowUsers $local_user
 EOF
 ################################################################################
 
@@ -3748,9 +3748,6 @@ fi
 
 # apparement obligatoire pour executer Signal
 chmod 4755 /opt/Signal/chrome-sandbox
-
-# apparement obligatoire pour executer balena-etcher
-chmod 4755 /opt/balenaEtcher/chrome-sandbox
 
 ################################################################################
 ## configuration du bashrc et du zsh
