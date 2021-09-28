@@ -2225,49 +2225,49 @@ CheckUpdateYoutube-dl() {
 
 CheckUpdateBoostnote() {
   local SoftwareName='Boostnote'
-  local v1="$(grep -Po '"version": "\K.*?(?=")' /usr/lib/boostnote/resources/app/package.json)"
+  local v1="$(grep -Po '"version": "\K[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+(?=")' /usr/lib/boostnote/resources/app/package.json)"
   local v2="$($CURL 'https://api.github.com/repos/BoostIO/boost-releases/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
 CheckUpdateFreefilesync() {
   local SoftwareName='FreeFileSync'
-  local v1="$(head "$manual_install_dir"/FreeFileSync/CHANGELOG -n 1 | grep -Po 'FreeFileSync \K(\d+\.+\d+)')"
-  local v2="$($CURL 'https://freefilesync.org/download.php' | grep 'Linux.tar.gz' | grep -Po '(FreeFileSync_)\K(\d+\.+\d+)')"
+  local v1="$(head "$manual_install_dir"/FreeFileSync/CHANGELOG -n 1 | grep -Po 'FreeFileSync \K([[:digit:]]+\.+[[:digit:]]+)')"
+  local v2="$($CURL 'https://freefilesync.org/download.php' | grep 'Linux.tar.gz' | grep -Po '(FreeFileSync_)\K([[:digit:]]+\.+[[:digit:]]+)')"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
 CheckUpdateKeepassxc() {
   local SoftwareName='KeePassXC'
-  local v1="$(grep -Po '^Exec.*-\K\d+.\d+.\d+' /usr/share/applications/keepassxc.desktop)"
+  local v1="$(grep -Po '^Exec.*-\K[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+' /usr/share/applications/keepassxc.desktop)"
   local v2="$($CURL 'https://api.github.com/repos/keepassxreboot/keepassxc/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
 CheckUpdateJoplin() {
   local SoftwareName='Joplin'
-  local v1="$(grep -Po '^Exec.*-\K\d+.\d+.\d+' /usr/share/applications/joplin.desktop)"
+  local v1="$(grep -Po '^Exec.*-\K[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+' /usr/share/applications/joplin.desktop)"
   local v2="$($CURL 'https://api.github.com/repos/laurent22/joplin/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
 CheckUpdateStacer() {
   local SoftwareName='Stacer'
-  local v1="$(strings /usr/share/stacer/stacer | grep -Po '(Stacer v)\K(\d+.\d+.\d+.)')"
+  local v1="$(strings /usr/share/stacer/stacer | grep -Po '(Stacer v)\K([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)')"
   local v2="$($CURL 'https://api.github.com/repos/oguzhaninan/Stacer/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
 CheckUpdateBat() {
   local SoftwareName='Bat'
-  local v1="$(bat --version | grep -Po '(bat )\K.*')"
+  local v1="$(bat --version | grep -Po '(bat )\K[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+')"
   local v2="$($CURL 'https://api.github.com/repos/sharkdp/bat/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
 CheckUpdateKrita() {
   local SoftwareName='Krita'
-  local v1="$(grep -Po '^Exec.*-\K\d+.\d+.\d+' /usr/share/applications/krita.desktop)"
+  local v1="$(grep -Po '^Exec.*-\K[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+' /usr/share/applications/krita.desktop)"
   local v2="$($CURL 'https://krita.org/fr/telechargement/krita-desktop/' | grep 'stable' | grep 'appimage>' | grep -Po '(?<=/stable/krita/)(\d+\.+\d\.\d+)')"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
@@ -2324,16 +2324,16 @@ UpdateBoostnote() {
   local tmp_dir="$(mktemp -d)" && \
   $WGET -P "$tmp_dir" https://github.com/BoostIO/boost-releases/releases/download/v$boostnote_version/boostnote_"$boostnote_version"_amd64.deb && \
   dpkg -i "$tmp_dir"/boostnote_"$boostnote_version"_amd64.deb
-  # rm -rf "$tmp_dir"
+  rm -rf "$tmp_dir"
 }
 
 UpdateFreefilesync() {
-  local freefilesync_version="$($CURL 'https://freefilesync.org/download.php' | grep 'Linux.tar.gz' | grep -Po "(FreeFileSync_)\K(\d+\.+\d+)")" && \
+  local freefilesync_version="$($CURL 'https://freefilesync.org/download.php' | grep 'Linux.tar.gz' | grep -Po "(FreeFileSync_)\K([[:digit:]]+\.+[[:digit:]]+)")" && \
   rm -rf "$manual_install_dir"/FreeFileSync && \
   local tmp_dir="$(mktemp -d)" && \
   aria2c -d "$tmp_dir" https://freefilesync.org/download/FreeFileSync_"$freefilesync_version"_Linux.tar.gz -o /FreeFileSync_"$freefilesync_version"_Linux.tar.gz && \
   tar xvf "$tmp_dir"/FreeFileSync_"$freefilesync_version"_Linux.tar.gz --directory "$manual_install_dir" > /dev/null
-  # rm -rf "$tmp_dir"
+  rm -rf "$tmp_dir"
 }
 
 UpdateKeepassxc() {
@@ -2344,7 +2344,7 @@ UpdateKeepassxc() {
   sed -i "s,.*Exec=.*,Exec="$manual_install_dir"/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage,g" /usr/share/applications/keepassxc.desktop && \
   [ -f /home/"$local_user"/.config/autostart/keepassxc.desktop ] && sed -i s,.*Exec=.*,Exec="$manual_install_dir"/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage,g /home/"$local_user"/.config/autostart/keepassxc.desktop && \
   [ -f "$manual_install_dir"/KeePassXC/keepassxc-logo.svg ] || $WGET -P "$manual_install_dir"/KeePassXC/ 'https://keepassxc.org/images/keepassxc-logo.svg'
-  [ -f /home/"$local_user"/.config/asbru/asbru.yml ] && sed -i "s,pathcli: /opt/manual_install/KeePassXC/KeePassXC-.*.AppImage,pathcli: "$manual_install_dir"/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage,g" /home/"$local_user"/.config/asbru/asbru.yml
+  # [ -f /home/"$local_user"/.config/asbru/asbru.yml ] && sed -i "s,pathcli: /opt/manual_install/KeePassXC/KeePassXC-.*.AppImage,pathcli: "$manual_install_dir"/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage,g" /home/"$local_user"/.config/asbru/asbru.yml
   # bon a priori la commande précendante ne fonctionne pas, elle change bien la version dans le fichier de conf de asbru, mais cette modification ne permet pas de changer réellement la conf de asbru
 }
 
