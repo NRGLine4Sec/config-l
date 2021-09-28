@@ -48,8 +48,6 @@
 
 
 
-# exemple de contenu du .zshrc (provient d'une Kali)
-
 
 
 ##
