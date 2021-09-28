@@ -456,6 +456,11 @@ chmod 600 "$log_dir"/"$(basename "$0")"
 # si le cp ne marche pas, tenter de faire cat "${FSLIST_TMP}" > "${FSLIST}"
 ################################################################################
 
+script_path="$(dirname $(readlink -f "${BASH_SOURCE[0]}"))"
+# équivalent POSIX compliant :
+# script_path=$(cd -P -- "$(dirname -- "$0")" && pwd -P)
+# ref : [Determine the path of the executing BASH script - Stack Overflow](https://stackoverflow.com/questions/630372/determine-the-path-of-the-executing-bash-script/630645#630645)
+
 ################################################################################
 ## création du dossier temporaire pour l'execution du script
 ##------------------------------------------------------------------------------
@@ -1217,7 +1222,7 @@ $AGI atom"
 ## instalation de WinSCP
 ##------------------------------------------------------------------------------
 install_winscp() {
-  execandlog "local tmp_dir="$(mktemp -d)""
+  local tmp_dir="$(mktemp -d)"
   displayandexec "Installation de WinSCP                              " "\
 [ -d "$manual_install_dir"/winscp/ ] || mkdir "$manual_install_dir"/winscp/ && \
 $WGET -P "$tmp_dir" https://winscp.net/download/WinSCP-"$winscp_version"-Portable.zip && \
@@ -1234,7 +1239,7 @@ rm -rf "$tmp_dir""
 ## instalation de Veracrypt
 ##------------------------------------------------------------------------------
 install_veracrypt() {
-  execandlog "local tmp_dir="$(mktemp -d)""
+  local tmp_dir="$(mktemp -d)"
   displayandexec "Installation de veracrypt                           " "\
 $WGET -P "$tmp_dir" https://launchpad.net/veracrypt/trunk/"$(tr '[:upper:]' '[:lower:]' <<< "$veracrypt_version")"/+download/veracrypt-"$veracrypt_version"-setup.tar.bz2 && \
 tar xjf "$tmp_dir"/veracrypt-"$veracrypt_version"-setup.tar.bz2 --directory="$tmp_dir" && \
@@ -1344,7 +1349,7 @@ EOF
 ##------------------------------------------------------------------------------
 install_boostnote() {
   displayandexec "Installation des dépendances de Boostnote           " "$AGI gconf2 gconf-service"
-  execandlog "local tmp_dir="$(mktemp -d)""
+  local tmp_dir="$(mktemp -d)"
   displayandexec "Installation de Boostnote                           " "\
 $WGET -P "$tmp_dir" https://github.com/BoostIO/boost-releases/releases/download/v"$boostnote_version"/boostnote_"$boostnote_version"_amd64.deb && \
 dpkg -i "$tmp_dir"/boostnote_"$boostnote_version"_amd64.deb
@@ -1618,7 +1623,7 @@ $AGI signal-desktop"
 ## instalation de Stacer
 ##------------------------------------------------------------------------------
 install_stacer() {
-  execandlog "local tmp_dir="$(mktemp -d)""
+  local tmp_dir="$(mktemp -d)"
   displayandexec "Installation de Stacer                              " "\
 $WGET -P "$tmp_dir" https://github.com/oguzhaninan/Stacer/releases/download/v"$stacer_version"/stacer_"$stacer_version"_amd64.deb && \
 dpkg -i "$tmp_dir"/stacer_"$stacer_version"_amd64.deb
@@ -1663,7 +1668,7 @@ $AGI asbru-cm"
 ## instalation de bat
 ##------------------------------------------------------------------------------
 install_bat() {
-  execandlog "local tmp_dir="$(mktemp -d)""
+  local tmp_dir="$(mktemp -d)"
   displayandexec "Installation de Bat                                 " "\
 $WGET -P "$tmp_dir" https://github.com/sharkdp/bat/releases/download/v"$bat_version"/bat_"$bat_version"_amd64.deb && \
 dpkg -i "$tmp_dir"/bat_"$bat_version"_amd64.deb
@@ -1733,7 +1738,7 @@ EOF
 ## instalation de OpenSnitch
 ##------------------------------------------------------------------------------
 install_opensnitch() {
-  execandlog "local tmp_dir="$(mktemp -d)""
+  local tmp_dir="$(mktemp -d)"
   displayandexec "Installation des dépendances de OpenSnitch          " "$AGI libnetfilter-queue1"
   displayandexec "Installation de OpenSnitch                          " "\
   $AGI python3-pyqt5.qtsql python3-pyinotify python3-grpcio python3-slugify && \
@@ -1788,7 +1793,7 @@ EOF
 ## instalation de Hashcat
 ##------------------------------------------------------------------------------
 install_hashcat() {
-  execandlog "local tmp_dir="$(mktemp -d)""
+  local tmp_dir="$(mktemp -d)"
   displayandexec "Installation de Hashcat                             " "\
 $WGET -P "$tmp_dir" https://github.com/hashcat/hashcat/releases/download/v"$hashcat_version"/hashcat-"$hashcat_version".7z && \
 [ -d "$manual_install_dir"/hashcat/ ] || mkdir "$manual_install_dir"/hashcat/ && \
@@ -2797,7 +2802,8 @@ echo '
 ################################################################################
 ## configuration des règles auditd
 ##------------------------------------------------------------------------------
-cat> /etc/audit/rules.d/audit.rules << 'EOF'
+# cat> /etc/audit/rules.d/audit.rules << 'EOF'
+cat> /tmp/audit.rules << 'EOF'
 # Linux Audit Daemon - Best Practice Configuration
 # /etc/audit/audit.rules
 #
@@ -3213,6 +3219,7 @@ cat> /etc/audit/rules.d/audit.rules << 'EOF'
 
 ##-e 2
 EOF
+rm -f /etc/audit/rules.d/audit.rules && mv "$script_path"/audit.rules /etc/audit/rules.d/audit.rules
 displayandexec "Configuration de auditd                             " "systemctl restart auditd"
 # rules based on https://github.com/Neo23x0/auditd/blob/master/audit.rules
 # les règles vont être généré (lors du restart) à l'aide de augenrules et seront ensuite dans le fichier /etc/audit/audit.rules
@@ -3228,7 +3235,6 @@ execandlog "sed -i 's/# set bell-style none/set bell-style none/' /etc/inputrc"
 ################################################################################
 ## configuration de freshclam (clamav)
 ##------------------------------------------------------------------------------
-# sed -E -i 's/^Checks [[:digit:]]+/Checks 1/g' /etc/clamav/freshclam.conf
 execandlog "sed -E -i 's/^Checks [[:digit:]]+/Checks 1/g' /etc/clamav/freshclam.conf"
 # Check for new database 1 times a day (insteed of 24)
 # les logs de freshclam sont dans /var/log/clamav/freshclam.log
@@ -3247,6 +3253,7 @@ Language=fr' > /home/"$local_user"/.config/stacer/settings.ini
 ################################################################################
 ## configuration de Etcher
 ##------------------------------------------------------------------------------
+configure_etcher() {
 [ -d /home/"$local_user"/.config/balena-etcher-electron/ ] || $ExeAsUser mkdir /home/"$local_user"/.config/balena-etcher-electron/ && \
 $ExeAsUser cat> /home/"$local_user"/.config/balena-etcher-electron/config.json << 'EOF'
 {
@@ -3257,15 +3264,20 @@ $ExeAsUser cat> /home/"$local_user"/.config/balena-etcher-electron/config.json <
   "decompressFirst": true
 }
 EOF
+}
+configure_etcher
 ################################################################################
 
 ################################################################################
 ## configuration de rkhunter
 ##------------------------------------------------------------------------------
 # suite aux infos de ce site : https://forum.cabane-libre.org/topic/239/invalid-web_cmd-configuration-option-relative-pathname-bin-false
+configure_rkhunter() {
 execandlog "sed -i 's/UPDATE_MIRRORS=0/UPDATE_MIRRORS=1/' /etc/rkhunter.conf && \
 sed -i 's/MIRRORS_MODE=1/MIRRORS_MODE=0/' /etc/rkhunter.conf && \
 sed -i 's%WEB_CMD="/bin/false"%WEB_CMD=""%' /etc/rkhunter.conf"
+}
+configure_rkhunter
 ################################################################################
 
 ################################################################################
@@ -3575,7 +3587,7 @@ EOF
 ################################################################################
 ## configuration de Gnome
 ##------------------------------------------------------------------------------
-$ExeAsUser cat> tmp_conf_dconf << 'EOF'
+cat << 'EOF' | $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" dconf load /org/
 [gnome/documents]
 window-maximized=true
 
@@ -3615,7 +3627,6 @@ had-bluetooth-devices-setup=false
 sort-directories-first=true
 show-hidden=true
 EOF
-$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" dconf load /org/ < tmp_conf_dconf
 # ref : https://superuser.com/questions/726550/use-dconf-or-comparable-to-set-configs-for-another-user/1265786#1265786
 
 
@@ -3660,6 +3671,94 @@ CustomGnomeShortcut "désactiver le bluetooth" "/usr/bin/desactivebt" "<Primary>
 #   - the shortcut is not used already in custom shortcuts;
 #   - the command is not used already in custom shortcuts;
 # - sometimes is uses the very same $num multiple times
+
+ConfigureGnomeTerminal(){
+  DCONF_write="DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" dconf write"
+  DCONF_read="DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" dconf read"
+  DCONF_list="DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" dconf list"
+  DCONF_dump="DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" dconf dump"
+  DCONF_load="DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" dconf load"
+
+  # Il ne faut pas que dconf soit executé dans un subshell avec bash -c par exemple, car sinon les caractères simple quote vont être interprété et il faudra backslash tous les cactères simple quote (ps même en escapant les simple quote ça ne fonctionnait toujours pas pour la valeur palette)
+  # les variables DCONF_* ne doivent pas être appelés entre parenthèses
+
+  dconf_set() {
+    local key="$1"
+    local value="$2"
+    $ExeAsUser $DCONF_write ""$new_profile_id_key"/"$key"" "$value"
+  }
+
+  # because dconf still doesn't have "append"
+  dconf_list_append() {
+    local key="$1"
+    local value="$2"
+    local entries="$(
+      {
+          $ExeAsUser $DCONF_read "$key" | tr -d '[]' | tr , "\n" | grep -F -v "$value"
+          echo "'$value'"
+      } | head -c-1 | tr "\n" ,
+    )"
+
+    $ExeAsUser $DCONF_write "$key" "[$entries]"
+  }
+
+  base_key_path='/org/gnome/terminal/legacy/profiles:'
+
+  if [[ -n "$($ExeAsUser $DCONF_list "$base_key_path"/)" ]]; then
+    # check if there are somes profile already configured
+    # there is no output after a fresh install (from the dconf command)(we can get the default with gsettings with this commande : gsettings get org.gnome.Terminal.ProfilesList default)
+    # we create an ID with uuidgen to create a new profile
+    new_profile_id="$(uuidgen)"
+
+        # récupère l'uuid de la conf par défaut du terminal
+    if [[ -n "$($ExeAsUser $DCONF_read "$base_key_path"/default)" ]]; then
+          default_profile_id=$($ExeAsUser $DCONF_read "$base_key_path"/default | tr -d \')
+      else
+        default_profile_id=$($ExeAsUser $DCONF_list "$base_key_path"/ | grep -m1 '^:' | tr -d :/)
+        # on récupère le premier id du profil disponnible dans la list des profiles
+        # default_profile_id=$($ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus gsettings get org.gnome.Terminal.ProfilesList default)"
+        # attention, à pirio la commande gsettings ne donne pas le même résultat pour le profil par défaut quand il y en a un d'accessible avec dconf
+        # peut aussi se faire uniquement avec awk 'NR==1,/^:/{gsub(/:/,"");gsub(/\//,""); print}'
+    fi
+
+    default_profile_id_key=""$base_key_path"/:$default_profile_id"
+    new_profile_id_key=""$base_key_path"/:"$new_profile_id""
+
+    # copy existing settings from default profile
+    $ExeAsUser $DCONF_dump "$default_profile_id_key"/ | $ExeAsUser $DCONF_load "$new_profile_id_key"/
+
+    # add new copy to list of profiles
+    dconf_list_append "$base_key_path"/list "$new_profile_id"
+
+    # update profile valueues with theme options
+    dconf_set visible-name "'$profile_name'"
+    dconf_set palette "['#000000', '#e06c75', '#98c379', '#d19a66', '#61afef', '#c678dd', '#56b6c2', '#abb2bf', '#5c6370', '#e06c75', '#98c379', '#d19a66', '#61afef', '#c678dd', '#56b6c2', '#ffffff']"
+    dconf_set background-color "'#282c34'"
+    dconf_set foreground-color "'#abb2bf'"
+    dconf_set bold-color "'#ABB2BF'"
+    dconf_set bold-color-same-as-fg "true"
+    dconf_set use-theme-colors "false"
+    dconf_set use-theme-background "false"
+
+  # autre version qui fonctionne aussi et permet d'éviter avoir à faire des dconf write
+  #     cat << 'EOF' | $ExeAsUser $DCONF_load "$new_profile_id_key"/
+  # [/]
+  # foreground-color='#abb2bf'
+  # visible-name='One Dark'
+  # palette=['#000000', '#e06c75', '#98c379', '#d19a66', '#61afef', '#c678dd', '#56b6c2', '#abb2bf', '#5c6370', '#e06c75', '#98c379', '#d19a66', '#61afef', '#c678dd', '#56b6c2', '#ffffff']
+  # use-theme-colors=false
+  # use-theme-background=false
+  # bold-color-same-as-fg=true
+  # bold-color='#ABB2BF'
+  # background-color='#282c34'
+  # EOF
+  fi
+}
+# script based from
+ConfigureGnomeTerminal
+
+# redémarer Gnome Shell
+gnome-shell --replace &>/dev/null & disown
 ################################################################################
 
 # Pour obtenir le lien de l'image utilisé commend fond d'écran
