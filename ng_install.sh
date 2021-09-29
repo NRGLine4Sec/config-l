@@ -714,11 +714,12 @@ check_latest_version_manual_install_apps() {
     fi
     # check version : https://github.com/evilsocket/opensnitch/releases/
 
-    opensnitch_latest_version="$($CURL 'https://api.github.com/repos/evilsocket/opensnitch/releases' | grep -m 1 -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+    opensnitch_latest_version="$(curl --silent 'https://api.github.com/repos/evilsocket/opensnitch/releases' | grep -m 1 -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
     if [ $? != 0 ] || [ -z "$opensnitch_latest_version" ]; then
         opensnitch_latest_version='1.4.0-rc.2'
     fi
     # check version : https://github.com/evilsocket/opensnitch/releases/
+    # je suis obligé de ne pas utilisé l'option --show-error car sinon j'obtiens une erreur : curl: (23) Failure writing output to destination
 
     hashcat_version="$($CURL 'https://api.github.com/repos/hashcat/hashcat/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
     if [ $? != 0 ] || [ -z "$hashcat_version" ]; then
@@ -795,7 +796,7 @@ manual_check_latest_version() {
   echo 'Krita '"$krita_version"
   opensnitch_stable_version="$($CURL 'https://api.github.com/repos/evilsocket/opensnitch/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   echo 'OpenSnitch stable '"$opensnitch_stable_version"
-  opensnitch_latest_version="$($CURL 'https://api.github.com/repos/evilsocket/opensnitch/releases' | grep -m 1 -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  opensnitch_latest_version="$(curl --silent 'https://api.github.com/repos/evilsocket/opensnitch/releases' | grep -m 1 -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   echo 'OpenSnitch latest (dev) '"$opensnitch_latest_version"
   hashcat_version="$($CURL 'https://api.github.com/repos/hashcat/hashcat/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   echo 'hashcat '"$hashcat_version"
@@ -862,11 +863,11 @@ execandlog "shopt -u nocasematch"
 ## désactivation de la mise en veille automatique pendant l'installation
 ##------------------------------------------------------------------------------
 # désactivation de l'écran noir
-$DCONF_write /org/gnome/desktop/session/idle-delay 'uint32 0'
+$ExeAsUser $DCONF_write /org/gnome/desktop/session/idle-delay 'uint32 0'
 # désactivation de la mise en veille automatique sur batterie
-$DCONF_write /org/gnome/settings-daemon/plugins/power/sleep-inactive-battery-type 'nothing'
+$ExeAsUser $DCONF_write /org/gnome/settings-daemon/plugins/power/sleep-inactive-battery-type 'nothing'
 # désactivation de la mise en veille automatique sur cable
-$DCONF_write /org/gnome/settings-daemon/plugins/power/sleep-inactive-ac-type 'nothing'
+$ExeAsUser $DCONF_write /org/gnome/settings-daemon/plugins/power/sleep-inactive-ac-type 'nothing'
 ################################################################################
 
 clear
@@ -1614,8 +1615,19 @@ install_shotcut() {
   displayandexec "Installation de Shotcut                             " "\
 [ -d "$manual_install_dir"/shotcut/ ] || mkdir "$manual_install_dir"/shotcut/ && \
 $WGET -P "$manual_install_dir"/shotcut/ https://github.com/mltframework/shotcut/releases/download/v"$shotcut_version"/"$shotcut_appimage" && \
-chmod +x "$manual_install_dir"/shotcut/"$shotcut_appimage" && \
-ln -s "$manual_install_dir"/shotcut/"$shotcut_appimage" /usr/bin/shotcut"
+$WGET -P "$manual_install_dir"/shotcut/ 'https://github.com/mltframework/shotcut/blob/master/icons/shotcut-logo-64.png' && \
+chmod +x "$manual_install_dir"/shotcut/"$shotcut_appimage""
+cat> /usr/share/applications/shotcut.desktop << EOF
+[Desktop Entry]
+Name=shotcut
+Exec=$manual_install_dir/shotcut/$shotcut_appimage
+Terminal=false
+Type=Application
+Icon=$manual_install_dir/shotcut/shotcut-logo-64.png
+Comment=a free, open source, cross-platform video editor
+MimeType=x-scheme-handler/etcher;
+Categories=Utility;
+EOF
 }
 ################################################################################
 
@@ -2053,9 +2065,9 @@ install_GSE_system_monitor() {
 }
 
 enable_GSE() {
-  busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")'
-  $ExeAsUser gnome-extensions enable 'gnome-shell-screenshot@ttll.de'
-  $ExeAsUser gnome-extensions enable 'system-monitor@paradoxxx.zero.gmail.com'
+  $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")'
+  $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'gnome-shell-screenshot@ttll.de'
+  $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'system-monitor@paradoxxx.zero.gmail.com'
 }
 displayandexec "Installation des Gnome Shell Extension              " "\
 "$(install_GSE_screenshot_tool)"
@@ -2064,8 +2076,9 @@ displayandexec "Installation des Gnome Shell Extension              " "\
 }
 # il est nécessaire de recharger Gnome Shell avant de pouvoit faire un gnome-extensions enable
 # la commande suivante permet de recharger Gnome Shell :
-# busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")'
+# $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")'
 # Par contre elle coupe tout ce qui est executer au moment du lancement de la commande
+# elle fait l'quivalent de la fermeture + réouverture de la session sans avoir à renseigner le mdp
 # il n'est pas nécessaire de recharger Gnome Shell après avoir activé les extensions pour les voir apparaitre dans la barre supérieure
 
 
@@ -2340,11 +2353,11 @@ CheckUpdateGeeqie() {
 UpdateShotcut() {
   local shotcut_version="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)" && \
   local shotcut_appimage="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"name": "\K.*?(?=")' | grep 'AppImage')" && \
-  rm -f /usr/bin/shotcut && \
   rm -f "$manual_install_dir"/shotcut/*.AppImage && \
 	$WGET -P "$manual_install_dir"/shotcut/ https://github.com/mltframework/shotcut/releases/download/v"$shotcut_version"/"$shotcut_appimage" && \
 	chmod +x "$manual_install_dir"/shotcut/"$shotcut_appimage" && \
-  ln -s "$manual_install_dir"/shotcut/"$shotcut_appimage" /usr/bin/shotcut
+  sed -i "s,.*Exec=.*,Exec="$manual_install_dir"/shotcut/"$shotcut_appimage",g" /usr/share/applications/shotcut.desktop && \
+  [ -f "$manual_install_dir"/shotcut/shotcut-logo-64.png ] || $WGET -P "$manual_install_dir"/shotcut/ 'https://github.com/mltframework/shotcut/blob/master/icons/shotcut-logo-64.png'
 }
 
 UpdateYoutube-dl() {
@@ -3715,7 +3728,7 @@ backup_LUKS_header
 ################################################################################
 ## désactivation du bluetooth
 ##------------------------------------------------------------------------------
-execandlog "$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gdbus call --session --dest org.gnome.SettingsDaemon.Rfkill --object-path /org/gnome/SettingsDaemon/Rfkill --method org.freedesktop.DBus.Properties.Set "org.gnome.SettingsDaemon.Rfkill" "BluetoothAirplaneMode" "<true>" > /dev/null"
+$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gdbus call --session --dest org.gnome.SettingsDaemon.Rfkill --object-path /org/gnome/SettingsDaemon/Rfkill --method org.freedesktop.DBus.Properties.Set "org.gnome.SettingsDaemon.Rfkill" "BluetoothAirplaneMode" "<true>" > /dev/null
 ################################################################################
 
 ################################################################################
@@ -3740,8 +3753,8 @@ ufw --force enable"
 ################################################################################
 
 #réapplication de la cond par défaut pour la mise en veille automatique
-$DCONF_write /org/gnome/settings-daemon/plugins/power/sleep-inactive-battery-type 'suspend'
-$DCONF_write /org/gnome/settings-daemon/plugins/power/sleep-inactive-ac-type 'suspend'
+$ExeAsUser $DCONF_write /org/gnome/settings-daemon/plugins/power/sleep-inactive-battery-type 'suspend'
+$ExeAsUser $DCONF_write /org/gnome/settings-daemon/plugins/power/sleep-inactive-ac-type 'suspend'
 
 # remise au propre du fichier de configuration DNS
 execandlog "rm -f /etc/resolv.conf && mv /etc/resolv.conf.old /etc/resolv.conf"
