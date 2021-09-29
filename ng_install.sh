@@ -1787,8 +1787,8 @@ EOF
 }
 install_ansible_bullseye() {
   displayandexec "Installation de Ansible                             " "\
-echo 'deb [arch=amd64] http://ppa.launchpad.net/ansible/ansible-4/ubuntu focal main' > /etc/apt/sources.list.d/ansible.list && \
-apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 93C4A3FD7BB9C367 && \
+$WGET --output-document - 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x93C4A3FD7BB9C367' | gpg --dearmor --output /usr/share/keyrings/ansible-archive-keyring.gpg && \
+echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/ansible-archive-keyring.gpg] http://ppa.launchpad.net/ansible/ansible-4/ubuntu focal main' > /etc/apt/sources.list.d/ansible.list && \
 $AG update && \
 $AGI ansible"
 $ExeAsUser cat>> /home/"$local_user"/.bashrc << 'EOF'
@@ -1799,6 +1799,7 @@ EOF
 }
 # echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/ansible-archive-keyring.gpg] deb http://ppa.launchpad.net/ansible/ansible-4/ubuntu focal main' > /etc/apt/sources.list.d/ansible.list && \
 # $CURL '' | gpg --dearmor --output /usr/share/keyrings/ansible-archive-keyring.gpg && \
+# apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 93C4A3FD7BB9C367 && \
 ################################################################################
 
 ################################################################################
@@ -1846,7 +1847,7 @@ GenericName[fr]=Visualisateur d'images
 Comment=View and manage images
 Comment[fr]=Voir et gérer des images
 Exec=$manual_install_dir/Geeqie/Geeqie-v$geeqie_version.AppImage
-Icon=geeqie
+Icon=$manual_install_dir/Geeqie/geeqie.svg
 Type=Application
 Terminal=false
 # Startup notification disabled, since the remote -r switch may not open a new window...
@@ -2038,8 +2039,8 @@ install_GSE_screenshot_tool() {
 }
 #system-monitor
 install_GSE_system_monitor() {
-  $AGI gnome-shell-extension-system-monitor && \
-  # $ExeAsUser gnome-extensions enable 'system-monitor@paradoxxx.zero.gmail.com'
+  $AGI gnome-shell-extension-system-monitor
+# $ExeAsUser gnome-extensions enable 'system-monitor@paradoxxx.zero.gmail.com'
 }
 #displayandexec "Installation des Gnome Shell Extension              " "\
 #"
@@ -3275,7 +3276,7 @@ CustomGnomeShortcut "désactiver le bluetooth" "/usr/bin/desactivebt" "<Primary>
 #   - the command is not used already in custom shortcuts;
 # - sometimes is uses the very same $num multiple times
 
-ConfigureGnomeTerminal(){
+ConfigureGnomeTerminal() {
   DCONF_write="DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" dconf write"
   DCONF_read="DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" dconf read"
   DCONF_list="DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" dconf list"
@@ -3518,6 +3519,8 @@ displayandexec "Réglage du volume audio à 10%                       " "$ExeAsU
 
 # cette dommande la a fonctionné dans le sudo : $ExeAsUser rm -rf /home/"$local_user"/.config/pulse/* &&  amixer set Master 20%
 
+
+# regarder aussi cette solution la : https://bbs.archlinux.org/viewtopic.php?id=155649
 ################################################################################
 
 
