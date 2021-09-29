@@ -1744,6 +1744,7 @@ StartupWMClass=krita
 EOF
 }
 # le contenu du .desktop est basé sur celui-ci : https://github.com/KDE/krita/blob/master/krita/org.kde.krita.desktop
+# télécharger l'icone de krita et templacer dans le desktop la valeur de Icon=
 ################################################################################
 
 ################################################################################
