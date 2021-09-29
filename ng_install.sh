@@ -643,7 +643,7 @@ check_latest_version_manual_install_apps() {
     # fi
     # check version : https://www.openoffice.org/fr/Telecharger/
 
-    freefilesync_version="$($CURL 'https://freefilesync.org/download.php' | grep 'Linux.tar.gz' | grep -Po '(?<=FreeFileSync_)(\d+\.+\d+)')"
+    freefilesync_version="$($CURL 'https://freefilesync.org/download.php' | grep 'Linux.tar.gz' | grep -Po '(?<=FreeFileSync_)([[:digit:]]+\.+[[:digit:]]+)')"
     if [ $? != 0 ] || [ -z "$freefilesync_version" ]; then
         freefilesync_version='11.14'
     fi
@@ -701,7 +701,7 @@ check_latest_version_manual_install_apps() {
     fi
     # check version : https://github.com/laurent22/joplin/releases/
 
-    krita_version="$($CURL 'https://krita.org/fr/telechargement/krita-desktop/' | grep 'stable' | grep 'appimage>' | grep -Po '(?<=/stable/krita/)(\d+\.+\d\.\d+)')"
+    krita_version="$($CURL 'https://krita.org/fr/telechargement/krita-desktop/' | grep 'stable' | grep 'appimage>' | grep -Po '(?<=/stable/krita/)([[:digit:]]+\.+[[:digit:]]+\.[[:digit:]]+)')"
     if [ $? != 0 ] || [ -z "$krita_version" ]; then
         krita_version='4.4.8'
     fi
@@ -770,9 +770,9 @@ manual_check_latest_version() {
   echo 'VeraCrypt '"$veracrypt_version"
   drawio_version="$($CURL 'https://api.github.com/repos/jgraph/drawio-desktop/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   echo 'drawio '"$drawio_version"
-  openoffice_version="$($CURL 'https://www.openoffice.org/fr/Telecharger/' | awk '/Linux/ && /deb/ && /x86-64/' | grep -Po '(?<=OpenOffice_)(\d+\.+)+\d+')"
+  openoffice_version="$($CURL 'https://www.openoffice.org/fr/Telecharger/' | awk '/Linux/ && /deb/ && /x86-64/' | grep -Po '(?<=OpenOffice_)([[:digit:]]+\.+)+[[:digit:]]+')"
   echo 'OpenOffice '"$openoffice_version"
-  freefilesync_version="$($CURL 'https://freefilesync.org/download.php' | grep 'Linux.tar.gz' | grep -Po '(?<=FreeFileSync_)(\d+\.+\d)+\d')"
+  freefilesync_version="$($CURL 'https://freefilesync.org/download.php' | grep 'Linux.tar.gz' | grep -Po '(?<=FreeFileSync_)([[:digit:]]+\.+[[:digit:]]+)')"
   echo 'FreeFileSync '"$freefilesync_version"
   boostnote_version="$($CURL 'https://api.github.com/repos/BoostIO/boost-releases/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   echo 'Boosnote '"$boostnote_version"
@@ -790,7 +790,7 @@ manual_check_latest_version() {
   echo 'bat '"$bat_version"
   joplin_version="$($CURL 'https://api.github.com/repos/laurent22/joplin/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   echo 'Joplin '"$joplin_version"
-  krita_version="$($CURL 'https://krita.org/fr/telechargement/krita-desktop/' | grep 'stable' | grep 'appimage>' | grep -Po '(?<=/stable/krita/)(\d+\.+\d\.\d+)')"
+  krita_version="$($CURL 'https://krita.org/fr/telechargement/krita-desktop/' | grep 'stable' | grep 'appimage>' | grep -Po '(?<=/stable/krita/)([[:digit:]]+\.+[[:digit:]]+\.[[:digit:]]+)')"
   echo 'Krita '"$krita_version"
   opensnitch_stable_version="$($CURL 'https://api.github.com/repos/evilsocket/opensnitch/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   echo 'OpenSnitch stable '"$opensnitch_stable_version"
@@ -838,6 +838,12 @@ computer_proc_model_name="$(grep -Po -m 1 '^model name.*: \K.*' /proc/cpuinfo)"
 computer_proc_vendor_ID="$(grep -Po -m 1 '(^vendor_id\s: )\K(.*)' /proc/cpuinfo)"
 debian_release="$(lsb_release -sc)"
 # peut aussi se faire avec la commande : awk -F'=' '/VERSION_CODENAME=/{print $2}' /etc/os-release
+DCONF_write="DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" dconf write"
+DCONF_read="DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" dconf read"
+DCONF_list="DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" dconf list"
+DCONF_dump="DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" dconf dump"
+DCONF_load="DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" dconf load"
+# les variables DCONF_* ne doivent pas être appelés entre parenthèses
 
 # on active le mode case insensitive de bash
 execandlog "shopt -s nocasematch"
@@ -855,11 +861,11 @@ execandlog "shopt -u nocasematch"
 ## désactivation de la mise en veille automatique pendant l'installation
 ##------------------------------------------------------------------------------
 # désactivation de l'écran noir
-$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" dconf write /org/gnome/desktop/session/idle-delay "'uint32 0'"
+$DCONF_write /org/gnome/desktop/session/idle-delay 'uint32 0'
 # désactivation de la mise en veille automatique sur batterie
-$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" dconf write /org/gnome/settings-daemon/plugins/power/sleep-inactive-battery-type "'nothing'"
+$DCONF_write /org/gnome/settings-daemon/plugins/power/sleep-inactive-battery-type 'nothing'
 # désactivation de la mise en veille automatique sur cable
-$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" dconf write /org/gnome/settings-daemon/plugins/power/sleep-inactive-ac-type "'nothing'"
+$DCONF_write /org/gnome/settings-daemon/plugins/power/sleep-inactive-ac-type 'nothing'
 ################################################################################
 
 clear
@@ -1726,7 +1732,8 @@ install_krita() {
   displayandexec "Installation de Krita                               " "\
 [ -d "$manual_install_dir"/Krita/ ] || mkdir "$manual_install_dir"/Krita/ && \
 $WGET -P "$manual_install_dir"/Krita/ https://download.kde.org/stable/krita/"$krita_version"/krita-"$krita_version"-x86_64.appimage && \
-chmod +x "$manual_install_dir"/Krita/krita-"$krita_version"-x86_64.appimage"
+chmod +x "$manual_install_dir"/Krita/krita-"$krita_version"-x86_64.appimage
+$WGET -P "$manual_install_dir"/Krita/ 'https://invent.kde.org/graphics/krita/-/raw/master/pics/krita.png'"
 cat> /usr/share/applications/krita.desktop << EOF
 [Desktop Entry]
 Name=Krita
@@ -1737,14 +1744,13 @@ MimeType=application/x-krita;image/openraster;application/x-krita-paintoppreset;
 Comment=Digital Painting
 Comment[fr]=Peinture numérique
 Type=Application
-Icon=calligrakrita
+Icon=$manual_install_dir/Krita/krita.png
 Categories=Qt;KDE;Graphics;2DGraphics;RasterGraphics;
 StartupNotify=true
 StartupWMClass=krita
 EOF
 }
 # le contenu du .desktop est basé sur celui-ci : https://github.com/KDE/krita/blob/master/krita/org.kde.krita.desktop
-# télécharger l'icone de krita et templacer dans le desktop la valeur de Icon=
 ################################################################################
 
 ################################################################################
@@ -1798,9 +1804,6 @@ $ExeAsUser cat>> /home/"$local_user"/.bashrc << 'EOF'
 export EDITOR=nano
 EOF
 }
-# echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/ansible-archive-keyring.gpg] deb http://ppa.launchpad.net/ansible/ansible-4/ubuntu focal main' > /etc/apt/sources.list.d/ansible.list && \
-# $CURL '' | gpg --dearmor --output /usr/share/keyrings/ansible-archive-keyring.gpg && \
-# apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 93C4A3FD7BB9C367 && \
 ################################################################################
 
 ################################################################################
@@ -2011,19 +2014,25 @@ install_GSE_screenshot_tool() {
   [ -d "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" ] || mkdir -p "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
   $WGET -P "$tmp_dir" 'https://extensions.gnome.org/extension-data/gnome-shell-screenshotttll.de.v40.shell-extension.zip' && \
   unzip -q "$tmp_dir"/gnome-shell-screenshotttll.de.v40.shell-extension.zip -d "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
-  chown -R "$local_user":"$local_user" "$gnome_shell_extension_path" && \
-  $ExeAsUser gnome-shell-extension-tool -e "$GnomeShellExtensionUUID"
+  chown -R "$local_user":"$local_user" "$gnome_shell_extension_path"
   rm -rf "$tmp_dir"
 }
 #system-monitor
 install_GSE_system_monitor() {
-  $AGI gnome-shell-extension-system-monitor && \
-  $ExeAsUser gnome-shell-extension-tool -e 'system-monitor@paradoxxx.zero.gmail.com'
+  $AGI gnome-shell-extension-system-monitor
 }
 #displayandexec "Installation des Gnome Shell Extension              " "\
 #"
+
+enable_GSE() {
+  busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")'
+  $ExeAsUser gnome-shell-extension-tool -e 'gnome-shell-screenshot@ttll.de'
+  $ExeAsUser gnome-shell-extension-tool -e 'system-monitor@paradoxxx.zero.gmail.com'
+}
+
 install_GSE_screenshot_tool
 install_GSE_system_monitor
+enable_GSE
 }
 
 install_GSE_bullseye() {
@@ -2034,19 +2043,24 @@ install_GSE_screenshot_tool() {
   [ -d "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" ] || mkdir -p "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
   $WGET -P "$tmp_dir" 'https://extensions.gnome.org/extension-data/gnome-shell-screenshotttll.de.v56.shell-extension.zip' && \
   unzip -q "$tmp_dir"/gnome-shell-screenshotttll.de.v56.shell-extension.zip -d "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
-  chown -R "$local_user":"$local_user" "$gnome_shell_extension_path" && \
-  # $ExeAsUser gnome-extensions enable "$GnomeShellExtensionUUID"
+  chown -R "$local_user":"$local_user" "$gnome_shell_extension_path"
   rm -rf "$tmp_dir"
 }
 #system-monitor
 install_GSE_system_monitor() {
   $AGI gnome-shell-extension-system-monitor
-# $ExeAsUser gnome-extensions enable 'system-monitor@paradoxxx.zero.gmail.com'
+}
+
+enable_GSE() {
+  busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")'
+  $ExeAsUser gnome-extensions enable 'gnome-shell-screenshot@ttll.de'
+  $ExeAsUser gnome-extensions enable 'system-monitor@paradoxxx.zero.gmail.com'
 }
 #displayandexec "Installation des Gnome Shell Extension              " "\
 #"
 install_GSE_screenshot_tool
 install_GSE_system_monitor
+enable_GSE
 }
 # il est nécessaire de recharger Gnome Shell avant de pouvoit faire un gnome-extensions enable
 # la commande suivante permet de recharger Gnome Shell :
@@ -2316,12 +2330,10 @@ CheckUpdateEtcher() {
 
 CheckUpdateGeeqie() {
   local SoftwareName='Geeqie'
-  local v1="$(grep -Po '^Exec.*-\K[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+' /usr/share/applications/geeqie.desktop)"
+  local v1="$(grep -Po '^Exec.*-v\K[[:digit:]]+\.[[:digit:]]+\+[[:digit:]]+' /usr/share/applications/geeqie.desktop)"
   local v2="$($CURL 'https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/AppImage/appimages.txt' | head -n1 | grep -Po '(?<=Geeqie-v)([[:digit:]]\.[[:digit:]]+\+[[:digit:]]+)(?=.AppImage)')"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
-
-  local v1="$(grep -Po '^Exec.*-\K[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+' /usr/share/applications/geeqie.desktop)"
 
 ################################################################################
 
@@ -2395,11 +2407,12 @@ UpdateBat() {
 }
 
 UpdateKrita() {
-  local krita_version="$($CURL 'https://krita.org/fr/telechargement/krita-desktop/' | grep 'stable' | grep 'appimage>' | grep -Po '(?<=/stable/krita/)(\d+\.+\d\.\d+)')" && \
+  local krita_version="$($CURL 'https://krita.org/fr/telechargement/krita-desktop/' | grep 'stable' | grep 'appimage>' | grep -Po '(?<=/stable/krita/)([[:digit:]]+\.+[[:digit:]]+\.[[:digit:]]+)')" && \
   rm -f "$manual_install_dir"/Krita/krita-*.appimage && \
   $WGET -P "$manual_install_dir"/Krita/ https://download.kde.org/stable/krita/"$krita_version"/krita-"$krita_version"-x86_64.appimage && \
   chmod +x "$manual_install_dir"/Krita/krita-"$krita_version"-x86_64.appimage && \
-  sed -i "s,^Exec=.*,Exec="$manual_install_dir"/Krita/krita-"$krita_version"-x86_64.appimage,g" /usr/share/applications/krita.desktop
+  sed -i "s,^Exec=.*,Exec="$manual_install_dir"/Krita/krita-"$krita_version"-x86_64.appimage,g" /usr/share/applications/krita.desktop && \
+  [ -f "$manual_install_dir"/Krita/krita.png ] || $WGET -P "$manual_install_dir"/Krita/ 'https://invent.kde.org/graphics/krita/-/raw/master/pics/krita.png'
 }
 
 UpdateOpensnitch() {
@@ -2880,7 +2893,7 @@ configure_etcher
 configure_rkhunter() {
 execandlog "sed -i 's/UPDATE_MIRRORS=0/UPDATE_MIRRORS=1/' /etc/rkhunter.conf && \
 sed -i 's/MIRRORS_MODE=1/MIRRORS_MODE=0/' /etc/rkhunter.conf && \
-sed -i 's%WEB_CMD="/bin/false"%WEB_CMD=""%' /etc/rkhunter.conf"
+sed -i 's%WEB_CMD=\"/bin/false\"%WEB_CMD=""%' /etc/rkhunter.conf"
 }
 configure_rkhunter
 ################################################################################
@@ -2889,12 +2902,12 @@ configure_rkhunter
 ## configuration des fichiers template
 ##------------------------------------------------------------------------------
 create_template_for_new_file() {
-  [ -d /home/"$local_user"/Modèles/ ] && template_dir="/home/"$local_user"/Modèles/"
-  [ -d /home/"$local_user"/Templates/ ] && template_dir="/home/"$local_user"/Templates/"
-execandlog "$ExeAsUser touch ""$template_dir"/Fichier Texte.txt" && \
+  [ -d /home/"$local_user"/Modèles ] && template_dir="/home/"$local_user"/Modèles/"
+  [ -d /home/"$local_user"/Templates ] && template_dir="/home/"$local_user"/Templates/"
+$ExeAsUser touch ""$template_dir"/Fichier Texte.txt" && \
 $ExeAsUser touch ""$template_dir"/Document ODT.txt" && \
 $ExeAsUser unoconv -f odt ""$template_dir"/Document ODT.txt" && \
-rm -f ""$template_dir"/Document ODT.txt""
+rm -f ""$template_dir"/Document ODT.txt"
 # ref : https://ask.libreoffice.org/en/question/153444/how-to-create-empty-libreoffice-file-in-a-current-directory-on-the-command-line/
 }
 create_template_for_new_file
@@ -2920,7 +2933,7 @@ execandlog "sed -i --follow-symlinks '/^export LC_ALL/a export GTK_THEME=Adwaita
 # $ExeAsUser sed -i 's%<enabled xsi:nil="false">true</enabled>%<enabled xsi:nil="false">false</enabled>%g' /home/"$local_user"/.config/libreoffice/4/user/config/javasettings_Linux_X86_64.xml
 # il faut potentiellement le mettre comme ça :
 [ -f /home/"$local_user"/.config/libreoffice/4/user/config/javasettings_Linux_X86_64.xml ] && \
-execandlog "$ExeAsUser sed -i 's%<enabled xsi:nil="true"></enabled>%<enabled xsi:nil="false">false</enabled>%g' /home/"$local_user"/.config/libreoffice/4/user/config/javasettings_Linux_X86_64.xml"
+$ExeAsUser sed -i 's%<enabled xsi:nil="true"></enabled>%<enabled xsi:nil="false">false</enabled>%g' /home/"$local_user"/.config/libreoffice/4/user/config/javasettings_Linux_X86_64.xml
 
 # ref : https://ask.libreoffice.org/en/question/167622/how-to-disable-java-in-configuration-files/
 # Pour aider à chercher les fichiers concernés par la modification de la configuration
@@ -2934,7 +2947,7 @@ execandlog "sed -i 's/Logo=1/Logo=0/g' /etc/libreoffice/sofficerc"
 # cette configuration n'existe pas dans le fichier après une install, il faut donc trouver le moyen de l'ajouter en insérant la ligne
 # Pour changer la valeur du niveau de sécurité des macros de Elevé à Très Elevé
 [ -f /home/"$local_user"/.config/libreoffice/4/user/registrymodifications.xcu ] && \
-execandlog "$ExeAsUser sed -i 's%<item oor:path="/org.openoffice.Office.Common/Security/Scripting"><prop oor:name="MacroSecurityLevel" oor:op="fuse"><value>2</value></prop></item>%<item oor:path="/org.openoffice.Office.Common/Security/Scripting"><prop oor:name="MacroSecurityLevel" oor:op="fuse"><value>3</value></prop></item>%g' /home/"$local_user"/.config/libreoffice/4/user/registrymodifications.xcu"
+$ExeAsUser sed -i 's%<item oor:path="/org.openoffice.Office.Common/Security/Scripting"><prop oor:name="MacroSecurityLevel" oor:op="fuse"><value>2</value></prop></item>%<item oor:path="/org.openoffice.Office.Common/Security/Scripting"><prop oor:name="MacroSecurityLevel" oor:op="fuse"><value>3</value></prop></item>%g' /home/"$local_user"/.config/libreoffice/4/user/registrymodifications.xcu
 # rajouter || créer le contenu du fichier avec un cat EOF
 
 # Pour insérer la ligne lorsque le fichier existe :
@@ -2951,7 +2964,7 @@ execandlog "sed -i 's/# set linenumbers/set linenumbers/g' /etc/nanorc"
 ################################################################################
 ## configuration de atom
 ##------------------------------------------------------------------------------
-[ -d /home/"$local_user"/.atom/ ] || $ExeAsUser mkdir /home/"$local_user"/.atom/ && \
+execandlog "[ -d /home/"$local_user"/.atom/ ] || $ExeAsUser mkdir /home/"$local_user"/.atom/"
 $ExeAsUser cat> /home/"$local_user"/.atom/config.cson << 'EOF'
 "*":
   autosave:
@@ -3015,7 +3028,7 @@ $ExeAsUser echo '7b22696e697469616c697a655f766572223a22302e392e3738222c226c696e6
 # début de réflexion pour faire des confs sur des apps qui utilise une base de donnée pour stocker la conf
 # apt-get install -y sqlite3 && sqlite3 .config/joplin-desktop/database.sqlite "select * from settings"
 
-[ -d /home/"$local_user"/.config/Joplin/ ] || $ExeAsUser mkdir /home/"$local_user"/.config/Joplin/ && \
+execandlog "[ -d /home/"$local_user"/.config/Joplin/ ] || $ExeAsUser mkdir /home/"$local_user"/.config/Joplin/"
 $ExeAsUser cat> /home/"$local_user"/.config/Joplin/Preferences << 'EOF'
 {"spellcheck":{"dictionaries":["fr"],"dictionary":""}}
 EOF
@@ -3062,7 +3075,7 @@ Categories=Network;InstantMessaging;Chat;
 EOF
 
 #terminal
-$ExeAsUser cat>  /home/"$local_user"/.config/autostart/terminal.desktop << 'EOF'
+$ExeAsUser cat> /home/"$local_user"/.config/autostart/terminal.desktop << 'EOF'
 [Desktop Entry]
 Name=Terminal
 Comment=lancement du terminal au démarage
@@ -3100,7 +3113,7 @@ EOF
 ################################################################################
 ## configuration de KeePassXC
 ##------------------------------------------------------------------------------
-[ -d /home/"$local_user"/.config/keepassxc/ ] || $ExeAsUser mkdir /home/"$local_user"/.config/keepassxc/ && \
+execandlog "[ -d /home/"$local_user"/.config/keepassxc/ ] || $ExeAsUser mkdir /home/"$local_user"/.config/keepassxc/"
 $ExeAsUser cat> /home/"$local_user"/.config/keepassxc/keepassxc.ini << 'EOF'
 [General]
 AutoReloadOnChange=true
@@ -3278,14 +3291,8 @@ CustomGnomeShortcut "désactiver le bluetooth" "/usr/bin/desactivebt" "<Primary>
 # - sometimes is uses the very same $num multiple times
 
 ConfigureGnomeTerminal() {
-  DCONF_write="DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" dconf write"
-  DCONF_read="DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" dconf read"
-  DCONF_list="DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" dconf list"
-  DCONF_dump="DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" dconf dump"
-  DCONF_load="DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" dconf load"
-
+  # configuration du profil du Gnome Terminal (couleur de Atom)
   # Il ne faut pas que dconf soit executé dans un subshell avec bash -c par exemple, car sinon les caractères simple quote vont être interprété et il faudra backslash tous les cactères simple quote (ps même en escapant les simple quote ça ne fonctionnait toujours pas pour la valeur palette)
-  # les variables DCONF_* ne doivent pas être appelés entre parenthèses
 
   dconf_set() {
     local key="$1"
@@ -3598,6 +3605,8 @@ execandlog "chmod 4755 /opt/Signal/chrome-sandbox"
 ##------------------------------------------------------------------------------
 
 # alias for the user
+rm -f /home/"$local_user"/.bashrc && \
+mv "$script_path"/.bashrc /home/"$local_user"/.bashrc &&
 $ExeAsUser cat>> /home/"$local_user"/.bashrc << EOF
 
 # alias perso
@@ -3664,7 +3673,7 @@ alias bat='bat -pp'
 alias free='free -ht'
 HISTTIMEFORMAT=\"%Y/%m/%d %T   \"
 EOF
-displayandexec "Configuration du bashrc                             " "stat /root/.bashrc && stat /home/$local_user/.bashrc"
+displayandexec "Configuration du bashrc                             " "stat /root/.bashrc && stat /home/"$local_user"/.bashrc"
 
 displayandexec "Configuration du zshrc                              " "\
 rm -f /home/"$local_user"/.zshrc && \
@@ -3675,7 +3684,8 @@ stat /home/"$local_user"/.zshrc"
 ################################################################################
 
 # Commande temporaire pour éviter que des fichiers de /home/user/.config n'appartienent à root lors de l'install, sans qu'on comprenne bien pourquoi (executé par ExeAsUser)
-execandlog "chown -R "$local_user":"$local_user" /home/"$local_user"/.config/"
+execandlog "chown -R "$local_user":"$local_user" /home/"$local_user"/"
+# problement que la commande va rester dans le script car elle permet de corriger les appartenances des fichiers/dossiers s'il y en a besoin (par exemple, les déplacement de .zshrc et .bashrc du dossier du script)
 
 ################################################################################
 ## Mise à jour de la base de donnée de rkhunter
@@ -3729,12 +3739,11 @@ ufw --force enable"
 ################################################################################
 
 #réapplication de la cond par défaut pour la mise en veille automatique
-execandlog "$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" dconf write /org/gnome/settings-daemon/plugins/power/sleep-inactive-battery-type "'suspend'""
-execandlog "$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" dconf write /org/gnome/settings-daemon/plugins/power/sleep-inactive-ac-type "'suspend'""
+$DCONF_write /org/gnome/settings-daemon/plugins/power/sleep-inactive-battery-type 'suspend'
+$DCONF_write /org/gnome/settings-daemon/plugins/power/sleep-inactive-ac-type 'suspend'
 
 # remise au propre du fichier de configuration DNS
-execandlog "rm -f /etc/resolv.conf"
-execandlog "mv /etc/resolv.conf.old /etc/resolv.conf"
+execandlog "rm -f /etc/resolv.conf && mv /etc/resolv.conf.old /etc/resolv.conf"
 
 # suppression du dossier temporaire pour l'execution du script
 execandlog "rm -rf "$tmp_dir""
