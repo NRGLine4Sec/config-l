@@ -599,7 +599,7 @@ displayandexec "Synchronisation de l'heure et de la time zone       " "systemctl
 ################################################################################
 
 # variable globale
-uname -a | grep 'debian\|Debian' &> /dev/null
+uname -a | grep -i 'debian' &> /dev/null
 # autre version
 # grep "^NAME=" /etc/os-release | grep "debian\|Debian" &> /dev/null
 if [ $? == 0 ]; then
@@ -1882,7 +1882,7 @@ EOF
 ################################################################################
 
 # apelle à la fonction qui permet de récupérer toutes les versions des logiciels qui s'installent manuellement
-check_latest_version_manual_install_apps
+execandlog "$(check_latest_version_manual_install_apps)"
 
 install_all_manual_install_apps_buster() {
   install_atom_buster
@@ -2034,18 +2034,30 @@ install_GSE_screenshot_tool() {
 install_GSE_system_monitor() {
   $AGI gnome-shell-extension-system-monitor
 }
-#displayandexec "Installation des Gnome Shell Extension              " "\
-#"
 
 enable_GSE() {
-  busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")'
-  $ExeAsUser gnome-shell-extension-tool -e 'gnome-shell-screenshot@ttll.de'
-  $ExeAsUser gnome-shell-extension-tool -e 'system-monitor@paradoxxx.zero.gmail.com'
+  $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")'
+  $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-shell-extension-tool -e 'gnome-shell-screenshot@ttll.de'
+  $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-shell-extension-tool -e 'system-monitor@paradoxxx.zero.gmail.com'
 }
 
-install_GSE_screenshot_tool
-install_GSE_system_monitor
-enable_GSE
+check_for_enable_GSE() {
+  # on check si le script est lancé depuis un tty (comme SSH) ou bien depuis un terminal graphique (comme gnome-terminal)
+  # si le script est executé depuis un terminal graphique, on execute pas la fonction enable_GSE, car le relancement du Gnome Shell provoque l'arrêt du script et de tout ce qui tourne au moment de son execution
+  # peut être voir pour créer un script dans /home à executer (en temps voulu) manuellement par l'utilisateur une fois que ng_install.sh aura terminé
+  case "$(tty)" in
+    "/dev/pts"*) enable_GSE=1 ;;
+    "/dev/tty"*) enable_GSE=0 ;;
+  esac
+  if [ "$enable_GSE" == 1 ]; then
+    enable_GSE
+  fi
+}
+
+displayandexec "Installation des Gnome Shell Extension              " "\
+"$(install_GSE_screenshot_tool)"
+"$(install_GSE_system_monitor)"
+"$(check_for_enable_GSE)""
 }
 
 install_GSE_bullseye() {
@@ -2069,10 +2081,24 @@ enable_GSE() {
   $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'gnome-shell-screenshot@ttll.de'
   $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'system-monitor@paradoxxx.zero.gmail.com'
 }
+
+check_for_enable_GSE() {
+  # on check si le script est lancé depuis un tty (comme SSH) ou bien depuis un terminal graphique (comme gnome-terminal)
+  # si le script est executé depuis un terminal graphique, on execute pas la fonction enable_GSE, car le relancement du Gnome Shell provoque l'arrêt du script et de tout ce qui tourne au moment de son execution
+  # peut être voir pour créer un script dans /home à executer (en temps voulu) manuellement par l'utilisateur une fois que ng_install.sh aura terminé
+  case "$(tty)" in
+    "/dev/pts"*) enable_GSE=1 ;;
+    "/dev/tty"*) enable_GSE=0 ;;
+  esac
+  if [ "$enable_GSE" == 1 ]; then
+    enable_GSE
+  fi
+}
+
 displayandexec "Installation des Gnome Shell Extension              " "\
 "$(install_GSE_screenshot_tool)"
 "$(install_GSE_system_monitor)"
-"$(enable_GSE)""
+"$(check_for_enable_GSE)""
 }
 # il est nécessaire de recharger Gnome Shell avant de pouvoit faire un gnome-extensions enable
 # la commande suivante permet de recharger Gnome Shell :
@@ -2083,7 +2109,7 @@ displayandexec "Installation des Gnome Shell Extension              " "\
 
 
 if [ "$buster" == 1 ]; then
- install_GSE_buster
+  install_GSE_buster
 fi
 if [ "$bullseye" == 1 ]; then
   install_GSE_bullseye
