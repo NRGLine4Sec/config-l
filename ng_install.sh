@@ -865,9 +865,9 @@ execandlog "shopt -u nocasematch"
 # désactivation de l'écran noir
 $ExeAsUser $DCONF_write /org/gnome/desktop/session/idle-delay 'uint32 0'
 # désactivation de la mise en veille automatique sur batterie
-$ExeAsUser $DCONF_write /org/gnome/settings-daemon/plugins/power/sleep-inactive-battery-type 'nothing'
+$ExeAsUser $DCONF_write /org/gnome/settings-daemon/plugins/power/sleep-inactive-battery-type "'nothing'"
 # désactivation de la mise en veille automatique sur cable
-$ExeAsUser $DCONF_write /org/gnome/settings-daemon/plugins/power/sleep-inactive-ac-type 'nothing'
+$ExeAsUser $DCONF_write /org/gnome/settings-daemon/plugins/power/sleep-inactive-ac-type "'nothing'"
 ################################################################################
 
 clear
@@ -967,7 +967,7 @@ echo ''
 displayandexec "Mise à jour des certificats racine                  " "update-ca-certificates"
 
 # make debian non-interactive
-execandlog "export DEBIAN_FRONTEND='noninteractive'"
+export DEBIAN_FRONTEND='noninteractive'
 
 displayandexec "Mise à jour du system                               " "$AG update && $AG upgrade -y"
 ################################################################################
@@ -1266,7 +1266,7 @@ rm -rf "$tmp_dir""
 ################################################################################
 ## instalation de Spotify
 ##------------------------------------------------------------------------------
-install_spotify_buster(){
+install_spotify_buster() {
   displayandexec "Installation de spotify                             " "\
 $CURL 'https://download.spotify.com/debian/pubkey_0D811D58.gpg' | apt-key add - && \
 echo 'deb http://repository.spotify.com stable non-free' > /etc/apt/sources.list.d/spotify.list && \
@@ -1882,7 +1882,7 @@ EOF
 ################################################################################
 
 # apelle à la fonction qui permet de récupérer toutes les versions des logiciels qui s'installent manuellement
-execandlog "$(check_latest_version_manual_install_apps)"
+check_latest_version_manual_install_apps
 
 install_all_manual_install_apps_buster() {
   install_atom_buster
@@ -2086,12 +2086,16 @@ check_for_enable_GSE() {
   # on check si le script est lancé depuis un tty (comme SSH) ou bien depuis un terminal graphique (comme gnome-terminal)
   # si le script est executé depuis un terminal graphique, on execute pas la fonction enable_GSE, car le relancement du Gnome Shell provoque l'arrêt du script et de tout ce qui tourne au moment de son execution
   # peut être voir pour créer un script dans /home à executer (en temps voulu) manuellement par l'utilisateur une fois que ng_install.sh aura terminé
-  case "$(tty)" in
-    "/dev/pts"*) enable_GSE=1 ;;
-    "/dev/tty"*) enable_GSE=0 ;;
-  esac
-  if [ "$enable_GSE" == 1 ]; then
-    enable_GSE
+  # case "$(tty)" in
+  #   "/dev/pts"*) enable_GSE=1 ;;
+  #   "/dev/tty"*) enable_GSE=0 ;;
+  # esac
+  # if [ "$enable_GSE" == 1 ]; then
+  #   enable_GSE
+  # fi
+
+  if $(env | grep 'GNOME_TERMINAL' &> /dev/null); then
+  	enable_GSE
   fi
 }
 
@@ -3244,7 +3248,7 @@ EOF
 ################################################################################
 ## configuration de Gnome
 ##------------------------------------------------------------------------------
-cat << 'EOF' | $DCONF_load /org/
+cat << 'EOF' | $ExeAsUser $DCONF_load /org/
 [gnome/documents]
 window-maximized=true
 
@@ -3779,8 +3783,8 @@ ufw --force enable"
 ################################################################################
 
 #réapplication de la cond par défaut pour la mise en veille automatique
-$ExeAsUser $DCONF_write /org/gnome/settings-daemon/plugins/power/sleep-inactive-battery-type 'suspend'
-$ExeAsUser $DCONF_write /org/gnome/settings-daemon/plugins/power/sleep-inactive-ac-type 'suspend'
+$ExeAsUser $DCONF_write /org/gnome/settings-daemon/plugins/power/sleep-inactive-battery-type "'suspend'"
+$ExeAsUser $DCONF_write /org/gnome/settings-daemon/plugins/power/sleep-inactive-ac-type "'suspend'"
 
 # remise au propre du fichier de configuration DNS
 execandlog "rm -f /etc/resolv.conf && mv /etc/resolv.conf.old /etc/resolv.conf"
