@@ -326,8 +326,6 @@
 # les mdp sont sotckés dans ~/.local/share/keyrings/
 
 
-## regarder pour voir si on ajoute le paquet harden-doc
-## chromium /usr/share/doc/harden-doc/html/fr-FR/index.html
 
 ################################################################################
 ## ROADMAP
@@ -342,7 +340,6 @@
 # Peut être un problème dans l'utilisation de ExeAsUser ?, essayer de monitorer avec des tests.
 # Si vraiment on arrive pas à comprendre pourquoi ni comment résoudre le problème simplement, alors peut être faire un chown -R $USER:$USER /home/$USER/.config/ à la fin du script
 # - regarder de près concernant l'intéret de d'installer le librairie du wivedine de google dans le chromium de debian
-# - ajouter le theme du gnome-terminal (https://github.com/denysdovhan/one-gnome-terminal) pour obtenir la même palette de couleur que atom
 # - rajouter une variable qui contient l'usage du script pour afficher de quel manière l'utiliser lorsque d'un des arguments n'est pas correct (l'équivalent d'un --help)
 # - ils ont changer l'install de FreeFileSync avec maintenant un binaire pour l'install (indice : bat -A /opt/manual_install/FreeFileSync_11.6_Install.run | more)
 # - regarder pour installer timeshift (sauvegarde incrémentale de l'OS) (l'installer depuis les releases https://github.com/teejee2008/Timeshift/releases car trop vieux depuis les dépos de debian) (c'est un .deb)
@@ -431,10 +428,10 @@ NOIR='\e[0;30m'
 ##------------------------------------------------------------------------------
 now="$(date +"%d-%m-%Y")"
 log_dir='/var/log/postinstall'
-[ -d "$log_dir" ] || mkdir "$log_dir"
-log_file="/var/log/postinstall/log_script_install-"$now".log"
-touch "$log_file"
-install_file="/var/log/postinstall/install_file-"$now".log"
+[ -d "$log_dir" ] || mkdir "$log_dir" && \
+log_file="/var/log/postinstall/log_script_install-"$now".log" && \
+touch "$log_file" && \
+install_file="/var/log/postinstall/install_file-"$now".log" && \
 touch "$install_file"
 
 echo '####################################################################' > "$log_file"
@@ -447,7 +444,7 @@ echo '--------------------------------------------------------------------' >> "
 ################################################################################
 ## copie du script ng_install dans /var/log
 ##------------------------------------------------------------------------------
-cp "$(readlink -f "${BASH_SOURCE[0]}")" "$log_dir"/"$(basename "$0")"
+cp "$(readlink -f "${BASH_SOURCE[0]}")" "$log_dir"/"$(basename "$0")" && \
 chmod 600 "$log_dir"/"$(basename "$0")"
 # on copie le contenu du script dans le répertoire $log_dir pour pouvoir savoir plus tard ce qu'il y avait dans le script au moment de son execution
 # le chmod permet de s'assurer qu'il ne sera pas executer par mégarde et qu'il n'est accessible qu'en lecture pour root
@@ -464,7 +461,7 @@ script_path="$(dirname $(readlink -f "${BASH_SOURCE[0]}"))"
 ##------------------------------------------------------------------------------
 cd
 tmp_dir='/tmp/install_tmp'
-[ -d "$tmp_dir" ] || mkdir "$tmp_dir"
+[ -d "$tmp_dir" ] || mkdir "$tmp_dir" && \
 cd "$tmp_dir"
 ################################################################################
 
@@ -524,8 +521,25 @@ execandlog() {
 }
 ################################################################################
 
-# rajouter un pré-check de la taille du terminal
-#exemple pour faire du strlen en BASH myvar='Généralités' && strlen=${#myvar} && echo $strlen
+################################################################################
+## vérification de la taille du terminal (largeur)
+##------------------------------------------------------------------------------
+check_available_columns_in_terminal() {
+  available_columns_in_term="$(tput cols)"
+  if [ "$available_columns_in_term" -lt 74 ]; then
+      echo -e "${RED}###########################################${RESET}" | tee -a "$log_file"
+      echo -e "${RED}#${RESET}  La taille du terminal est trop petite  ${RED}#${RESET}" | tee -a "$log_file"
+      echo -e "${RED}#${RESET}  L'affichage en sera donc impactée      ${RED}#${RESET}" | tee -a "$log_file"
+      echo -e "${RED}###########################################${RESET}" | tee -a "$log_file"
+  fi
+}
+check_available_columns_in_terminal
+# peut aussi se faire avec echo $COLUMNS
+# peut aussi se faire avec stty size | awk '{print $2}'
+# ref : [How do I find the width & height of a terminal window? - Stack Overflow](https://stackoverflow.com/questions/263890/how-do-i-find-the-width-height-of-a-terminal-window)
+
+# mes lignes ne dépassent pas 74 caractères dans le script, il faut donc que le tty fasse au moins cette taille
+################################################################################
 
 ################################################################################
 ## vérification de l'espace disponnible minimum sur /
@@ -565,7 +579,7 @@ check_available_space_in_var
 ## utilisation du DNS de Cloudflare durant l'execution du script
 ##------------------------------------------------------------------------------
 force_dns_for_install() {
-cp /etc/resolv.conf /etc/resolv.conf.old && \
+execandlog "cp /etc/resolv.conf /etc/resolv.conf.old"
 cat> /etc/resolv.conf << 'EOF'
 # DNS Cloudflare
 nameserver 1.1.1.1
@@ -598,12 +612,10 @@ displayandexec "Synchronisation de l'heure et de la time zone       " "systemctl
 # voir comment faire lorsque la machine n'est pas à la bonne date et qu'elle a créer le fichier de log en se basant sur la date à laquelle elle était. regarder concernant le bon moment pour executer la commande car elle a besoin de displayandexec qui utilise notamment le fait qu'un fichier de log soit créé
 ################################################################################
 
-# variable globale
-uname -a | grep -i 'debian' &> /dev/null
 # autre version
 # grep "^NAME=" /etc/os-release | grep "debian\|Debian" &> /dev/null
-if [ $? == 0 ]; then
-    version_linux='Debian'
+if $(uname -a | grep -i 'debian' &> /dev/null); then
+  version_linux='Debian'
 else
     echo -e "${RED}######################################################################${RESET}" | tee -a "$log_file"
     echo -e "${RED}#${RESET}             Ce script s'execute seulement sur Debian !             ${RED}#${RESET}" | tee -a "$log_file"
@@ -848,7 +860,7 @@ DCONF_load="DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus"
 # les variables DCONF_* ne doivent pas être appelés entre parenthèses
 
 # on active le mode case insensitive de bash
-execandlog "shopt -s nocasematch"
+shopt -s nocasematch
 if [[ "$debian_release" =~ buster ]]; then
     buster=1
 fi
@@ -856,7 +868,7 @@ if [[ "$debian_release" =~ bullseye ]]; then
     bullseye=1
 fi
 # on déscactive le mode case insensitive de bash
-execandlog "shopt -u nocasematch"
+shopt -u nocasematch
 
 
 ################################################################################
@@ -1034,7 +1046,7 @@ fi
 # fi
 
 # on active le mode case insensitive de bash
-execandlog "shopt -s nocasematch"
+shopt -s nocasematch
 if [[ "$computer_proc_vendor_ID" =~ amd ]]; then
     displayandexec "Installation de amd64-microcode                     " "$AGI amd64-microcode"
 fi
@@ -1042,7 +1054,7 @@ if [[ "$computer_proc_vendor_ID" =~ intel ]]; then
     displayandexec "Installation de intel-microcode                     " "$AGI intel-microcode"
 fi
 # on déscactive le mode case insensitive de bash
-execandlog "shopt -u nocasematch"
+shopt -u nocasematch
 
 displayandexec "Installation de ascii                               " "$AGI ascii"
 displayandexec "Installation de aria2                               " "$AGI aria2"
@@ -1075,7 +1087,6 @@ displayandexec "Installation de firejail                            " "$AGI fire
 displayandexec "Installation de flameshot                           " "$AGI flameshot"
 displayandexec "Installation de freerdp2-wayland                    " "$AGI freerdp2-wayland"
 displayandexec "Installation de gcc                                 " "$AGI gcc"
-# displayandexec "Installation de geeqie                              " "$AGI geeqie" # installer geekie depuis le script d'install du github car la version dans les dépots de débian est beaucoup trop vielle
 displayandexec "Installation de gimp                                " "$AGI gimp"
 displayandexec "Installation de git                                 " "$AGI git"
 displayandexec "Installation de gitk                                " "$AGI gitk"
@@ -1100,7 +1111,9 @@ displayandexec "Installation de lynx                                " "$AGI lynx
 displayandexec "Installation de macchanger                          " "$AGI macchanger"
 displayandexec "Installation de make                                " "$AGI make"
 displayandexec "Installation de mediainfo-gui                       " "$AGI mediainfo-gui"
-displayandexec "Installation de mpv                                 " "$AGI mpv"
+displayandexec "Installation de mpv                                 " "$AGI mpv youtube-dl-"
+# on n'install pas la dépendance youtube-dl requise par mpv car la version des dépots debian est trop ancienne
+# ref : [ubuntu - How do I get apt-get to ignore some dependencies? - Server Fault](https://serverfault.com/questions/250224/how-do-i-get-apt-get-to-ignore-some-dependencies/663803#663803)
 displayandexec "Installation de nautilus-gtkhash                    " "$AGI nautilus-gtkhash"
 displayandexec "Installation de nautilus-wipe                       " "$AGI nautilus-wipe"
 displayandexec "Installation de netdiscover                         " "$AGI netdiscover"
@@ -1197,7 +1210,11 @@ displayandexec "Désinstalation des paquets qui ne sont plus utilisés" "$AG aut
 #                       INSTALL MANUAL INSTALL APPS                            #
 #//////////////////////////////////////////////////////////////////////////////#
 
-echo '###### instalation des logiciels avec une instalation special ######'
+echo ''
+echo '       ################################################################'
+echo '       #    INSTALLATION DES LOGICIELS AVEC UNE INSTALATION MANUEL    #'
+echo '       ################################################################'
+echo ''
 
 # création du répertoire qui contiendra les logiciels avec une installation spéciale
 manual_install_dir='/opt/manual_install'
@@ -1414,7 +1431,7 @@ $WGET --output-document - 'https://www.virtualbox.org/download/oracle_vbox.asc' 
 $AG update && \
 $AGI virtualbox-6.1"
 # virtualbox_version=$(virtualbox --help | grep v[0-9] | cut -c 35-) # ancienne version
-virtualbox_version="$(virtualbox --help | grep -Po ' v\K\d+.\d+.\d+')"
+virtualbox_version="$(virtualbox --help | grep -Po ' v\K[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+')"
 displayandexec "Installation de VM VirtualBox Extension Pack        " "\
 $WGET -P "$tmp_dir" https://download.virtualbox.org/virtualbox/"$virtualbox_version"/Oracle_VM_VirtualBox_Extension_Pack-"$virtualbox_version".vbox-extpack && \
 echo y | /usr/bin/VBoxManage extpack install --replace "$tmp_dir"/Oracle_VM_VirtualBox_Extension_Pack-"$virtualbox_version".vbox-extpack"
@@ -1478,7 +1495,7 @@ $WGET --output-document - 'https://www.virtualbox.org/download/oracle_vbox_2016.
 $AG update && \
 $AGI virtualbox-6.1"
 # virtualbox_version=$(virtualbox --help | grep v[0-9] | cut -c 35-) # ancienne version
-virtualbox_version="$(virtualbox --help | grep -Po ' v\K\d+.\d+.\d+')"
+virtualbox_version="$(virtualbox --help | grep -Po ' v\K[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+')"
 displayandexec "Installation de VM VirtualBox Extension Pack        " "\
 $WGET -P "$tmp_dir" https://download.virtualbox.org/virtualbox/"$virtualbox_version"/Oracle_VM_VirtualBox_Extension_Pack-"$virtualbox_version".vbox-extpack && \
 echo y | /usr/bin/VBoxManage extpack install --replace "$tmp_dir"/Oracle_VM_VirtualBox_Extension_Pack-"$virtualbox_version".vbox-extpack"
@@ -1951,7 +1968,12 @@ fi
 ################################################################################
 ## désinstalation des logicels inutils
 ##------------------------------------------------------------------------------
-echo "############### désinstalation des logicels inutils ###############"
+echo ''
+echo '       ################################################################'
+echo '       #           DESINSTALATION DES PAQUETS NON SOUHAITES           #'
+echo '       ################################################################'
+echo ''
+
 #Konqueror
 displayandexec "Désinstalation de Konqueror                         " "$AG remove -y Konqueror*"
 
@@ -2045,19 +2067,29 @@ check_for_enable_GSE() {
   # on check si le script est lancé depuis un tty (comme SSH) ou bien depuis un terminal graphique (comme gnome-terminal)
   # si le script est executé depuis un terminal graphique, on execute pas la fonction enable_GSE, car le relancement du Gnome Shell provoque l'arrêt du script et de tout ce qui tourne au moment de son execution
   # peut être voir pour créer un script dans /home à executer (en temps voulu) manuellement par l'utilisateur une fois que ng_install.sh aura terminé
-  case "$(tty)" in
-    "/dev/pts"*) enable_GSE=1 ;;
-    "/dev/tty"*) enable_GSE=0 ;;
-  esac
-  if [ "$enable_GSE" == 1 ]; then
-    enable_GSE
+  if ! $(env | grep 'GNOME_TERMINAL' &> /dev/null); then
+  	enable_GSE
+  else
+    cat> /tmp/enable_GSE.sh << 'EOF'
+#!/bin/bash
+
+local_user="$(awk -F':' '/1000/{print $1}' /etc/passwd)"
+local_user_UID="$(id -u "$local_user")"
+ExeAsUser="sudo -u "$local_user""
+
+$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")'
+$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'gnome-shell-screenshot@ttll.de'
+$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'system-monitor@paradoxxx.zero.gmail.com'
+EOF
+chmod +x /tmp/enable_GSE.sh && \
+chown "$local_user":"$local_user" /tmp/enable_GSE.sh
   fi
 }
 
 displayandexec "Installation des Gnome Shell Extension              " "\
 "$(install_GSE_screenshot_tool)"
-"$(install_GSE_system_monitor)"
-"$(check_for_enable_GSE)""
+"$(install_GSE_system_monitor)""
+check_for_enable_GSE
 }
 
 install_GSE_bullseye() {
@@ -2094,15 +2126,29 @@ check_for_enable_GSE() {
   #   enable_GSE
   # fi
 
-  if $(env | grep 'GNOME_TERMINAL' &> /dev/null); then
+  if ! $(env | grep 'GNOME_TERMINAL' &> /dev/null); then
   	enable_GSE
+  else
+    cat> /tmp/enable_GSE.sh << 'EOF'
+#!/bin/bash
+
+local_user="$(awk -F':' '/1000/{print $1}' /etc/passwd)"
+local_user_UID="$(id -u "$local_user")"
+ExeAsUser="sudo -u "$local_user""
+
+$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")'
+$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'gnome-shell-screenshot@ttll.de'
+$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'system-monitor@paradoxxx.zero.gmail.com'
+EOF
+chmod +x /tmp/enable_GSE.sh && \
+chown "$local_user":"$local_user" /tmp/enable_GSE.sh
   fi
 }
 
 displayandexec "Installation des Gnome Shell Extension              " "\
 "$(install_GSE_screenshot_tool)"
-"$(install_GSE_system_monitor)"
-"$(check_for_enable_GSE)""
+"$(install_GSE_system_monitor)""
+check_for_enable_GSE
 }
 # il est nécessaire de recharger Gnome Shell avant de pouvoit faire un gnome-extensions enable
 # la commande suivante permet de recharger Gnome Shell :
@@ -2153,6 +2199,11 @@ displayandexec "Suppression du cache de apt-get                     " "$AG clean
 #//////////////////////////////////////////////////////////////////////////////#
 #                            INSTALL SCRIP PERSO                               #
 #//////////////////////////////////////////////////////////////////////////////#
+echo ''
+echo '       ################################################################'
+echo '       #                INSTALLATION DES SCRIPTS PERSO                #'
+echo '       ################################################################'
+echo ''
 
 ################################################################################
 ## install du scrip gitupdate
@@ -2819,6 +2870,11 @@ install_all_perso_script
 #//////////////////////////////////////////////////////////////////////////////#
 #                              CONFIGURATION                                   #
 #//////////////////////////////////////////////////////////////////////////////#
+echo ''
+echo '       ################################################################'
+echo '       #             CONFIGURATION DES DIFFERENTS ELEMENTS            #'
+echo '       ################################################################'
+echo ''
 
 ################################################################################
 ## configuration de SSH
@@ -3334,7 +3390,7 @@ CustomGnomeShortcut "désactiver le bluetooth" "/usr/bin/desactivebt" "<Primary>
 # - sometimes is uses the very same $num multiple times
 
 ConfigureGnomeTerminal() {
-  # configuration du profil du Gnome Terminal (couleur de Atom)
+  # configuration du profil du Gnome Terminal (palette de couleur identique de celle de Atom)
   # Il ne faut pas que dconf soit executé dans un subshell avec bash -c par exemple, car sinon les caractères simple quote vont être interprété et il faudra backslash tous les cactères simple quote (ps même en escapant les simple quote ça ne fonctionnait toujours pas pour la valeur palette)
 
   dconf_set() {
@@ -3432,11 +3488,11 @@ elif [[ -n "$($ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_u
   dconf_set use-theme-background "false"
   fi
 }
-# script based from
+# script based from https://github.com/denysdovhan/one-gnome-terminal
 ConfigureGnomeTerminal
 
 # redémarer Gnome Shell
-gnome-shell --replace &>/dev/null & disown
+$ExeAsUser gnome-shell --replace &>/dev/null & disown
 ################################################################################
 
 # Pour obtenir le lien de l'image utilisé commend fond d'écran
@@ -3494,7 +3550,7 @@ EOF
 # une manière de contourner les problème est de supprimer l'extension rajouter lors de l'installation d'un paquet dans le répertoire /usr/lib/x86_64-linux-gnu/nautilus/extensions-3.0/
 # ref : [gnome - Edit/Remove existing File Manager (right-click/context menu) actions - Ask Ubuntu](https://askubuntu.com/questions/1300049/edit-remove-existing-file-manager-right-click-context-menu-actions/1300079#1300079)
 # par exemple le paquet nautilus-wipe rajoute des entrés dans le clic droit assez dangereuses comme "Ecraser" et "Ecraser l'espace disque disponnible"
-# pour supprimer ces entrées des options de clic droit de nautilus, il faut soit désinstaller le paquet, soit supprimer le .so correspondant dans le répertoire des extensions de nautilus
+# pour supprimer ces entrées des options de clic droit de nautilus, il faut soit désinstaller le paquet nautilus-wipe, soit supprimer le .so correspondant dans le répertoire des extensions de nautilus
 execandlog "mv /usr/lib/x86_64-linux-gnu/nautilus/extensions-3.0/libnautilus-wipe.so /usr/lib/x86_64-linux-gnu/nautilus/extensions-3.0/libnautilus-wipe.so.backup"
 
 # pour supprimer des options internes à nautilus, il faudrait modifier son code source et le recompiler
@@ -3575,15 +3631,6 @@ displayandexec "Réglage du volume audio à 10%                       " "$ExeAsU
 # regarder aussi cette solution la : https://bbs.archlinux.org/viewtopic.php?id=155649
 ################################################################################
 
-
-
-# /.local/share/gnome-shell/extensions/
-
-# [Added Associations]
-# application/x-shellscript=atom.desktop;
-# application/octet-stream=atom.desktop;
-# application/x-php=atom.desktop;
-
 ################################################################################
 ## configuration spéficique pour le pc pro
 ##------------------------------------------------------------------------------
@@ -3645,7 +3692,7 @@ fi
 execandlog "chmod 4755 /opt/Signal/chrome-sandbox"
 
 ################################################################################
-## configuration du bashrc et du zsh
+## configuration du bashrc et du zshrc
 ##------------------------------------------------------------------------------
 
 # alias for the user
@@ -3748,9 +3795,10 @@ displayandexec "Mise à jour de la base de donnée de rkhunter        " "rkhunte
 ## création d'un fichier de backup du header LUKS
 ##------------------------------------------------------------------------------
 backup_LUKS_header() {
-luks_partition="$(lsblk --fs --list | awk '/crypto_LUKS/{print $1}')"
-$ExeAsUser mkdir --parents /home/"$local_user"/backup/
-cryptsetup luksHeaderBackup /dev/"$luks_partition" --header-backup-file /home/"$local_user"/backup/LUKS_Header_Backup.img
+  luks_partition="$(lsblk --fs --list | awk '/crypto_LUKS/{print $1}')"
+  displayandexec "Création d'un backup de l'entête LUKS               " "\
+[ -d /home/"$local_user"/backup/ ] || $ExeAsUser mkdir --parents /home/"$local_user"/backup/ && \
+cryptsetup luksHeaderBackup /dev/"$luks_partition" --header-backup-file /home/"$local_user"/backup/LUKS_Header_Backup.img"
 }
 backup_LUKS_header
 ################################################################################
@@ -3762,10 +3810,10 @@ $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" 
 ################################################################################
 
 ################################################################################
-## stoper les services inutiles
+## redémarage ou arrêt des services
 ##------------------------------------------------------------------------------
-# /etc/init.d/knockd stop
-# /etc/init.d/fail2ban stop
+# systemctl stop knockd
+# systemctl stop fail2ban
 displayandexec "Redémarage du service SSH                           " "systemctl restart ssh"
 ################################################################################
 
