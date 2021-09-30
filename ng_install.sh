@@ -522,26 +522,6 @@ execandlog() {
 ################################################################################
 
 ################################################################################
-## vérification de la taille du terminal (largeur)
-##------------------------------------------------------------------------------
-check_available_columns_in_terminal() {
-  available_columns_in_term="$(tput cols)"
-  if [ "$available_columns_in_term" -lt 74 ]; then
-      echo -e "${RED}###########################################${RESET}" | tee -a "$log_file"
-      echo -e "${RED}#${RESET}  La taille du terminal est trop petite  ${RED}#${RESET}" | tee -a "$log_file"
-      echo -e "${RED}#${RESET}  L'affichage en sera donc impactée      ${RED}#${RESET}" | tee -a "$log_file"
-      echo -e "${RED}###########################################${RESET}" | tee -a "$log_file"
-  fi
-}
-check_available_columns_in_terminal
-# peut aussi se faire avec echo $COLUMNS
-# peut aussi se faire avec stty size | awk '{print $2}'
-# ref : [How do I find the width & height of a terminal window? - Stack Overflow](https://stackoverflow.com/questions/263890/how-do-i-find-the-width-height-of-a-terminal-window)
-
-# mes lignes ne dépassent pas 74 caractères dans le script, il faut donc que le tty fasse au moins cette taille
-################################################################################
-
-################################################################################
 ## vérification de l'espace disponnible minimum sur /
 ##------------------------------------------------------------------------------
 check_available_space_in_root() {
@@ -603,6 +583,7 @@ check_internet_access() {
   fi
 }
 check_internet_access
+# avec ce test, on vérifie aussi bien la connectivité réseau que la résolution DNS
 ################################################################################
 
 ################################################################################
@@ -883,6 +864,26 @@ $ExeAsUser $DCONF_write /org/gnome/settings-daemon/plugins/power/sleep-inactive-
 ################################################################################
 
 clear
+################################################################################
+## vérification de la taille du terminal (largeur)
+##------------------------------------------------------------------------------
+check_available_columns_in_terminal() {
+  available_columns_in_term="$(tput cols)"
+  if [ "$available_columns_in_term" -lt 74 ]; then
+      echo -e "${RED}###########################################${RESET}" | tee -a "$log_file"
+      echo -e "${RED}#${RESET}  La taille du terminal est trop petite  ${RED}#${RESET}" | tee -a "$log_file"
+      echo -e "${RED}#${RESET}  L'affichage en sera donc impactée      ${RED}#${RESET}" | tee -a "$log_file"
+      echo -e "${RED}###########################################${RESET}" | tee -a "$log_file"
+  fi
+}
+check_available_columns_in_terminal
+# peut aussi se faire avec echo $COLUMNS
+# peut aussi se faire avec stty size | awk '{print $2}'
+# ref : [How do I find the width & height of a terminal window? - Stack Overflow](https://stackoverflow.com/questions/263890/how-do-i-find-the-width-height-of-a-terminal-window)
+
+# mes lignes ne dépassent pas 74 caractères dans le script, il faut donc que le tty fasse au moins cette taille
+################################################################################
+
 echo ''
 echo ''
 echo '       ################################################################'
@@ -961,7 +962,7 @@ deb-src http://deb.debian.org/debian/ $debian_release-updates main contrib non-f
 #deb http://deb.debian.org/debian $debian_release-backports main contrib non-free
 EOF
 }
-# ne pas mettre les variable entre guillemet
+# ne pas mettre les variable entre double quote
 
 if [ "$buster" == 1 ]; then
  make_apt_source_list_clean_buster
@@ -1103,7 +1104,6 @@ displayandexec "Installation de inxi                                " "$AGI inxi
 displayandexec "Installation de inkscape                            " "$AGI inkscape"
 displayandexec "Installation de iotop                               " "$AGI iotop"
 displayandexec "Installation de ipcalc                              " "$AGI ipcalc"
-# displayandexec "Installation de keepass2                            " "$AGI keepass2" # il est amener à ne plus être installé au fur et à mesure qu'on utilise et qu'on valide KeepassXC
 displayandexec "Installation de jq                                  " "$AGI jq"
 displayandexec "Installation de lnav                                " "$AGI lnav"
 displayandexec "Installation de lshw                                " "$AGI lshw"
@@ -1212,7 +1212,7 @@ displayandexec "Désinstalation des paquets qui ne sont plus utilisés" "$AG aut
 
 echo ''
 echo '       ################################################################'
-echo '       #    INSTALLATION DES LOGICIELS AVEC UNE INSTALATION MANUEL    #'
+echo '       #  INSTALLATION DES LOGICIELS AVEC UNE INSTALLATION MANUELLE   #'
 echo '       ################################################################'
 echo ''
 
@@ -1473,7 +1473,7 @@ mokutil --import vboxpci.der
 #mokutil --import vboxdrv.der vboxnetflt.der vboxnetadp.der vboxpci.der
 reboot
 EOF
-      chmod +x /opt/sign_virtualbox_kernel_module.sh
+    chmod +x /opt/sign_virtualbox_kernel_module.sh
   }
   # ref : [Debian, SecureBoot et les modules noyaux DKMS - Where is it?](https://medspx.fr/blog/Debian/secure_boot_dkms/)
 
@@ -1537,7 +1537,7 @@ mokutil --import vboxpci.der
 #mokutil --import vboxdrv.der vboxnetflt.der vboxnetadp.der vboxpci.der
 reboot
 EOF
-      chmod +x /opt/sign_virtualbox_kernel_module.sh
+    chmod +x /opt/sign_virtualbox_kernel_module.sh
   }
   # ref : [Debian, SecureBoot et les modules noyaux DKMS - Where is it?](https://medspx.fr/blog/Debian/secure_boot_dkms/)
 
@@ -1730,8 +1730,11 @@ rm -rf "$tmp_dir""
 install_youtubedl() {
   displayandexec "Installation de youtube-dl                          " "\
 $WGET -P /usr/bin https://github.com/ytdl-org/youtube-dl/releases/download/"$youtubedl_version"/youtube-dl && \
-chmod +x /usr/bin/youtube-dl"
+chmod +x /usr/bin/youtube-dl && \
+ln -s /usr/bin/python3 /usr/bin/python"
 }
+# le lien symbolique de python3 vers python est nécessaire car youtube-dl utilise "#!/usr/bin/env python"
+# Une autre solution pourrait être de modifier le fichier /usr/bin/youtube-dl pour utiliser python3 directement avec un sed par exemple
 ################################################################################
 
 ################################################################################
@@ -2105,7 +2108,7 @@ install_GSE_screenshot_tool() {
 }
 #system-monitor
 install_GSE_system_monitor() {
-  $AGI gnome-shell-extension-system-monitor
+  $AGI gnome-shell-extension-system-monitor &> /dev/null
 }
 
 enable_GSE() {
@@ -3847,9 +3850,9 @@ echo '#                           Fin du script                          #' >> "
 echo '####################################################################' >> "$log_file"
 
 echo ''
-echo '       ####################################################################'
-echo "       #                    L'installation est terminée                   #"
-echo '       ####################################################################'
+echo '       ################################################################'
+echo "       #                  L'INSTALLATION EST TERMINEE                 #"
+echo '       ################################################################'
 echo ''
 
 ################################################################################
