@@ -184,16 +184,6 @@
 # ref : [Linux: xbindkeys Tutorial](http://xahlee.info/linux/linux_xbindkeys_tutorial.html)
 # ref : [How to start a service automatically when Arch Linux boots? - Super User](https://superuser.com/questions/755937/how-to-start-a-service-automatically-when-arch-linux-boots)
 
-# si jamais il y a besoin :
-# cat> /home/$local_user/.config/autostart/xbindkeys.desktop << 'EOF'
-# [Desktop Entry]
-# Name=xbindkeys
-# Comment=xbindkeys
-# Exec=xbindkeys
-# Type=Application
-# Terminal=false
-# Hidden=false
-# EOF
 
 
 ## regarder aussi .local/share/solaar/udev-rules.d/42-logitech-unify-permissions.rules
@@ -332,13 +322,8 @@
 ##------------------------------------------------------------------------------
 # - tester dans une VM après l'execution du script postinstall de modifier (réduire et augmenter) les partitions d'un LVM crypté pour voir comment cel se comporte
 # - tester de faire l'instllation des apps avec apt-fast à la place de apt-get et mesurer la différence de temps d'excution du script
-# - mpv a besoin de la dépendance youtube-dl sauf que la version depuis les dépots est trop vielle et donc je l'install manuellement, le problème c'est que la version dans les dépots s'installa avant la version manuel, lors de l'install de mpv. Il faudrait donc trouver un moyen de ne pas installer cette dépendance.
-# regarder par exemple : [ubuntu - How do I get apt-get to ignore some dependencies? - Server Fault](https://serverfault.com/questions/250224/how-do-i-get-apt-get-to-ignore-some-dependencies#:~:text=You%20can%20try%20the%20%2D%2D,the%20option%20%2D%2Dignore%2Ddepends%20.&text=You%20can%20download%20the%20package,would%20like%20to%20be%20ignored.)
-# Une autre façon de faire serrait de le laisser s'installer normallement et de faire un apt-get remove youtube-dl après l'install de mpv, normalment, ça ne casse pas les dépendances de apt.
-# apt-cache depends mpv
 # - essayer de comprendre pouquoi il y a parfois un certain nombre de fichier qui devrait appartenir à l'utilisaeur et qui appartiennet pourtant à l'utilisateur root, parfois, c'est des rerpertoire entier qui appartiennent à root dans .config/
 # Peut être un problème dans l'utilisation de ExeAsUser ?, essayer de monitorer avec des tests.
-# Si vraiment on arrive pas à comprendre pourquoi ni comment résoudre le problème simplement, alors peut être faire un chown -R $USER:$USER /home/$USER/.config/ à la fin du script
 # - regarder de près concernant l'intéret de d'installer le librairie du wivedine de google dans le chromium de debian
 # - rajouter une variable qui contient l'usage du script pour afficher de quel manière l'utiliser lorsque d'un des arguments n'est pas correct (l'équivalent d'un --help)
 # - ils ont changer l'install de FreeFileSync avec maintenant un binaire pour l'install (indice : bat -A /opt/manual_install/FreeFileSync_11.6_Install.run | more)
@@ -448,7 +433,7 @@ cp "$(readlink -f "${BASH_SOURCE[0]}")" "$log_dir"/"$(basename "$0")" && \
 chmod 600 "$log_dir"/"$(basename "$0")"
 # on copie le contenu du script dans le répertoire $log_dir pour pouvoir savoir plus tard ce qu'il y avait dans le script au moment de son execution
 # le chmod permet de s'assurer qu'il ne sera pas executer par mégarde et qu'il n'est accessible qu'en lecture pour root
-# si le cp ne marche pas, tenter de faire cat "${FSLIST_TMP}" > "${FSLIST}"
+# si le cp ne marche pas, tenter de faire cat "$(readlink -f "${BASH_SOURCE[0]}")" > "$log_dir"/"$(basename "$0")"
 ################################################################################
 
 script_path="$(dirname $(readlink -f "${BASH_SOURCE[0]}"))"
@@ -490,21 +475,19 @@ displayandexec() {
     else
         echo -e "\r $message                ${GREEN}[OK]${RESET} " && echo -e "\r $message                ${GREEN}[OK]${RESET} " >> "$install_file"
     fi
-    # if [ $ret != 0 ]; then
-    #     echo -e "\r\e[0;30m $message                ${RED}[ERROR]${RESET} " && echo -e "\r\e[0;30m $message                ${RED}[ERROR]${RESET} " >> $install_file
-    # else
-    #     echo -e "\r\e[0;30m $message                ${GREEN}[OK]${RESET} " && echo -e "\r\e[0;30m $message                ${GREEN}[OK]${RESET} " >> $install_file
-    # fi
-    # on test pour voir la différence lorsqu'on ne force pas la couleur de la police en noir pour voir ce que ça donne lorsque la couleur de fond du terminal est sombre
     return $ret
 }
 # la variable message récupère la valeur du premier argument passé à la fonction "le message", c'est à dire ce que l'on veut afficher à l'écran lors de l'execution du script (to stdout)
+# shift permet de remplacer sur la même ligne l'affichage de "[En cours]" à "[ERROR]" ou "[OK]"
 # le premier echo permet de reproduire tout ce qu'on voit dans le stdout dans le fichier $install_file
-# les >>> dans le deuxième echo ne servent qu'à la présentation dans le fichier de log
+# les >>> dans le deuxième echo ne servent qu'à la présentation dans le fichier de log, cette ligne correspond à la ligne de la commande qui sera effectuée
 # local ret=$? on défini la variable ret qui contiendra la valeur de retour de l'execution de la commande
+# la ligne du bash -c correspond à l'envoi dans bash de l'exuction de la commande passé en paramètre dans la fonction displayandexec par le contenu de "$COMMAND" (récupéré ici à l'aide de $*). L'execution de la commande ainsi que son résultat, même en cas d'érreur sont envoyés dans le fichier de log et n'apparaissent pas sur le stdout
 
 # regarder ce que fait l'option echo -e "\r $message"
 # car lorsque j'ai executer le script sans cette option, il mettait deux fois sur la même ligne le contenu de $message et ensuite le [OK]
+
+# probablement qu'on peut remplacer le deuxième echo qui renvoit dans le fichier "$install_file" par | tee --append "$log_file"
 ################################################################################
 
 ################################################################################
@@ -528,9 +511,9 @@ check_available_space_in_root() {
   available_space="$(df --block-size=G / | awk '(NR>1){print $4}' | sed 's/.$//')"
   # peut aussi se faire en utilisant une seule redirection : "$(df --block-size=G / | awk '(NR>1){gsub(/.$/,"",$4); print $4}')"
   if [ "$available_space" -lt 10 ]; then
-      echo -e "${RED}######################################################################${RESET}" | tee -a "$log_file"
-      echo -e "${RED}#${RESET}  Il faut au minimum 10 Go d'espace libre pour executer le script.  ${RED}#${RESET}" | tee -a "$log_file"
-      echo -e "${RED}######################################################################${RESET}" | tee -a "$log_file"
+      echo -e "${RED}######################################################################${RESET}" | tee --append "$log_file"
+      echo -e "${RED}#${RESET}  Il faut au minimum 10 Go d'espace libre pour executer le script.  ${RED}#${RESET}" | tee --append "$log_file"
+      echo -e "${RED}######################################################################${RESET}" | tee --append "$log_file"
       exit 1
   fi
 }
@@ -545,9 +528,9 @@ check_available_space_in_var() {
   available_space="$(df --block-size=G /var | awk '(NR>1){print $4}' | sed 's/.$//')"
   # peut aussi se faire en utilisant une seule redirection : "$(df --block-size=G /var | awk '(NR>1){gsub(/.$/,"",$4); print $4}')"
   if [ "$available_space" -lt 5 ]; then
-      echo -e "${RED}######################################################################${RESET}" | tee -a "$log_file"
-      echo -e "${RED}#${RESET}  Il faut au minimum 5 Go d'espace libre pour executer le script.   ${RED}#${RESET}" | tee -a "$log_file"
-      echo -e "${RED}######################################################################${RESET}" | tee -a "$log_file"
+      echo -e "${RED}######################################################################${RESET}" | tee --append "$log_file"
+      echo -e "${RED}#${RESET}  Il faut au minimum 5 Go d'espace libre pour executer le script.   ${RED}#${RESET}" | tee --append "$log_file"
+      echo -e "${RED}######################################################################${RESET}" | tee --append "$log_file"
       exit 1
   fi
 }
@@ -576,9 +559,9 @@ force_dns_for_install
 check_internet_access() {
   displayandexec "Vérification de la connection internet              " "ping -c 1 www.google.com"
   if [ $? != 0 ]; then
-      echo -e "${RED}######################################################################${RESET}" | tee -a "$log_file"
-      echo -e "${RED}#${RESET} Pour executer ce script, il faut disposer d'une connexion Internet ${RED}#${RESET}" | tee -a "$log_file"
-      echo -e "${RED}######################################################################${RESET}" | tee -a "$log_file"
+      echo -e "${RED}######################################################################${RESET}" | tee --append "$log_file"
+      echo -e "${RED}#${RESET} Pour executer ce script, il faut disposer d'une connexion Internet ${RED}#${RESET}" | tee --append "$log_file"
+      echo -e "${RED}######################################################################${RESET}" | tee --append "$log_file"
       exit 1
   fi
 }
@@ -593,16 +576,23 @@ displayandexec "Synchronisation de l'heure et de la time zone       " "systemctl
 # voir comment faire lorsque la machine n'est pas à la bonne date et qu'elle a créer le fichier de log en se basant sur la date à laquelle elle était. regarder concernant le bon moment pour executer la commande car elle a besoin de displayandexec qui utilise notamment le fait qu'un fichier de log soit créé
 ################################################################################
 
-# autre version
-# grep "^NAME=" /etc/os-release | grep "debian\|Debian" &> /dev/null
+################################################################################
+## vérification que le script s'execute sur une debian
+##------------------------------------------------------------------------------
+check_distrib_is_debian() {
 if $(uname -a | grep -i 'debian' &> /dev/null); then
   version_linux='Debian'
 else
-    echo -e "${RED}######################################################################${RESET}" | tee -a "$log_file"
-    echo -e "${RED}#${RESET}             Ce script s'execute seulement sur Debian !             ${RED}#${RESET}" | tee -a "$log_file"
-    echo -e "${RED}######################################################################${RESET}" | tee -a "$log_file"
+    echo -e "${RED}######################################################################${RESET}" | tee --append "$log_file"
+    echo -e "${RED}#${RESET}             Ce script s'execute seulement sur Debian !             ${RED}#${RESET}" | tee --append "$log_file"
+    echo -e "${RED}######################################################################${RESET}" | tee --append "$log_file"
     exit 1
 fi
+check_distrib_is_debian
+# autre version
+# grep "^NAME=" /etc/os-release | grep "debian\|Debian" &> /dev/null
+################################################################################
+
 script_version='2.0'
 system_version="$(cat /etc/debian_version)"
 CURL='curl --silent --show-error'
@@ -812,12 +802,12 @@ AGI='apt-get install -y'
 AG='apt-get'
 WGET='wget -q'
 computer_proc_architecture="$(uname -r | grep -Po '.*-\K.*')" # peut aussi se faire avec : "$(uname -r | /usr/bin/cut -d '-' -f 3)"
-network_int_name="$(awk 'NR==1,/default/ {print $5}' <(ip route))"
+network_int_name="$(awk 'NR==1,/default/{print $5}' <(ip route))"
 # on remplace l'ancienne commande par celle qui prend le retour de ip route car celle ci permet d'éviter les cas ou il y a plusieurs interfaces qui commencent par en et de prendre en priorité celle qui est utilisé pour se connecter à la default gateway, en admettant donc que ce sois l'interface principale. Cela permet aussi de récupérer le nom de l'interface lorsque c'est une interface wifi
 # ancienne commande qui faisait le travail : $(ip addr | grep 'UP' | cut -d " " -f 2 | cut -d ":" -f 1 | grep 'en')
 # peut potentillement se faire aussi avec ip addr | awk -F':' '/UP/ && / en/ {sub(/[[:blank:]]/,""); print $2}'
 # une autre commande qui permet de se passer de la commande ip en utilisant uniquement les infos lspci et depuis /sys
-# pci=`lspci  | awk '/Ethernet/{print $1}'`; find /sys/class/net ! -type d | xargs --max-args=1 realpath  | awk -v pciid=$pci -F\/ '{if($0 ~ pciid){print $NF}}'
+# pci=`lspci  | awk '/Ethernet/{print $1}'`; find /sys/class/net ! -type d | xargs --max-args=1 realpath | awk -v pciid=$pci -F\/ '{if($0 ~ pciid){print $NF}}'
 IPv4_local_address="$(ip -o -4 addr list "$network_int_name" | awk '{print $4}' | cut -d/ -f1)"
 IPv4_external_address="$(GET http://ipinfo.io/ip)"
 #autres méthodes :
@@ -828,7 +818,7 @@ IPv6_external_address="$(ip -o -6 addr list "$network_int_name" | grep -v 'nopre
 computer_RAM="$(awk '/MemTotal/{printf("%.0f", $2/1024/1024+1);}' /proc/meminfo)"
 # grep "MemTotal" /proc/meminfo | awk '{print $2}' | sed -r 's/.{3}$//'
 # potentiellement à remplacer avec free -g | awk '/^Mem:/{print $2}'
-computer_proc="$(grep -c '^processor' /proc/cpuinfo)"
+computer_proc_nb="$(grep -c '^processor' /proc/cpuinfo)"
 computer_proc_model_name="$(grep -Po -m 1 '^model name.*: \K.*' /proc/cpuinfo)"
 computer_proc_vendor_ID="$(grep -Po -m 1 '(^vendor_id\s: )\K(.*)' /proc/cpuinfo)"
 debian_release="$(lsb_release -sc)"
@@ -870,10 +860,10 @@ clear
 check_available_columns_in_terminal() {
   available_columns_in_term="$(tput cols)"
   if [ "$available_columns_in_term" -lt 74 ]; then
-      echo -e "${RED}###########################################${RESET}" | tee -a "$log_file"
-      echo -e "${RED}#${RESET}  La taille du terminal est trop petite  ${RED}#${RESET}" | tee -a "$log_file"
-      echo -e "${RED}#${RESET}  L'affichage en sera donc impactée      ${RED}#${RESET}" | tee -a "$log_file"
-      echo -e "${RED}###########################################${RESET}" | tee -a "$log_file"
+      echo -e "${RED}###########################################${RESET}" | tee --append "$log_file"
+      echo -e "${RED}#${RESET}  La taille du terminal est trop petite  ${RED}#${RESET}" | tee --append "$log_file"
+      echo -e "${RED}#${RESET}  L'affichage en sera donc impactée      ${RED}#${RESET}" | tee --append "$log_file"
+      echo -e "${RED}###########################################${RESET}" | tee --append "$log_file"
   fi
 }
 check_available_columns_in_terminal
@@ -886,9 +876,9 @@ check_available_columns_in_terminal
 
 echo ''
 echo ''
-echo '       ################################################################'
-echo '       #            LANCEMENT DU SCRIPT DEBIAN_POSTINSTALL            #'
-echo '       ################################################################'
+echo '     ################################################################'
+echo '     #            LANCEMENT DU SCRIPT DEBIAN_POSTINSTALL            #'
+echo '     ################################################################'
 echo ''
 echo ''
 echo '       ================================================================'
@@ -899,7 +889,7 @@ echo '                   version             : '"$script_version"
 echo '                   lancement du script : sudo bash ng_install.sh       '
 echo '                   version du système  : '"$version_linux" "$system_version"
 echo '                   architecture CPU    : '"$computer_proc_architecture"
-echo '                   nombre de coeur CPU : '"$computer_proc"
+echo '                   nombre de coeur CPU : '"$computer_proc_nb"
 echo '                   adresse IPv4 local  : '"$IPv4_local_address"
 echo '                   adresse IPv4 extern : '"$IPv4_external_address"
 if [ "$IPv6_local_address" ]; then
@@ -972,9 +962,9 @@ if [ "$bullseye" == 1 ]; then
 fi
 
 echo ''
-echo '       ################################################################'
-echo '       #                      MISE A JOUR DU SYSTEM                   #'
-echo '       ################################################################'
+echo '     ################################################################'
+echo '     #                      MISE A JOUR DU SYSTEM                   #'
+echo '     ################################################################'
 echo ''
 
 displayandexec "Mise à jour des certificats racine                  " "update-ca-certificates"
@@ -1020,9 +1010,9 @@ configure_debconf
 ## installation des logiciels
 ##------------------------------------------------------------------------------
 echo ''
-echo '       ################################################################'
-echo '       #                   INSTALLATION DES LOGICIELS                 #'
-echo '       ################################################################'
+echo '     ################################################################'
+echo '     #                   INSTALLATION DES LOGICIELS                 #'
+echo '     ################################################################'
 echo ''
 
 # si besoin de iwlwifi
@@ -1211,9 +1201,9 @@ displayandexec "Désinstalation des paquets qui ne sont plus utilisés" "$AG aut
 #//////////////////////////////////////////////////////////////////////////////#
 
 echo ''
-echo '       ################################################################'
-echo '       #  INSTALLATION DES LOGICIELS AVEC UNE INSTALLATION MANUELLE   #'
-echo '       ################################################################'
+echo '     ################################################################'
+echo '     #  INSTALLATION DES LOGICIELS AVEC UNE INSTALLATION MANUELLE   #'
+echo '     ################################################################'
 echo ''
 
 # création du répertoire qui contiendra les logiciels avec une installation spéciale
@@ -1642,8 +1632,8 @@ Terminal=false
 Type=Application
 Icon=$manual_install_dir/shotcut/shotcut-logo-64.png
 Comment=a free, open source, cross-platform video editor
-MimeType=x-scheme-handler/etcher;
-Categories=Utility;
+MimeType=video/x-matroska;video/webm;video/x-flv;video/mp4;
+Categories=Graphics;
 EOF
 }
 ################################################################################
@@ -1972,9 +1962,9 @@ fi
 ## désinstalation des logicels inutils
 ##------------------------------------------------------------------------------
 echo ''
-echo '       ################################################################'
-echo '       #           DESINSTALATION DES PAQUETS NON SOUHAITES           #'
-echo '       ################################################################'
+echo '     ################################################################'
+echo '     #           DESINSTALATION DES PAQUETS NON SOUHAITES           #'
+echo '     ################################################################'
 echo ''
 
 #Konqueror
@@ -2058,6 +2048,8 @@ install_GSE_screenshot_tool() {
 #system-monitor
 install_GSE_system_monitor() {
   $AGI gnome-shell-extension-system-monitor
+  $ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/memory-style "'digit'"
+  # on configure avec la commande ci-dessus l'affichage de la métrique de la RAM sous forme de pourcentage plustôt que de graph
 }
 
 enable_GSE() {
@@ -2089,10 +2081,13 @@ chown "$local_user":"$local_user" /tmp/enable_GSE.sh
   fi
 }
 
-displayandexec "Installation des Gnome Shell Extension              " "\
-"$(install_GSE_screenshot_tool)"
-"$(install_GSE_system_monitor)""
+install_GSE_screenshot_tool
+install_GSE_system_monitor
 check_for_enable_GSE
+
+displayandexec "Installation des Gnome Shell Extension              " "\
+stat /home/"$local_user"/.local/share/gnome-shell/extensions/gnome-shell-screenshot@ttll.de/metadata.json && \
+stat /usr/share/gnome-shell/extensions/system-monitor@paradoxxx.zero.gmail.com/metadata.json"
 }
 
 install_GSE_bullseye() {
@@ -2109,6 +2104,8 @@ install_GSE_screenshot_tool() {
 #system-monitor
 install_GSE_system_monitor() {
   $AGI gnome-shell-extension-system-monitor &> /dev/null
+  $ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/memory-style "'digit'"
+  # on configure avec la commande ci-dessus l'affichage de la métrique de la RAM sous forme de pourcentage plustôt que de graph
 }
 
 enable_GSE() {
@@ -2148,10 +2145,13 @@ chown "$local_user":"$local_user" /tmp/enable_GSE.sh
   fi
 }
 
-displayandexec "Installation des Gnome Shell Extension              " "\
-"$(install_GSE_screenshot_tool)"
-"$(install_GSE_system_monitor)""
+install_GSE_screenshot_tool
+install_GSE_system_monitor
 check_for_enable_GSE
+
+displayandexec "Installation des Gnome Shell Extension              " "\
+stat /home/"$local_user"/.local/share/gnome-shell/extensions/gnome-shell-screenshot@ttll.de/metadata.json && \
+stat /usr/share/gnome-shell/extensions/system-monitor@paradoxxx.zero.gmail.com/metadata.json"
 }
 # il est nécessaire de recharger Gnome Shell avant de pouvoit faire un gnome-extensions enable
 # la commande suivante permet de recharger Gnome Shell :
@@ -2203,9 +2203,9 @@ displayandexec "Suppression du cache de apt-get                     " "$AG clean
 #                            INSTALL SCRIP PERSO                               #
 #//////////////////////////////////////////////////////////////////////////////#
 echo ''
-echo '       ################################################################'
-echo '       #                INSTALLATION DES SCRIPTS PERSO                #'
-echo '       ################################################################'
+echo '     ################################################################'
+echo '     #                INSTALLATION DES SCRIPTS PERSO                #'
+echo '     ################################################################'
 echo ''
 
 ################################################################################
@@ -2363,8 +2363,8 @@ CheckUpdateBoostnote() {
 
 CheckUpdateFreefilesync() {
   local SoftwareName='FreeFileSync'
-  local v1="$(head "$manual_install_dir"/FreeFileSync/CHANGELOG -n 1 | grep -Po 'FreeFileSync \K([[:digit:]]+\.+[[:digit:]]+)')"
-  local v2="$($CURL 'https://freefilesync.org/download.php' | grep 'Linux.tar.gz' | grep -Po '(FreeFileSync_)\K([[:digit:]]+\.+[[:digit:]]+)')"
+  local v1="$(head "$manual_install_dir"/FreeFileSync/CHANGELOG -n 1 | grep -Po 'FreeFileSync \K([[:digit:]]+\.[[:digit:]]+)')"
+  local v2="$($CURL 'https://freefilesync.org/download.php' | grep 'Linux.tar.gz' | grep -Po '(FreeFileSync_)\K([[:digit:]]+\.[[:digit:]]+)')"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
@@ -2874,9 +2874,9 @@ install_all_perso_script
 #                              CONFIGURATION                                   #
 #//////////////////////////////////////////////////////////////////////////////#
 echo ''
-echo '       ################################################################'
-echo '       #             CONFIGURATION DES DIFFERENTS ELEMENTS            #'
-echo '       ################################################################'
+echo '     ################################################################'
+echo '     #             CONFIGURATION DES DIFFERENTS ELEMENTS            #'
+echo '     ################################################################'
 echo ''
 
 ################################################################################
@@ -2910,6 +2910,7 @@ EOF
 ## configuration de SSHFS
 ##------------------------------------------------------------------------------
 # création du répertoire qui servira de point de montage pour SSHFS
+# on le créer dans /home/"$local_user"/.mnt/sshfs/ car cela permet de lire et écrire sans élévation de privilège
 execandlog "[ -d /home/"$local_user"/.mnt/sshfs/ ] || $ExeAsUser mkdir -p /home/"$local_user"/.mnt/sshfs/"
 ################################################################################
 
@@ -3495,7 +3496,7 @@ elif [[ -n "$($ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_u
 ConfigureGnomeTerminal
 
 # redémarer Gnome Shell
-$ExeAsUser gnome-shell --replace &>/dev/null & disown
+$ExeAsUser gnome-shell --replace &>/dev/null && disown
 ################################################################################
 
 # Pour obtenir le lien de l'image utilisé commend fond d'écran
@@ -3775,6 +3776,16 @@ mv "$script_path"/.zshrc /home/"$local_user"/.zshrc && \
 stat /home/"$local_user"/.zshrc"
 # rajouter stat /root/.zshrc &&
 # si on  met aussi la conf zsh pour root
+
+displayandexec "Configuration du zshrc                              "
+displayandexec "Configuration de zsh en tant que shell par défaut   " "\
+sed -i 's/auth       required   pam_shells.so/auth       sufficient   pam_shells.so/' /etc/pam.d/chsh && \
+"$local_user" chsh -s "$(command -v zsh)" && \
+sed -i 's/auth       sufficient   pam_shells.so/auth       required   pam_shells.so/' /etc/pam.d/chsh"
+# l'excution de cette commande demande un logoff/login du user pour prendre éffet
+# on est obliger de changer la valeur de /etc/pam.d/chsh car sinon la commande nous de demande de rentrer le mdp de l'utilisateur et donc l'execution de la commande devient intéractif.
+# ref : [command line - chsh always asking a password , and get `PAM: Authentication failure` - Ask Ubuntu](https://askubuntu.com/questions/812420/chsh-always-asking-a-password-and-get-pam-authentication-failure/812426#812426)
+# on change donc la valeur avant et après l'execution de la commande chsh
 ################################################################################
 
 # Commande temporaire pour éviter que des fichiers de /home/user/.config n'appartienent à root lors de l'install, sans qu'on comprenne bien pourquoi (executé par ExeAsUser)
@@ -3850,9 +3861,9 @@ echo '#                           Fin du script                          #' >> "
 echo '####################################################################' >> "$log_file"
 
 echo ''
-echo '       ################################################################'
-echo "       #                  L'INSTALLATION EST TERMINEE                 #"
-echo '       ################################################################'
+echo '     ################################################################'
+echo "     #                  L'INSTALLATION EST TERMINEE                 #"
+echo '     ################################################################'
 echo ''
 
 ################################################################################
