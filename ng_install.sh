@@ -588,6 +588,7 @@ else
     echo -e "${RED}######################################################################${RESET}" | tee --append "$log_file"
     exit 1
 fi
+}
 check_distrib_is_debian
 # autre version
 # grep "^NAME=" /etc/os-release | grep "debian\|Debian" &> /dev/null
@@ -881,26 +882,31 @@ echo '     #            LANCEMENT DU SCRIPT DEBIAN_POSTINSTALL            #'
 echo '     ################################################################'
 echo ''
 echo ''
-echo '       ================================================================'
+echo '     ================================================================'
 echo ''
-echo '                   nom du script       : DEBIAN_POSTINSTALL            '
-echo '                   auteur              : NRGLine4Sec                   '
-echo '                   version             : '"$script_version"
-echo '                   lancement du script : sudo bash ng_install.sh       '
-echo '                   version du système  : '"$version_linux" "$system_version"
-echo '                   architecture CPU    : '"$computer_proc_architecture"
-echo '                   nombre de coeur CPU : '"$computer_proc_nb"
-echo '                   adresse IPv4 local  : '"$IPv4_local_address"
-echo '                   adresse IPv4 extern : '"$IPv4_external_address"
+echo '                 nom du script       : DEBIAN_POSTINSTALL            '
+echo '                 auteur              : NRGLine4Sec                   '
+echo '                 version             : '"$script_version"
+echo '                 lancement du script : sudo bash ng_install.sh       '
+echo '                 version du système  : '"$version_linux" "$system_version"
+echo '                 architecture CPU    : '"$computer_proc_architecture"
+echo '                 nombre de coeur CPU : '"$computer_proc_nb"
+echo '                 adresse IPv4 local  : '"$IPv4_local_address"
+echo '                 adresse IPv4 extern : '"$IPv4_external_address"
 if [ "$IPv6_local_address" ]; then
-    echo '                   adresse IPv6 local  : '"$IPv6_local_address"
+    echo '                 adresse IPv6 local  : '"$IPv6_local_address"
 fi
 if [ "$IPv6_external_address" ]; then
-    echo '                   adresse IPv6 extern : '"$IPv6_external_address"
+    echo '                 adresse IPv6 extern : '"$IPv6_external_address"
 fi
 echo ''
-echo '       ================================================================'
+echo '     ================================================================'
 echo ''
+
+# regarder pour voir si on peut rajouter la version de debian (codename) à la fin de la ligne '                 version du système  : '"$version_linux" "$system_version"
+# if [ "$debian_release" ]; then
+#     echo "($debian_release)"
+# fi
 
 #//////////////////////////////////////////////////////////////////////////////#
 #                                INSTALL APPS                                  #
@@ -3700,8 +3706,8 @@ execandlog "chmod 4755 /opt/Signal/chrome-sandbox"
 ##------------------------------------------------------------------------------
 
 # alias for the user
-rm -f /home/"$local_user"/.bashrc && \
-mv "$script_path"/.bashrc /home/"$local_user"/.bashrc &&
+execandlog "rm -f /home/"$local_user"/.bashrc && \
+mv "$script_path"/.bashrc /home/"$local_user"/.bashrc"
 $ExeAsUser cat>> /home/"$local_user"/.bashrc << EOF
 
 # alias perso
@@ -3715,6 +3721,7 @@ alias nn='nano -c'
 alias cl='clear'
 alias grep='grep --color=auto'
 alias i='sudo apt-get install'
+alias ip='ip --color=auto'
 alias u='sudo apt-get update'
 alias up='sudo apt-get upgrade'
 alias upp='sudo apt-get update && sudo apt-get upgrade'
@@ -3756,6 +3763,7 @@ alias nn='nano -c'
 alias cl='clear'
 alias grep='grep --color=auto'
 alias i='apt-get install'
+alias ip='ip --color=auto'
 alias u='apt-get update'
 alias up='apt-get upgrade'
 alias upp='apt-get update && apt-get upgrade'
@@ -3770,9 +3778,48 @@ HISTTIMEFORMAT=\"%Y/%m/%d %T   \"
 EOF
 displayandexec "Configuration du bashrc                             " "stat /root/.bashrc && stat /home/"$local_user"/.bashrc"
 
+execandlog "rm -f /home/"$local_user"/.zshrc && \
+mv "$script_path"/.zshrc /home/"$local_user"/.zshrc"
+$ExeAsUser cat>> /home/"$local_user"/.zshrc << EOF
+
+# alias perso
+alias ll='ls --color=always -l -h'
+alias la='ls --color=always -A'
+alias l='ls --color=always -CF'
+alias asearch='apt-cache search'
+alias ashow='apt-cache show'
+alias h='history'
+alias nn='nano -c'
+alias cl='clear'
+alias grep='grep --color=auto'
+alias i='sudo apt-get install'
+alias u='sudo apt-get update'
+alias up='sudo apt-get upgrade'
+alias upp='sudo apt-get update && sudo apt-get upgrade'
+alias uppr='sudo apt-get update && sudo apt-get dist-upgrade'
+alias x='exit'
+alias xx='sudo shutdown now'
+alias xwx='sudo poweroff'
+# a priori le stream de funradio ne fonctionne plus
+# alias funradio='mpv --cache=no http://streaming.radio.funradio.fr/fun-1-48-192'
+alias youtube-dl='youtube-dl -o "%(title)s.%(ext)s"'
+alias spyme='sudo lnav /var/log/syslog /var/log/auth.log'
+alias ngupp='sudo /usr/bin/sysupdateNG'
+alias bat='bat -pp'
+alias free='free -ht'
+alias showshortcut='dconf dump /org/gnome/settings-daemon/plugins/media-keys/'
+alias bitcoin='curl -s "http://api.coindesk.com/v1/bpi/currentprice.json"  | jq ".bpi.EUR.rate" | tr -d \"'
+alias sshuttle='sudo sshuttle'
+HISTTIMEFORMAT="%Y/%m/%d %T   "
+is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/\$1 ;}
+
+# for Ansible vault editor
+export EDITOR=nano
+
+# for python binnary
+export PATH="\$PATH:/home/$local_user/.local/bin"
+EOF
 displayandexec "Configuration du zshrc                              " "\
-rm -f /home/"$local_user"/.zshrc && \
-mv "$script_path"/.zshrc /home/"$local_user"/.zshrc && \
 stat /home/"$local_user"/.zshrc"
 # rajouter stat /root/.zshrc &&
 # si on  met aussi la conf zsh pour root
