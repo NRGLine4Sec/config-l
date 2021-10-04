@@ -2068,7 +2068,22 @@ check_for_enable_GSE() {
   # on check si le script est lancé depuis un tty (comme SSH) ou bien depuis un terminal graphique (comme gnome-terminal)
   # si le script est executé depuis un terminal graphique, on execute pas la fonction enable_GSE, car le relancement du Gnome Shell provoque l'arrêt du script et de tout ce qui tourne au moment de son execution
   # peut être voir pour créer un script dans /home à executer (en temps voulu) manuellement par l'utilisateur une fois que ng_install.sh aura terminé
-  if ! $(env | grep 'GNOME_TERMINAL' &> /dev/null); then
+
+# on check si les processus parents qui ont lancés le bash qui executera les commandes a été lancé à partir d'un processus parent qui correspond à "gnome-terminal"
+# ref de la méthode : [macos - How to identify the terminal from a script? - Super User](https://superuser.com/questions/683962/how-to-identify-the-terminal-from-a-script/683973#683973)
+
+# peut aussi se faire à l'aide de pstree avec cette commande : if ! $(pstree -sg $$ | grep 'gnome-terminal' &> /dev/null); then
+# ref : [How to get parent PID of a given process in GNU/Linux from command line? - Super User](https://superuser.com/questions/150117/how-to-get-parent-pid-of-a-given-process-in-gnu-linux-from-command-line/1043124#1043124)
+
+  get_all_parent_PID() {
+    ps --pid ${1:-$$} --no-headers --format pid,ppid,args | \
+      (
+        read pid ppid args
+        echo "$args"
+        [[ $pid -gt 1 ]] && get_all_parent_PID $ppid
+      )
+  }
+  if ! get_all_parent_PID | grep 'gnome-terminal' &> /dev/null; then
   	enable_GSE
   else
     cat> /tmp/enable_GSE.sh << 'EOF'
@@ -2132,7 +2147,15 @@ check_for_enable_GSE() {
   #   enable_GSE
   # fi
 
-  if ! $(env | grep 'GNOME_TERMINAL' &> /dev/null); then
+  get_all_parent_PID() {
+    ps --pid ${1:-$$} --no-headers --format pid,ppid,args | \
+      (
+        read pid ppid args
+        echo "$args"
+        [[ $pid -gt 1 ]] && get_all_parent_PID $ppid
+      )
+  }
+  if ! get_all_parent_PID | grep 'gnome-terminal' &> /dev/null; then
   	enable_GSE
   else
     cat> /tmp/enable_GSE.sh << 'EOF'
