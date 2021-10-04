@@ -416,7 +416,7 @@ log_dir='/var/log/postinstall'
 [ -d "$log_dir" ] || mkdir "$log_dir" && \
 log_file="/var/log/postinstall/log_script_install-"$now".log" && \
 touch "$log_file" && \
-install_file="/var/log/postinstall/install_file-"$now".log" && \
+install_file="/var/log/postinstall/stdout_on_script_execution-"$now".log" && \
 touch "$install_file"
 
 echo '####################################################################' > "$log_file"
@@ -810,10 +810,12 @@ network_int_name="$(awk 'NR==1,/default/{print $5}' <(ip route))"
 # une autre commande qui permet de se passer de la commande ip en utilisant uniquement les infos lspci et depuis /sys
 # pci=`lspci  | awk '/Ethernet/{print $1}'`; find /sys/class/net ! -type d | xargs --max-args=1 realpath | awk -v pciid=$pci -F\/ '{if($0 ~ pciid){print $NF}}'
 IPv4_local_address="$(ip -o -4 addr list "$network_int_name" | awk '{print $4}' | cut -d/ -f1)"
-IPv4_external_address="$(GET http://ipinfo.io/ip)"
+IPv4_external_address="$($CURL 'https://ipinfo.io/ip')"
+if [ -z "$IPv4_external_address" ]; then
+  IPv4_external_address="$($WGET --output-document - 'https://ifconfig.me')"
+fi
 #autres méthodes :
 #IPv4_external_address=$($AG install -y curl > /dev/null && curl -s http://ipinfo.io/ip)
-#wget -q http://ipinfo.io/ip && IPv4_external_address=$(cat ip)
 IPv6_local_address="$(ip -o -6 addr list "$network_int_name" | awk '/fe80/{print $4}' | cut -d/ -f1)"
 IPv6_external_address="$(ip -o -6 addr list "$network_int_name" | grep -v 'noprefixroute' | awk '{print $4}' | cut -d/ -f1)"
 computer_RAM="$(awk '/MemTotal/{printf("%.0f", $2/1024/1024+1);}' /proc/meminfo)"
@@ -823,7 +825,9 @@ computer_proc_nb="$(grep -c '^processor' /proc/cpuinfo)"
 computer_proc_model_name="$(grep -Po -m 1 '^model name.*: \K.*' /proc/cpuinfo)"
 computer_proc_vendor_ID="$(grep -Po -m 1 '(^vendor_id\s: )\K(.*)' /proc/cpuinfo)"
 debian_release="$(lsb_release -sc)"
-# peut aussi se faire avec la commande : awk -F'=' '/VERSION_CODENAME=/{print $2}' /etc/os-release
+if [ -z "$debian_release" ]; then
+  debian_release="$(awk -F'=' '/VERSION_CODENAME=/{print $2}' /etc/os-release)"
+fi
 DCONF_write="DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" dconf write"
 DCONF_read="DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" dconf read"
 DCONF_list="DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" dconf list"
@@ -888,7 +892,7 @@ echo '                 nom du script       : DEBIAN_POSTINSTALL            '
 echo '                 auteur              : NRGLine4Sec                   '
 echo '                 version             : '"$script_version"
 echo '                 lancement du script : sudo bash ng_install.sh       '
-echo '                 version du système  : '"$version_linux" "$system_version"
+echo '                 version du système  : '"$version_linux" "$system_version" "($debian_release)"
 echo '                 architecture CPU    : '"$computer_proc_architecture"
 echo '                 nombre de coeur CPU : '"$computer_proc_nb"
 echo '                 adresse IPv4 local  : '"$IPv4_local_address"
@@ -902,11 +906,6 @@ fi
 echo ''
 echo '     ================================================================'
 echo ''
-
-# regarder pour voir si on peut rajouter la version de debian (codename) à la fin de la ligne '                 version du système  : '"$version_linux" "$system_version"
-# if [ "$debian_release" ]; then
-#     echo "($debian_release)"
-# fi
 
 #//////////////////////////////////////////////////////////////////////////////#
 #                                INSTALL APPS                                  #
