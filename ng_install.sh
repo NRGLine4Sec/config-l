@@ -602,6 +602,34 @@ CURL='curl --silent --show-error'
 # https://github.com/shiftkey/desktop/releases
 
 ################################################################################
+## vérification que le script s'execute depuis un terminal graphique (gnome-terminal)
+##------------------------------------------------------------------------------
+# on check si le script est lancé depuis un tty (comme SSH) ou bien depuis un terminal graphique (comme gnome-terminal)
+# si le script est executé depuis un terminal graphique, on execute pas la fonction enable_GSE, car le relancement du Gnome Shell provoque l'arrêt du script et de tout ce qui tourne au moment de son execution
+# peut être voir pour créer un script dans /home à executer (en temps voulu) manuellement par l'utilisateur une fois que ng_install.sh aura terminé
+
+# on check si les processus parents qui ont lancés le bash qui executera les commandes a été lancé à partir d'un processus parent qui correspond à "gnome-terminal"
+# ref de la méthode : [macos - How to identify the terminal from a script? - Super User](https://superuser.com/questions/683962/how-to-identify-the-terminal-from-a-script/683973#683973)
+
+# peut aussi se faire à l'aide de pstree avec cette commande : if ! $(pstree -sg $$ | grep 'gnome-terminal' &> /dev/null); then
+# ref : [How to get parent PID of a given process in GNU/Linux from command line? - Super User](https://superuser.com/questions/150117/how-to-get-parent-pid-of-a-given-process-in-gnu-linux-from-command-line/1043124#1043124)
+is_script_launch_with_gnome_terminal() {
+get_all_parent_PID() {
+  ps --pid ${1:-$$} --no-headers --format pid,ppid,args | \
+    (
+      read pid ppid args
+      echo "$args"
+      [[ $pid -gt 1 ]] && get_all_parent_PID $ppid
+    )
+}
+if get_all_parent_PID | grep 'gnome-terminal' &> /dev/null; then
+  script_is_launch_with_gnome_terminal='1'
+fi
+}
+is_script_launch_with_gnome_terminal
+################################################################################
+
+################################################################################
 ## fonction qui permet de checker automatiquement les versions des logiciels qui s'installent manuellement, de façon automatique
 ##------------------------------------------------------------------------------
 check_latest_version_manual_install_apps() {
@@ -815,7 +843,7 @@ if [ -z "$IPv4_external_address" ]; then
   IPv4_external_address="$($WGET --output-document - 'https://ifconfig.me')"
 fi
 #autres méthodes :
-#IPv4_external_address=$($AG install -y curl > /dev/null && curl -s http://ipinfo.io/ip)
+#IPv4_external_address="$($AGI curl > /dev/null && $CURL 'https://ipinfo.io/ip')"
 IPv6_local_address="$(ip -o -6 addr list "$network_int_name" | awk '/fe80/{print $4}' | cut -d/ -f1)"
 IPv6_external_address="$(ip -o -6 addr list "$network_int_name" | grep -v 'noprefixroute' | awk '{print $4}' | cut -d/ -f1)"
 computer_RAM="$(awk '/MemTotal/{printf("%.0f", $2/1024/1024+1);}' /proc/meminfo)"
@@ -2064,26 +2092,8 @@ enable_GSE() {
 }
 
 check_for_enable_GSE() {
-  # on check si le script est lancé depuis un tty (comme SSH) ou bien depuis un terminal graphique (comme gnome-terminal)
-  # si le script est executé depuis un terminal graphique, on execute pas la fonction enable_GSE, car le relancement du Gnome Shell provoque l'arrêt du script et de tout ce qui tourne au moment de son execution
-  # peut être voir pour créer un script dans /home à executer (en temps voulu) manuellement par l'utilisateur une fois que ng_install.sh aura terminé
-
-# on check si les processus parents qui ont lancés le bash qui executera les commandes a été lancé à partir d'un processus parent qui correspond à "gnome-terminal"
-# ref de la méthode : [macos - How to identify the terminal from a script? - Super User](https://superuser.com/questions/683962/how-to-identify-the-terminal-from-a-script/683973#683973)
-
-# peut aussi se faire à l'aide de pstree avec cette commande : if ! $(pstree -sg $$ | grep 'gnome-terminal' &> /dev/null); then
-# ref : [How to get parent PID of a given process in GNU/Linux from command line? - Super User](https://superuser.com/questions/150117/how-to-get-parent-pid-of-a-given-process-in-gnu-linux-from-command-line/1043124#1043124)
-
-  get_all_parent_PID() {
-    ps --pid ${1:-$$} --no-headers --format pid,ppid,args | \
-      (
-        read pid ppid args
-        echo "$args"
-        [[ $pid -gt 1 ]] && get_all_parent_PID $ppid
-      )
-  }
-  if ! get_all_parent_PID | grep 'gnome-terminal' &> /dev/null; then
-  	enable_GSE
+  if [ -z "$script_is_launch_with_gnome_terminal" ]; then
+    	enable_GSE
   else
     cat> /tmp/enable_GSE.sh << 'EOF'
 #!/bin/bash
@@ -2135,26 +2145,7 @@ enable_GSE() {
 }
 
 check_for_enable_GSE() {
-  # on check si le script est lancé depuis un tty (comme SSH) ou bien depuis un terminal graphique (comme gnome-terminal)
-  # si le script est executé depuis un terminal graphique, on execute pas la fonction enable_GSE, car le relancement du Gnome Shell provoque l'arrêt du script et de tout ce qui tourne au moment de son execution
-  # peut être voir pour créer un script dans /home à executer (en temps voulu) manuellement par l'utilisateur une fois que ng_install.sh aura terminé
-  # case "$(tty)" in
-  #   "/dev/pts"*) enable_GSE=1 ;;
-  #   "/dev/tty"*) enable_GSE=0 ;;
-  # esac
-  # if [ "$enable_GSE" == 1 ]; then
-  #   enable_GSE
-  # fi
-
-  get_all_parent_PID() {
-    ps --pid ${1:-$$} --no-headers --format pid,ppid,args | \
-      (
-        read pid ppid args
-        echo "$args"
-        [[ $pid -gt 1 ]] && get_all_parent_PID $ppid
-      )
-  }
-  if ! get_all_parent_PID | grep 'gnome-terminal' &> /dev/null; then
+if [ -z "$script_is_launch_with_gnome_terminal" ]; then
   	enable_GSE
   else
     cat> /tmp/enable_GSE.sh << 'EOF'
@@ -2764,10 +2755,10 @@ install_check_domain_creation_date() {
 cat> /usr/bin/check_domain_creation_date << 'EOF'
 #!/bin/bash
 
-domain_creation_date="$(whois "$1" | grep -Po -m 1 '(Creation Date:[[:space:]])\K(\d+-\d+-\d+)')"
+domain_creation_date="$(whois "$1" | grep -Po -m 1 '(Creation Date:[[:space:]])\K([[:digit:]]+-[[:digit:]]+-[[:digit:]]+)')"
 
 if [[ -z "$domain_creation_date" ]]; then
-	domain_creation_date="$(whois "$1" | grep -Po -m 1 '(created:[[:space:]]+)\K(\d+-\d+-\d+)')"
+	domain_creation_date="$(whois "$1" | grep -Po -m 1 '(created:[[:space:]]+)\K([[:digit:]]+-[[:digit:]]+-[[:digit:]]+)')"
 fi
 
 domain_creation_date_at_timestamp="$(date -d "$domain_creation_date" +%s)"
