@@ -2086,7 +2086,7 @@ install_GSE_system_monitor() {
 }
 
 enable_GSE() {
-  $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")'
+  $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")' > /dev/null && \
   $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-shell-extension-tool -e 'gnome-shell-screenshot@ttll.de'
   $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-shell-extension-tool -e 'system-monitor@paradoxxx.zero.gmail.com'
 }
@@ -2102,7 +2102,7 @@ local_user="$(awk -F':' '/1000/{print $1}' /etc/passwd)"
 local_user_UID="$(id -u "$local_user")"
 ExeAsUser="sudo -u "$local_user""
 
-$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")'
+$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")' > /dev/null && \
 $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'gnome-shell-screenshot@ttll.de'
 $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'system-monitor@paradoxxx.zero.gmail.com'
 EOF
@@ -2139,7 +2139,7 @@ install_GSE_system_monitor() {
 }
 
 enable_GSE() {
-  $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")'
+  $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")' > /dev/null && \
   $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'gnome-shell-screenshot@ttll.de'
   $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'system-monitor@paradoxxx.zero.gmail.com'
 }
@@ -2155,7 +2155,7 @@ local_user="$(awk -F':' '/1000/{print $1}' /etc/passwd)"
 local_user_UID="$(id -u "$local_user")"
 ExeAsUser="sudo -u "$local_user""
 
-$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")'
+$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")' > /dev/null && \
 $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'gnome-shell-screenshot@ttll.de'
 $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'system-monitor@paradoxxx.zero.gmail.com'
 EOF
@@ -3513,9 +3513,6 @@ elif [[ -n "$($ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_u
 }
 # script based from https://github.com/denysdovhan/one-gnome-terminal
 ConfigureGnomeTerminal
-
-# redémarer Gnome Shell
-$ExeAsUser gnome-shell --replace &>/dev/null && disown
 ################################################################################
 
 # Pour obtenir le lien de l'image utilisé commend fond d'écran
@@ -3837,10 +3834,9 @@ stat /home/"$local_user"/.zshrc"
 # rajouter stat /root/.zshrc &&
 # si on  met aussi la conf zsh pour root
 
-displayandexec "Configuration du zshrc                              "
 displayandexec "Configuration de zsh en tant que shell par défaut   " "\
 sed -i 's/auth       required   pam_shells.so/auth       sufficient   pam_shells.so/' /etc/pam.d/chsh && \
-"$local_user" chsh -s "$(command -v zsh)" && \
+$ExeAsUser chsh -s "$(command -v zsh)" && \
 sed -i 's/auth       sufficient   pam_shells.so/auth       required   pam_shells.so/' /etc/pam.d/chsh"
 # l'excution de cette commande demande un logoff/login du user pour prendre éffet
 # on est obliger de changer la valeur de /etc/pam.d/chsh car sinon la commande nous de demande de rentrer le mdp de l'utilisateur et donc l'execution de la commande devient intéractif.
