@@ -93,7 +93,7 @@
 ##
 ## Une extension Gnome permet de faire en sorte de désactivé le black screen après avoir vérouiller la session (Win + L) : https://extensions.gnome.org/extension/1414/unblank/
 ##
-## Pour faire l'install du script avec apt-fast à place de apt-get
+## Pour faire l'install du scriptt avec apt-fast à place de apt-get
 ## On vérifie que aria1 est installé, si il ne l'ait pas, on l'install
 # if ! dpkg-query --show aria2 > /dev/null 2>&1; then
 #     apt-get update
@@ -1105,6 +1105,7 @@ displayandexec "Installation de dos2unix                            " "$AGI dos2
 displayandexec "Installation de ethtool                             " "$AGI ethtool"
 displayandexec "Installation de ettercap-graphical                  " "$AGI ettercap-graphical"
 displayandexec "Installation de evince                              " "$AGI evince"
+displayandexec "Installation de exiv2                               " "$AGI exiv2"
 displayandexec "Installation de filezilla                           " "$AGI filezilla"
 displayandexec "Installation de firefox-esr-l10n-fr                 " "$AGI firefox-esr-l10n-fr"
 displayandexec "Installation de firejail                            " "$AGI firejail"
@@ -2228,7 +2229,7 @@ echo '     ################################################################'
 echo ''
 
 ################################################################################
-## install du scrip gitupdate
+## install du script gitupdate
 ##------------------------------------------------------------------------------
 install_gitupdate() {
 # probablement améliorer le script gitupdate avec une condition if quand la branche principal n'est pas origin master
@@ -2259,7 +2260,7 @@ ln -s /opt/gitupdate /usr/bin/gitupdate"
 ################################################################################
 
 ################################################################################
-## install du scrip sysupdateNG
+## install du script sysupdateNG
 ##------------------------------------------------------------------------------
 install_sysupdateng() {
 cat> /opt/sysupdateNG << 'EOF'
@@ -2645,7 +2646,7 @@ ln -s /opt/sysupdateNG /usr/bin/sysupdateNG"
 ################################################################################
 
 ################################################################################
-## install du scrip check_backport_update
+## install du script check_backport_update
 ##------------------------------------------------------------------------------
 install_check_backport_update() {
   # porbablement qu'il vaudrait lister les paquets qui peuvent être mis à jours avec sudo apt-get update && sudo apt list --upgradable
@@ -2675,7 +2676,7 @@ chmod +x /usr/bin/check_backport_update"
 ################################################################################
 
 ################################################################################
-## install du scrip wsudo
+## install du script wsudo
 ##------------------------------------------------------------------------------
 install_wsudo() {
 cat> /usr/bin/wsudo << 'EOF'
@@ -2692,7 +2693,7 @@ displayandexec "Installation du script wsudo                        " "chmod +x 
 ################################################################################
 
 ################################################################################
-## install du scrip launch_url_file
+## install du script launch_url_file
 ##------------------------------------------------------------------------------
 install_launch_url_file() {
 echo 'chromium "$(tail -n 1 "$@" | cut -c 5-)"' > /usr/bin/launch_url_file
@@ -2713,7 +2714,7 @@ EOF
 ################################################################################
 
 ################################################################################
-## install du scrip scanmyhome
+## install du script scanmyhome
 ##------------------------------------------------------------------------------
 install_scanmyhome() {
 displayandexec "Installation du script scanmyhome                   " "\
@@ -2723,7 +2724,7 @@ chmod +x /usr/bin/scanmyhome"
 ################################################################################
 
 ################################################################################
-## install du scrip rktscan
+## install du script rktscan
 ##------------------------------------------------------------------------------
 install_rktscan() {
 cat> /usr/bin/rktscan << 'EOF'
@@ -2739,7 +2740,7 @@ displayandexec "Installation du script rktscan                      " "chmod +x 
 ################################################################################
 
 ################################################################################
-## install du scrip spyme
+## install du script spyme
 ##------------------------------------------------------------------------------
 install_spyme() {
 displayandexec "Installation du script spyme                        " "\
@@ -2749,7 +2750,7 @@ chmod +x /usr/bin/spyme"
 ################################################################################
 
 ################################################################################
-## install du scrip check_domain_creation_date
+## install du script check_domain_creation_date
 ##------------------------------------------------------------------------------
 install_check_domain_creation_date() {
 cat> /usr/bin/check_domain_creation_date << 'EOF'
@@ -2783,7 +2784,7 @@ displayandexec "Installation du script check_domain_creation_date   " "chmod +x 
 ################################################################################
 
 ################################################################################
-## install du scrip appairmebt
+## install du script appairmebt
 ##------------------------------------------------------------------------------
 install_appairmebt() {
 cat> /usr/bin/appairmebt << 'EOF'
@@ -2850,7 +2851,7 @@ displayandexec "Installation du script appairmebt                   " "chmod +x 
 ################################################################################
 
 ################################################################################
-## install du script desactivebt
+## install du scriptt desactivebt
 ##------------------------------------------------------------------------------
 install_desactivebt() {
 cat> /usr/bin/desactivebt << 'EOF'
@@ -2861,7 +2862,7 @@ displayandexec "Installation du script desactivebt                  " "chmod +x 
 ################################################################################
 
 ################################################################################
-## install du script play_pause_chromium
+## install du scriptt play_pause_chromium
 ##------------------------------------------------------------------------------
 install_play_pause_chromium() {
 cat> /usr/bin/play_pause_chromium << 'EOF'
@@ -3660,6 +3661,7 @@ configure_for_pro() {
 if [ "$conf_pro" == 1 ]; then
     configure_for_pro
 fi
+# https://privatebin.net/?5a462d6ebedb23c4#8D9v7fMZpywSYgUiTBpE2VYv8UdHfoD6f2jUh9o7ccEr
 ################################################################################
 
 ################################################################################
