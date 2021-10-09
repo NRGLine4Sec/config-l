@@ -427,7 +427,7 @@ echo '--------------------------------------------------------------------' >> "
 ################################################################################
 
 ################################################################################
-## copie du script ng_install dans /var/log
+## copie du script ng_install dans "$log_dir"
 ##------------------------------------------------------------------------------
 cp "$(readlink -f "${BASH_SOURCE[0]}")" "$log_dir"/"$(basename "$0")" && \
 chmod 600 "$log_dir"/"$(basename "$0")"
@@ -465,15 +465,15 @@ SSH_Port=''
 # Autres parametres: COMMAND
 displayandexec() {
     local message=$1
-    echo -n "[En cours] $message" && echo -n "[En cours] $message" >> "$install_file"
+    echo -n "[En cours] $message" | tee --append "$install_file"
     shift
     echo ">>> $*" >> "$log_file" 2>&1
     bash -c "$*" >> "$log_file" 2>&1
     local ret=$?
     if [ $ret != 0 ]; then
-        echo -e "\r $message                ${RED}[ERROR]${RESET} " && echo -e "\r $message                ${RED}[ERROR]${RESET} " >> "$install_file"
+        echo -e "\r $message                ${RED}[ERROR]${RESET} " | tee --append "$install_file"
     else
-        echo -e "\r $message                ${GREEN}[OK]${RESET} " && echo -e "\r $message                ${GREEN}[OK]${RESET} " >> "$install_file"
+        echo -e "\r $message                ${GREEN}[OK]${RESET} " | tee --append "$install_file"
     fi
     return $ret
 }
@@ -488,6 +488,7 @@ displayandexec() {
 # car lorsque j'ai executer le script sans cette option, il mettait deux fois sur la même ligne le contenu de $message et ensuite le [OK]
 
 # probablement qu'on peut remplacer le deuxième echo qui renvoit dans le fichier "$install_file" par | tee --append "$log_file"
+# && echo -e "\r $message                ${GREEN}[OK]${RESET} " >> "$install_file"
 ################################################################################
 
 ################################################################################
@@ -838,7 +839,7 @@ network_int_name="$(awk 'NR==1,/default/{print $5}' <(ip route))"
 # une autre commande qui permet de se passer de la commande ip en utilisant uniquement les infos lspci et depuis /sys
 # pci=`lspci  | awk '/Ethernet/{print $1}'`; find /sys/class/net ! -type d | xargs --max-args=1 realpath | awk -v pciid=$pci -F\/ '{if($0 ~ pciid){print $NF}}'
 IPv4_local_address="$(ip -o -4 addr list "$network_int_name" | awk '{print $4}' | cut -d/ -f1)"
-IPv4_external_address="$($CURL 'https://ipinfo.io/ip')"
+IPv4_external_address="$(curl --silent 'https://ipinfo.io/ip')"
 if [ -z "$IPv4_external_address" ]; then
   IPv4_external_address="$($WGET --output-document - 'https://ifconfig.me')"
 fi
@@ -1169,6 +1170,7 @@ displayandexec "Installation de tcpdump                             " "$AGI tcpd
 displayandexec "Installation de telnet                              " "$AGI telnet"
 displayandexec "Installation de testdisk                            " "$AGI testdisk"
 displayandexec "Installation de testssl.sh                          " "$AGI testssl.sh"
+displayandexec "Installation de timeshift                           " "$AGI timeshift"
 displayandexec "Installation de tree                                " "$AGI tree"
 displayandexec "Installation de ufw                                 " "$AGI ufw"
 displayandexec "Installation de unoconv                             " "$AGI unoconv"
@@ -1656,7 +1658,7 @@ install_shotcut() {
   displayandexec "Installation de Shotcut                             " "\
 [ -d "$manual_install_dir"/shotcut/ ] || mkdir "$manual_install_dir"/shotcut/ && \
 $WGET -P "$manual_install_dir"/shotcut/ https://github.com/mltframework/shotcut/releases/download/v"$shotcut_version"/"$shotcut_appimage" && \
-$WGET -P "$manual_install_dir"/shotcut/ 'https://github.com/mltframework/shotcut/blob/master/icons/shotcut-logo-64.png' && \
+$WGET -P "$manual_install_dir"/shotcut/ 'https://github.com/mltframework/shotcut/raw/master/icons/shotcut-logo-64.png' && \
 chmod +x "$manual_install_dir"/shotcut/"$shotcut_appimage""
 cat> /usr/share/applications/shotcut.desktop << EOF
 [Desktop Entry]
@@ -2461,7 +2463,7 @@ UpdateShotcut() {
 	$WGET -P "$manual_install_dir"/shotcut/ https://github.com/mltframework/shotcut/releases/download/v"$shotcut_version"/"$shotcut_appimage" && \
 	chmod +x "$manual_install_dir"/shotcut/"$shotcut_appimage" && \
   sed -i "s,.*Exec=.*,Exec="$manual_install_dir"/shotcut/"$shotcut_appimage",g" /usr/share/applications/shotcut.desktop && \
-  [ -f "$manual_install_dir"/shotcut/shotcut-logo-64.png ] || $WGET -P "$manual_install_dir"/shotcut/ 'https://github.com/mltframework/shotcut/blob/master/icons/shotcut-logo-64.png'
+  [ -f "$manual_install_dir"/shotcut/shotcut-logo-64.png ] || $WGET -P "$manual_install_dir"/shotcut/ 'https://github.com/mltframework/shotcut/raw/master/icons/shotcut-logo-64.png'
 }
 
 UpdateYoutube-dl() {
@@ -2707,9 +2709,7 @@ Comment=script de lancement des fichiers URL depuis nautilus
 Icon=chromium
 Exec=/usr/bin/launch_url_file
 Categories=FileTools;
-OnlyShowIn=Old;
 EOF
-# si Icon=chromium ne marche pas mettre Icon=applications-other
 }
 ################################################################################
 
@@ -2756,6 +2756,14 @@ install_check_domain_creation_date() {
 cat> /usr/bin/check_domain_creation_date << 'EOF'
 #!/bin/bash
 
+check_if_domain_exist() {
+  if $(whois "$1" | grep 'No entries found' > /dev/null); then
+    echo "Le domaine "$1" n'existe pas."
+    exit
+  fi
+}
+check_if_domain_exist "$1"
+
 domain_creation_date="$(whois "$1" | grep -Po -m 1 '(Creation Date:[[:space:]])\K([[:digit:]]+-[[:digit:]]+-[[:digit:]]+)')"
 
 if [[ -z "$domain_creation_date" ]]; then
@@ -2777,7 +2785,7 @@ else
     echo "Le domaine "$1" a été enregistré il y a plus de deux mois ("$domain_creation_date")."
 fi
 
-exit 0
+exit $?
 EOF
 displayandexec "Installation du script check_domain_creation_date   " "chmod +x /usr/bin/check_domain_creation_date"
 }
@@ -2888,6 +2896,75 @@ install_all_perso_script() {
   install_play_pause_chromium
 }
 install_all_perso_script
+################################################################################
+
+################################################################################
+## configuration spéficique pour le pc pro
+##------------------------------------------------------------------------------
+configure_for_pro() {
+  echo ''
+  echo '     ################################################################'
+  echo '     #             CONFIGURATION SPECIFIQUE POUR PC PRO             #'
+  echo '     ################################################################'
+  echo ''
+  source /home/"$local_user"/postinstall_pro.sh
+}
+if [ "$conf_pro" == 1 ]; then
+  configure_for_pro
+fi
+# https://privatebin.net/?5a462d6ebedb23c4#8D9v7fMZpywSYgUiTBpE2VYv8UdHfoD6f2jUh9o7ccEr
+################################################################################
+
+################################################################################
+## configuration spéficique pour le pc perso
+##------------------------------------------------------------------------------
+configure_for_perso() {
+  echo ''
+  echo '     ################################################################'
+  echo '     #            CONFIGURATION SPECIFIQUE POUR PC PERSO            #'
+  echo '     ################################################################'
+  echo ''
+  source /home/"$local_user"/postinstall_perso.sh
+#     $ExeAsUser cat> tmp_conf_dconf_perso << EOF
+# [gnome/settings-daemon/plugins/media-keys]
+# custom-keybindings=['/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom1/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom2/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom3/']
+#
+# [gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom2]
+# binding='<Primary><Shift>y'
+# command='/usr/bin/eteindreecran'
+# name='réactiver l ecran'
+# [gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom3]
+# binding='<Primary><Shift>h'
+# command='/usr/bin/redemarerecran'
+# name="réactiver l écran du PC avec les paramètres à gauche de l écran principal"
+# EOF
+#     $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$local_user_UID/bus" dconf load /org/ < tmp_conf_dconf_perso
+
+  install_redemarerecran() {
+  #redemarerecran
+  displayandexec "Installation du script redemarerecran               " "\
+  echo 'xrandr --output eDP-1 --left-of HDMI-1 --auto' > /usr/bin/redemarerecran && \
+  chmod +x /usr/bin/redemarerecran"
+
+  # pour obtenir le nom des écrans : xrandr -q
+  # https://askubuntu.com/questions/62858/turn-off-monitor-using-command-line
+  }
+  install_redemarerecran
+
+  install_eteindreecran() {
+  #eteindreecran
+  displayandexec "Installation du script eteindreecran                " "\
+  echo 'xrandr --output eDP-1 --off' > /usr/bin/eteindreecran && \
+  chmod +x /usr/bin/eteindreecran"
+  }
+  install_eteindreecran
+
+  CustomGnomeShortcut "eteindre l ecran" "/usr/bin/eteindreecran" "<Primary><Shift>y"
+  CustomGnomeShortcut "réactiver l écran du PC avec les paramètres à gauche de l écran principal" "/usr/bin/redemarerecran" "<Primary><Shift>h"
+}
+if [ "$conf_perso" == 1 ]; then
+    configure_for_perso
+fi
 ################################################################################
 
 #//////////////////////////////////////////////////////////////////////////////#
@@ -3652,66 +3729,15 @@ displayandexec "Réglage du volume audio à 10%                       " "$ExeAsU
 # regarder aussi cette solution la : https://bbs.archlinux.org/viewtopic.php?id=155649
 ################################################################################
 
-################################################################################
-## configuration spéficique pour le pc pro
-##------------------------------------------------------------------------------
-configure_for_pro() {
-    echo "conf pro"
-}
-if [ "$conf_pro" == 1 ]; then
-    configure_for_pro
-fi
-# https://privatebin.net/?5a462d6ebedb23c4#8D9v7fMZpywSYgUiTBpE2VYv8UdHfoD6f2jUh9o7ccEr
-################################################################################
-
-################################################################################
-## configuration spéficique pour le pc perso
-##------------------------------------------------------------------------------
-configure_for_perso() {
-#     $ExeAsUser cat> tmp_conf_dconf_perso << EOF
-# [gnome/settings-daemon/plugins/media-keys]
-# custom-keybindings=['/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom1/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom2/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom3/']
-#
-# [gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom2]
-# binding='<Primary><Shift>y'
-# command='/usr/bin/eteindreecran'
-# name='réactiver l ecran'
-# [gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom3]
-# binding='<Primary><Shift>h'
-# command='/usr/bin/redemarerecran'
-# name="réactiver l écran du PC avec les paramètres à gauche de l écran principal"
-# EOF
-#     $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$local_user_UID/bus" dconf load /org/ < tmp_conf_dconf_perso
-
-  install_redemarerecran() {
-  #redemarerecran
-  displayandexec "Installation du script redemarerecran               " "\
-  echo 'xrandr --output eDP-1 --left-of HDMI-1 --auto' > /usr/bin/redemarerecran && \
-  chmod +x /usr/bin/redemarerecran"
-
-  # pour obtenir le nom des écrans : xrandr -q
-  # https://askubuntu.com/questions/62858/turn-off-monitor-using-command-line
-  }
-  install_redemarerecran
-
-  install_eteindreecran() {
-  #eteindreecran
-  displayandexec "Installation du script eteindreecran                " "\
-  echo 'xrandr --output eDP-1 --off' > /usr/bin/eteindreecran && \
-  chmod +x /usr/bin/eteindreecran"
-  }
-  install_eteindreecran
-
-  CustomGnomeShortcut "eteindre l ecran" "/usr/bin/eteindreecran" "<Primary><Shift>y"
-  CustomGnomeShortcut "réactiver l écran du PC avec les paramètres à gauche de l écran principal" "/usr/bin/redemarerecran" "<Primary><Shift>h"
-}
-if [ "$conf_perso" == 1 ]; then
-    configure_for_perso
-fi
-################################################################################
-
 # apparement obligatoire pour executer Signal
 execandlog "chmod 4755 /opt/Signal/chrome-sandbox"
+
+################################################################################
+## configuration du programme par défaut pour execter les commandes apt-*
+##------------------------------------------------------------------------------
+execandlog "ln -s "$(command -v apt-fast)" /usr/bin/ag"
+# on ne le définie pas en tant que alias pour qu'il puisse être utilisé dans un subshell
+################################################################################
 
 ################################################################################
 ## configuration du bashrc et du zshrc
@@ -3732,12 +3758,12 @@ alias h='history'
 alias nn='nano -c'
 alias cl='clear'
 alias grep='grep --color=auto'
-alias i='sudo apt-get install'
+alias i='sudo ag install'
 alias ip='ip --color=auto'
-alias u='sudo apt-get update'
-alias up='sudo apt-get upgrade'
-alias upp='sudo apt-get update && sudo apt-get upgrade'
-alias uppr='sudo apt-get update && sudo apt-get dist-upgrade'
+alias u='sudo ag update'
+alias up='sudo ag upgrade'
+alias upp='sudo ag update && sudo ag upgrade'
+alias uppr='sudo ag update && sudo ag dist-upgrade'
 alias x='exit'
 alias xx='sudo shutdown now'
 alias xwx='sudo poweroff'
@@ -3762,6 +3788,8 @@ export PATH="\$PATH:/home/$local_user/.local/bin"
 EOF
 
 # alias for root
+execandlog "rm -f /root/.bashrc && \
+mv "$script_path"/.bashrc /root/.bashrc"
 cat>> /root/.bashrc << EOF
 
 # alias perso
@@ -3774,12 +3802,12 @@ alias h='history'
 alias nn='nano -c'
 alias cl='clear'
 alias grep='grep --color=auto'
-alias i='apt-get install'
+alias i='ag install'
 alias ip='ip --color=auto'
-alias u='apt-get update'
-alias up='apt-get upgrade'
-alias upp='apt-get update && apt-get upgrade'
-alias uppr='apt-get update && apt-get dist-upgrade'
+alias u='ag update'
+alias up='ag upgrade'
+alias upp='ag update && ag upgrade'
+alias uppr='ag update && ag dist-upgrade'
 alias x='exit'
 alias xx='shutdown now'
 alias xwx='poweroff'
@@ -3804,11 +3832,11 @@ alias h='history'
 alias nn='nano -c'
 alias cl='clear'
 alias grep='grep --color=auto'
-alias i='sudo apt-get install'
-alias u='sudo apt-get update'
-alias up='sudo apt-get upgrade'
-alias upp='sudo apt-get update && sudo apt-get upgrade'
-alias uppr='sudo apt-get update && sudo apt-get dist-upgrade'
+alias i='sudo ag install'
+alias u='sudo ag update'
+alias up='sudo ag upgrade'
+alias upp='sudo ag update && sudo ag upgrade'
+alias uppr='sudo ag update && sudo ag dist-upgrade'
 alias x='exit'
 alias xx='sudo shutdown now'
 alias xwx='sudo poweroff'
@@ -3844,6 +3872,15 @@ sed -i 's/auth       sufficient   pam_shells.so/auth       required   pam_shells
 # on est obliger de changer la valeur de /etc/pam.d/chsh car sinon la commande nous de demande de rentrer le mdp de l'utilisateur et donc l'execution de la commande devient intéractif.
 # ref : [command line - chsh always asking a password , and get `PAM: Authentication failure` - Ask Ubuntu](https://askubuntu.com/questions/812420/chsh-always-asking-a-password-and-get-pam-authentication-failure/812426#812426)
 # on change donc la valeur avant et après l'execution de la commande chsh
+
+if [ "$conf_perso" == 1 ]; then
+  configure_bashrc_perso
+  configure_zshrc_perso
+fi
+if [ "$conf_pro" == 1 ]; then
+  configure_bashrc_pro
+  configure_zshrc_pro
+fi
 ################################################################################
 
 # Commande temporaire pour éviter que des fichiers de /home/user/.config n'appartienent à root lors de l'install, sans qu'on comprenne bien pourquoi (executé par ExeAsUser)
@@ -3870,7 +3907,7 @@ backup_LUKS_header() {
   luks_partition="$(lsblk --fs --list | awk '/crypto_LUKS/{print $1}')"
   displayandexec "Création d'un backup de l'entête LUKS               " "\
 [ -d /home/"$local_user"/backup/ ] || $ExeAsUser mkdir --parents /home/"$local_user"/backup/ && \
-cryptsetup luksHeaderBackup /dev/"$luks_partition" --header-backup-file /home/"$local_user"/backup/LUKS_Header_Backup.img"
+cryptsetup luksHeaderBackup /dev/"$luks_partition" --header-backup-file /home/"$local_user"/backup/"$luks_partition"_LUKS_Header_Backup.img"
 }
 backup_LUKS_header
 ################################################################################
@@ -3878,7 +3915,10 @@ backup_LUKS_header
 ################################################################################
 ## désactivation du bluetooth
 ##------------------------------------------------------------------------------
+disable_bluetooth() {
 $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gdbus call --session --dest org.gnome.SettingsDaemon.Rfkill --object-path /org/gnome/SettingsDaemon/Rfkill --method org.freedesktop.DBus.Properties.Set "org.gnome.SettingsDaemon.Rfkill" "BluetoothAirplaneMode" "<true>" > /dev/null
+}
+disable_bluetooth
 ################################################################################
 
 ################################################################################
