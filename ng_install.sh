@@ -3092,8 +3092,8 @@ configure_rkhunter
 ## configuration des fichiers template
 ##------------------------------------------------------------------------------
 create_template_for_new_file() {
-  [ -d /home/"$local_user"/Modèles ] && template_dir="/home/"$local_user"/Modèles/"
-  [ -d /home/"$local_user"/Templates ] && template_dir="/home/"$local_user"/Templates/"
+  [ -d /home/"$local_user"/Modèles ] && template_dir="/home/"$local_user"/Modèles"
+  [ -d /home/"$local_user"/Templates ] && template_dir="/home/"$local_user"/Templates"
 $ExeAsUser touch ""$template_dir"/Fichier Texte.txt" && \
 $ExeAsUser touch ""$template_dir"/Document ODT.txt" && \
 $ExeAsUser unoconv -f odt ""$template_dir"/Document ODT.txt" && \
@@ -3258,15 +3258,15 @@ execandlog "[ -d /home/"$local_user"/.config/ghb/ ] || $ExeAsUser mkdir /home/"$
 ##------------------------------------------------------------------------------
 # On est obliger de créer le fichier de conf (/home/"$local_user"/.config/geeqie/geeqierc.xml) en lancant geeqie graphiquement et ensuite en allant dans Edit -> Preference -> cliquer sur OK
 configure_geeqie() {
-sed -i -E 's/image.alpha_color_1 = "#[[:digit:]]+"/image.alpha_color_1 = "#FFFFFFFFFFFF"/g' /home/"$local_user"/.config/geeqie/geeqierc.xml
-sed -i -E 's/image.alpha_color_2 = "#[[:digit:]]+"/image.alpha_color_2 = "#FFFFFFFFFFFF"/g' /home/"$local_user"/.config/geeqie/geeqierc.xml
+$ExeAsUser sed -i -E 's/image.alpha_color_1 = "#[[:digit:]]+"/image.alpha_color_1 = "#FFFFFFFFFFFF"/g' /home/"$local_user"/.config/geeqie/geeqierc.xml
+$ExeAsUser sed -i -E 's/image.alpha_color_2 = "#[[:digit:]]+"/image.alpha_color_2 = "#FFFFFFFFFFFF"/g' /home/"$local_user"/.config/geeqie/geeqierc.xml
 
 # on désactive la capacité de geekie d'ouvrir des .pdf
-sed -i -E 's%<file_type key = "pdf" enabled = "true" extensions = ".pdf" description = "Portable Document Format" file_class = "6" writable = "false" allow_sidecar = "false" />%<file_type key = "pdf" enabled = "false" extensions = ".pdf" description = "Portable Document Format" file_class = "6" writable = "false" allow_sidecar = "false" />%g' .config/geeqie/geeqierc.xml
+$ExeAsUser sed -i -E 's%<file_type key = "pdf" enabled = "true" extensions = ".pdf" description = "Portable Document Format" file_class = "6" writable = "false" allow_sidecar = "false" />%<file_type key = "pdf" enabled = "false" extensions = ".pdf" description = "Portable Document Format" file_class = "6" writable = "false" allow_sidecar = "false" />%g' .config/geeqie/geeqierc.xml
 
-sed -i 's/image.zoom_to_fit_allow_expand = "false"/image.zoom_to_fit_allow_expand = "true"/g' /home/"$local_user"/.config/geeqie/geeqierc.xml
+$ExeAsUser sed -i 's/image.zoom_to_fit_allow_expand = "false"/image.zoom_to_fit_allow_expand = "true"/g' /home/"$local_user"/.config/geeqie/geeqierc.xml
 
-sed -i 's/image.zoom_quality = "[[:digit:]]"/image.zoom_quality = "3"/g' /home/"$local_user"/.config/geeqie/geeqierc.xml
+$ExeAsUser sed -i 's/image.zoom_quality = "[[:digit:]]"/image.zoom_quality = "3"/g' /home/"$local_user"/.config/geeqie/geeqierc.xml
 }
 # configure_geeqie
 ################################################################################
