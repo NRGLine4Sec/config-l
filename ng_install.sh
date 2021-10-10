@@ -469,8 +469,8 @@ SSH_Port=''
 ################################################################################
 ## fonction d'éxecution et d'affichage displayandexec
 ##------------------------------------------------------------------------------
-# Premier parametre: MESSAGE
-# Autres parametres: COMMAND
+# Premier parametre: message
+# Autres parametres: command
 displayandexec() {
     local message=$1
     echo -n "[En cours] $message" | tee --append "$stdout_file"
@@ -502,9 +502,9 @@ displayandexec() {
 ################################################################################
 ## fonction d'éxecution et de redirection dans le fichier de log execandlog
 ##------------------------------------------------------------------------------
-# Premier parametre: MESSAGE
-# Autres parametres: COMMAND
-# fonction pour ne faire que les executions et envoyer les commandes ainsi que leur résultat dans le fichier de log
+# Premier parametre: message
+# Autres parametres: command
+# fonction pour ne faire que les executions et envoyer les commandes ainsi que leurs résultats dans le fichier de log
 execandlog() {
     echo ">>> $*" >> "$log_file" 2>&1
     bash -c "$*" >> "$log_file" 2>&1
@@ -544,7 +544,7 @@ check_available_space_in_var() {
   fi
 }
 check_available_space_in_var
-# On vérifie qu'il y a au minimum 10 Go de disponnible sur /var
+# On vérifie qu'il y a au minimum 5 Go de disponnible sur /var
 ################################################################################
 
 ################################################################################
@@ -614,8 +614,8 @@ CURL='curl --silent --show-error'
 ## vérification que le script s'execute depuis un terminal graphique (gnome-terminal)
 ##------------------------------------------------------------------------------
 # on check si le script est lancé depuis un tty (comme SSH) ou bien depuis un terminal graphique (comme gnome-terminal)
-# si le script est executé depuis un terminal graphique, on execute pas la fonction enable_GSE, car le relancement du Gnome Shell provoque l'arrêt du script et de tout ce qui tourne au moment de son execution
-# peut être voir pour créer un script dans /home à executer (en temps voulu) manuellement par l'utilisateur une fois que ng_install.sh aura terminé
+# si le script est executé depuis un terminal graphique, on n'execute pas la fonction enable_GSE, car le relancement du Gnome Shell provoque l'arrêt du script et de tout ce qui tourne au moment de son execution
+# on créer donc à la place un script dans /home à executer (en temps voulu) manuellement par l'utilisateur une fois que ng_install.sh aura terminé
 
 # on check si les processus parents qui ont lancés le bash qui executera les commandes a été lancé à partir d'un processus parent qui correspond à "gnome-terminal"
 # ref de la méthode : [macos - How to identify the terminal from a script? - Super User](https://superuser.com/questions/683962/how-to-identify-the-terminal-from-a-script/683973#683973)
@@ -762,22 +762,10 @@ check_latest_version_manual_install_apps() {
 
 }
 
-# tester la commande ci-dessous pour aller chercher les dernière versions directement depuis Github
-# apt-get install -y jq
-# $CURL https://api.github.com/repos/oguzhaninan/Stacer/releases/latest | jq .name -r
-# OU
-# $CURL https://api.github.com/repos/oguzhaninan/Stacer/releases/latest | grep -Po '"tag_name": "\K.*?(?=")'
-# OU pour enlever le v :
-# $CURL https://api.github.com/repos/oguzhaninan/Stacer/releases/latest | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-
-# parfois le .name n'est pas la variable qui contient la version et des fois c'est dans tag_name, il faut alors mettre jq .tag_name -r
+
 # OU alors on récupère le lien directement du .deb avec la commande suivante
 # $CURL https://api.github.com/repos/oguzhaninan/Stacer/releases/latest | jq -r '.assets[2].browser_download_url'
 # il faut changer la valeur dans assets[2] pour alterner entre les différents liens dispos (.deb, .rpm, .AppImage, ...)
-# OU
-# curl -s https://api.github.com/repos/jgm/pandoc/releases/latest \
-    # | grep "browser_download_url.*deb" \
-    # | cut -d '"' -f 4 \
-    # | wget -qi -
 ################################################################################
 
 ################################################################################
@@ -956,8 +944,8 @@ echo ''
 # cette commande n'est plus nécessaire à partir du moment ou on remet au propre le contenu de /apt/souces.list
 
 # à regarder pour désactiver la recherche de mise à jour qui provoque le lock de pdkg
-# /etc/init.d/unattended-upgrades status
-# /etc/init.d/unattended-upgrades stop
+# systemctl status unattended-upgrades
+# systemctl stop unattended-upgrades
 
 # remise au propre de /etc/apt/sources.list
 make_apt_source_list_clean_buster() {
@@ -1228,12 +1216,6 @@ fi
 if [ "$bullseye" == 1 ]; then
   install_zfs_bullseye
 fi
-
-
-# regarder si on peut intégrer l'appel à la fonction install_zfs dans la fonction displayandexec
-
-# la version de mkvtoolnix dans les dépots officiel est trop vielle -> install manuel
-# la version de krita dans les dépots officiel est trop vielle -> install manuel
 ################################################################################
 
 
@@ -1288,8 +1270,7 @@ echo "wine "$manual_install_dir"/winscp/WinSCP.exe" > /usr/bin/winscp && \
 chmod +x /usr/bin/winscp
 rm -rf "$tmp_dir""
 }
-# WinSCP utilise wine32 pour s'executer
-# vérifier si la dernière version de WinSCP a besoin spécifiquement de wine32
+# il semblerait que WinSCP a besoin spécifiquement de wine32 et ne fonctionne pas avec wine64
 ################################################################################
 
 ################################################################################
@@ -2003,7 +1984,7 @@ fi
 ################################################################################
 
 ################################################################################
-## désinstalation des logicels inutils
+## désinstalation des paquets non souhaités
 ##------------------------------------------------------------------------------
 echo ''
 echo '     ################################################################'
@@ -2038,9 +2019,6 @@ aisleriot"
 
 #exim4
 displayandexec "Désinstalation de exim4                             " "$AG remove -y exim4-base exim4-config exim4-daemon-light"
-
-#libreoffice
-#displayandexec "désinstalation de libreoffice                       " "$AG remove libreoffice* -y"
 ################################################################################
 
 #OpenOffice
@@ -2865,7 +2843,7 @@ displayandexec "Installation du script appairmebt                   " "chmod +x 
 ################################################################################
 
 ################################################################################
-## install du scriptt desactivebt
+## install du script desactivebt
 ##------------------------------------------------------------------------------
 install_desactivebt() {
 cat> /usr/bin/desactivebt << 'EOF'
@@ -2876,11 +2854,11 @@ displayandexec "Installation du script desactivebt                  " "chmod +x 
 ################################################################################
 
 ################################################################################
-## install du scriptt play_pause_chromium
+## install du script play_pause_chromium
 ##------------------------------------------------------------------------------
 install_play_pause_chromium() {
 cat> /usr/bin/play_pause_chromium << 'EOF'
-dbus_dest_org="$(dbus-send --session --dest=org.freedesktop.DBus --type=method_call --print-reply /org/freedesktop/DBus org.freedesktop.DBus.ListNames | awk '/org.mpris.MediaPlayer2.chromium/ {gsub(/\"/,"");print $2}')" && \
+dbus_dest_org="$(dbus-send --session --dest=org.freedesktop.DBus --type=method_call --print-reply /org/freedesktop/DBus org.freedesktop.DBus.ListNames | awk '/org.mpris.MediaPlayer2.chromium/{gsub(/\"/,"");print $2}')" && \
 dbus-send --print-reply --dest=$dbus_dest_org /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player.PlayPause > /dev/null
 EOF
 displayandexec "Installation du script play_pause_chromium          " "chmod +x /usr/bin/play_pause_chromium"
@@ -3059,7 +3037,10 @@ execandlog "sed -i 's/# set bell-style none/set bell-style none/' /etc/inputrc"
 ################################################################################
 ## configuration de freshclam (clamav)
 ##------------------------------------------------------------------------------
+configure_freshclam() {
 execandlog "sed -E -i 's/^Checks [[:digit:]]+/Checks 1/g' /etc/clamav/freshclam.conf"
+}
+configure_freshclam
 # Check for new database 1 times a day (insteed of 24)
 # les logs de freshclam sont dans /var/log/clamav/freshclam.log
 # c'est le service clamav-freshclam qui fait tourner freshclam
@@ -3068,10 +3049,13 @@ execandlog "sed -E -i 's/^Checks [[:digit:]]+/Checks 1/g' /etc/clamav/freshclam.
 ################################################################################
 ## configuration de stacer
 ##------------------------------------------------------------------------------
+configure_stacer() {
 execandlog "[ -d /home/"$local_user"/.config/stacer/ ] || $ExeAsUser mkdir /home/"$local_user"/.config/stacer/"
 $ExeAsUser echo '[General]
 AppQuitDialogDontAsk=true
 Language=fr' > /home/"$local_user"/.config/stacer/settings.ini
+}
+configure_stacer
 ################################################################################
 
 ################################################################################
@@ -3164,12 +3148,16 @@ $ExeAsUser sed -i 's%<item oor:path="/org.openoffice.Office.Common/Security/Scri
 ## configuration de nano
 ##------------------------------------------------------------------------------
 # la configuration de nano s'effectue dans le fichier /etc/nanorc
+configure_nano() {
 execandlog "sed -i 's/# set linenumbers/set linenumbers/g' /etc/nanorc"
+}
+configure_nano
 ################################################################################
 
 ################################################################################
 ## configuration de atom
 ##------------------------------------------------------------------------------
+configure_atom() {
 execandlog "[ -d /home/"$local_user"/.atom/ ] || $ExeAsUser mkdir /home/"$local_user"/.atom/"
 $ExeAsUser cat> /home/"$local_user"/.atom/config.cson << 'EOF'
 "*":
@@ -3188,6 +3176,8 @@ $ExeAsUser apm install language-powershell && \
 $ExeAsUser apm install script && \
 $ExeAsUser apm install vertical-tabs && \
 $ExeAsUser apm install tab-title"
+}
+configure_atom
 # Les plugins atom en commentaire sont encore en cour de validation
 # apm install autoclose-html-plus
 # apm install atom-beautify
@@ -3202,9 +3192,12 @@ $ExeAsUser apm install tab-title"
 ################################################################################
 ## configuration de typora
 ##------------------------------------------------------------------------------
+configure_typora() {
 execandlog "[ -d /home/"$local_user"/.config/Typora/ ] || $ExeAsUser mkdir /home/"$local_user"/.config/Typora/ && \
 $ExeAsUser echo '7b22696e697469616c697a655f766572223a22302e392e3738222c226c696e655f656e64696e675f63726c66223a66616c73652c227072654c696e65627265616b4f6e4578706f7274223a747275652c2275756964223a2237346265383439362d343239372d343362382d616633632d336439343463646432376439222c227374726963745f6d6f6465223a747275652c22636f70795f6d61726b646f776e5f62795f64656661756c74223a747275652c226261636b67726f756e64436f6c6f72223a2223333633423430222c227468656d65223a226e696768742e637373222c22736964656261725f746162223a22222c2273656e645f75736167655f696e666f223a66616c73652c22656e61626c654175746f53617665223a747275652c226c617374436c6f736564426f756e6473223a7b2266756c6c73637265656e223a66616c73652c226d6178696d697a6564223a747275657d7d' > /home/"$local_user"/.config/Typora/profile.data"
+}
 # la configuration des préférences de Typora ne peut se faire que graphiquement le seul moyen de contourner ce problème est de configurer graphiquement les préférences et de récupérer le contenu du fichier /home/$local_user/.config/Typora/profile.data
+configure_typora
 ################################################################################
 
 ################################################################################
@@ -3233,11 +3226,13 @@ $ExeAsUser echo '7b22696e697469616c697a655f766572223a22302e392e3738222c226c696e6
 ##------------------------------------------------------------------------------
 # début de réflexion pour faire des confs sur des apps qui utilise une base de donnée pour stocker la conf
 # apt-get install -y sqlite3 && sqlite3 .config/joplin-desktop/database.sqlite "select * from settings"
-
+configure_joplin() {
 execandlog "[ -d /home/"$local_user"/.config/Joplin/ ] || $ExeAsUser mkdir /home/"$local_user"/.config/Joplin/"
 $ExeAsUser cat> /home/"$local_user"/.config/Joplin/Preferences << 'EOF'
 {"spellcheck":{"dictionaries":["fr"],"dictionary":""}}
 EOF
+}
+configure_joplin
 ################################################################################
 
 ################################################################################
@@ -3256,6 +3251,24 @@ execandlog "[ -d /home/"$local_user"/.config/ghb/ ] || $ExeAsUser mkdir /home/"$
 # le fichier de conf n'existe pas tant que handbrake n'a pas été lancé
 # donc il faut soit trouver un moyen de lancer handbrake silencieusement soit copier coller la conf entière dans le fichier directement
 # et donc qu'il faille faire le sed qu'une fois que le fichier de configuration ne soit présent
+################################################################################
+
+################################################################################
+## configuration de geeqie
+##------------------------------------------------------------------------------
+# On est obliger de créer le fichier de conf (/home/"$local_user"/.config/geeqie/geeqierc.xml) en lancant geeqie graphiquement et ensuite en allant dans Edit -> Preference -> cliquer sur OK
+configure_geeqie() {
+sed -i -E 's/image.alpha_color_1 = "#[[:digit:]]+"/image.alpha_color_1 = "#FFFFFFFFFFFF"/g' /home/"$local_user"/.config/geeqie/geeqierc.xml
+sed -i -E 's/image.alpha_color_2 = "#[[:digit:]]+"/image.alpha_color_2 = "#FFFFFFFFFFFF"/g' /home/"$local_user"/.config/geeqie/geeqierc.xml
+
+# on désactive la capacité de geekie d'ouvrir des .pdf
+sed -i -E 's%<file_type key = "pdf" enabled = "true" extensions = ".pdf" description = "Portable Document Format" file_class = "6" writable = "false" allow_sidecar = "false" />%<file_type key = "pdf" enabled = "false" extensions = ".pdf" description = "Portable Document Format" file_class = "6" writable = "false" allow_sidecar = "false" />%g' .config/geeqie/geeqierc.xml
+
+sed -i 's/image.zoom_to_fit_allow_expand = "false"/image.zoom_to_fit_allow_expand = "true"/g' /home/"$local_user"/.config/geeqie/geeqierc.xml
+
+sed -i 's/image.zoom_quality = "[[:digit:]]"/image.zoom_quality = "3"/g' /home/"$local_user"/.config/geeqie/geeqierc.xml
+}
+# configure_geeqie
 ################################################################################
 
 # ajout du dossier partagé pour VirtualBox
@@ -3319,6 +3332,7 @@ EOF
 ################################################################################
 ## configuration de KeePassXC
 ##------------------------------------------------------------------------------
+configure_keepassxc() {
 execandlog "[ -d /home/"$local_user"/.config/keepassxc/ ] || $ExeAsUser mkdir /home/"$local_user"/.config/keepassxc/"
 $ExeAsUser cat> /home/"$local_user"/.config/keepassxc/keepassxc.ini << 'EOF'
 [General]
@@ -3387,14 +3401,19 @@ Logograms=true
 [Security]
 LockDatabaseScreenLock=false
 EOF
+}
+configure_keepassxc
 # réfléchir au parametre DropToBackgroundOnCopy=false, voir si on ne le passe pas à True
 ################################################################################
 
 ################################################################################
 ## configuration de audacity
 ##------------------------------------------------------------------------------
+# configure_audacity() {
 # sed -i '/Enabled=1/a [GUI]' /home/$local_user/.audacity-data/audacity.cfg
 # sed -i '/[GUI]/a ShowSplashScreen=0' /home/$local_user/.audacity-data/audacity.cfg
+# }
+# configure_audacity
 # on est obligé de lancer audacity pour que le repertoire /home/$local_user/.audacity-data/ soit créé ainsi que les fichiers qu'il contient
 # une solution pourrait être d'utiliser la commande suivante :
 # timeout 10 bash -c "audacity"
