@@ -331,6 +331,7 @@
 # - potentiellement intégrer l'installation de l'outil xdotool
 # - potentiellement instaler le paquet sysstat
 # - potentiellement installer le paquet iozone3
+# - potentiellement rajouter la création d'une snapshot avec timeshift après l'install (timeshift --scripted --create --rsync --comments "first snapshot, after postinstall script")
 ################################################################################
 
 ################################################################################
@@ -341,12 +342,6 @@ BASH_XTRACEFD='19'
 set -x
 ################################################################################
 
-#juste pour vérifier que la fonction de calcul du temps d'execution fonctionne correctement, essayer ensuite de trouver une meilleur solution et de supprimer cette ligne
-systemctl restart systemd-timesyncd > /dev/null
-# utilisé à des fin de stats pour l'éxecution du script
-start_time="$(date +%s)"
-# pose problème lorsque la date et l'heure ne sont pas à jour, il faudrait récuperer le start_time une fois la resyncro éffectué, sinon la valeur du temps d'éexecution du script est abérante
-
 ################################################################################
 ## Test que le script est executé en tant que root
 ##------------------------------------------------------------------------------
@@ -356,21 +351,34 @@ if [ $EUID != 0 ]; then
 fi
 ################################################################################
 
-usage_guide() {
+#juste pour vérifier que la fonction de calcul du temps d'execution fonctionne correctement, essayer ensuite de trouver une meilleur solution et de supprimer cette ligne
+systemctl restart systemd-timesyncd > /dev/null
+# utilisé à des fin de stats pour l'éxecution du script
+start_time="$(date +%s)"
+# pose problème lorsque la date et l'heure ne sont pas à jour, il faudrait récuperer le start_time une fois la resyncro éffectué, sinon la valeur du temps d'éexecution du script est abérante
+
+script_name='ng_install.sh'
+
+################################################################################
+## usage guide
+##------------------------------------------------------------------------------
+print_usage_guide() {
   cat << EOF
-Usage: sudo bash $SCRIPT_NAME [OPTIONS]
+Usage: sudo bash $script_name [OPTIONS]
 Options:
   -l or --log 			Print the log file when the script terminated.
   -s or --shutdown 			Shutdown the PC when the script terminated.
-  -r or --reboot 		Reboot the PC when the script terminated.
+  -r or --reboot 			Reboot the PC when the script terminated.
   -h or --help 			Print this message.
+  -e or --error 			Print error.
   -v or --version 			Print the script version.
   -pr or --pro 			Configure the PC with the PRO configuration.
   -pe or --perso 			Configure the PC with the PERSO configuration.
   Usage examples:
-  $SCRIPT_NAME -e			# Execute the script and print errors in stdout.
+  $script_name -e			# Execute the script and print errors in stdout.
 EOF
 }
+################################################################################
 
 ################################################################################
 ## options d'execution du script
@@ -378,7 +386,7 @@ EOF
 for param in "$@"; do
     case $param in
         '-h'|'--help')
-            print_usage ;;
+            print_usage_guide ;;
         '-v'|'--version')
             echo "$script_version" ;;
         '-s'|'--shutdown')
@@ -395,14 +403,14 @@ for param in "$@"; do
             reboot_after_install=1 ;;
         *)
             # echo 'Invalid option' ;;
-            # usage_guide; exit 1 ;;
+            # print_usage_guide; exit 1 ;;
     esac
 done
 
 # [Multiple arguments using "case" : bash](https://www.reddit.com/r/bash/comments/brfsf8/multiple_arguments_using_case/)
 ################################################################################
 
-# Définition des varibles de couleur
+# Définition des variables de couleur
 GREEN='\e[0;32m'
 RED='\e[0;31m'
 RESET='\e[0m'
@@ -411,13 +419,13 @@ NOIR='\e[0;30m'
 ################################################################################
 ## création d'un fichier de log
 ##------------------------------------------------------------------------------
-now="$(date +"%d-%m-%Y")"
-log_dir='/var/log/postinstall'
-[ -d "$log_dir" ] || mkdir "$log_dir" && \
-log_file="/var/log/postinstall/log_script_install-"$now".log" && \
+now="$(date +"%d-%m-%Y")" && \
+log_dir="/var/log/postinstall/"$now"" && \
+[ -d "$log_dir" ] || mkdir -p "$log_dir" && \
+log_file=""$log_dir"/log_script_install-"$now".log" && \
 touch "$log_file" && \
-install_file="/var/log/postinstall/stdout_on_script_execution-"$now".log" && \
-touch "$install_file"
+stdout_file=""$log_dir"/stdout_on_script_execution-"$now".log" && \
+touch "$stdout_file"
 
 echo '####################################################################' > "$log_file"
 echo '#                          Debut du script                         #' >> "$log_file"
@@ -465,21 +473,21 @@ SSH_Port=''
 # Autres parametres: COMMAND
 displayandexec() {
     local message=$1
-    echo -n "[En cours] $message" | tee --append "$install_file"
+    echo -n "[En cours] $message" | tee --append "$stdout_file"
     shift
     echo ">>> $*" >> "$log_file" 2>&1
     bash -c "$*" >> "$log_file" 2>&1
     local ret=$?
     if [ $ret != 0 ]; then
-        echo -e "\r $message                ${RED}[ERROR]${RESET} " | tee --append "$install_file"
+        echo -e "\r $message                ${RED}[ERROR]${RESET} " | tee --append "$stdout_file"
     else
-        echo -e "\r $message                ${GREEN}[OK]${RESET} " | tee --append "$install_file"
+        echo -e "\r $message                ${GREEN}[OK]${RESET} " | tee --append "$stdout_file"
     fi
     return $ret
 }
 # la variable message récupère la valeur du premier argument passé à la fonction "le message", c'est à dire ce que l'on veut afficher à l'écran lors de l'execution du script (to stdout)
 # shift permet de remplacer sur la même ligne l'affichage de "[En cours]" à "[ERROR]" ou "[OK]"
-# le premier echo permet de reproduire tout ce qu'on voit dans le stdout dans le fichier $install_file
+# le premier echo permet de reproduire tout ce qu'on voit dans le stdout dans le fichier $stdout_file
 # les >>> dans le deuxième echo ne servent qu'à la présentation dans le fichier de log, cette ligne correspond à la ligne de la commande qui sera effectuée
 # local ret=$? on défini la variable ret qui contiendra la valeur de retour de l'execution de la commande
 # la ligne du bash -c correspond à l'envoi dans bash de l'exuction de la commande passé en paramètre dans la fonction displayandexec par le contenu de "$COMMAND" (récupéré ici à l'aide de $*). L'execution de la commande ainsi que son résultat, même en cas d'érreur sont envoyés dans le fichier de log et n'apparaissent pas sur le stdout
@@ -487,8 +495,8 @@ displayandexec() {
 # regarder ce que fait l'option echo -e "\r $message"
 # car lorsque j'ai executer le script sans cette option, il mettait deux fois sur la même ligne le contenu de $message et ensuite le [OK]
 
-# probablement qu'on peut remplacer le deuxième echo qui renvoit dans le fichier "$install_file" par | tee --append "$log_file"
-# && echo -e "\r $message                ${GREEN}[OK]${RESET} " >> "$install_file"
+# probablement qu'on peut remplacer le deuxième echo qui renvoit dans le fichier "$stdout_file" par | tee --append "$log_file"
+# && echo -e "\r $message                ${GREEN}[OK]${RESET} " >> "$stdout_file"
 ################################################################################
 
 ################################################################################
@@ -2235,7 +2243,7 @@ echo ''
 ##------------------------------------------------------------------------------
 install_gitupdate() {
 # probablement améliorer le script gitupdate avec une condition if quand la branche principal n'est pas origin master
-cat> /opt/gitupdate << 'EOF'
+cat> /usr/bin/gitupdate << 'EOF'
 #!/bin/bash
 
 # store the current dir
@@ -2256,16 +2264,15 @@ done
 exit 0
 EOF
 displayandexec "Installation du script gitupdate                    " "\
-chmod +x /opt/gitupdate && \
-ln -s /opt/gitupdate /usr/bin/gitupdate"
+chmod +x /usr/bin/gitupdate"
 }
 ################################################################################
 
 ################################################################################
 ## install du script sysupdateNG
 ##------------------------------------------------------------------------------
-install_sysupdateng() {
-cat> /opt/sysupdateNG << 'EOF'
+install_sysupdate() {
+cat> /usr/bin/sysupdate << 'EOF'
 #!/bin/bash
 
 # a priori on ne peut pas executer de fonction (tel que CheckUpdate) dans l'appel de fonction displayandexec
@@ -2641,9 +2648,8 @@ CheckUpdate
 
 exit 0
 EOF
-displayandexec "Installation du script sysupdateNG                  " "\
-chmod +x /opt/sysupdateNG && \
-ln -s /opt/sysupdateNG /usr/bin/sysupdateNG"
+displayandexec "Installation du script sysupdate                    " "\
+chmod +x /usr/bin/sysupdate"
 }
 ################################################################################
 
@@ -2883,7 +2889,7 @@ displayandexec "Installation du script play_pause_chromium          " "chmod +x 
 
 install_all_perso_script() {
   install_gitupdate
-  install_sysupdateng
+  install_sysupdate
   install_check_backport_update
   install_wsudo
   install_launch_url_file
@@ -3736,7 +3742,7 @@ execandlog "chmod 4755 /opt/Signal/chrome-sandbox"
 ## configuration du programme par défaut pour execter les commandes apt-*
 ##------------------------------------------------------------------------------
 execandlog "ln -s "$(command -v apt-fast)" /usr/bin/ag"
-# on ne le définie pas en tant que alias pour qu'il puisse être utilisé dans un subshell
+# on ne le définie pas en tant qu'un alias pour qu'il puisse être utilisé dans un subshell
 ################################################################################
 
 ################################################################################
@@ -3771,7 +3777,7 @@ alias xwx='sudo poweroff'
 # alias funradio='mpv --cache=no http://streaming.radio.funradio.fr/fun-1-48-192'
 alias youtube-dl='youtube-dl -o "%(title)s.%(ext)s"'
 alias spyme='sudo lnav /var/log/syslog /var/log/auth.log'
-alias ngupp='sudo /usr/bin/sysupdateNG'
+alias sysupdate='sudo sysupdate'
 alias bat='bat -pp'
 alias free='free -ht'
 alias showshortcut='dconf dump /org/gnome/settings-daemon/plugins/media-keys/'
@@ -3844,7 +3850,7 @@ alias xwx='sudo poweroff'
 # alias funradio='mpv --cache=no http://streaming.radio.funradio.fr/fun-1-48-192'
 alias youtube-dl='youtube-dl -o "%(title)s.%(ext)s"'
 alias spyme='sudo lnav /var/log/syslog /var/log/auth.log'
-alias ngupp='sudo /usr/bin/sysupdateNG'
+alias sysupdate='sudo sysupdate'
 alias bat='bat -pp'
 alias free='free -ht'
 alias showshortcut='dconf dump /org/gnome/settings-daemon/plugins/media-keys/'
@@ -3983,7 +3989,7 @@ if [ "$show_log" == 1 ]; then
 fi
 
 if [ "$show_only_error" == 1 ]; then
-    grep -i 'error' "$install_file"
+    grep -i 'error' "$stdout_file"
 fi
 
 if [ "$reboot_after_install" == 1 ]; then
