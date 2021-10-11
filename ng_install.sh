@@ -1178,6 +1178,7 @@ displayandexec "Installation de wine                                " "$AGI wine
 displayandexec "Installation de wine32                              " "dpkg --add-architecture i386 && $AG update ; $AGI wine32"
 displayandexec "Installation de wipe                                " "$AGI wipe"
 displayandexec "Installation de wireshark                           " "$AGI wireshark"
+displayandexec "Installation de xfsprogs                            " "$AGI xfsprogs" # nécessaire pour manipuler des filesystems XFS
 displayandexec "Installation de xinput                              " "$AGI xinput"
 displayandexec "Installation de xorriso                             " "$AGI xorriso"
 displayandexec "Installation de yersinia                            " "$AGI yersinia"
@@ -3935,6 +3936,13 @@ backup_LUKS_header() {
 cryptsetup luksHeaderBackup /dev/"$luks_partition" --header-backup-file /home/"$local_user"/backup/"$luks_partition"_LUKS_Header_Backup.img"
 }
 backup_LUKS_header
+# potentiellement à remplacer avec ce code :
+# for crypted_dev in $luks_partition; do
+# 	if cryptsetup isLuks /dev/"$crypted_dev"; then
+# 		cryptsetup luksHeaderBackup /dev/"$crypted_dev" --header-backup-file /home/"$local_user"/backup/"$crypted_dev"_LUKS_Header_Backup.img
+# 	fi
+# done
+# ce code permet de faire les backup de tous les devices cryptés s'il y en a plusieurs
 ################################################################################
 
 ################################################################################
