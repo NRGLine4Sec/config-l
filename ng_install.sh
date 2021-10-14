@@ -821,6 +821,7 @@ local_user="$(awk -F':' '/1000/{print $1}' /etc/passwd)"
 # peut aussi se faire avec "$(grep '1000' /etc/passwd | cut -d: -f 1)"
 # autre méthode pour obtenir le user, lorsqu'il est à l'origine de la session en cour : "$(who | awk 'FNR == 1 {print $1}')"
 # on peut potentiellemnt remplacer la valeur 1000 par le retour de la commande "$(cat /proc/self/loginuid)"
+# encore une autre méthode qui fonctionne aussi dans un sudo : who | awk -v vt=tty$(fgconsole 2>/dev/null) '$0 ~ vt {print $1}'
 local_user_UID="$(id -u "$local_user")"
 gnome_shell_extension_path="/home/"$local_user"/.local/share/gnome-shell/extensions"
 ExeAsUser="sudo -u "$local_user""
