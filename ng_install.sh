@@ -1179,6 +1179,7 @@ displayandexec "Installation de wine                                " "$AGI wine
 displayandexec "Installation de wine32                              " "dpkg --add-architecture i386 && $AG update ; $AGI wine32"
 displayandexec "Installation de wipe                                " "$AGI wipe"
 displayandexec "Installation de wireshark                           " "$AGI wireshark"
+displayandexec "Installation de xclip                               " "$AGI xclip"
 displayandexec "Installation de xfsprogs                            " "$AGI xfsprogs" # nécessaire pour manipuler des filesystems XFS
 displayandexec "Installation de xinput                              " "$AGI xinput"
 displayandexec "Installation de xorriso                             " "$AGI xorriso"
@@ -2898,7 +2899,7 @@ configure_for_pro() {
 if [ "$conf_pro" == 1 ]; then
   configure_for_pro
 fi
-# https://privatebin.net/?53f3ea824c646208#2P4b2Tfads7apByi7HN2UjCLY1GSJwZb6q4fBStUzR9P
+# https://privatebin.net/?cfc4952eaeb0f212#F32YoMe75zSDp8Yao8gjguSuMJCLiVbooYyEbRn4dcj7
 ################################################################################
 
 ################################################################################
