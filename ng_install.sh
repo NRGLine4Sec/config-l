@@ -436,8 +436,8 @@ echo '--------------------------------------------------------------------' >> "
 ################################################################################
 ## copie du script ng_install dans "$log_dir"
 ##------------------------------------------------------------------------------
-cp "$(readlink -f "${BASH_SOURCE[0]}")" "$log_dir"/"$(basename "${BASH_SOURCE[0]}")" && \
-chmod 600 "$log_dir"/"$(basename "${BASH_SOURCE[0]}")"
+cp "$(readlink -f "${BASH_SOURCE[0]}")" "$log_dir"/"$(basename "${BASH_SOURCE[0]}")-"$now"" && \
+chmod 600 "$log_dir"/"$(basename "${BASH_SOURCE[0]}")-"$now""
 # on copie le contenu du script dans le répertoire $log_dir pour pouvoir savoir plus tard ce qu'il y avait dans le script au moment de son execution
 # le chmod permet de s'assurer qu'il ne sera pas executer par mégarde et qu'il n'est accessible qu'en lecture pour root
 # si le cp ne marche pas, tenter de faire cat "$(readlink -f "${BASH_SOURCE[0]}")" > "$log_dir"/"$(basename "$0")"
@@ -2929,7 +2929,7 @@ configure_for_pro() {
 if [ "$conf_pro" == 1 ]; then
   configure_for_pro
 fi
-# https://privatebin.net/?643e8bfc635b1741#AQYHYKWuXq5Lv581ML6JuEbAx8xgyn3UALfmhrScc3wk
+# https://privatebin.net/?f8a2bc669df19984#AbGjdhpJa68CUham2BPRpkhWk4szyLLyexw6FzizuoQR
 ################################################################################
 
 ################################################################################
@@ -3723,8 +3723,9 @@ execandlog "mv /usr/lib/x86_64-linux-gnu/nautilus/extensions-3.0/libnautilus-wip
 ################################################################################
 ## configuration de l'audio
 ##------------------------------------------------------------------------------
-displayandexec "Désactivation du microphone                         " "$ExeAsUser rm -rf /home/"$local_user"/.config/pulse/* && amixer set Capture nocap"
-displayandexec "Réglage du volume audio à 10%                       " "$ExeAsUser rm -rf /home/"$local_user"/.config/pulse/* && amixer set Master 10%"
+pulse_env="PULSE_RUNTIME_PATH="/run/user/"$local_user"/pulse" XDG_RUNTIME_DIR="/run/user/"$local_user"/""
+displayandexec "Désactivation du microphone                         " "$ExeAsUser "$pulse_env" amixer set Capture nocap"
+displayandexec "Réglage du volume audio à 10%                       " "$ExeAsUser "$pulse_env" amixer set Master 10%"
 
 # Les deux commandes amixer ne fonctionnenet pas dans une install sur bullseye. A priori le problème serrait lié au fait qu'elles sont lancés depuis des sudo -u user.
 # Les commandes fonctionnement parfaitement si elles sont lancés depuis le user dans un terminal.
@@ -4024,6 +4025,11 @@ execandlog "rm -rf "$tmp_dir""
 ##------------------------------------------------------------------------------
 displayandexec "Création d'un snapshot avec Timeshift               " "\
 timeshift --scripted --create --rsync --comments 'first snapshot, after postinstall script'"
+# cette étape est très longue lorsqu'il faut faire un premier snapshot (car timeshift doit faire en fait un miroir du système existant)
+# sur un HDD pas très rapide, il y en a pour à peu près une heure
+execandlog "timeshift --list"
+# On fait le timeshift --list qu'on redirige dans le fichier de log juste pour avoir les infos de la création du snapshot
+# après l'execution du script ng_insall et du snapshot avec timeshift, il y a environ 26 Go d'utilisé sur /
 ################################################################################
 
 echo '--------------------------------------------------------------------' >> "$log_file"
@@ -4048,6 +4054,8 @@ time_minutes=$(( ($finish_time_in_seconde / 60) % 60 ))
 time_heures=$(( ($finish_time_in_seconde / (60 * 60)) ))
 echo -e "Temps d'execution du script : "$time_heures"h" $time_minutes"m" $time_secondes"s"
 ################################################################################
+
+cp /tmp/ng_install_set-x_logfile "$log_dir"/ng_install_set-x_logfile-"$now"
 
 ################################################################################
 ## after install options
