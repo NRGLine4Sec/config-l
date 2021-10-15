@@ -436,8 +436,8 @@ echo '--------------------------------------------------------------------' >> "
 ################################################################################
 ## copie du script ng_install dans "$log_dir"
 ##------------------------------------------------------------------------------
-cp "$(readlink -f "${BASH_SOURCE[0]}")" "$log_dir"/"$(basename "$0")" && \
-chmod 600 "$log_dir"/"$(basename "$0")"
+cp "$(readlink -f "${BASH_SOURCE[0]}")" "$log_dir"/"$(basename "${BASH_SOURCE[0]}")" && \
+chmod 600 "$log_dir"/"$(basename "${BASH_SOURCE[0]}")"
 # on copie le contenu du script dans le répertoire $log_dir pour pouvoir savoir plus tard ce qu'il y avait dans le script au moment de son execution
 # le chmod permet de s'assurer qu'il ne sera pas executer par mégarde et qu'il n'est accessible qu'en lecture pour root
 # si le cp ne marche pas, tenter de faire cat "$(readlink -f "${BASH_SOURCE[0]}")" > "$log_dir"/"$(basename "$0")"
@@ -2923,11 +2923,13 @@ configure_for_pro() {
   echo '     ################################################################'
   echo ''
   source /home/"$local_user"/postinstall_pro.sh
+  exec 19>/tmp/ng_install_set-x_logfile
+  BASH_XTRACEFD='19'
 }
 if [ "$conf_pro" == 1 ]; then
   configure_for_pro
 fi
-# https://privatebin.net/?cfc4952eaeb0f212#F32YoMe75zSDp8Yao8gjguSuMJCLiVbooYyEbRn4dcj7
+# https://privatebin.net/?643e8bfc635b1741#AQYHYKWuXq5Lv581ML6JuEbAx8xgyn3UALfmhrScc3wk
 ################################################################################
 
 ################################################################################
@@ -2940,6 +2942,8 @@ configure_for_perso() {
   echo '     ################################################################'
   echo ''
   source /home/"$local_user"/postinstall_perso.sh
+  exec 19>/tmp/ng_install_set-x_logfile
+  BASH_XTRACEFD='19'
 #     $ExeAsUser cat> tmp_conf_dconf_perso << EOF
 # [gnome/settings-daemon/plugins/media-keys]
 # custom-keybindings=['/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom1/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom2/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom3/']
