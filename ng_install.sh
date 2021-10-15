@@ -2923,7 +2923,7 @@ configure_for_pro() {
   echo '     ################################################################'
   echo ''
   source /home/"$local_user"/postinstall_pro.sh
-  exec 19>/tmp/ng_install_set-x_logfile
+  exec 19>>/tmp/ng_install_set-x_logfile
   BASH_XTRACEFD='19'
 }
 if [ "$conf_pro" == 1 ]; then
@@ -2942,7 +2942,7 @@ configure_for_perso() {
   echo '     ################################################################'
   echo ''
   source /home/"$local_user"/postinstall_perso.sh
-  exec 19>/tmp/ng_install_set-x_logfile
+  exec 19>>/tmp/ng_install_set-x_logfile
   BASH_XTRACEFD='19'
 #     $ExeAsUser cat> tmp_conf_dconf_perso << EOF
 # [gnome/settings-daemon/plugins/media-keys]
