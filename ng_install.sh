@@ -2115,14 +2115,24 @@ check_for_enable_GSE() {
   if [ -z "$script_is_launch_with_gnome_terminal" ]; then
     	enable_GSE
   else
-    cat> /tmp/enable_GSE.sh << 'EOF'
+    cat> /tmp/reload_GnomeShell.sh << 'EOF'
 #!/bin/bash
 
 local_user="$(awk -F':' '/1000/{print $1}' /etc/passwd)"
 local_user_UID="$(id -u "$local_user")"
 ExeAsUser="sudo -u "$local_user""
 
-$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")' > /dev/null && \
+$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")' > /dev/null
+EOF
+chmod +x /tmp/reload_GnomeShell.sh && \
+chown "$local_user":"$local_user" /tmp/reload_GnomeShell.sh
+cat> /tmp/enable_GSE.sh << 'EOF'
+#!/bin/bash
+
+local_user="$(awk -F':' '/1000/{print $1}' /etc/passwd)"
+local_user_UID="$(id -u "$local_user")"
+ExeAsUser="sudo -u "$local_user""
+
 $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'gnome-shell-screenshot@ttll.de'
 $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'system-monitor@paradoxxx.zero.gmail.com'
 EOF
@@ -2168,14 +2178,24 @@ check_for_enable_GSE() {
 if [ -z "$script_is_launch_with_gnome_terminal" ]; then
   	enable_GSE
   else
-    cat> /tmp/enable_GSE.sh << 'EOF'
+    cat> /tmp/reload_GnomeShell.sh << 'EOF'
 #!/bin/bash
 
 local_user="$(awk -F':' '/1000/{print $1}' /etc/passwd)"
 local_user_UID="$(id -u "$local_user")"
 ExeAsUser="sudo -u "$local_user""
 
-$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")' > /dev/null && \
+$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")' > /dev/null
+EOF
+chmod +x /tmp/reload_GnomeShell.sh && \
+chown "$local_user":"$local_user" /tmp/reload_GnomeShell.sh
+cat> /tmp/enable_GSE.sh << 'EOF'
+#!/bin/bash
+
+local_user="$(awk -F':' '/1000/{print $1}' /etc/passwd)"
+local_user_UID="$(id -u "$local_user")"
+ExeAsUser="sudo -u "$local_user""
+
 $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'gnome-shell-screenshot@ttll.de'
 $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'system-monitor@paradoxxx.zero.gmail.com'
 EOF
@@ -4011,8 +4031,8 @@ ufw --force enable"
 ################################################################################
 
 #réapplication de la cond par défaut pour la mise en veille automatique
-$ExeAsUser $DCONF_write /org/gnome/settings-daemon/plugins/power/sleep-inactive-battery-type "'suspend'"
-$ExeAsUser $DCONF_write /org/gnome/settings-daemon/plugins/power/sleep-inactive-ac-type "'suspend'"
+# $ExeAsUser $DCONF_write /org/gnome/settings-daemon/plugins/power/sleep-inactive-battery-type "'suspend'"
+# $ExeAsUser $DCONF_write /org/gnome/settings-daemon/plugins/power/sleep-inactive-ac-type "'suspend'"
 
 # remise au propre du fichier de configuration DNS
 execandlog "rm -f /etc/resolv.conf && mv /etc/resolv.conf.old /etc/resolv.conf"
