@@ -331,7 +331,6 @@
 # - potentiellement intégrer l'installation de l'outil xdotool
 # - potentiellement instaler le paquet sysstat
 # - potentiellement installer le paquet iozone3
-# - potentiellement rajouter la création d'une snapshot avec timeshift après l'install (timeshift --scripted --create --rsync --comments "first snapshot, after postinstall script")
 ################################################################################
 
 ################################################################################
@@ -1919,6 +1918,33 @@ EOF
 # même la plus ancienne version de geekie en appimage 'Geeqie-v1.6+20210613.AppImage' au moment de la création de la fonction d'install de geekie ne fonctionne pas pour Buster
 ################################################################################
 
+################################################################################
+## instalation de timeshift
+##------------------------------------------------------------------------------
+install_timeshift_buster() {
+  displayandexec "Installation de timeshift                           " "\
+cat> /etc/apt/sources.list.d/timeshift.list << 'EOF'
+deb http://ppa.launchpad.net/teejee2008/timeshift/ubuntu focal main
+#deb-src http://ppa.launchpad.net/teejee2008/timeshift/ubuntu focal main
+EOF
+apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 1B32B87ABAEE357218F6B48CB5B116B72D0F61F0
+$AG update
+$AGI timeshift"
+}
+install_timeshift_bullseye() {
+  displayandexec "Installation de timeshift                           " "\
+$WGET --output-document - 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x1B32B87ABAEE357218F6B48CB5B116B72D0F61F0' | gpg --dearmor --output /usr/share/keyrings/timeshift-archive-keyring.gpg && \
+cat> /etc/apt/sources.list.d/timeshift.list << 'EOF'
+deb [arch=amd64 signed-by=/usr/share/keyrings/timeshift-archive-keyring.gpg] http://ppa.launchpad.net/teejee2008/timeshift/ubuntu focal main
+#deb-src http://ppa.launchpad.net/teejee2008/timeshift/ubuntu focal main
+EOF
+$AG update
+$AGI timeshift"
+}
+# to get the GPG Key version : https://keyserver.ubuntu.com/pks/lookup?fingerprint=on&op=index&search=0x1B32B87ABAEE357218F6B48CB5B116B72D0F61F0
+# https://launchpad.net/~teejee2008/+archive/ubuntu/timeshift
+################################################################################
+
 # apelle à la fonction qui permet de récupérer toutes les versions des logiciels qui s'installent manuellement
 check_latest_version_manual_install_apps
 
@@ -1948,6 +1974,7 @@ install_all_manual_install_apps_buster() {
   install_ansible_buster
   install_hashcat
   install_sshuttle
+  install_timeshift_buster
 }
 install_all_manual_install_apps_bullseye() {
   install_atom_bullseye
@@ -1976,6 +2003,7 @@ install_all_manual_install_apps_bullseye() {
   install_hashcat
   install_sshuttle
   install_geeqie_bullseye
+  install_timeshift_bullseye
 }
 
 if [ "$buster" == 1 ]; then
@@ -3986,6 +4014,13 @@ execandlog "rm -f /etc/resolv.conf && mv /etc/resolv.conf.old /etc/resolv.conf"
 
 # suppression du dossier temporaire pour l'execution du script
 execandlog "rm -rf "$tmp_dir""
+
+################################################################################
+## Création d'un snapshot avec Timeshift
+##------------------------------------------------------------------------------
+displayandexec "Création d'un snapshot avec Timeshift               " "\
+timeshift --scripted --create --rsync --comments 'first snapshot, after postinstall script'"
+################################################################################
 
 echo '--------------------------------------------------------------------' >> "$log_file"
 echo '' >> "$log_file"
