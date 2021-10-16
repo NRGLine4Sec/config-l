@@ -1166,7 +1166,6 @@ displayandexec "Installation de tcpdump                             " "$AGI tcpd
 displayandexec "Installation de telnet                              " "$AGI telnet"
 displayandexec "Installation de testdisk                            " "$AGI testdisk"
 displayandexec "Installation de testssl.sh                          " "$AGI testssl.sh"
-displayandexec "Installation de timeshift                           " "$AGI timeshift"
 displayandexec "Installation de tree                                " "$AGI tree"
 displayandexec "Installation de ufw                                 " "$AGI ufw"
 displayandexec "Installation de unoconv                             " "$AGI unoconv"
@@ -3743,7 +3742,7 @@ execandlog "mv /usr/lib/x86_64-linux-gnu/nautilus/extensions-3.0/libnautilus-wip
 ################################################################################
 ## configuration de l'audio
 ##------------------------------------------------------------------------------
-pulse_env="PULSE_RUNTIME_PATH="/run/user/"$local_user"/pulse" XDG_RUNTIME_DIR="/run/user/"$local_user"/""
+pulse_env="PULSE_RUNTIME_PATH="/run/user/"$local_user_UID"/pulse" XDG_RUNTIME_DIR="/run/user/"$local_user_UID"/""
 displayandexec "Désactivation du microphone                         " "$ExeAsUser "$pulse_env" amixer set Capture nocap"
 displayandexec "Réglage du volume audio à 10%                       " "$ExeAsUser "$pulse_env" amixer set Master 10%"
 
