@@ -4038,6 +4038,7 @@ execandlog "rm -f /etc/resolv.conf && mv /etc/resolv.conf.old /etc/resolv.conf"
 
 # suppression du dossier temporaire pour l'execution du script
 execandlog "rm -rf "$tmp_dir""
+cd
 
 ################################################################################
 ## Création d'un snapshot avec Timeshift
