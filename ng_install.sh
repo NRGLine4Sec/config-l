@@ -759,6 +759,12 @@ check_latest_version_manual_install_apps() {
     fi
     # check version : https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/AppImage/appimages.txt
 
+    ytdlp_version="$($CURL 'https://api.github.com/repos/yt-dlp/yt-dlp/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
+    if [ $? != 0 ] || [ -z "$ytdlp_version" ]; then
+        ytdlp_version='2021.10.10'
+    fi
+    # check version : https://github.com/yt-dlp/yt-dlp/releases/
+
 }
 
 
@@ -812,6 +818,8 @@ manual_check_latest_version() {
   echo 'WinSCP '"$winscp_version"
   geeqie_version="$($CURL 'https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/AppImage/appimages.txt' | head -n1 | grep -Po '(?<=Geeqie-v)([[:digit:]]\.[[:digit:]]+\+[[:digit:]]+)(?=.AppImage)')"
   echo 'Geeqie '"$geeqie_version"
+  ytdlp_version="$($CURL 'https://api.github.com/repos/yt-dlp/yt-dlp/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
+  echo 'yt-dlp '"$ytdlp_version"
 }
 # manual_check_latest_version
 ################################################################################
@@ -1046,9 +1054,24 @@ echo '     ################################################################'
 echo ''
 
 # si besoin de iwlwifi
-if grep '0x8086' /sys/devices/pci0000:00/*/*/ieee80211/phy0/device/vendor &> /dev/null; then
-	displayandexec "Installation de firmware-iwlwifi                    " "$AGI firmware-iwlwifi"
+# awk '{print $2}' /proc/bus/pci/devices | grep '^8086'
+if awk '{print $2}' /proc/bus/pci/devices | grep '^8086' &> /dev/null; then
+  # on s'assure que le device intel est bien une carte wifi
+  intel_device="$(grep -Po "^[[:xdigit:]]{4}[[:blank:]]+8086\K[[:xdigit:]]{4}" /proc/bus/pci/devices)"
+  if grep "$intel_device" /usr/share/misc/pci.ids | grep -i 'wireless' > /dev/null; then
+    displayandexec "Installation de firmware-iwlwifi                    " "$AGI firmware-iwlwifi"
+  fi
 fi
+
+# cat /proc/bus/pci/devices | column --table
+# cat /proc/bus/pci/devices | column --table  | grep -E "^[[:xdigit:]]{4}[[:blank:]]+8086"
+# lspci -nn | grep -i 'network' | grep -i 'intel'
+# Pour récupérer l'id qui permet de déterminer quelle est la carte wifi utilisé : cat /proc/bus/pci/devices | column --table | grep -Po "^[[:xdigit:]]{4}[[:blank:]]+8086\K[[:xdigit:]]{4}"
+
+# if grep '0x8086' /sys/devices/pci0000:00/*/*/ieee80211/phy0/device/vendor &> /dev/null; then
+# 	displayandexec "Installation de firmware-iwlwifi                    " "$AGI firmware-iwlwifi"
+# fi
+# La commande précédente ne fonctionne pas car à priori il faut que iwlwifi soit déjà installé pour qu'on puiss avoir une entrée dans sysfs qui positionne le bus PCI de la carte wifi avec un sous répetoire
 
 # Les commandes utiles qui m'ont aider à trouver la bonne commande pour détecter si la carte wifi est de chez Intel ou pas :
 # find '/sys/devices/pci0000:00/' -type d -name 'ieee80211'
@@ -1059,6 +1082,8 @@ fi
 #
 # # Pour obtenir tous les ID en fonction du fabricant
 # grep -E "^[[:xdigit:]]{4}[[:blank:]]" /usr/share/misc/pci.ids
+
+# script intéressant pour ce type d'élément : [Gujin: gujin.sh | Fossies](https://fossies.org/linux/gujin/gujin.sh)
 
 # ancienne commande utilisée (avec lspci) :
 # lspci -nn | grep 'Network' | grep 'Intel' &> /dev/null
@@ -1119,6 +1144,7 @@ displayandexec "Installation de hardinfo                            " "$AGI hard
 displayandexec "Installation de htop                                " "$AGI htop"
 displayandexec "Installation de hugo                                " "$AGI hugo"
 displayandexec "Installation de hydra-gtk                           " "$AGI hydra-gtk"
+displayandexec "Installation de hwinfo                              " "$AGI hwinfo"
 displayandexec "Installation de icdiff                              " "$AGI icdiff"
 displayandexec "Installation de iftop                               " "$AGI iftop"
 displayandexec "Installation de inxi                                " "$AGI inxi"
@@ -1754,6 +1780,16 @@ ln -s /usr/bin/python3 /usr/bin/python"
 ################################################################################
 
 ################################################################################
+## instalation de yt-dlp
+##------------------------------------------------------------------------------
+install_yt-dlp() {
+  displayandexec "Installation de yt-dlp                              " "\
+$WGET -P /usr/bin https://github.com/yt-dlp/yt-dlp/releases/download/"$ytdlp_version"/yt-dlp && \
+chmod +x /usr/bin/yt-dlp"
+}
+################################################################################
+
+################################################################################
 ## instalation de joplin
 ##------------------------------------------------------------------------------
 install_joplin() {
@@ -1944,6 +1980,29 @@ $AGI timeshift"
 # https://launchpad.net/~teejee2008/+archive/ubuntu/timeshift
 ################################################################################
 
+################################################################################
+## instalation de Visual Studio Code
+##------------------------------------------------------------------------------
+install_vscode_bullseye() {
+  displayandexec "Installation de vscode                              " "\
+echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/vscode-archive-keyring.gpg] https://packages.microsoft.com/repos/code stable main' > /etc/apt/sources.list.d/vscode.list && \
+$CURL 'https://packages.microsoft.com/keys/microsoft.asc' | gpg --dearmor --output /usr/share/keyrings/vscode-archive-keyring.gpg && \
+$AG update && \
+$AGI code"
+}
+# Pour installer des extensions en ligne de commande : [Managing Extensions in Visual Studio Code](https://code.visualstudio.com/docs/editor/extension-marketplace#_command-line-extension-management)
+cat> /home/"$local_user"/.config/Code/User/settings.json << 'EOF'
+{
+    "workbench.colorTheme": "Default Dark+",
+    "update.mode": "none",
+    "telemetry.telemetryLevel": "off",
+    "security.workspace.trust.untrustedFiles": "open"
+}
+EOF
+# peut être qu'il faut créer le répertoire /home/"$local_user"/.config/Code/ à la main s'il se créer uniquement après un premier lancement en graphique
+################################################################################
+
+
 # apelle à la fonction qui permet de récupérer toutes les versions des logiciels qui s'installent manuellement
 check_latest_version_manual_install_apps
 
@@ -1967,6 +2026,7 @@ install_all_manual_install_apps_buster() {
   install_asbru_buster
   install_bat
   install_youtubedl
+  install_yt-dlp
   install_joplin
   install_krita
   install_opensnitch
@@ -1995,6 +2055,7 @@ install_all_manual_install_apps_bullseye() {
   install_asbru_bullseye
   install_bat
   install_youtubedl
+  install_yt-dlp
   install_joplin
   install_krita
   install_opensnitch
@@ -2049,6 +2110,12 @@ aisleriot"
 
 #exim4
 displayandexec "Désinstalation de exim4                             " "$AG remove -y exim4-base exim4-config exim4-daemon-light"
+
+#synaptic
+displayandexec "Désinstalation de synaptic                          " "$AG remove -y synaptic"
+
+#de l'outil Parental Control de Gnome
+displayandexec "Désinstalation de Gnome Parental Control            " "$AG remove -y malcontent malcontent-gui"
 ################################################################################
 
 #OpenOffice
@@ -2489,6 +2556,13 @@ CheckUpdateGeeqie() {
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
+CheckUpdateYt-dlp() {
+  local SoftwareName='yt-dlp'
+  local v1="$(yt-dlp --version)"
+  local v2="$($CURL 'https://api.github.com/repos/yt-dlp/yt-dlp/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
+  CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
+}
+
 ################################################################################
 
 UpdateShotcut() {
@@ -2606,7 +2680,10 @@ UpdateGeeqie() {
   chmod +x "$manual_install_dir"/Geeqie/Geeqie-v"$geeqie_version".AppImage && \
   sed -i "s,^Exec=.*,Exec=$manual_install_dir/Geeqie/Geeqie-v"$geeqie_version".AppImage,g" /usr/share/applications/geeqie.desktop
   [ -f "$manual_install_dir"/Geeqie/geeqie.svg ] || $WGET -P "$manual_install_dir"/Geeqie/ 'https://github.com/geeqie/geeqie.github.io/raw/master/geeqie.svg'
+}
 
+UpdateYt-dlp() {
+  yt-dlp --update
 }
 
 
@@ -2643,7 +2720,8 @@ Krita
 Opensnitch
 Drawio
 Etcher
-Geeqie'
+Geeqie
+Yt-dlp'
 
 CheckUpdate() {
 for software in $software_list; do
@@ -3240,6 +3318,8 @@ configure_atom
 # apm install atom-marp
 # regarder pour faire du collaboratif avec atom : https://atom.io/packages/teletype
 
+# apm install language-ansible
+
 # pour voir la liste des plugins installés : apm ls
 ################################################################################
 
@@ -3282,9 +3362,9 @@ configure_typora
 # apt-get install -y sqlite3 && sqlite3 .config/joplin-desktop/database.sqlite "select * from settings"
 configure_joplin() {
 execandlog "[ -d /home/"$local_user"/.config/Joplin/ ] || $ExeAsUser mkdir /home/"$local_user"/.config/Joplin/"
-$ExeAsUser cat> /home/"$local_user"/.config/Joplin/Preferences << 'EOF'
-{"spellcheck":{"dictionaries":["fr"],"dictionary":""}}
-EOF
+# $ExeAsUser cat> /home/"$local_user"/.config/Joplin/Preferences << 'EOF'
+# {"spellcheck":{"dictionaries":["fr"],"dictionary":""}}
+# EOF
 }
 configure_joplin
 ################################################################################
@@ -3491,6 +3571,9 @@ window-maximized=true
 [gnome/settings-daemon/peripherals/keyboard]
 numlock-state='on'
 
+[org/gnome/GWeather]
+temperature-unit='centigrade'
+
 [gnome/Weather/Application]
 locations=[<(uint32 2, <('Le Mans', 'LFRM', true, [(0.83659448230485101, 0.0034906585039886592)], [(0.83775804095727813, 0.0034906585039886592)])>)>]
 
@@ -3510,7 +3593,7 @@ show-battery-percentage=true
 gtk-im-module='gtk-im-context-simple'
 clock-show-seconds=false
 clock-show-weekday=true
-gtk-theme='Adwaita'
+gtk-theme='Adwaita-dark'
 
 [gnome/desktop/wm/preferences]
 button-layout='appmenu:minimize,maximize,close'
@@ -3526,6 +3609,11 @@ show-hidden=true
 EOF
 # ref : https://superuser.com/questions/726550/use-dconf-or-comparable-to-set-configs-for-another-user/1265786#1265786
 
+# le fait de positionner le theme Adwaita-dark en graphique (avec gnome-tweaks) a créer les fichiers /home/"$local_user"/.config/gtk-4.0/settings.ini  et /home/"$local_user"/.config/gtk-3.0/settings.ini avec le contenu suivant
+# [Settings]
+# gtk-application-prefer-dark-theme=0
+
+# à voir donc s'il est nécessaire de le créer manuellement en positionnement uniquement la valeur à travers le dconf ou s'il est généré automatiquement avec le dconf
 
 CustomGnomeShortcut() {
 	local name="$1"
