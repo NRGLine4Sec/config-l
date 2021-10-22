@@ -331,6 +331,7 @@
 # - potentiellement intégrer l'installation de l'outil xdotool
 # - potentiellement instaler le paquet sysstat
 # - potentiellement installer le paquet iozone3
+# - potentiellemnt installer qview (https://interversehq.com/qview/download/)
 ################################################################################
 
 ################################################################################
@@ -2908,6 +2909,8 @@ displayandexec "Installation du script check_domain_creation_date   " "chmod +x 
 ##------------------------------------------------------------------------------
 install_appairmebt() {
 cat> /usr/bin/appairmebt << 'EOF'
+#!/bin/bash
+
 gdbus call --session --dest org.gnome.SettingsDaemon.Rfkill --object-path /org/gnome/SettingsDaemon/Rfkill --method org.freedesktop.DBus.Properties.Set "org.gnome.SettingsDaemon.Rfkill" "BluetoothAirplaneMode" "<false>" > /dev/null
 bluetoothctl select AA:AA:AA:AA:AA:AA > /dev/null
 bluetoothctl power on > /dev/null
@@ -2968,6 +2971,10 @@ displayandexec "Installation du script appairmebt                   " "chmod +x 
 # EOF
 # #and then reload the rules :
 # udevadm control --reload-rules
+
+# il semblerait qu'il faille d'abord faire une première commande qui scann les devices dispos avant de pouvoir appairer le device
+# Il faudrait donc executer la commande : bluetoothctl scan on
+# et ensuite seulement on peut executer appairmebt
 ################################################################################
 
 ################################################################################
@@ -3367,13 +3374,6 @@ execandlog "[ -d /home/"$local_user"/.config/Joplin/ ] || $ExeAsUser mkdir /home
 # EOF
 }
 configure_joplin
-################################################################################
-
-################################################################################
-## configuration de asbru
-##------------------------------------------------------------------------------
-# La configuration de asbru est situé dans /home/$local_user/.config/asbru/asbru.yml
-# La configuration est beaucoup trop longue et sensible pour pouvoir la mettre dans ce script, il vaut mieux faire un import/export de la conf
 ################################################################################
 
 ################################################################################

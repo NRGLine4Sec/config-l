@@ -175,8 +175,6 @@
 
 ### Changes to other files
 -w /etc/hosts -p wa -k network_modifications
-#-w /etc/sysconfig/network -p wa -k network_modifications # ne fonctionne pas
-# -w /etc/sysconfig/network-scripts -p w -k network_modifications # ne fonctionne pas
 -w /etc/network/ -p wa -k network
 -a always,exit -F dir=/etc/NetworkManager/ -F perm=wa -k network_modifications
 
@@ -185,7 +183,6 @@
 -w /etc/issue.net -p wa -k etcissue
 
 ## System startup scripts
--w /etc/inittab -p wa -k init
 -w /etc/init.d/ -p wa -k init
 -w /etc/init/ -p wa -k init
 
@@ -305,9 +302,10 @@
 -w /usr/bin/tshark -p x -k susp_activity
 -w /usr/bin/rawshark -p x -k susp_activity
 -w /usr/bin/rdesktop -p x -k susp_activity
+-w /usr/bin/wlfreerdp -p x -k susp_activity
 -w /usr/bin/nmap -p x -k susp_activity
 
-## Added to catch netcat on Ubuntu
+## Added to catch netcat on Debian based distribution
 -w /bin/nc.openbsd -p x -k susp_activity
 -w /bin/nc.traditional -p x -k susp_activity
 
@@ -382,6 +380,8 @@
 ## File Deletion Events by User
 -a always,exit -F arch=b32 -S rmdir -S unlink -S unlinkat -S rename -S renameat -F auid>=1000 -F auid!=-1 -k delete
 -a always,exit -F arch=b64 -S rmdir -S unlink -S unlinkat -S rename -S renameat -F auid>=1000 -F auid!=-1 -k delete
+# these two rules cause to much volume, we disable it for now
+# il faudrait restreindre la portée des règles et au minimum ne pas auditer dans /home avec ces règles-ci
 
 ## File Access
 ### Unauthorized Access (unsuccessful)
