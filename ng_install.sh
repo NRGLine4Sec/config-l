@@ -327,11 +327,10 @@
 # - regarder de près concernant l'intéret de d'installer le librairie du wivedine de google dans le chromium de debian
 # - rajouter une variable qui contient l'usage du script pour afficher de quel manière l'utiliser lorsque d'un des arguments n'est pas correct (l'équivalent d'un --help)
 # - ils ont changer l'install de FreeFileSync avec maintenant un binaire pour l'install (indice : bat -A /opt/manual_install/FreeFileSync_11.6_Install.run | more)
-# - regarder pour installer timeshift (sauvegarde incrémentale de l'OS) (l'installer depuis les releases https://github.com/teejee2008/Timeshift/releases car trop vieux depuis les dépos de debian) (c'est un .deb)
 # - potentiellement intégrer l'installation de l'outil xdotool
 # - potentiellement instaler le paquet sysstat
 # - potentiellement installer le paquet iozone3
-# - potentiellemnt installer qview (https://interversehq.com/qview/download/)
+# - potentiellement installer qview (https://interversehq.com/qview/download/)
 ################################################################################
 
 ################################################################################
@@ -1092,6 +1091,32 @@ fi
 #    displayandexec "Installation de firmware-iwlwifi                    " "$AGI firmware-iwlwifi"
 # fi
 
+# si CPU/GPU is AMD
+# awk '!/^[[:blank:]]/ && /^1002/' /usr/share/misc/pci.ids
+# l'ID 1002 correspond à Advanced Micro Devices, Inc. [AMD/ATI]
+if awk '{print $2}' /proc/bus/pci/devices | grep '^1002' &> /dev/null; then
+  for device in $(grep -Po "^[[:xdigit:]]{4}[[:blank:]]+1002\K[[:xdigit:]]{4}" /proc/bus/pci/devices); do
+    # on s'assure que le device AMD est bien une carte graphique
+    if grep "$device" /usr/share/misc/pci.ids | grep -i 'Radeon' > /dev/null; then
+      displayandexec "Installation de firmware-amd-graphics               " "$AGI firmware-amd-graphics"
+      displayandexec "Installation de xserver-xorg-video-amdgpu           " "$AGI xserver-xorg-video-amdgpu"
+      displayandexec "Installation de radeontop                           " "$AGI radeontop"
+    fi
+  done
+fi
+
+# si carte Ethernet Realtek
+# awk '!/^[[:blank:]]/ && /^10ec/' /usr/share/misc/pci.ids
+# l'ID 10ec correspond à Realtek Semiconductor Co., Ltd.
+if awk '{print $2}' /proc/bus/pci/devices | grep '^10ec' &> /dev/null; then
+  for device in $(grep -Po "^[[:xdigit:]]{4}[[:blank:]]+10ec\K[[:xdigit:]]{4}" /proc/bus/pci/devices); do
+    # on s'assure que le device Realtek est bien une carte Ethernet
+    if grep "$device" /usr/share/misc/pci.ids | grep -i 'Ethernet' > /dev/null; then
+      displayandexec "Installation de firmware-realtek                    " "$AGI firmware-realtek"
+    fi
+  done
+fi
+
 # on active le mode case insensitive de bash
 shopt -s nocasematch
 if [[ "$computer_proc_vendor_ID" =~ amd ]]; then
@@ -1129,6 +1154,7 @@ displayandexec "Installation de ethtool                             " "$AGI etht
 displayandexec "Installation de ettercap-graphical                  " "$AGI ettercap-graphical"
 displayandexec "Installation de evince                              " "$AGI evince"
 displayandexec "Installation de exiv2                               " "$AGI exiv2"
+displayandexec "Installation de ffmpeg                              " "$AGI ffmpeg"
 displayandexec "Installation de filezilla                           " "$AGI filezilla"
 displayandexec "Installation de firefox-esr-l10n-fr                 " "$AGI firefox-esr-l10n-fr"
 displayandexec "Installation de firejail                            " "$AGI firejail"
@@ -1158,7 +1184,7 @@ displayandexec "Installation de lshw                                " "$AGI lshw
 displayandexec "Installation de lynx                                " "$AGI lynx"
 displayandexec "Installation de macchanger                          " "$AGI macchanger"
 displayandexec "Installation de make                                " "$AGI make"
-displayandexec "Installation de mediainfo-gui                       " "$AGI mediainfo-gui"
+displayandexec "Installation de mediainfo-gui                       " "$AGI mediainfo mediainfo-gui"
 displayandexec "Installation de mpv                                 " "$AGI mpv youtube-dl-"
 # on n'install pas la dépendance youtube-dl requise par mpv car la version des dépots debian est trop ancienne
 # ref : [ubuntu - How do I get apt-get to ignore some dependencies? - Server Fault](https://serverfault.com/questions/250224/how-do-i-get-apt-get-to-ignore-some-dependencies/663803#663803)
@@ -3893,8 +3919,11 @@ displayandexec "Réglage du volume audio à 10%                       " "$ExeAsU
 
 # cette dommande la a fonctionné dans le sudo : $ExeAsUser rm -rf /home/"$local_user"/.config/pulse/* &&  amixer set Master 20%
 
-
 # regarder aussi cette solution la : https://bbs.archlinux.org/viewtopic.php?id=155649
+
+# la solution a été d'ajouter les variables d'environnement nécessaires à pulseaudio avec la commande suivante :
+# pulse_env="PULSE_RUNTIME_PATH="/run/user/"$local_user_UID"/pulse" XDG_RUNTIME_DIR="/run/user/"$local_user_UID"/""
+# ref : [Managin a user-local pulseaudio daemon with runit in voidlinux](https://gist.github.com/yyny/c60b02dd629fc6ed9856c66595688f15#file-pulse-common-sh-L10)
 ################################################################################
 
 # apparement obligatoire pour executer Signal
@@ -3938,6 +3967,7 @@ alias xwx='sudo poweroff'
 # a priori le stream de funradio ne fonctionne plus
 # alias funradio='mpv --cache=no http://streaming.radio.funradio.fr/fun-1-48-192'
 alias youtube-dl='youtube-dl -o "%(title)s.%(ext)s"'
+alias yt-dlp='yt-dlp -o "%(title)s.%(ext)s"'
 alias spyme='sudo lnav /var/log/syslog /var/log/auth.log'
 alias sysupdate='sudo sysupdate'
 alias bat='bat -pp'
@@ -4011,6 +4041,7 @@ alias xwx='sudo poweroff'
 # a priori le stream de funradio ne fonctionne plus
 # alias funradio='mpv --cache=no http://streaming.radio.funradio.fr/fun-1-48-192'
 alias youtube-dl='youtube-dl -o "%(title)s.%(ext)s"'
+alias yt-dlp='yt-dlp -o "%(title)s.%(ext)s"'
 alias spyme='sudo lnav /var/log/syslog /var/log/auth.log'
 alias sysupdate='sudo sysupdate'
 alias bat='bat -pp'
