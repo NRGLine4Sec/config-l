@@ -331,6 +331,11 @@
 # - potentiellement instaler le paquet sysstat
 # - potentiellement installer le paquet iozone3
 # - potentiellement installer qview (https://interversehq.com/qview/download/)
+
+# [HardwareVideoAcceleration - Debian Wiki](https://wiki.debian.org/HardwareVideoAcceleration)
+# vainfo
+# vdpauinfo
+
 ################################################################################
 
 ################################################################################
