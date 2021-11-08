@@ -1063,7 +1063,7 @@ echo ''
 if awk '{print $2}' /proc/bus/pci/devices | grep '^8086' &> /dev/null; then
   # on s'assure que le device intel est bien une carte wifi
   intel_device="$(grep -Po "^[[:xdigit:]]{4}[[:blank:]]+8086\K[[:xdigit:]]{4}" /proc/bus/pci/devices)"
-  if grep "$intel_device" /usr/share/misc/pci.ids | grep -i 'wireless' > /dev/null; then
+  if grep "$intel_device" /usr/share/misc/pci.ids | grep -i -e 'wireless' -e 'Wi-Fi' -e 'WiFi' > /dev/null; then
     displayandexec "Installation de firmware-iwlwifi                    " "$AGI firmware-iwlwifi"
   fi
 fi
