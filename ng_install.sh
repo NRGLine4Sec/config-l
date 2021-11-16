@@ -268,26 +268,6 @@
 
 # sudo lspci -nnkv | grep -iB13 pcieport
 
-# faire un diff avant et après avoir modifier la conf de l'interface de Wireshark (ajout de la colonne Port et SNI et date)
-# cp ./.config/wireshark/preferences tmp_diff1.txt
-# cp ./.config/wireshark/preferences tmp_diff2.txt
-# diff tmp_diff1.txt tmp_diff2.txt
-
-# Le fichier n'existe pas avant d'avoir été dans  Edit → Preferences…​ (Wireshark → Preferences…) et d'avoir quitter la fenêtre avec OK.
-#
-# Ce qui semble faire la conf :
-# ####### User Interface ########
-# # The max. number of items in the open recent files list
-# # A decimal number
-# /ssl.handshake.extensions
-# … escamotage
-# 	"Protocol", "%p",
-# 	"Length", "%L",
-# 	"SNI", "%Cus:ssl.handshake.extensions_server_name:0:R",
-# 	"SMBv2 Filename", "%Cus:smb2.filename:0:R"
-#
-# regarder https://osqa-ask.wireshark.org/answer_link/50481/
-
 
 
 # script à regarder de plus près pour voir comment intégrer un affichage des tirets et des hashtags en fonction de la longueur du terminal et du message a afficher
@@ -1225,6 +1205,7 @@ displayandexec "Installation de telnet                              " "$AGI teln
 displayandexec "Installation de testdisk                            " "$AGI testdisk"
 displayandexec "Installation de testssl.sh                          " "$AGI testssl.sh"
 displayandexec "Installation de tree                                " "$AGI tree"
+displayandexec "Installation de tshark                              " "$AGI tshark"
 displayandexec "Installation de ufw                                 " "$AGI ufw"
 displayandexec "Installation de unoconv                             " "$AGI unoconv"
 displayandexec "Installation de unrar                               " "$AGI unrar"
@@ -3214,6 +3195,30 @@ configure_freshclam
 # Check for new database 1 times a day (insteed of 24)
 # les logs de freshclam sont dans /var/log/clamav/freshclam.log
 # c'est le service clamav-freshclam qui fait tourner freshclam
+################################################################################
+
+################################################################################
+## configuration de wireshark
+##------------------------------------------------------------------------------
+configure_wireshark() {
+  local conf_wireshark_tls_sni='	"TLS_SNI", "%Cus:tls.handshake.extensions_server_name:0:R"' && \
+  sed -i '/^gui.column.format:/,/^$/{s/\"$/\",/;s/^$/'"$conf_wireshark_tls_sni"'\n/}' /root/.config/wireshark/preferences
+  local conf_wireshark_dst_port='	"Destination Port", "%D"' && \
+  sed -i '/^gui.column.format:/,/^$/{s/\"$/\",/;s/^$/'"$conf_wireshark_dst_port"'\n/}' /root/.config/wireshark/preferences
+}
+configure_wireshark
+# on ajoute les colonnes "TLS_SNI" et "Destination Port" dans l'affichage principal de wireshark car elles sont très pratique lors de l'utilisation de wireshark.
+
+# Le fichier n'existe pas avant d'avoir été dans  Edit → Preferences…​ (Wireshark → Preferences…) et d'avoir quitter la fenêtre avec OK.
+#
+# normallement il y a ce contenu dans la configuration de base de wireshark :
+# gui.column.format:
+# 	"No.", "%m",
+# 	"Time", "%t",
+# 	"Source", "%s",
+# 	"Destination", "%d",
+# 	"Protocol", "%p",
+# 	"Length", "%L"
 ################################################################################
 
 ################################################################################
