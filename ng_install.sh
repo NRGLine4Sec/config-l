@@ -1916,7 +1916,7 @@ $WGET -P "$tmp_dir" https://github.com/hashcat/hashcat/releases/download/v"$hash
 chown -R "$local_user":"$local_user" "$manual_install_dir"/hashcat && \
 ln -s "$manual_install_dir"/hashcat/hashcat-"$hashcat_version"/hashcat.bin /usr/bin/hashcat && \
 rm -rf "$tmp_dir""
-# hashcat a besoin d'être capable d'écrire dans son répertoire, il faut donc soit associ le répertoire à l'utilisateur soit le lancer en sudo
+# hashcat a besoin d'être capable d'écrire dans son répertoire, il faut donc soit associer le répertoire à l'utilisateur soit le lancer en sudo
 }
 ################################################################################
 
@@ -2576,6 +2576,13 @@ CheckUpdateYt-dlp() {
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
+CheckUpdateHashcat() {
+  local SoftwareName='Hashcat'
+  local v1="$(hashcat --version | grep -Po '(v)\K([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)')"
+  local v2="$($CURL 'https://api.github.com/repos/hashcat/hashcat/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
+}
+
 ################################################################################
 
 UpdateShotcut() {
@@ -2699,6 +2706,19 @@ UpdateYt-dlp() {
   yt-dlp --update
 }
 
+UpdateHashcat() {
+  local hashcat_version="$($CURL 'https://api.github.com/repos/hashcat/hashcat/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)" && \
+  local tmp_dir="$(mktemp -d)" && \
+  rm -rf "$manual_install_dir"/hashcat/ && \
+  rm -f /usr/bin/hashcat && \
+  mkdir "$manual_install_dir"/hashcat/ && \
+  $WGET -P "$tmp_dir" https://github.com/hashcat/hashcat/releases/download/v"$hashcat_version"/hashcat-"$hashcat_version".7z && \
+  7z x "$tmp_dir"/hashcat-"$hashcat_version".7z -o"$manual_install_dir"/hashcat && \
+  chown -R "$local_user":"$local_user" "$manual_install_dir"/hashcat && \
+  ln -s "$manual_install_dir"/hashcat/hashcat-"$hashcat_version"/hashcat.bin /usr/bin/hashcat
+  rm -rf "$tmp_dir"
+}
+
 
 ################################################################################
 
@@ -2734,7 +2754,8 @@ Opensnitch
 Drawio
 Etcher
 Geeqie
-Yt-dlp'
+Yt-dlp
+Hashcat'
 
 CheckUpdate() {
 for software in $software_list; do
