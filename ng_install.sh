@@ -1347,7 +1347,7 @@ $AGI spotify-client"
 }
 install_spotify_bullseye() {
   displayandexec "Installation de spotify                             " "\
-$CURL 'https://download.spotify.com/debian/pubkey_0D811D58.gpg' | gpg --dearmor --output /usr/share/keyrings/spotify-archive-keyring.gpg && \
+$CURL 'https://download.spotify.com/debian/pubkey_5E3C45D7B312C643.gpg' | gpg --dearmor --output /usr/share/keyrings/spotify-archive-keyring.gpg && \
 echo 'deb [signed-by=/usr/share/keyrings/spotify-archive-keyring.gpg] http://repository.spotify.com stable non-free' > /etc/apt/sources.list.d/spotify.list && \
 $AG update && \
 $AGI spotify-client"
