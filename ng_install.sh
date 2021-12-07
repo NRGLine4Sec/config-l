@@ -2015,6 +2015,20 @@ EOF
 # peut être qu'il faut créer le répertoire /home/"$local_user"/.config/Code/ à la main s'il se créer uniquement après un premier lancement en graphique
 ################################################################################
 
+################################################################################
+## instalation de Brave
+##------------------------------------------------------------------------------
+install_brave() {
+  displayandexec "Installation de brave                               " "\
+$WGET --output-document - 'https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg' | gpg --dearmor --output /usr/share/keyrings/brave-archive-keyring.gpg && \
+cat> /etc/apt/sources.list.d/brave.list << 'EOF'
+deb [arch=amd64 signed-by=/usr/share/keyrings/brave-archive-keyring.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main
+EOF
+$AG update
+$AGI brave-browser"
+}
+################################################################################
+
 
 # apelle à la fonction qui permet de récupérer toutes les versions des logiciels qui s'installent manuellement
 check_latest_version_manual_install_apps
@@ -2047,6 +2061,7 @@ install_all_manual_install_apps_buster() {
   install_hashcat
   install_sshuttle
   install_timeshift_buster
+  install_brave
 }
 install_all_manual_install_apps_bullseye() {
   install_atom_bullseye
@@ -2077,6 +2092,8 @@ install_all_manual_install_apps_bullseye() {
   install_sshuttle
   install_geeqie_bullseye
   install_timeshift_bullseye
+  install_vscode_bullseye
+  install_brave
 }
 
 if [ "$buster" == 1 ]; then
