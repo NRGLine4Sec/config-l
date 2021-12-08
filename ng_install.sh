@@ -626,14 +626,10 @@ is_script_launch_with_gnome_terminal
 ## fonction qui permet de checker automatiquement les versions des logiciels qui s'installent manuellement, de façon automatique
 ##------------------------------------------------------------------------------
 check_latest_version_manual_install_apps() {
-    veracrypt_version="$($CURL 'https://www.veracrypt.fr/en/Downloads.html' | grep 'tar.bz2' | grep -v '.sig\|x86\|Source\|freebsd' | grep -Po '(?<=veracrypt-)([[:digit:]]+\.+[[:digit:]]+)(?=-setup)')"
-    # permet de récupérer la version lorsque la release est du type 'veracrypt-1.24-setup.tar.bz2'
+    veracrypt_version="$($CURL 'https://www.veracrypt.fr/en/Downloads.html' | grep 'tar.bz2' | grep -v '.sig\|x86\|Source\|freebsd' | grep -Po '(?<=veracrypt-)([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+-[[:alnum:]]+|[[:digit:]]+\.[[:digit:]]+-[[:alnum:]]+|[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+|[[:digit:]]+\.[[:digit:]]+)(?=-setup)')"
+    # permet de récupérer la version lorsque la release est du type 'veracrypt-1.24-Update3-setup.tar.bz2' ainsi que 'veracrypt-1.24.3-Update3-setup.tar.bz2' ou 'veracrypt-1.24-setup.tar.bz2' ou 'veracrypt-1.24.4-setup.tar.bz2'
     if [ $? != 0 ] || [ -z "$veracrypt_version" ]; then
-      veracrypt_version="$($CURL 'https://www.veracrypt.fr/en/Downloads.html' | grep 'tar.bz2' | grep -v '.sig\|x86\|Source\|freebsd' | grep -Po '(?<=veracrypt-)([[:digit:]]+\.+[[:digit:]]+-[[:alnum:]]+)(?=-setup)')"
-      # permet de récupérer la version lorsque la release est du type 'veracrypt-1.24-Update7-setup.tar.bz2'
-      if [ $? != 0 ] || [ -z "$veracrypt_version" ]; then
-          veracrypt_version='1.24-Update7'
-      fi
+          veracrypt_version='1.25.4'
     fi
     # check version : https://www.veracrypt.fr/en/Downloads.html
 
@@ -763,11 +759,7 @@ check_latest_version_manual_install_apps() {
 ##------------------------------------------------------------------------------
 CURL='curl --silent --show-error'
 manual_check_latest_version() {
-  veracrypt_version="$($CURL 'https://www.veracrypt.fr/en/Downloads.html' | grep 'tar.bz2' | grep -v '.sig\|x86\|Source\|freebsd' | grep -Po '(?<=veracrypt-)([[:digit:]]+\.+[[:digit:]]+)(?=-setup)')"
-  # permet de récupérer la version lorsque la release est du type 'veracrypt-1.24-setup.tar.bz2'
-  if [ $? != 0 ] || [ -z "$veracrypt_version" ]; then
-    veracrypt_version="$($CURL 'https://www.veracrypt.fr/en/Downloads.html' | grep 'tar.bz2' | grep -v '.sig\|x86\|Source\|freebsd' | grep -Po '(?<=veracrypt-)([[:digit:]]+\.+[[:digit:]]+-[[:alnum:]]+)(?=-setup)')"
-  fi
+  veracrypt_version="$($CURL 'https://www.veracrypt.fr/en/Downloads.html' | grep 'tar.bz2' | grep -v '.sig\|x86\|Source\|freebsd' | grep -Po '(?<=veracrypt-)([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+-[[:alnum:]]+|[[:digit:]]+\.[[:digit:]]+-[[:alnum:]]+|[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+|[[:digit:]]+\.[[:digit:]]+)(?=-setup)')"
   echo 'VeraCrypt '"$veracrypt_version"
   drawio_version="$($CURL 'https://api.github.com/repos/jgraph/drawio-desktop/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   echo 'drawio '"$drawio_version"
@@ -2600,6 +2592,13 @@ CheckUpdateHashcat() {
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
+CheckUpdateVeracrypt() {
+  local SoftwareName='Veracrypt'
+  local v1="$(veracrypt --text --version | grep -Poi '(?<=veracrypt )\K([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+-[[:alnum:]]+|[[:digit:]]+\.[[:digit:]]+-[[:alnum:]]+|[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+|[[:digit:]]+\.[[:digit:]]+)(?=$)')"
+  local v2="$($CURL 'https://www.veracrypt.fr/en/Downloads.html' | grep 'tar.bz2' | grep -v '.sig\|x86\|Source\|freebsd' | grep -Po '(?<=veracrypt-)([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+-[[:alnum:]]+|[[:digit:]]+\.[[:digit:]]+-[[:alnum:]]+|[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+|[[:digit:]]+\.[[:digit:]]+)(?=-setup)')"
+  CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
+}
+
 ################################################################################
 
 UpdateShotcut() {
@@ -2730,9 +2729,20 @@ UpdateHashcat() {
   rm -f /usr/bin/hashcat && \
   mkdir "$manual_install_dir"/hashcat/ && \
   $WGET -P "$tmp_dir" https://github.com/hashcat/hashcat/releases/download/v"$hashcat_version"/hashcat-"$hashcat_version".7z && \
-  7z x "$tmp_dir"/hashcat-"$hashcat_version".7z -o"$manual_install_dir"/hashcat && \
+  7z x "$tmp_dir"/hashcat-"$hashcat_version".7z -o"$manual_install_dir"/hashcat > /dev/null && \
   chown -R "$local_user":"$local_user" "$manual_install_dir"/hashcat && \
   ln -s "$manual_install_dir"/hashcat/hashcat-"$hashcat_version"/hashcat.bin /usr/bin/hashcat
+  rm -rf "$tmp_dir"
+}
+
+UpdateVeracrypt() {
+  local veracrypt_version="$($CURL 'https://www.veracrypt.fr/en/Downloads.html' | grep 'tar.bz2' | grep -v '.sig\|x86\|Source\|freebsd' | grep -Po '(?<=veracrypt-)([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+-[[:alnum:]]+|[[:digit:]]+\.[[:digit:]]+-[[:alnum:]]+|[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+|[[:digit:]]+\.[[:digit:]]+)(?=-setup)')" && \
+  local tmp_dir="$(mktemp -d)" && \
+  $WGET -P "$tmp_dir" https://launchpad.net/veracrypt/trunk/"$(tr '[:upper:]' '[:lower:]' <<< "$veracrypt_version")"/+download/veracrypt-"$veracrypt_version"-setup.tar.bz2 && \
+  tar xjf "$tmp_dir"/veracrypt-"$veracrypt_version"-setup.tar.bz2 --directory="$tmp_dir" && \
+  "$tmp_dir"/veracrypt-"$veracrypt_version"-setup-gui-x64 --nox11 --noexec --target "$tmp_dir" && \
+  tail -n +$(sed -n 's/.*PACKAGE_START=\([0-9]*\).*/\1/p' "$tmp_dir"/veracrypt_install_gui_x64.sh) "$tmp_dir"/veracrypt_install_gui_x64.sh > "$tmp_dir"/veracrypt_installer.tar && \
+  tar -C / --no-overwrite-dir -xpzvf "$tmp_dir"/veracrypt_installer.tar
   rm -rf "$tmp_dir"
 }
 
@@ -2772,7 +2782,8 @@ Drawio
 Etcher
 Geeqie
 Yt-dlp
-Hashcat'
+Hashcat
+Veracrypt'
 
 CheckUpdate() {
 for software in $software_list; do
