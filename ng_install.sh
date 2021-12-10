@@ -728,9 +728,9 @@ check_latest_version_manual_install_apps() {
     fi
     # check version : https://github.com/hashcat/hashcat/releases/
 
-    winscp_version="$($CURL 'https://winscp.net/eng/downloads.php' | grep 'Portable.zip' | grep -Po '(?<=WinSCP-)([[:digit:]]+\.+[[:digit:]]+\.[[:digit:]]+)(?=-Portable.zip")')"
+    winscp_version="$($CURL 'https://winscp.net/eng/downloads.php' | grep 'Portable.zip' | grep -Po '(?<=WinSCP-)([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)(?=-Portable.zip")')"
     if [ $? != 0 ] || [ -z "$winscp_version" ]; then
-        winscp_version='5.19.2'
+        winscp_version='5.19.5'
     fi
     # check version : https://winscp.net/eng/downloads.php
 
@@ -2019,6 +2019,7 @@ EOF
 $AG update
 $AGI brave-browser"
 }
+# La conf de Brave est dans /home/$USER/.config/BraveSoftware/Brave-Browser/Default
 ################################################################################
 
 
@@ -2599,6 +2600,22 @@ CheckUpdateVeracrypt() {
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
+CheckUpdateWinscp() {
+  local SoftwareName='WinSCP'
+  local v1="$()"
+  # execute WinSCP
+  # dump the process with the PID of the WinSCP process : gcore -o winscp.dump "$(pgrep WinSCP.exe)"
+  # extract the version from the dump memory of the process :
+  # grep --text -Po '(WinSCP-release-)\K([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)' winscp.pid.86694
+  # find . -type f -regex '.*winscp.dump\.[0-9]+$' -exec grep --text -Po '(WinSCP-release-)\K([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)' {} \;
+
+  # autre méthode, plus simple
+  # local v1="$(7z l "$manual_install_dir"/winscp/WinSCP.exe | grep -Po '(ProductVersion: )\K([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)')"
+  local v2="$($CURL 'https://winscp.net/eng/downloads.php' | grep 'Portable.zip' | grep -Po '(?<=WinSCP-)([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)(?=-Portable.zip")')"
+  CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
+}
+
+
 ################################################################################
 
 UpdateShotcut() {
@@ -2746,6 +2763,15 @@ UpdateVeracrypt() {
   rm -rf "$tmp_dir"
 }
 
+UpdateWinscp() {
+  local tmp_dir="$(mktemp -d)" && \
+  [ -d "$manual_install_dir"/winscp/ ] || rm -rf "$manual_install_dir"/winscp/ && \
+  mkdir "$manual_install_dir"/winscp/ && \
+  $WGET -P "$tmp_dir" https://winscp.net/download/WinSCP-"$winscp_version"-Portable.zip && \
+  unzip "$tmp_dir"/WinSCP-"$winscp_version"-Portable.zip -d "$manual_install_dir"/winscp/
+  rm -rf "$tmp_dir"
+}
+
 
 ################################################################################
 
@@ -2783,7 +2809,8 @@ Etcher
 Geeqie
 Yt-dlp
 Hashcat
-Veracrypt'
+Veracrypt
+Winscp'
 
 CheckUpdate() {
 for software in $software_list; do
