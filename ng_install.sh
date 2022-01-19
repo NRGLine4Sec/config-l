@@ -1197,6 +1197,7 @@ displayandexec "Installation de telnet                              " "$AGI teln
 displayandexec "Installation de testdisk                            " "$AGI testdisk"
 displayandexec "Installation de testssl.sh                          " "$AGI testssl.sh"
 displayandexec "Installation de tree                                " "$AGI tree"
+displayandexec "Installation de tigervnc-viewer                     " "$AGI tigervnc-viewer"
 displayandexec "Installation de tshark                              " "$AGI tshark"
 displayandexec "Installation de ufw                                 " "$AGI ufw"
 displayandexec "Installation de unoconv                             " "$AGI unoconv"
@@ -3348,8 +3349,12 @@ create_template_for_new_file() {
 $ExeAsUser touch ""$template_dir"/Fichier Texte.txt" && \
 $ExeAsUser touch ""$template_dir"/Document ODT.txt" && \
 $ExeAsUser unoconv -f odt ""$template_dir"/Document ODT.txt" && \
-rm -f ""$template_dir"/Document ODT.txt"
+rm -f ""$template_dir"/Document ODT.txt" && \
+$ExeAsUser touch ""$template_dir"/Document ODS.txt" && \
+$ExeAsUser unoconv -f ods ""$template_dir"/Document ODS.txt" && \
+rm -f ""$template_dir"/Document ODS.txt"
 # ref : https://ask.libreoffice.org/en/question/153444/how-to-create-empty-libreoffice-file-in-a-current-directory-on-the-command-line/
+# Pour voir tous les formats supportés par unoconv : unoconv --show
 }
 create_template_for_new_file
 # cette fonction permet d'obtnir dans le clique droit de nautilus l'accès à "Nouveau Document -> Ficher Texte"
