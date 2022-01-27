@@ -311,6 +311,7 @@
 # - potentiellement instaler le paquet sysstat
 # - potentiellement installer le paquet iozone3
 # - potentiellement installer qview (https://interversehq.com/qview/download/)
+# voir si on onstall cette extension : [kgshank/gse-sound-output-device-chooser: Gnome Shell Extension to show a simple chooser to select Input & Output device based on gnome control center](https://github.com/kgshank/gse-sound-output-device-chooser) (gnome-extensions enable 'sound-output-device-chooser@kgshank.net')
 
 # [HardwareVideoAcceleration - Debian Wiki](https://wiki.debian.org/HardwareVideoAcceleration)
 # vainfo
@@ -1851,7 +1852,7 @@ install_opensnitch() {
   local tmp_dir="$(mktemp -d)"
   displayandexec "Installation des dépendances de OpenSnitch          " "$AGI libnetfilter-queue1"
   displayandexec "Installation de OpenSnitch                          " "\
-  $AGI python3-pyqt5.qtsql python3-pyinotify python3-grpcio python3-slugify && \
+  $AGI python3-pyqt5.qtsql python3-pyinotify python3-grpcio python3-slugify python3-notify2 && \
   $WGET -P "$tmp_dir" https://github.com/evilsocket/opensnitch/releases/download/v"$opensnitch_latest_version"/python3-opensnitch-ui_"$(sed -e 's/\.//3' -e 's/-/\./' <<< "$opensnitch_latest_version")"-1_all.deb && \
   $WGET -P "$tmp_dir" https://github.com/evilsocket/opensnitch/releases/download/v"$opensnitch_latest_version"/opensnitch_"$(sed -e 's/\.//3' -e 's/-/\./' <<< "$opensnitch_latest_version")"-1_amd64.deb && \
   dpkg -i "$tmp_dir"/opensnitch_"$(sed -e 's/\.//3' -e 's/-/\./' <<< "$opensnitch_latest_version")"-1_amd64.deb && \
