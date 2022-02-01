@@ -1139,6 +1139,7 @@ displayandexec "Installation de firejail                            " "$AGI fire
 displayandexec "Installation de flameshot                           " "$AGI flameshot"
 displayandexec "Installation de freerdp2-wayland                    " "$AGI freerdp2-wayland"
 displayandexec "Installation de gcc                                 " "$AGI gcc"
+displayandexec "Installation de genisoimage                         " "$AGI genisoimage" # needed to get isoinfo binnary
 displayandexec "Installation de gimp                                " "$AGI gimp"
 displayandexec "Installation de git                                 " "$AGI git"
 displayandexec "Installation de gitk                                " "$AGI gitk"
