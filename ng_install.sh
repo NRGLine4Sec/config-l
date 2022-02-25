@@ -3695,6 +3695,10 @@ temperature-unit='centigrade'
 [gnome/Weather/Application]
 locations=[<(uint32 2, <('Le Mans', 'LFRM', true, [(0.83659448230485101, 0.0034906585039886592)], [(0.83775804095727813, 0.0034906585039886592)])>)>]
 
+[shell/weather]
+automatic-location=true
+locations=[<(uint32 2, <('Le Mans', 'LFRM', true, [(0.83659448230485101, 0.0034906585039886592)], [(0.83775804095727813, 0.0034906585039886592)])>)>]
+
 [gnome/nautilus/preferences]
 search-view='list-view'
 default-folder-viewer='icon-view'
@@ -3730,6 +3734,14 @@ EOF
 # le fait de positionner le theme Adwaita-dark en graphique (avec gnome-tweaks) a créer les fichiers /home/"$local_user"/.config/gtk-4.0/settings.ini  et /home/"$local_user"/.config/gtk-3.0/settings.ini avec le contenu suivant
 # [Settings]
 # gtk-application-prefer-dark-theme=0
+
+# Il semblerait que dans les nouvelles versions de Gnome, il faille mettre
+# [Weather]
+# locations=[<(uint32 2, <('Le Mans', 'LFRM', true, [(0.83659448230485101, 0.0034906585039886592)], [(0.83775804095727813, 0.0034906585039886592)])>)>]
+# alors qu'avant il fallait mettre :
+# [gnome/Weather/Application]
+# locations=[<(uint32 2, <('Le Mans', 'LFRM', true, [(0.83659448230485101, 0.0034906585039886592)], [(0.83775804095727813, 0.0034906585039886592)])>)>]
+# Peut être aussi qu'il faut mettre les deux
 
 # à voir donc s'il est nécessaire de le créer manuellement en positionnement uniquement la valeur à travers le dconf ou s'il est généré automatiquement avec le dconf
 
