@@ -89,7 +89,6 @@
 ##
 ## Regarder pour voir si on install zulucrypt
 ##
-## Regarder pour voir si on install firejail (l'installer manuellement depuis https://github.com/netblue30/firejail/releases car la release depuis les dépots de Debian est trop vielle)
 ##
 ## Une extension Gnome permet de faire en sorte de désactivé le black screen après avoir vérouiller la session (Win + L) : https://extensions.gnome.org/extension/1414/unblank/
 ##
