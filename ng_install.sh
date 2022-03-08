@@ -5,7 +5,7 @@
 
 ## Les .desktop créés par alacarte sont dans .local/share/applications
 
-## Pour retrouver la date d'installation d'un paquet avec apt-get : sudo zgrep "linux-image" /var/log/dpkg.log* | grep " install\| installed "
+## Pour retrouver la date d'installation d'un paquet avec apt-get : sudo zgrep 'linux-image' /var/log/dpkg.log* | grep ' install\| installed '
 ## c'est un exemple qui permet d'obtenir la date d'install de tous les paquets linux-image.
 
 ## les règles udev sont situés dans /etc/udev/rules.d/ mais aussi dans /usr/lib/udev/rules.d/
@@ -199,8 +199,6 @@
 # [gsd-rfkill can't cope with hotplugged rfkill devices (#52) · Issues · GNOME / gnome-settings-daemon · GitLab](https://gitlab.gnome.org/GNOME/gnome-settings-daemon/-/issues/52)
 
 
-# sudo cat /var/lib/gdm3/.local/share/xorg/Xorg.0.log
-
 # problématique de pouvoir désactiver ou activer le bluetooth depuis l'interface graphique sans avoir de permission root alors qu'il semble qu'il y ait besoin des permissions root pour puvoir le faire en ligne de commande, notamment à l'aide de la commande rfkill
 # [rfkill permissions · Issue #75 · linuxmint/blueberry](https://github.com/linuxmint/blueberry/issues/75)
 
@@ -307,7 +305,6 @@
 # - rajouter une variable qui contient l'usage du script pour afficher de quel manière l'utiliser lorsque d'un des arguments n'est pas correct (l'équivalent d'un --help)
 # - ils ont changer l'install de FreeFileSync avec maintenant un binaire pour l'install (indice : bat -A /opt/manual_install/FreeFileSync_11.6_Install.run | more)
 # - potentiellement intégrer l'installation de l'outil xdotool
-# - potentiellement instaler le paquet sysstat
 # - potentiellement installer le paquet iozone3
 # - potentiellement installer qview (https://interversehq.com/qview/download/)
 # voir si on onstall cette extension : [kgshank/gse-sound-output-device-chooser: Gnome Shell Extension to show a simple chooser to select Input & Output device based on gnome control center](https://github.com/kgshank/gse-sound-output-device-chooser) (gnome-extensions enable 'sound-output-device-chooser@kgshank.net')
@@ -1112,6 +1109,7 @@ displayandexec "Installation de auditd                              " "$AGI audi
 displayandexec "Installation de audacity                            " "$AGI audacity"
 displayandexec "Installation de apparmor-profiles                   " "$AGI apparmor-profiles"
 displayandexec "Installation de apparmor-profiles-extra             " "$AGI apparmor-profiles-extra"
+displayandexec "Installation de bind9-dnsutils                      " "$AGI bind9-dnsutils"
 displayandexec "Installation de binwalk                             " "$AGI binwalk"
 displayandexec "Installation de bwm-ng                              " "$AGI bwm-ng"
 displayandexec "Installation de cadaver                             " "$AGI cadaver"
@@ -1125,7 +1123,6 @@ displayandexec "Installation de curl                                " "$AGI curl
 displayandexec "Installation de debconf-utils                       " "$AGI debconf-utils"
 displayandexec "Installation de dmidecode                           " "$AGI dmidecode"
 displayandexec "Installation de dmitry                              " "$AGI dmitry"
-displayandexec "Installation de dnsutils                            " "$AGI dnsutils"
 displayandexec "Installation de dos2unix                            " "$AGI dos2unix"
 displayandexec "Installation de ethtool                             " "$AGI ethtool"
 displayandexec "Installation de ettercap-graphical                  " "$AGI ettercap-graphical"
@@ -1193,6 +1190,7 @@ displayandexec "Installation de ssh                                 " "$AGI ssh"
 displayandexec "Installation de sshfs                               " "$AGI sshfs"
 displayandexec "Installation de strace                              " "$AGI strace"
 displayandexec "Installation de sudo                                " "$AGI sudo"
+displayandexec "Installation de sysstat                             " "$AGI sysstat"
 displayandexec "Installation de tcpdump                             " "$AGI tcpdump"
 displayandexec "Installation de telnet                              " "$AGI telnet"
 displayandexec "Installation de testdisk                            " "$AGI testdisk"
@@ -3432,7 +3430,8 @@ $ExeAsUser apm install language-cisco && \
 $ExeAsUser apm install language-powershell && \
 $ExeAsUser apm install script && \
 $ExeAsUser apm install vertical-tabs && \
-$ExeAsUser apm install tab-title"
+$ExeAsUser apm install tab-title && \
+$ExeAsUser apm install language-ansible"
 }
 configure_atom
 # Les plugins atom en commentaire sont encore en cour de validation
@@ -3442,8 +3441,6 @@ configure_atom
 # apm install markdown-pdf
 # apm install atom-marp
 # regarder pour faire du collaboratif avec atom : https://atom.io/packages/teletype
-
-# apm install language-ansible
 
 # pour voir la liste des plugins installés : apm ls
 ################################################################################
@@ -4220,6 +4217,8 @@ backup_LUKS_header
 # 	fi
 # done
 # ce code permet de faire les backup de tous les devices cryptés s'il y en a plusieurs
+
+# Il faudra certainement changer /home/"$local_user"/backup/ par /home/"$local_user"/.backup/
 ################################################################################
 
 ################################################################################
