@@ -1143,6 +1143,7 @@ displayandexec "Installation de gparted                             " "$AGI gpar
 displayandexec "Installation de gsmartcontrol                       " "$AGI gsmartcontrol"
 displayandexec "Installation de handbrake                           " "$AGI handbrake"
 displayandexec "Installation de hardinfo                            " "$AGI hardinfo"
+displayandexec "Installation de hdparm                              " "$AGI hdparm"
 displayandexec "Installation de htop                                " "$AGI htop"
 displayandexec "Installation de hugo                                " "$AGI hugo"
 displayandexec "Installation de hydra-gtk                           " "$AGI hydra-gtk"
@@ -1183,6 +1184,7 @@ displayandexec "Installation de python3-scapy                       " "$AGI pyth
 displayandexec "Installation de rdesktop                            " "$AGI rdesktop"
 displayandexec "Installation de rkhunter                            " "$AGI rkhunter"
 displayandexec "Installation de rsync                               " "$AGI rsync"
+displayandexec "Installation de sdparm                              " "$AGI sdparm"
 displayandexec "Installation de secure-delete                       " "$AGI secure-delete"
 displayandexec "Installation de shotwell                            " "$AGI shotwell"
 displayandexec "Installation de sqlitebrowser                       " "$AGI sqlitebrowser"
@@ -1332,7 +1334,7 @@ rm -rf "$tmp_dir""
 ##------------------------------------------------------------------------------
 install_spotify_buster() {
   displayandexec "Installation de spotify                             " "\
-$CURL 'https://download.spotify.com/debian/pubkey_0D811D58.gpg' | apt-key add - && \
+$CURL 'https://download.spotify.com/debian/pubkey_5E3C45D7B312C643.gpg' | apt-key add - && \
 echo 'deb http://repository.spotify.com stable non-free' > /etc/apt/sources.list.d/spotify.list && \
 $AG update && \
 $AGI spotify-client"
@@ -2194,10 +2196,25 @@ install_GSE_system_monitor() {
   # on configure avec la commande ci-dessus l'affichage de la métrique de la RAM sous forme de pourcentage plustôt que de graph
 }
 
+#Sound Input & Output Device Chooser
+install_GSE_sound_output_device_chooser() {
+  local tmp_dir="$(mktemp -d)"
+  local GnomeShellExtensionUUID='sound-output-device-chooser@kgshank.net' && \
+  [ -d "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" ] || mkdir -p "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
+  $WGET -P "$tmp_dir" 'https://extensions.gnome.org/extension-data/sound-output-device-chooserkgshank.net.v40.shell-extension.zip' && \
+  unzip -q "$tmp_dir"/sound-output-device-chooserkgshank.net.v40.shell-extension.zip -d "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
+  chown -R "$local_user":"$local_user" "$gnome_shell_extension_path"
+  rm -rf "$tmp_dir"
+}
+# to check the latest version : https://extensions.gnome.org/extension/906/sound-output-device-chooser/
+# https://github.com/kgshank/gse-sound-output-device-chooser
+gnome-extensions enable 'sound-output-device-chooser@kgshank.net'
+
 enable_GSE() {
   $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")' > /dev/null && \
   $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-shell-extension-tool -e 'gnome-shell-screenshot@ttll.de'
   $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-shell-extension-tool -e 'system-monitor@paradoxxx.zero.gmail.com'
+  $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-shell-extension-tool -e 'sound-output-device-chooser@kgshank.net'
 }
 
 check_for_enable_GSE() {
@@ -2222,8 +2239,9 @@ local_user="$(awk -F':' '/1000/{print $1}' /etc/passwd)"
 local_user_UID="$(id -u "$local_user")"
 ExeAsUser="sudo -u "$local_user""
 
-$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'gnome-shell-screenshot@ttll.de'
-$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'system-monitor@paradoxxx.zero.gmail.com'
+$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-shell-extension-tool -e 'gnome-shell-screenshot@ttll.de'
+$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-shell-extension-tool -e 'system-monitor@paradoxxx.zero.gmail.com'
+$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-shell-extension-tool -e 'sound-output-device-chooser@kgshank.net'
 EOF
 chmod +x /tmp/enable_GSE.sh && \
 chown "$local_user":"$local_user" /tmp/enable_GSE.sh
@@ -2232,10 +2250,12 @@ chown "$local_user":"$local_user" /tmp/enable_GSE.sh
 
 install_GSE_screenshot_tool
 install_GSE_system_monitor
+install_GSE_sound_output_device_chooser
 check_for_enable_GSE
 
 displayandexec "Installation des Gnome Shell Extension              " "\
-stat /home/"$local_user"/.local/share/gnome-shell/extensions/gnome-shell-screenshot@ttll.de/metadata.json && \
+stat "$gnome_shell_extension_path"/gnome-shell-screenshot@ttll.de/metadata.json && \
+stat "$gnome_shell_extension_path"/sound-output-device-chooser@kgshank.net/metadata.json && \
 stat /usr/share/gnome-shell/extensions/system-monitor@paradoxxx.zero.gmail.com/metadata.json"
 }
 
@@ -2257,10 +2277,24 @@ install_GSE_system_monitor() {
   # on configure avec la commande ci-dessus l'affichage de la métrique de la RAM sous forme de pourcentage plustôt que de graph
 }
 
+#Sound Input & Output Device Chooser
+install_GSE_sound_output_device_chooser() {
+  local tmp_dir="$(mktemp -d)"
+  local GnomeShellExtensionUUID='sound-output-device-chooser@kgshank.net' && \
+  [ -d "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" ] || mkdir -p "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
+  $WGET -P "$tmp_dir" 'https://extensions.gnome.org/extension-data/sound-output-device-chooserkgshank.net.v40.shell-extension.zip' && \
+  unzip -q "$tmp_dir"/sound-output-device-chooserkgshank.net.v40.shell-extension.zip -d "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
+  chown -R "$local_user":"$local_user" "$gnome_shell_extension_path"
+  rm -rf "$tmp_dir"
+}
+# to check the latest version : https://extensions.gnome.org/extension/906/sound-output-device-chooser/
+# https://github.com/kgshank/gse-sound-output-device-chooser
+
 enable_GSE() {
   $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")' > /dev/null && \
   $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'gnome-shell-screenshot@ttll.de'
   $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'system-monitor@paradoxxx.zero.gmail.com'
+  $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'sound-output-device-chooser@kgshank.net'
 }
 
 check_for_enable_GSE() {
@@ -2287,6 +2321,7 @@ ExeAsUser="sudo -u "$local_user""
 
 $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'gnome-shell-screenshot@ttll.de'
 $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'system-monitor@paradoxxx.zero.gmail.com'
+$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'sound-output-device-chooser@kgshank.net'
 EOF
 chmod +x /tmp/enable_GSE.sh && \
 chown "$local_user":"$local_user" /tmp/enable_GSE.sh
@@ -2295,10 +2330,12 @@ chown "$local_user":"$local_user" /tmp/enable_GSE.sh
 
 install_GSE_screenshot_tool
 install_GSE_system_monitor
+install_GSE_sound_output_device_chooser
 check_for_enable_GSE
 
 displayandexec "Installation des Gnome Shell Extension              " "\
-stat /home/"$local_user"/.local/share/gnome-shell/extensions/gnome-shell-screenshot@ttll.de/metadata.json && \
+stat "$gnome_shell_extension_path"/gnome-shell-screenshot@ttll.de/metadata.json && \
+stat "$gnome_shell_extension_path"/sound-output-device-chooser@kgshank.net/metadata.json && \
 stat /usr/share/gnome-shell/extensions/system-monitor@paradoxxx.zero.gmail.com/metadata.json"
 }
 # il est nécessaire de recharger Gnome Shell avant de pouvoit faire un gnome-extensions enable
@@ -2883,6 +2920,8 @@ chmod +x /usr/bin/check_backport_update"
 ##------------------------------------------------------------------------------
 install_wsudo() {
 cat> /usr/bin/wsudo << 'EOF'
+#!/bin/bash
+
 #small script to enable root access to x-windows system
 xhost +SI:localuser:root
 sudo $1
@@ -2919,7 +2958,7 @@ EOF
 ##------------------------------------------------------------------------------
 install_scanmyhome() {
 displayandexec "Installation du script scanmyhome                   " "\
-echo 'clamscan -r -i /home/' > /usr/bin/scanmyhome && \
+echo 'clamscan --recursive --infected /home/' > /usr/bin/scanmyhome && \
 chmod +x /usr/bin/scanmyhome"
 }
 ################################################################################
@@ -2929,6 +2968,8 @@ chmod +x /usr/bin/scanmyhome"
 ##------------------------------------------------------------------------------
 install_rktscan() {
 cat> /usr/bin/rktscan << 'EOF'
+#!/bin/bash
+
 echo "scan de rootkit avec rkhunter"
 sudo rkhunter --checkall --report-warnings-only
 echo "--------------------------------------------------------------------------------"
@@ -3082,9 +3123,40 @@ displayandexec "Installation du script desactivebt                  " "chmod +x 
 install_play_pause_chromium() {
 cat> /usr/bin/play_pause_chromium << 'EOF'
 dbus_dest_org="$(dbus-send --session --dest=org.freedesktop.DBus --type=method_call --print-reply /org/freedesktop/DBus org.freedesktop.DBus.ListNames | awk '/org.mpris.MediaPlayer2.chromium/{gsub(/\"/,"");print $2}')" && \
-dbus-send --print-reply --dest=$dbus_dest_org /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player.PlayPause > /dev/null
+dbus-send --print-reply --dest="$dbus_dest_org" /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player.PlayPause > /dev/null
 EOF
 displayandexec "Installation du script play_pause_chromium          " "chmod +x /usr/bin/play_pause_chromium"
+}
+################################################################################
+
+################################################################################
+## install du script ex
+##------------------------------------------------------------------------------
+install_ex() {
+cat> /usr/bin/ex << 'EOF'
+#!/bin/bash
+
+if [ -f $1 ]; then
+  case $1 in
+    *.tar.bz2)   tar xjf $1   ;;
+    *.tar.gz)    tar xzf $1   ;;
+    *.tar.xz)		 tar xf $1			;;
+    *.bz2)       bunzip2 $1   ;;
+    *.rar)       unrar x $1     ;;
+    *.gz)        gunzip $1    ;;
+    *.tar)       tar xf $1    ;;
+    *.tbz2)      tar xjf $1   ;;
+    *.tgz)       tar xzf $1   ;;
+    *.zip)       unzip $1     ;;
+    *.Z)         uncompress $1;;
+    *.7z)        7z x $1      ;;
+    *)           echo "'$1' ne peut etre extrait par ex()" ;;
+  esac
+else
+  echo "'$1' fichier invalide"
+fi
+EOF
+displayandexec "Installation du script ex                           " "chmod +x /usr/bin/ex"
 }
 ################################################################################
 
@@ -3101,6 +3173,7 @@ install_all_perso_script() {
   install_appairmebt
   install_desactivebt
   install_play_pause_chromium
+  install_ex
 }
 install_all_perso_script
 ################################################################################
@@ -3443,6 +3516,19 @@ configure_atom
 # regarder pour faire du collaboratif avec atom : https://atom.io/packages/teletype
 
 # pour voir la liste des plugins installés : apm ls
+################################################################################
+
+################################################################################
+## configuration de mpv
+##------------------------------------------------------------------------------
+configure_mpv() {
+execandlog "[ -d /home/"$local_user"/.config/mpv/ ] || $ExeAsUser mkdir /home/"$local_user"/.config/mpv/" && \
+$ExeAsUser cat> /home/"$local_user"/.config/mpv/input.conf << 'EOF'
+# add the capacity to rotate the video when pressing r key
+r cycle_values video-rotate 90 180 270 0
+EOF
+}
+configure_mpv
 ################################################################################
 
 ################################################################################
@@ -4069,6 +4155,7 @@ alias xwx='sudo poweroff'
 # alias funradio='mpv --cache=no http://streaming.radio.funradio.fr/fun-1-48-192'
 alias youtube-dl='youtube-dl -o "%(title)s.%(ext)s"'
 alias yt-dlp='yt-dlp -o "%(title)s.%(ext)s"'
+alias yt-dlp_best='yt-dlp -o "%(title)s.%(ext)s" -f "bestvideo+bestaudio"'
 alias spyme='sudo lnav /var/log/syslog /var/log/auth.log'
 alias sysupdate='sudo sysupdate'
 alias bat='bat -pp'
@@ -4143,6 +4230,7 @@ alias xwx='sudo poweroff'
 # alias funradio='mpv --cache=no http://streaming.radio.funradio.fr/fun-1-48-192'
 alias youtube-dl='youtube-dl -o "%(title)s.%(ext)s"'
 alias yt-dlp='yt-dlp -o "%(title)s.%(ext)s"'
+alias yt-dlp_best='yt-dlp -o "%(title)s.%(ext)s" -f "bestvideo+bestaudio"'
 alias spyme='sudo lnav /var/log/syslog /var/log/auth.log'
 alias sysupdate='sudo sysupdate'
 alias bat='bat -pp'
@@ -4167,11 +4255,12 @@ stat /home/"$local_user"/.zshrc"
 displayandexec "Configuration de zsh en tant que shell par défaut   " "\
 sed -i 's/auth       required   pam_shells.so/auth       sufficient   pam_shells.so/' /etc/pam.d/chsh && \
 $ExeAsUser chsh -s "$(command -v zsh)" && \
+chsh -s "$(command -v zsh)" && \
 sed -i 's/auth       sufficient   pam_shells.so/auth       required   pam_shells.so/' /etc/pam.d/chsh"
 # l'excution de cette commande demande un logoff/login du user pour prendre éffet
-# on est obliger de changer la valeur de /etc/pam.d/chsh car sinon la commande nous de demande de rentrer le mdp de l'utilisateur et donc l'execution de la commande devient intéractif.
+# on est obliger de changer la valeur de /etc/pam.d/chsh car sinon la commande nous demande de rentrer le mdp de l'utilisateur et donc l'execution de la commande devient intéractif.
 # ref : [command line - chsh always asking a password , and get `PAM: Authentication failure` - Ask Ubuntu](https://askubuntu.com/questions/812420/chsh-always-asking-a-password-and-get-pam-authentication-failure/812426#812426)
-# on change donc la valeur avant et après l'execution de la commande chsh
+# on change donc la valeur dans /etc/pam.d/chsh avant et après l'execution de la commande chsh
 
 if [ "$conf_perso" == 1 ]; then
   configure_bashrc_perso
