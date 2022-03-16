@@ -10,8 +10,6 @@
 
 ## les règles udev sont situés dans /etc/udev/rules.d/ mais aussi dans /usr/lib/udev/rules.d/
 
-## Pour installer un paquet depuis les dépots buster-backport : apt-get -t buster-backports install <package>
-
 ## Pour ajouter des modules au démarrage du système, il faut les ajouter dans ce fichier /etc/initramfs-tools/modules
 ## ensuite lancer la commande suivante : update-initramfs -u
 
@@ -34,11 +32,7 @@
 ## \K : permet de supprimer tout le patern matcher précédement du résulat
 ## \d+ : permet d'inttifer un patern de type digit (donc un chiffre). Le + permet d'indiquer qu'il peut y en avoir plusieurs à la suite
 
-## grep -m 1 permet de ne matcher que la première occurence
-
 ## Pour redémarer le daemon alsa : sudo systemctl restart alsa-state.service
-
-## Pour faire un tcpdump sur toutes les interfaces : sudo tcpdump -i any
 
 ## pour obtenir les systèmes de fichier utilisés : mount | column -t
 
@@ -53,8 +47,7 @@
 ##
 ## à garder de côté et à regarder pour l'utilité : https://github.com/lunaryorn/mdcat
 ##
-## passer de iptables à nftables, notamment pour la partie ufw/gufw
-##
+
 
 # Regarder comment ils font avec le script shell de remediation : http://static.open-scap.org/ssg-guides/ssg-debian8-guide-anssi_np_nt28_high.html#xccdf_org.ssgproject.content_rule_sshd_disable_root_login
 # Regarder aussi pour ajouter cette conf la : http://static.open-scap.org/ssg-guides/ssg-debian8-guide-anssi_np_nt28_high.html#xccdf_org.ssgproject.content_rule_sshd_disable_empty_passwords
@@ -84,8 +77,6 @@
 ##
 ## Regarder pour voir si on install gnome-boxes
 ##
-## Rajouter dans la version PRO l'install de VMWare Workstation
-##
 ##
 ## Regarder pour voir si on install zulucrypt
 ##
@@ -108,8 +99,6 @@
 ##
 ## regarder si on a besoin de ça : https://github.com/denisidoro/navi
 ## ça fonctionne vriament bien et c'est simple d'utilisation, il faudrait simplement créer les cheatsheats en fonction des besoins
-##
-## regarder de très près cet outil : https://github.com/chmln/sd
 ##
 ## a garder dans un coin en cas d'upgrade de Gnome ( pour installer des gnom-extension) : https://github.com/gustavo-iniguez-goya/opensnitch/issues/44#issuecomment-654373737
 ##
@@ -199,44 +188,6 @@
 # [gsd-rfkill can't cope with hotplugged rfkill devices (#52) · Issues · GNOME / gnome-settings-daemon · GitLab](https://gitlab.gnome.org/GNOME/gnome-settings-daemon/-/issues/52)
 
 
-# problématique de pouvoir désactiver ou activer le bluetooth depuis l'interface graphique sans avoir de permission root alors qu'il semble qu'il y ait besoin des permissions root pour puvoir le faire en ligne de commande, notamment à l'aide de la commande rfkill
-# [rfkill permissions · Issue #75 · linuxmint/blueberry](https://github.com/linuxmint/blueberry/issues/75)
-
-
-
-# PRESEED
-# [DebianInstaller/Preseed - Debian Wiki](https://wiki.debian.org/DebianInstaller/Preseed)
-# [Mike Renfro Blog : The New File Server: Preseeding and LVM](https://web.archive.org/web/20170911182730/http://blogs.cae.tntech.edu/mwr/2007/08/02/the-new-file-server-preseeding-and-lvm/)
-# [Mike Renfro Blog : Unattended Debian Installations (or How I Learned to Stop Worrying and Love the preseed.cfg)](https://web.archive.org/web/20170911185428/http://blogs.cae.tntech.edu/mwr/2007/04/17/unattended-debian-installations-or-how-i-learned-to-stop-worrying-and-love-the-preseedcfg/)
-# [Automating new Debian installations with preseeding](https://web.archive.org/web/20200809164102/https://debian-administration.org/article/394/Automating_new_Debian_installations_with_preseeding)
-# [paulgorman.org/technical](https://paulgorman.org/technical/ubuntu-preseed-kickstart.txt.html)
-# [debian-installer/partman-auto-recipe.txt at master · xobs/debian-installer](https://github.com/xobs/debian-installer/blob/master/doc/devel/partman-auto-recipe.txt)
-# [server - How do I preseed a disk to 50% / and /tmp? - Ask Ubuntu](https://askubuntu.com/questions/94280/how-do-i-preseed-a-disk-to-50-and-tmp)
-# [Debian Preseed and Docker](https://www.frakkingsweet.com/debian-preseed-and-docker/)
-# [Enterprise/WorkstationAutoinstallPreseed - Ubuntu Wiki](https://wiki.ubuntu.com/Enterprise/WorkstationAutoinstallPreseed)
-# [p50-preseed · master · Preseed / p50 preseed · GitLab](https://gitlab.com/preseed/preseed-p50/-/blob/master/p50-preseed)
-# [gaming-preseed · master · Preseed / desktop preseed · GitLab](https://gitlab.com/preseed/preseed-desktop/-/blob/master/gaming-preseed)
-# [Debian 10 Preseed [Chuck Nemeth]](https://www.chucknemeth.com/linux/distribution/debian/debian-10-preseed)
-# [Preseed Debian 9 – UEFI with Encrypted LVM [Chuck Nemeth]](https://www.chucknemeth.com/linux/distribution/debian/debian-9-preseed-uefi-encrypted-lvm)
-# [installation - Ubuntu preseed install. 50% of / and /tmp - Stack Overflow](https://stackoverflow.com/questions/8800256/ubuntu-preseed-install-50-of-and-tmp)
-# [Understanding partman-auto/expert_recipe | Tim Bishop](https://www.bishnet.net/tim/blog/2015/01/29/understanding-partman-autoexpert_recipe/)
-# [PartMan/Auto - Wikitech](https://wikitech.wikimedia.org/wiki/PartMan/Auto)
-# [Preseed LVM+Crypto 18.04 - Ask Ubuntu](https://askubuntu.com/questions/1132060/preseed-lvmcrypto-18-04)
-# [Preseeding Full Disk Encryption | Linux Journal](https://www.linuxjournal.com/content/preseeding-full-disk-encryption)
-# [Debian Preseed with Encrypted LVM](https://gist.github.com/chuckn246/ca24d26c048b3cc4ffa8188708f5dccf)
-# [Ubuntu 14.04 preseed - Full Disk Encryption](https://gist.github.com/cedricvidal/eab1578c30b30802eaca403a2dd596d5)
-# [Disk encryption in debian-installer recipe - Support - TheForeman](https://community.theforeman.org/t/disk-encryption-in-debian-installer-recipe/20184/4)
-# [Quelques astuces sur la méthode preseed pour installer Debian - Where is it?](https://medspx.fr/blog/Debian/preseed_snippets/)
-# [preseed debian / Wiki / Debian-facile](https://debian-facile.org/doc:install:preseed)
-# [DebianInstaller/Preseed/EditIso - Debian Wiki](https://wiki.debian.org/DebianInstaller/Preseed/EditIso)
-# [fr/DebianInstaller/Preseed - Debian Wiki](https://wiki.debian.org/fr/DebianInstaller/Preseed)
-# [B.3. Creating a preconfiguration file](https://www.debian.org/releases/buster/amd64/apbs03.en.html)
-# [server - How do I preseed a disk to 50% / and /tmp? - Ask Ubuntu](https://askubuntu.com/questions/94280/how-do-i-preseed-a-disk-to-50-and-tmp)
-# [debian-installer/partman-auto-recipe.txt at master · xobs/debian-installer](https://github.com/xobs/debian-installer/blob/master/doc/devel/partman-auto-recipe.txt)
-# https://github.com/elreydetoda/packer-kali_linux/blob/master/install/http/kali-linux-rolling-preseed.cfg
-# [Debian 10 Preseed [Chuck Nemeth]](https://www.chucknemeth.com/linux/distribution/debian/debian-10-preseed)
-
-
 ## copier leur système d'affiche pour l'usage : [Remove Elasticsearch indices that older than a given date.](https://gist.github.com/yumminhuang/ec03bcacbbc6434412b82ca0c34e7a18)
 
 ## a regarder pour installer setools-gui
@@ -307,7 +258,8 @@
 # - potentiellement intégrer l'installation de l'outil xdotool
 # - potentiellement installer le paquet iozone3
 # - potentiellement installer qview (https://interversehq.com/qview/download/)
-# voir si on onstall cette extension : [kgshank/gse-sound-output-device-chooser: Gnome Shell Extension to show a simple chooser to select Input & Output device based on gnome control center](https://github.com/kgshank/gse-sound-output-device-chooser) (gnome-extensions enable 'sound-output-device-chooser@kgshank.net')
+
+
 
 # [HardwareVideoAcceleration - Debian Wiki](https://wiki.debian.org/HardwareVideoAcceleration)
 # vainfo
@@ -1019,6 +971,14 @@ configure_debconf
 ################################################################################
 
 ################################################################################
+## Update PCI ID list
+##------------------------------------------------------------------------------
+displayandexec "Mise à jour de la liste des ID PCI                  " "update-pciids"
+# This utility requires curl, wget or lynx to be installed.
+# le binnaire est situé ici : /usr/sbin/update-pciids
+################################################################################
+
+################################################################################
 ## installation des logiciels
 ##------------------------------------------------------------------------------
 echo ''
@@ -1079,6 +1039,18 @@ if awk '{print $2}' /proc/bus/pci/devices | grep '^1002' &> /dev/null; then
   done
 fi
 
+# # si CPU/GPU is Intel
+# # awk '!/^[[:blank:]]/ && /^1002/' /usr/share/misc/pci.ids
+# # l'ID 1002 correspond à Advanced Micro Devices, Inc. [AMD/ATI]
+# if awk '{print $2}' /proc/bus/pci/devices | grep '^1002' &> /dev/null; then
+#   for device in $(grep -Po "^[[:xdigit:]]{4}[[:blank:]]+1002\K[[:xdigit:]]{4}" /proc/bus/pci/devices); do
+#     # on s'assure que le device AMD est bien une carte graphique
+#     if grep "$device" /usr/share/misc/pci.ids | grep -i 'Radeon' > /dev/null; then
+#       displayandexec "Installation de intel-gpu-tools                     " "$AGI intel-gpu-tools"
+#     fi
+#   done
+# fi
+
 # si carte Ethernet Realtek
 # awk '!/^[[:blank:]]/ && /^10ec/' /usr/share/misc/pci.ids
 # l'ID 10ec correspond à Realtek Semiconductor Co., Ltd.
@@ -1131,7 +1103,7 @@ displayandexec "Installation de exiv2                               " "$AGI exiv
 displayandexec "Installation de ffmpeg                              " "$AGI ffmpeg"
 displayandexec "Installation de filezilla                           " "$AGI filezilla"
 displayandexec "Installation de firefox-esr-l10n-fr                 " "$AGI firefox-esr-l10n-fr"
-displayandexec "Installation de firejail                            " "$AGI firejail"
+displayandexec "Installation de firejail                            " "$AGI firejail firejail-profiles"
 displayandexec "Installation de flameshot                           " "$AGI flameshot"
 displayandexec "Installation de freerdp2-wayland                    " "$AGI freerdp2-wayland"
 displayandexec "Installation de gcc                                 " "$AGI gcc"
@@ -1222,6 +1194,20 @@ displayandexec "Installation de zutils                              " "$AGI zuti
 displayandexec "Installation de zsh                                 " "$AGI zsh"
 displayandexec "Installation de zstd                                " "$AGI zstd"
 displayandexec "Installation de whois                               " "$AGI whois"
+
+install_from_backports() {
+  sed -i "s%^#deb http://deb.debian.org/debian "$debian_release"-backports%deb http://deb.debian.org/debian "$debian_release"-backports%" /etc/apt/sources.list && \
+  $AG update
+  if apt-cache policy firejail | grep 'Candidate: ' | grep '~bpo' > /dev/null; then
+    displayandexec "Installation de firejail                            " "$AG -t "$debian_release"-backports install -y firejail firejail-profiles"
+  fi
+  sed -i "s%^deb http://deb.debian.org/debian "$debian_release"-backports%#deb http://deb.debian.org/debian "$debian_release"-backports%" /etc/apt/sources.list
+  $AG update
+}
+# a savoir que juste après la release de la latest stable de debian, les paquets ne sont probablement pas disponnibles dans les backports et qu'il faut donc les garder aussi dans l'installation des paquets depuis le main standard pour pouvoir être compatible avec une instable from scratch apès une nouvelle release de debian.
+# On permet toutefois l'install de la dernière version disponnible dans backport si elle existe (vérification avec la commande apt-cache policy firejail | grep 'Candidate: ' | grep '~bpo')
+install_from_backports
+
 install_zfs_buster() {
   sed -i "s%^#deb http://deb.debian.org/debian "$debian_release"-backports%deb http://deb.debian.org/debian "$debian_release"-backports%" /etc/apt/sources.list
   displayandexec "Installation de ZFS                                 " "\
@@ -1236,12 +1222,15 @@ install_zfs_buster() {
 }
 
 install_zfs_bullseye() {
+  sed -i "s%^#deb http://deb.debian.org/debian "$debian_release"-backports%deb http://deb.debian.org/debian "$debian_release"-backports%" /etc/apt/sources.list
   displayandexec "Installation de ZFS                                 " "\
   echo 'zfs-dkms	zfs-dkms/stop-build-for-32bit-kernel	boolean	true' | debconf-set-selections && \
   echo 'zfs-dkms	zfs-dkms/note-incompatible-licenses	note' | debconf-set-selections && \
   echo 'zfs-dkms	zfs-dkms/stop-build-for-unknown-kernel	boolean	true'| debconf-set-selections && \
   $AGI zfsutils-linux zfs-dkms zfs-zed && \
   modprobe zfs"
+  sed -i "s%^deb http://deb.debian.org/debian "$debian_release"-backports%#deb http://deb.debian.org/debian "$debian_release"-backports%" /etc/apt/sources.list && \
+  $AG update
 }
 
 if [ "$buster" == 1 ]; then
@@ -1759,6 +1748,11 @@ $CURL --location 'https://packagecloud.io/asbru-cm/asbru-cm/gpgkey' | gpg --dear
 $AG update && \
 $AGI asbru-cm"
 }
+
+# a priori le nouveau dépot serrait celui de cloudsmith.io d'après https://docs.asbru-cm.net/General/Installation/#debian
+# https://dl.cloudsmith.io/public/asbru-cm/release/gpg.7684B0670B1C65E8.key
+# deb [arch=amd64 signed-by=/usr/share/keyrings/asbru-archive-keyring.gpg] https://dl.cloudsmith.io/public/asbru-cm/release/deb/debian bullseye main
+#deb-src https://dl.cloudsmith.io/public/asbru-cm/release/deb/debian bullseye main
 ################################################################################
 
 ################################################################################
@@ -2143,14 +2137,6 @@ displayandexec "Désinstalation de synaptic                          " "$AG remo
 displayandexec "Désinstalation de Gnome Parental Control            " "$AG remove -y malcontent malcontent-gui"
 ################################################################################
 
-#OpenOffice
-# displayandexec "Installation de OpenOffice                          " "\
-# $WGET http://sourceforge.net/projects/openofficeorg.mirror/files/"$openoffice_version"/binaries/fr/Apache_OpenOffice_"$openoffice_version"_Linux_x86-64_install-deb_fr.tar.gz && \
-# tar xzf Apache_OpenOffice_"$openoffice_version"_Linux_x86-64_install-deb_fr.tar.gz && \
-# cd fr/DEBS/ && \
-# dpkg -i *.deb && cd desktop-integration/ && \
-# dpkg -i openoffice4.1-debian-menu*.deb"
-
 ################################################################################
 ## instalation des Gnome Shell Extension
 ##------------------------------------------------------------------------------
@@ -2189,6 +2175,7 @@ install_GSE_screenshot_tool() {
   chown -R "$local_user":"$local_user" "$gnome_shell_extension_path"
   rm -rf "$tmp_dir"
 }
+
 #system-monitor
 install_GSE_system_monitor() {
   $AGI gnome-shell-extension-system-monitor
@@ -2208,7 +2195,6 @@ install_GSE_sound_output_device_chooser() {
 }
 # to check the latest version : https://extensions.gnome.org/extension/906/sound-output-device-chooser/
 # https://github.com/kgshank/gse-sound-output-device-chooser
-gnome-extensions enable 'sound-output-device-chooser@kgshank.net'
 
 enable_GSE() {
   $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")' > /dev/null && \
@@ -2270,6 +2256,7 @@ install_GSE_screenshot_tool() {
   chown -R "$local_user":"$local_user" "$gnome_shell_extension_path"
   rm -rf "$tmp_dir"
 }
+
 #system-monitor
 install_GSE_system_monitor() {
   $AGI gnome-shell-extension-system-monitor &> /dev/null
@@ -2370,9 +2357,6 @@ fi
 # zgrep -a '"uuid":' /tmp/gnome-shell-screenshotttll.de.v56.shell-extension.zip | grep -Po '(?<="uuid": ")\K(.*)(?=",)'
 
 # regarder si on peut faire du debug sur l'install des Gnome Shell Extension avec journalctl --user /usr/bin/gnome-shell --follow
-
-# regarder l'interêt d'installer cette extension la : https://extensions.gnome.org/extension/906/sound-output-device-chooser/
-# "Shows a list of sound output and input devices (similar to gnome sound settings) in the status menu below the volume slider."
 ################################################################################
 
 ################################################################################
@@ -3209,42 +3193,6 @@ configure_for_perso() {
   source /home/"$local_user"/postinstall_perso.sh
   exec 19>>/tmp/ng_install_set-x_logfile
   BASH_XTRACEFD='19'
-#     $ExeAsUser cat> tmp_conf_dconf_perso << EOF
-# [gnome/settings-daemon/plugins/media-keys]
-# custom-keybindings=['/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom1/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom2/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom3/']
-#
-# [gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom2]
-# binding='<Primary><Shift>y'
-# command='/usr/bin/eteindreecran'
-# name='réactiver l ecran'
-# [gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom3]
-# binding='<Primary><Shift>h'
-# command='/usr/bin/redemarerecran'
-# name="réactiver l écran du PC avec les paramètres à gauche de l écran principal"
-# EOF
-#     $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$local_user_UID/bus" dconf load /org/ < tmp_conf_dconf_perso
-
-  install_redemarerecran() {
-  #redemarerecran
-  displayandexec "Installation du script redemarerecran               " "\
-  echo 'xrandr --output eDP-1 --left-of HDMI-1 --auto' > /usr/bin/redemarerecran && \
-  chmod +x /usr/bin/redemarerecran"
-
-  # pour obtenir le nom des écrans : xrandr -q
-  # https://askubuntu.com/questions/62858/turn-off-monitor-using-command-line
-  }
-  install_redemarerecran
-
-  install_eteindreecran() {
-  #eteindreecran
-  displayandexec "Installation du script eteindreecran                " "\
-  echo 'xrandr --output eDP-1 --off' > /usr/bin/eteindreecran && \
-  chmod +x /usr/bin/eteindreecran"
-  }
-  install_eteindreecran
-
-  CustomGnomeShortcut "eteindre l ecran" "/usr/bin/eteindreecran" "<Primary><Shift>y"
-  CustomGnomeShortcut "réactiver l écran du PC avec les paramètres à gauche de l écran principal" "/usr/bin/redemarerecran" "<Primary><Shift>h"
 }
 if [ "$conf_perso" == 1 ]; then
     configure_for_perso
@@ -4148,11 +4096,8 @@ alias u='sudo ag update'
 alias up='sudo ag upgrade'
 alias upp='sudo ag update && sudo ag upgrade'
 alias uppr='sudo ag update && sudo ag dist-upgrade'
-alias x='exit'
 alias xx='sudo shutdown now'
 alias xwx='sudo poweroff'
-# a priori le stream de funradio ne fonctionne plus
-# alias funradio='mpv --cache=no http://streaming.radio.funradio.fr/fun-1-48-192'
 alias youtube-dl='youtube-dl -o "%(title)s.%(ext)s"'
 alias yt-dlp='yt-dlp -o "%(title)s.%(ext)s"'
 alias yt-dlp_best='yt-dlp -o "%(title)s.%(ext)s" -f "bestvideo+bestaudio"'
@@ -4194,7 +4139,6 @@ alias u='ag update'
 alias up='ag upgrade'
 alias upp='ag update && ag upgrade'
 alias uppr='ag update && ag dist-upgrade'
-alias x='exit'
 alias xx='shutdown now'
 alias xwx='poweroff'
 alias spyme='lnav /var/log/syslog /var/log/auth.log'
@@ -4223,11 +4167,8 @@ alias u='sudo ag update'
 alias up='sudo ag upgrade'
 alias upp='sudo ag update && sudo ag upgrade'
 alias uppr='sudo ag update && sudo ag dist-upgrade'
-alias x='exit'
 alias xx='sudo shutdown now'
 alias xwx='sudo poweroff'
-# a priori le stream de funradio ne fonctionne plus
-# alias funradio='mpv --cache=no http://streaming.radio.funradio.fr/fun-1-48-192'
 alias youtube-dl='youtube-dl -o "%(title)s.%(ext)s"'
 alias yt-dlp='yt-dlp -o "%(title)s.%(ext)s"'
 alias yt-dlp_best='yt-dlp -o "%(title)s.%(ext)s" -f "bestvideo+bestaudio"'
@@ -4295,7 +4236,7 @@ displayandexec "Mise à jour de la base de donnée de rkhunter        " "rkhunte
 backup_LUKS_header() {
   luks_partition="$(lsblk --fs --list | awk '/crypto_LUKS/{print $1}')"
   displayandexec "Création d'un backup de l'entête LUKS               " "\
-[ -d /home/"$local_user"/backup/ ] || $ExeAsUser mkdir --parents /home/"$local_user"/backup/ && \
+[ -d /home/"$local_user"/.backup/ ] || $ExeAsUser mkdir --parents /home/"$local_user"/.backup/ && \
 cryptsetup luksHeaderBackup /dev/"$luks_partition" --header-backup-file /home/"$local_user"/backup/"$luks_partition"_LUKS_Header_Backup.img"
 }
 backup_LUKS_header
@@ -4306,8 +4247,6 @@ backup_LUKS_header
 # 	fi
 # done
 # ce code permet de faire les backup de tous les devices cryptés s'il y en a plusieurs
-
-# Il faudra certainement changer /home/"$local_user"/backup/ par /home/"$local_user"/.backup/
 ################################################################################
 
 ################################################################################
@@ -4359,8 +4298,8 @@ timeshift --scripted --create --rsync --comments 'first snapshot, after postinst
 # cette étape est très longue lorsqu'il faut faire un premier snapshot (car timeshift doit faire en fait un miroir du système existant)
 # sur un HDD pas très rapide, il y en a pour à peu près une heure
 execandlog "timeshift --list"
-# On fait le timeshift --list qu'on redirige dans le fichier de log juste pour avoir les infos de la création du snapshot
-# après l'execution du script ng_insall et du snapshot avec timeshift, il y a environ 26 Go d'utilisé sur /
+# On fait le timeshift --list qu'on redirige dans le fichier de log juste pour avoir les infos de la création du snapshot.
+# Après l'execution du script ng_install et du snapshot avec timeshift, il y a environ 26 Go d'utilisé sur /
 ################################################################################
 
 echo '--------------------------------------------------------------------' >> "$log_file"
@@ -4392,19 +4331,19 @@ cp /tmp/ng_install_set-x_logfile "$log_dir"/ng_install_set-x_logfile-"$now"
 ## after install options
 ##------------------------------------------------------------------------------
 if [ "$show_log" == 1 ]; then
-    more "$log_file"
+  more "$log_file"
 fi
 
 if [ "$show_only_error" == 1 ]; then
-    grep -i 'error' "$stdout_file"
+  grep -i 'error' "$stdout_file"
 fi
 
 if [ "$reboot_after_install" == 1 ]; then
-    reboot
+  reboot
 fi
 
 if [ "$shutdown_after_install" == 1 ]; then
-    poweroff
+  poweroff
 fi
 ################################################################################
 
