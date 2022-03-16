@@ -261,10 +261,6 @@
 
 
 
-# [HardwareVideoAcceleration - Debian Wiki](https://wiki.debian.org/HardwareVideoAcceleration)
-# vainfo
-# vdpauinfo
-
 ################################################################################
 
 ################################################################################
@@ -1239,6 +1235,12 @@ fi
 if [ "$bullseye" == 1 ]; then
   install_zfs_bullseye
 fi
+
+install_hardware_acceleration() {
+  displayandexec "Installation des packages HardwareVideoAcceleration " "$AGI vainfo vdpauinfo"
+}
+# [HardwareVideoAcceleration - Debian Wiki](https://wiki.debian.org/HardwareVideoAcceleration)
+install_hardware_acceleration
 ################################################################################
 
 
@@ -1753,6 +1755,8 @@ $AGI asbru-cm"
 # https://dl.cloudsmith.io/public/asbru-cm/release/gpg.7684B0670B1C65E8.key
 # deb [arch=amd64 signed-by=/usr/share/keyrings/asbru-archive-keyring.gpg] https://dl.cloudsmith.io/public/asbru-cm/release/deb/debian bullseye main
 #deb-src https://dl.cloudsmith.io/public/asbru-cm/release/deb/debian bullseye main
+
+# Il semblerait donc que bullseye ne soit toujours pas dans les nouveaux dépots : [Cloudsmith - Repositories - asbru-cm (asbru-cm) - release (release) - Packages](https://cloudsmith.io/~asbru-cm/repos/release/packages/?q=distribution%3Adebian)
 ################################################################################
 
 ################################################################################
