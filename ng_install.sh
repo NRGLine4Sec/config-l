@@ -3411,7 +3411,8 @@ $ExeAsUser apm install language-powershell && \
 $ExeAsUser apm install script && \
 $ExeAsUser apm install vertical-tabs && \
 $ExeAsUser apm install tab-title && \
-$ExeAsUser apm install language-ansible"
+$ExeAsUser apm install language-ansible && \
+$ExeAsUser apm install language-diff"
 }
 configure_atom
 # Les plugins atom en commentaire sont encore en cour de validation
@@ -3904,6 +3905,7 @@ text/markdown=typora.desktop;org.gnome.gedit.desktop;
 text/csv=libreoffice-calc.desktop;org.gnome.gedit.desktop;
 text/html=chromium.desktop;atom.desktop;
 text/x-patch=atom.desktop;
+text/x-diff=atom.desktop;
 text/x-python=atom.desktop;
 video/x-matroska=mpv.desktop;
 video/webm=mpv.desktop;
@@ -3917,6 +3919,7 @@ application/x-keepass2=keepassxc.desktop
 application/x-kdbx=keepassxc.desktop
 text/html=chromium.desktop
 text/plain=atom.desktop
+text/x-diff=atom.desktop
 text/markdown=typora.desktop
 video/mp4=mpv.desktop
 video/x-matroska=mpv.desktop
