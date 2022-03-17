@@ -584,12 +584,6 @@ check_latest_version_manual_install_apps() {
     fi
     # check version : https://github.com/jgraph/drawio-desktop/releases
 
-    # openoffice_version=$($CURL 'https://www.openoffice.org/fr/Telecharger/' | awk '/Linux/ && /deb/ && /x86-64/' | grep -Po '(?<=OpenOffice_)(\d+\.+)+\d+')
-    # if [ $? != 0 ] || [ -z $openoffice_version ]; then
-    #     openoffice_version='4.1.10'
-    # fi
-    # check version : https://www.openoffice.org/fr/Telecharger/
-
     freefilesync_version="$($CURL 'https://freefilesync.org/download.php' | grep 'Linux.tar.gz' | grep -Po '(?<=FreeFileSync_)([[:digit:]]+\.+[[:digit:]]+)')"
     if [ $? != 0 ] || [ -z "$freefilesync_version" ]; then
         freefilesync_version='11.14'
@@ -708,8 +702,6 @@ manual_check_latest_version() {
   echo 'VeraCrypt '"$veracrypt_version"
   drawio_version="$($CURL 'https://api.github.com/repos/jgraph/drawio-desktop/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   echo 'drawio '"$drawio_version"
-  openoffice_version="$($CURL 'https://www.openoffice.org/fr/Telecharger/' | awk '/Linux/ && /deb/ && /x86-64/' | grep -Po '(?<=OpenOffice_)([[:digit:]]+\.+)+[[:digit:]]+')"
-  echo 'OpenOffice '"$openoffice_version"
   freefilesync_version="$($CURL 'https://freefilesync.org/download.php' | grep 'Linux.tar.gz' | grep -Po '(?<=FreeFileSync_)([[:digit:]]+\.+[[:digit:]]+)')"
   echo 'FreeFileSync '"$freefilesync_version"
   boostnote_version="$($CURL 'https://api.github.com/repos/BoostIO/boost-releases/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
@@ -1035,17 +1027,17 @@ if awk '{print $2}' /proc/bus/pci/devices | grep '^1002' &> /dev/null; then
   done
 fi
 
-# # si CPU/GPU is Intel
-# # awk '!/^[[:blank:]]/ && /^1002/' /usr/share/misc/pci.ids
-# # l'ID 1002 correspond à Advanced Micro Devices, Inc. [AMD/ATI]
-# if awk '{print $2}' /proc/bus/pci/devices | grep '^1002' &> /dev/null; then
-#   for device in $(grep -Po "^[[:xdigit:]]{4}[[:blank:]]+1002\K[[:xdigit:]]{4}" /proc/bus/pci/devices); do
-#     # on s'assure que le device AMD est bien une carte graphique
-#     if grep "$device" /usr/share/misc/pci.ids | grep -i 'Radeon' > /dev/null; then
-#       displayandexec "Installation de intel-gpu-tools                     " "$AGI intel-gpu-tools"
-#     fi
-#   done
-# fi
+# si CPU/GPU is Intel
+# awk '!/^[[:blank:]]/ && /^8086/' /usr/share/misc/pci.ids
+# l'ID 8086 correspond à Intel Corporation
+if awk '{print $2}' /proc/bus/pci/devices | grep '^8086' &> /dev/null; then
+  for device in $(grep -Po "^[[:xdigit:]]{4}[[:blank:]]+8086\K[[:xdigit:]]{4}" /proc/bus/pci/devices); do
+    # on s'assure que le device Intel est bien une carte graphique
+    if grep "$device" /usr/share/misc/pci.ids | grep -i 'Graphics' > /dev/null; then
+      displayandexec "Installation de intel-gpu-tools                     " "$AGI intel-gpu-tools"
+    fi
+  done
+fi
 
 # si carte Ethernet Realtek
 # awk '!/^[[:blank:]]/ && /^10ec/' /usr/share/misc/pci.ids
@@ -3166,43 +3158,6 @@ install_all_perso_script() {
 install_all_perso_script
 ################################################################################
 
-################################################################################
-## configuration spéficique pour le pc pro
-##------------------------------------------------------------------------------
-configure_for_pro() {
-  echo ''
-  echo '     ################################################################'
-  echo '     #             CONFIGURATION SPECIFIQUE POUR PC PRO             #'
-  echo '     ################################################################'
-  echo ''
-  source /home/"$local_user"/postinstall_pro.sh
-  exec 19>>/tmp/ng_install_set-x_logfile
-  BASH_XTRACEFD='19'
-}
-if [ "$conf_pro" == 1 ]; then
-  configure_for_pro
-fi
-# https://privatebin.net/?a6afba924ca26454#BDfwXqhPL4wYAwBDELCKDfXt858y5YD4rMsSfeWM6pQz
-################################################################################
-
-################################################################################
-## configuration spéficique pour le pc perso
-##------------------------------------------------------------------------------
-configure_for_perso() {
-  echo ''
-  echo '     ################################################################'
-  echo '     #            CONFIGURATION SPECIFIQUE POUR PC PERSO            #'
-  echo '     ################################################################'
-  echo ''
-  source /home/"$local_user"/postinstall_perso.sh
-  exec 19>>/tmp/ng_install_set-x_logfile
-  BASH_XTRACEFD='19'
-}
-if [ "$conf_perso" == 1 ]; then
-    configure_for_perso
-fi
-################################################################################
-
 #//////////////////////////////////////////////////////////////////////////////#
 #                              CONFIGURATION                                   #
 #//////////////////////////////////////////////////////////////////////////////#
@@ -3481,6 +3436,7 @@ r cycle_values video-rotate 90 180 270 0
 EOF
 }
 configure_mpv
+# ref : [command line - Rotate video by a keyboard shortcut in mpv - Ask Ubuntu](https://askubuntu.com/questions/1212733/rotate-video-by-a-keyboard-shortcut-in-mpv/1345092#1345092)
 ################################################################################
 
 ################################################################################
@@ -4073,6 +4029,43 @@ execandlog "chmod 4755 /opt/Signal/chrome-sandbox"
 ##------------------------------------------------------------------------------
 execandlog "ln -s "$(command -v apt-fast)" /usr/bin/ag"
 # on ne le définie pas en tant qu'un alias pour qu'il puisse être utilisé dans un subshell
+################################################################################
+
+################################################################################
+## configuration spéficique pour le pc pro
+##------------------------------------------------------------------------------
+configure_for_pro() {
+  echo ''
+  echo '     ################################################################'
+  echo '     #             CONFIGURATION SPECIFIQUE POUR PC PRO             #'
+  echo '     ################################################################'
+  echo ''
+  source /home/"$local_user"/postinstall_pro.sh
+  exec 19>>/tmp/ng_install_set-x_logfile
+  BASH_XTRACEFD='19'
+}
+if [ "$conf_pro" == 1 ]; then
+  configure_for_pro
+fi
+# https://privatebin.net/?a6afba924ca26454#BDfwXqhPL4wYAwBDELCKDfXt858y5YD4rMsSfeWM6pQz
+################################################################################
+
+################################################################################
+## configuration spéficique pour le pc perso
+##------------------------------------------------------------------------------
+configure_for_perso() {
+  echo ''
+  echo '     ################################################################'
+  echo '     #            CONFIGURATION SPECIFIQUE POUR PC PERSO            #'
+  echo '     ################################################################'
+  echo ''
+  source /home/"$local_user"/postinstall_perso.sh
+  exec 19>>/tmp/ng_install_set-x_logfile
+  BASH_XTRACEFD='19'
+}
+if [ "$conf_perso" == 1 ]; then
+    configure_for_perso
+fi
 ################################################################################
 
 ################################################################################
