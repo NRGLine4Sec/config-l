@@ -993,7 +993,7 @@ echo ''
 if awk '{print $2}' /proc/bus/pci/devices | grep '^8086' &> /dev/null; then
   for intel_device in $(grep -Po "^[[:xdigit:]]{4}[[:blank:]]+8086\K[[:xdigit:]]{4}" /proc/bus/pci/devices); do
     # on s'assure que le device intel est bien une carte wifi
-    if grep "$intel_device" /usr/share/misc/pci.ids | grep -i -e 'wireless' -e 'Wi-Fi' -e 'WiFi' &> /dev/null; then
+    if grep "[[:blank:]]"$intel_device"[[:blank:]]" /usr/share/misc/pci.ids | grep -i -e 'wireless' -e 'Wi-Fi' -e 'WiFi' &> /dev/null; then
       displayandexec "Installation de firmware-iwlwifi                    " "$AGI firmware-iwlwifi"
     fi
   done
@@ -1033,7 +1033,7 @@ fi
 if awk '{print $2}' /proc/bus/pci/devices | grep '^1002' &> /dev/null; then
   for amd_device in $(grep -Po "^[[:xdigit:]]{4}[[:blank:]]+1002\K[[:xdigit:]]{4}" /proc/bus/pci/devices); do
     # on s'assure que le device AMD est bien une carte graphique
-    if grep "$amd_device" /usr/share/misc/pci.ids | grep -i 'Radeon' &> /dev/null; then
+    if grep "[[:blank:]]"$amd_device"[[:blank:]]" /usr/share/misc/pci.ids | grep -i 'Radeon' &> /dev/null; then
       displayandexec "Installation de firmware-amd-graphics               " "$AGI firmware-amd-graphics"
       displayandexec "Installation de xserver-xorg-video-amdgpu           " "$AGI xserver-xorg-video-amdgpu"
       displayandexec "Installation de radeontop                           " "$AGI radeontop"
@@ -1047,7 +1047,7 @@ fi
 if awk '{print $2}' /proc/bus/pci/devices | grep '^8086' &> /dev/null; then
   for intel_device in $(grep -Po "^[[:xdigit:]]{4}[[:blank:]]+8086\K[[:xdigit:]]{4}" /proc/bus/pci/devices); do
     # on s'assure que le device Intel est bien une carte graphique
-    if grep "$intel_device" /usr/share/misc/pci.ids | grep -i 'Graphics' &> /dev/null; then
+    if grep "[[:blank:]]"$intel_device"[[:blank:]]" /usr/share/misc/pci.ids | grep -i 'Graphics' &> /dev/null; then
       displayandexec "Installation de intel-gpu-tools                     " "$AGI intel-gpu-tools"
     fi
   done
@@ -1059,7 +1059,7 @@ fi
 if awk '{print $2}' /proc/bus/pci/devices | grep '^10ec' &> /dev/null; then
   for realtek_device in $(grep -Po "^[[:xdigit:]]{4}[[:blank:]]+10ec\K[[:xdigit:]]{4}" /proc/bus/pci/devices); do
     # on s'assure que le device Realtek est bien une carte Ethernet
-    if grep "$realtek_device" /usr/share/misc/pci.ids | grep -i 'Ethernet' &> /dev/null; then
+    if grep "[[:blank:]]"$realtek_device"[[:blank:]]" /usr/share/misc/pci.ids | grep -i 'Ethernet' &> /dev/null; then
       displayandexec "Installation de firmware-realtek                    " "$AGI firmware-realtek"
     fi
   done
