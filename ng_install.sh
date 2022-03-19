@@ -992,10 +992,11 @@ echo ''
 # awk '{print $2}' /proc/bus/pci/devices | grep '^8086'
 if awk '{print $2}' /proc/bus/pci/devices | grep '^8086' &> /dev/null; then
   for intel_device in $(grep -Po "^[[:xdigit:]]{4}[[:blank:]]+8086\K[[:xdigit:]]{4}" /proc/bus/pci/devices); do
-  # on s'assure que le device intel est bien une carte wifi
-  if grep "$intel_device" /usr/share/misc/pci.ids | grep -i -e 'wireless' -e 'Wi-Fi' -e 'WiFi' &> /dev/null; then
-    displayandexec "Installation de firmware-iwlwifi                    " "$AGI firmware-iwlwifi"
-  fi
+    # on s'assure que le device intel est bien une carte wifi
+    if grep "$intel_device" /usr/share/misc/pci.ids | grep -i -e 'wireless' -e 'Wi-Fi' -e 'WiFi' &> /dev/null; then
+      displayandexec "Installation de firmware-iwlwifi                    " "$AGI firmware-iwlwifi"
+    fi
+  done
 fi
 
 # cat /proc/bus/pci/devices | column --table
