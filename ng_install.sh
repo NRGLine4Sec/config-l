@@ -1224,25 +1224,27 @@ install_zfs_buster() {
 }
 
 install_zfs_bullseye() {
-  sed -i "s%^#deb http://deb.debian.org/debian "$debian_release"-backports%deb http://deb.debian.org/debian "$debian_release"-backports%" /etc/apt/sources.list && \
-  execandlog "$AG update"
-  if apt-cache policy zfsutils-linux zfs-dkms zfs-zed | sed -n '/Version table:/{n;p;}' | grep '~bpo' &> /dev/null; then
-    displayandexec "Installation de ZFS                                 " "\
-    echo 'zfs-dkms	zfs-dkms/stop-build-for-32bit-kernel	boolean	true' | debconf-set-selections && \
-    echo 'zfs-dkms	zfs-dkms/note-incompatible-licenses	note' | debconf-set-selections && \
-    echo 'zfs-dkms	zfs-dkms/stop-build-for-unknown-kernel	boolean	true'| debconf-set-selections && \
-    $AG -t "$debian_release"-backports install -y zfsutils-linux zfs-dkms zfs-zed && \
-    modprobe zfs"
-  else
-    sed -i "s%^deb http://deb.debian.org/debian "$debian_release"-backports%#deb http://deb.debian.org/debian "$debian_release"-backports%" /etc/apt/sources.list && \
-    execandlog "$AG update" && \
+  # sed -i "s%^#deb http://deb.debian.org/debian "$debian_release"-backports%deb http://deb.debian.org/debian "$debian_release"-backports%" /etc/apt/sources.list && \
+  # execandlog "$AG update"
+  # if apt-cache policy zfsutils-linux zfs-dkms zfs-zed | sed -n '/Version table:/{n;p;}' | grep '~bpo' &> /dev/null; then
+  #   displayandexec "Installation de ZFS                                 " "\
+  #   echo 'zfs-dkms	zfs-dkms/stop-build-for-32bit-kernel	boolean	true' | debconf-set-selections && \
+  #   echo 'zfs-dkms	zfs-dkms/note-incompatible-licenses	note' | debconf-set-selections && \
+  #   echo 'zfs-dkms	zfs-dkms/stop-build-for-unknown-kernel	boolean	true'| debconf-set-selections && \
+  #   $AG -t "$debian_release"-backports install -y zfsutils-linux zfs-dkms zfs-zed && \
+  #   modprobe zfs"
+  #   sed -i "s%^deb http://deb.debian.org/debian "$debian_release"-backports%#deb http://deb.debian.org/debian "$debian_release"-backports%" /etc/apt/sources.list && \
+  #   execandlog "$AG update"
+  # else
+  #   sed -i "s%^deb http://deb.debian.org/debian "$debian_release"-backports%#deb http://deb.debian.org/debian "$debian_release"-backports%" /etc/apt/sources.list && \
+  #   execandlog "$AG update" && \
     displayandexec "Installation de ZFS                                 " "\
     echo 'zfs-dkms	zfs-dkms/stop-build-for-32bit-kernel	boolean	true' | debconf-set-selections && \
     echo 'zfs-dkms	zfs-dkms/note-incompatible-licenses	note' | debconf-set-selections && \
     echo 'zfs-dkms	zfs-dkms/stop-build-for-unknown-kernel	boolean	true'| debconf-set-selections && \
     $AGI zfsutils-linux zfs-dkms zfs-zed && \
     modprobe zfs"
-  fi
+  # fi
 }
 
 if [ "$buster" == 1 ]; then
@@ -2012,16 +2014,6 @@ $AG update && \
 $AGI code"
 }
 # Pour installer des extensions en ligne de commande : [Managing Extensions in Visual Studio Code](https://code.visualstudio.com/docs/editor/extension-marketplace#_command-line-extension-management)
-execandlog "[ -d /home/"$local_user"/.config/Code/ ] || $ExeAsUser mkdir -p /home/"$local_user"/.config/Code/"
-$ExeAsUser cat> /home/"$local_user"/.config/Code/User/settings.json << 'EOF'
-{
-    "workbench.colorTheme": "Default Dark+",
-    "update.mode": "none",
-    "telemetry.telemetryLevel": "off",
-    "security.workspace.trust.untrustedFiles": "open"
-}
-EOF
-# le répertoire /home/"$local_user"/.config/Code/ se créer uniquement après un premier lancement en graphique
 ################################################################################
 
 ################################################################################
@@ -3192,10 +3184,10 @@ echo '     #             CONFIGURATION DES DIFFERENTS ELEMENTS            #'
 echo '     ################################################################'
 echo ''
 
-exec_graphic_app_with_root_privileges "wireshark"
-exec_graphic_app_with_user_privileges "ghb"
-exec_graphic_app_with_user_privileges "/usr/share/code/code"
-exec_graphic_app_with_user_privileges "$(grep -Po '(^Exec=)\K.*' /usr/share/applications/geeqie.desktop)"
+# exec_graphic_app_with_root_privileges "wireshark"
+# exec_graphic_app_with_user_privileges "ghb"
+# exec_graphic_app_with_user_privileges "/usr/share/code/code"
+# exec_graphic_app_with_user_privileges "$(grep -Po '(^Exec=)\K.*' /usr/share/applications/geeqie.desktop)"
 
 ################################################################################
 ## configuration de SSH
@@ -3455,6 +3447,24 @@ configure_atom
 # regarder pour faire du collaboratif avec atom : https://atom.io/packages/teletype
 
 # pour voir la liste des plugins installés : apm ls
+################################################################################
+
+################################################################################
+## configuration de VSCode
+##------------------------------------------------------------------------------
+configure_vscode() {
+  execandlog "[ -d /home/"$local_user"/.config/Code/ ] || $ExeAsUser mkdir -p /home/"$local_user"/.config/Code/"
+[ -f /home/"$local_user"/.config/Code/User/settings.json ] || $ExeAsUser cat> /home/"$local_user"/.config/Code/User/settings.json << 'EOF'
+{
+    "workbench.colorTheme": "Default Dark+",
+    "update.mode": "none",
+    "telemetry.telemetryLevel": "off",
+    "security.workspace.trust.untrustedFiles": "open"
+}
+EOF
+}
+configure_vscode
+# le répertoire /home/"$local_user"/.config/Code/ se créer uniquement après un premier lancement en graphique
 ################################################################################
 
 ################################################################################
