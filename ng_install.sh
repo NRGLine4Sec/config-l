@@ -3454,7 +3454,7 @@ configure_atom
 ##------------------------------------------------------------------------------
 configure_vscode() {
   execandlog "[ -d /home/"$local_user"/.config/Code/ ] || $ExeAsUser mkdir -p /home/"$local_user"/.config/Code/"
-[ -f /home/"$local_user"/.config/Code/User/settings.json ] || $ExeAsUser cat> /home/"$local_user"/.config/Code/User/settings.json << 'EOF'
+[ -f /home/"$local_user"/.config/Code/User/settings.json ] && $ExeAsUser cat> /home/"$local_user"/.config/Code/User/settings.json << 'EOF'
 {
     "workbench.colorTheme": "Default Dark+",
     "update.mode": "none",
@@ -4119,7 +4119,7 @@ fi
 
 # alias for the user
 execandlog "rm -f /home/"$local_user"/.bashrc && \
-mv "$script_path"/.bashrc /home/"$local_user"/.bashrc"
+cp "$script_path"/.bashrc /home/"$local_user"/.bashrc"
 $ExeAsUser cat>> /home/"$local_user"/.bashrc << EOF
 
 # alias perso
@@ -4162,7 +4162,7 @@ EOF
 
 # alias for root
 execandlog "rm -f /root/.bashrc && \
-mv "$script_path"/.bashrc /root/.bashrc"
+cp "$script_path"/.bashrc /root/.bashrc"
 cat>> /root/.bashrc << EOF
 
 # alias perso
@@ -4191,7 +4191,7 @@ EOF
 displayandexec "Configuration du bashrc                             " "stat /root/.bashrc && stat /home/"$local_user"/.bashrc"
 
 execandlog "rm -f /home/"$local_user"/.zshrc && \
-mv "$script_path"/.zshrc /home/"$local_user"/.zshrc"
+cp "$script_path"/.zshrc /home/"$local_user"/.zshrc"
 $ExeAsUser cat>> /home/"$local_user"/.zshrc << EOF
 
 # alias perso
@@ -4232,7 +4232,7 @@ export PATH="\$PATH:/home/$local_user/.local/bin"
 EOF
 
 execandlog "rm -f /root/.zshrc && \
-mv "$script_path"/.zshrc /root/.zshrc"
+cp "$script_path"/.zshrc /root/.zshrc"
 cat>> /root/.zshrc << EOF
 
 # alias perso
