@@ -793,6 +793,19 @@ fi
 # on déscactive le mode case insensitive de bash
 shopt -u nocasematch
 
+# DISPLAY="$(ps e | grep -Po ' DISPLAY=[\.0-9A-Za-z:]* ' | sort -u | grep -Po '(DISPLAY=)\K.*')"
+
+exec_graphic_app_with_root_privileges() {
+  export DISPLAY=:0
+  sudo -u "$local_user" xhost +SI:localuser:root
+  sudo -u root timeout 10 "$1"
+  sudo -u "$local_user" xhost -SI:localuser:root
+}
+
+exec_graphic_app_with_user_privileges() {
+  export DISPLAY=:0
+  sudo -u "$local_user" timeout 10 "$1"
+}
 
 ################################################################################
 ## désactivation de la mise en veille automatique pendant l'installation
@@ -978,9 +991,9 @@ echo ''
 # si besoin de iwlwifi
 # awk '{print $2}' /proc/bus/pci/devices | grep '^8086'
 if awk '{print $2}' /proc/bus/pci/devices | grep '^8086' &> /dev/null; then
+  for intel_device in $(grep -Po "^[[:xdigit:]]{4}[[:blank:]]+8086\K[[:xdigit:]]{4}" /proc/bus/pci/devices); do
   # on s'assure que le device intel est bien une carte wifi
-  intel_device="$(grep -Po "^[[:xdigit:]]{4}[[:blank:]]+8086\K[[:xdigit:]]{4}" /proc/bus/pci/devices)"
-  if grep "$intel_device" /usr/share/misc/pci.ids | grep -i -e 'wireless' -e 'Wi-Fi' -e 'WiFi' > /dev/null; then
+  if grep "$intel_device" /usr/share/misc/pci.ids | grep -i -e 'wireless' -e 'Wi-Fi' -e 'WiFi' &> /dev/null; then
     displayandexec "Installation de firmware-iwlwifi                    " "$AGI firmware-iwlwifi"
   fi
 fi
@@ -1017,9 +1030,9 @@ fi
 # awk '!/^[[:blank:]]/ && /^1002/' /usr/share/misc/pci.ids
 # l'ID 1002 correspond à Advanced Micro Devices, Inc. [AMD/ATI]
 if awk '{print $2}' /proc/bus/pci/devices | grep '^1002' &> /dev/null; then
-  for device in $(grep -Po "^[[:xdigit:]]{4}[[:blank:]]+1002\K[[:xdigit:]]{4}" /proc/bus/pci/devices); do
+  for amd_device in $(grep -Po "^[[:xdigit:]]{4}[[:blank:]]+1002\K[[:xdigit:]]{4}" /proc/bus/pci/devices); do
     # on s'assure que le device AMD est bien une carte graphique
-    if grep "$device" /usr/share/misc/pci.ids | grep -i 'Radeon' > /dev/null; then
+    if grep "$amd_device" /usr/share/misc/pci.ids | grep -i 'Radeon' &> /dev/null; then
       displayandexec "Installation de firmware-amd-graphics               " "$AGI firmware-amd-graphics"
       displayandexec "Installation de xserver-xorg-video-amdgpu           " "$AGI xserver-xorg-video-amdgpu"
       displayandexec "Installation de radeontop                           " "$AGI radeontop"
@@ -1031,9 +1044,9 @@ fi
 # awk '!/^[[:blank:]]/ && /^8086/' /usr/share/misc/pci.ids
 # l'ID 8086 correspond à Intel Corporation
 if awk '{print $2}' /proc/bus/pci/devices | grep '^8086' &> /dev/null; then
-  for device in $(grep -Po "^[[:xdigit:]]{4}[[:blank:]]+8086\K[[:xdigit:]]{4}" /proc/bus/pci/devices); do
+  for intel_device in $(grep -Po "^[[:xdigit:]]{4}[[:blank:]]+8086\K[[:xdigit:]]{4}" /proc/bus/pci/devices); do
     # on s'assure que le device Intel est bien une carte graphique
-    if grep "$device" /usr/share/misc/pci.ids | grep -i 'Graphics' > /dev/null; then
+    if grep "$intel_device" /usr/share/misc/pci.ids | grep -i 'Graphics' &> /dev/null; then
       displayandexec "Installation de intel-gpu-tools                     " "$AGI intel-gpu-tools"
     fi
   done
@@ -1043,9 +1056,9 @@ fi
 # awk '!/^[[:blank:]]/ && /^10ec/' /usr/share/misc/pci.ids
 # l'ID 10ec correspond à Realtek Semiconductor Co., Ltd.
 if awk '{print $2}' /proc/bus/pci/devices | grep '^10ec' &> /dev/null; then
-  for device in $(grep -Po "^[[:xdigit:]]{4}[[:blank:]]+10ec\K[[:xdigit:]]{4}" /proc/bus/pci/devices); do
+  for realtek_device in $(grep -Po "^[[:xdigit:]]{4}[[:blank:]]+10ec\K[[:xdigit:]]{4}" /proc/bus/pci/devices); do
     # on s'assure que le device Realtek est bien une carte Ethernet
-    if grep "$device" /usr/share/misc/pci.ids | grep -i 'Ethernet' > /dev/null; then
+    if grep "$realtek_device" /usr/share/misc/pci.ids | grep -i 'Ethernet' &> /dev/null; then
       displayandexec "Installation de firmware-realtek                    " "$AGI firmware-realtek"
     fi
   done
@@ -1185,15 +1198,15 @@ displayandexec "Installation de whois                               " "$AGI whoi
 
 install_from_backports() {
   sed -i "s%^#deb http://deb.debian.org/debian "$debian_release"-backports%deb http://deb.debian.org/debian "$debian_release"-backports%" /etc/apt/sources.list && \
-  $AG update
-  if apt-cache policy firejail | grep 'Candidate: ' | grep '~bpo' > /dev/null; then
+  execandlog "$AG update" && \
+  if apt-cache policy firejail | sed -n '/Version table:/{n;p;}' | grep '~bpo' &> /dev/null; then
     displayandexec "Installation de firejail                            " "$AG -t "$debian_release"-backports install -y firejail firejail-profiles"
   fi
   sed -i "s%^deb http://deb.debian.org/debian "$debian_release"-backports%#deb http://deb.debian.org/debian "$debian_release"-backports%" /etc/apt/sources.list
-  $AG update
+  execandlog "$AG update"
 }
 # a savoir que juste après la release de la latest stable de debian, les paquets ne sont probablement pas disponnibles dans les backports et qu'il faut donc les garder aussi dans l'installation des paquets depuis le main standard pour pouvoir être compatible avec une instable from scratch apès une nouvelle release de debian.
-# On permet toutefois l'install de la dernière version disponnible dans backport si elle existe (vérification avec la commande apt-cache policy firejail | grep 'Candidate: ' | grep '~bpo')
+# On permet toutefois l'install de la dernière version disponnible dans backport si elle existe (vérification avec la commande apt-cache policy firejail | sed -n '/Version table:/{n;p;}' | grep '~bpo')
 install_from_backports
 
 install_zfs_buster() {
@@ -1206,19 +1219,29 @@ install_zfs_buster() {
   $AG -t "$debian_release"-backports install -y zfsutils-linux zfs-dkms zfs-zed && \
   modprobe zfs"
   sed -i "s%^deb http://deb.debian.org/debian "$debian_release"-backports%#deb http://deb.debian.org/debian "$debian_release"-backports%" /etc/apt/sources.list && \
-  $AG update
+  execandlog "$AG update"
 }
 
 install_zfs_bullseye() {
-  sed -i "s%^#deb http://deb.debian.org/debian "$debian_release"-backports%deb http://deb.debian.org/debian "$debian_release"-backports%" /etc/apt/sources.list
-  displayandexec "Installation de ZFS                                 " "\
-  echo 'zfs-dkms	zfs-dkms/stop-build-for-32bit-kernel	boolean	true' | debconf-set-selections && \
-  echo 'zfs-dkms	zfs-dkms/note-incompatible-licenses	note' | debconf-set-selections && \
-  echo 'zfs-dkms	zfs-dkms/stop-build-for-unknown-kernel	boolean	true'| debconf-set-selections && \
-  $AGI zfsutils-linux zfs-dkms zfs-zed && \
-  modprobe zfs"
-  sed -i "s%^deb http://deb.debian.org/debian "$debian_release"-backports%#deb http://deb.debian.org/debian "$debian_release"-backports%" /etc/apt/sources.list && \
-  $AG update
+  sed -i "s%^#deb http://deb.debian.org/debian "$debian_release"-backports%deb http://deb.debian.org/debian "$debian_release"-backports%" /etc/apt/sources.list && \
+  execandlog "$AG update"
+  if apt-cache policy zfsutils-linux zfs-dkms zfs-zed | sed -n '/Version table:/{n;p;}' | grep '~bpo' &> /dev/null; then
+    displayandexec "Installation de ZFS                                 " "\
+    echo 'zfs-dkms	zfs-dkms/stop-build-for-32bit-kernel	boolean	true' | debconf-set-selections && \
+    echo 'zfs-dkms	zfs-dkms/note-incompatible-licenses	note' | debconf-set-selections && \
+    echo 'zfs-dkms	zfs-dkms/stop-build-for-unknown-kernel	boolean	true'| debconf-set-selections && \
+    $AG -t "$debian_release"-backports install -y zfsutils-linux zfs-dkms zfs-zed && \
+    modprobe zfs"
+  else
+    sed -i "s%^deb http://deb.debian.org/debian "$debian_release"-backports%#deb http://deb.debian.org/debian "$debian_release"-backports%" /etc/apt/sources.list && \
+    execandlog "$AG update" && \
+    displayandexec "Installation de ZFS                                 " "\
+    echo 'zfs-dkms	zfs-dkms/stop-build-for-32bit-kernel	boolean	true' | debconf-set-selections && \
+    echo 'zfs-dkms	zfs-dkms/note-incompatible-licenses	note' | debconf-set-selections && \
+    echo 'zfs-dkms	zfs-dkms/stop-build-for-unknown-kernel	boolean	true'| debconf-set-selections && \
+    $AGI zfsutils-linux zfs-dkms zfs-zed && \
+    modprobe zfs"
+  fi
 }
 
 if [ "$buster" == 1 ]; then
@@ -1988,7 +2011,8 @@ $AG update && \
 $AGI code"
 }
 # Pour installer des extensions en ligne de commande : [Managing Extensions in Visual Studio Code](https://code.visualstudio.com/docs/editor/extension-marketplace#_command-line-extension-management)
-cat> /home/"$local_user"/.config/Code/User/settings.json << 'EOF'
+execandlog "[ -d /home/"$local_user"/.config/Code/ ] || $ExeAsUser mkdir -p /home/"$local_user"/.config/Code/"
+$ExeAsUser cat> /home/"$local_user"/.config/Code/User/settings.json << 'EOF'
 {
     "workbench.colorTheme": "Default Dark+",
     "update.mode": "none",
@@ -1996,7 +2020,7 @@ cat> /home/"$local_user"/.config/Code/User/settings.json << 'EOF'
     "security.workspace.trust.untrustedFiles": "open"
 }
 EOF
-# peut être qu'il faut créer le répertoire /home/"$local_user"/.config/Code/ à la main s'il se créer uniquement après un premier lancement en graphique
+# le répertoire /home/"$local_user"/.config/Code/ se créer uniquement après un premier lancement en graphique
 ################################################################################
 
 ################################################################################
@@ -3167,6 +3191,11 @@ echo '     #             CONFIGURATION DES DIFFERENTS ELEMENTS            #'
 echo '     ################################################################'
 echo ''
 
+exec_graphic_app_with_root_privileges "wireshark"
+exec_graphic_app_with_user_privileges "ghb"
+exec_graphic_app_with_user_privileges "/usr/share/code/code"
+exec_graphic_app_with_user_privileges "$(grep -Po '(^Exec=)\K.*' /usr/share/applications/geeqie.desktop)"
+
 ################################################################################
 ## configuration de SSH
 ##------------------------------------------------------------------------------
@@ -3258,14 +3287,15 @@ configure_freshclam
 ##------------------------------------------------------------------------------
 configure_wireshark() {
   local conf_wireshark_tls_sni='	"TLS_SNI", "%Cus:tls.handshake.extensions_server_name:0:R"' && \
-  sed -i '/^gui.column.format:/,/^$/{s/\"$/\",/;s/^$/'"$conf_wireshark_tls_sni"'\n/}' /root/.config/wireshark/preferences
+  [ -f /root/.config/wireshark/preferences ] && sed -i '/^gui.column.format:/,/^$/{s/\"$/\",/;s/^$/'"$conf_wireshark_tls_sni"'\n/}' /root/.config/wireshark/preferences
   local conf_wireshark_dst_port='	"Destination Port", "%D"' && \
-  sed -i '/^gui.column.format:/,/^$/{s/\"$/\",/;s/^$/'"$conf_wireshark_dst_port"'\n/}' /root/.config/wireshark/preferences
+  [ -f /root/.config/wireshark/preferences ] && sed -i '/^gui.column.format:/,/^$/{s/\"$/\",/;s/^$/'"$conf_wireshark_dst_port"'\n/}' /root/.config/wireshark/preferences
 }
 configure_wireshark
 # on ajoute les colonnes "TLS_SNI" et "Destination Port" dans l'affichage principal de wireshark car elles sont très pratique lors de l'utilisation de wireshark.
 
 # Le fichier n'existe pas avant d'avoir été dans  Edit → Preferences…​ (Wireshark → Preferences…) et d'avoir quitter la fenêtre avec OK.
+# C'est à dire qu'il n'est pas créer simplement en lançant wireshark en graphique
 #
 # normallement il y a ce contenu dans la configuration de base de wireshark :
 # gui.column.format:
@@ -3501,6 +3531,7 @@ execandlog "[ -d /home/"$local_user"/.config/ghb/ ] || $ExeAsUser mkdir /home/"$
 ## configuration de geeqie
 ##------------------------------------------------------------------------------
 # On est obliger de créer le fichier de conf (/home/"$local_user"/.config/geeqie/geeqierc.xml) en lancant geeqie graphiquement et ensuite en allant dans Edit -> Preference -> cliquer sur OK
+# Il semblerait que le fichier de conf se créer aussi lorsqu'on lance Geeqie et qu'on le quitte proprement (en appuyant sur la croix en haut de la fenêtre)
 configure_geeqie() {
 $ExeAsUser sed -i -E 's/image.alpha_color_1 = "#[[:digit:]]+"/image.alpha_color_1 = "#FFFFFFFFFFFF"/g' /home/"$local_user"/.config/geeqie/geeqierc.xml
 $ExeAsUser sed -i -E 's/image.alpha_color_2 = "#[[:digit:]]+"/image.alpha_color_2 = "#FFFFFFFFFFFF"/g' /home/"$local_user"/.config/geeqie/geeqierc.xml
@@ -4188,10 +4219,38 @@ export EDITOR=nano
 # for python binnary
 export PATH="\$PATH:/home/$local_user/.local/bin"
 EOF
+
+execandlog "rm -f /root/.zshrc && \
+mv "$script_path"/.zshrc /root/.zshrc"
+cat>> /root/.zshrc << EOF
+
+# alias perso
+alias ll='ls --color=always -l -h'
+alias la='ls --color=always -A'
+alias l='ls --color=always -CF'
+alias asearch='apt-cache search'
+alias ashow='apt-cache show'
+alias h='history'
+alias nn='nano -c'
+alias cl='clear'
+alias grep='grep --color=auto'
+alias i='ag install'
+alias ip='ip --color=auto'
+alias u='ag update'
+alias up='ag upgrade'
+alias upp='ag update && ag upgrade'
+alias uppr='ag update && ag dist-upgrade'
+alias xx='shutdown now'
+alias xwx='poweroff'
+alias spyme='lnav /var/log/syslog /var/log/auth.log'
+alias bat='bat -pp'
+alias free='free -ht'
+HISTTIMEFORMAT=\"%Y/%m/%d %T   \"
+EOF
+
 displayandexec "Configuration du zshrc                              " "\
-stat /home/"$local_user"/.zshrc"
-# rajouter stat /root/.zshrc &&
-# si on  met aussi la conf zsh pour root
+stat /home/"$local_user"/.zshrc && \
+stat /root/.zshrc"
 
 displayandexec "Configuration de zsh en tant que shell par défaut   " "\
 sed -i 's/auth       required   pam_shells.so/auth       sufficient   pam_shells.so/' /etc/pam.d/chsh && \
@@ -4237,7 +4296,7 @@ backup_LUKS_header() {
   luks_partition="$(lsblk --fs --list | awk '/crypto_LUKS/{print $1}')"
   displayandexec "Création d'un backup de l'entête LUKS               " "\
 [ -d /home/"$local_user"/.backup/ ] || $ExeAsUser mkdir --parents /home/"$local_user"/.backup/ && \
-cryptsetup luksHeaderBackup /dev/"$luks_partition" --header-backup-file /home/"$local_user"/backup/"$luks_partition"_LUKS_Header_Backup.img"
+cryptsetup luksHeaderBackup /dev/"$luks_partition" --header-backup-file /home/"$local_user"/.backup/"$luks_partition"_LUKS_Header_Backup.img"
 }
 backup_LUKS_header
 # potentiellement à remplacer avec ce code :
