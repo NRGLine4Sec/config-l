@@ -1224,27 +1224,27 @@ install_zfs_buster() {
 }
 
 install_zfs_bullseye() {
-  # sed -i "s%^#deb http://deb.debian.org/debian "$debian_release"-backports%deb http://deb.debian.org/debian "$debian_release"-backports%" /etc/apt/sources.list && \
-  # execandlog "$AG update"
-  # if apt-cache policy zfsutils-linux zfs-dkms zfs-zed | sed -n '/Version table:/{n;p;}' | grep '~bpo' &> /dev/null; then
-  #   displayandexec "Installation de ZFS                                 " "\
-  #   echo 'zfs-dkms	zfs-dkms/stop-build-for-32bit-kernel	boolean	true' | debconf-set-selections && \
-  #   echo 'zfs-dkms	zfs-dkms/note-incompatible-licenses	note' | debconf-set-selections && \
-  #   echo 'zfs-dkms	zfs-dkms/stop-build-for-unknown-kernel	boolean	true'| debconf-set-selections && \
-  #   $AG -t "$debian_release"-backports install -y zfsutils-linux zfs-dkms zfs-zed && \
-  #   modprobe zfs"
-  #   sed -i "s%^deb http://deb.debian.org/debian "$debian_release"-backports%#deb http://deb.debian.org/debian "$debian_release"-backports%" /etc/apt/sources.list && \
-  #   execandlog "$AG update"
-  # else
-  #   sed -i "s%^deb http://deb.debian.org/debian "$debian_release"-backports%#deb http://deb.debian.org/debian "$debian_release"-backports%" /etc/apt/sources.list && \
-  #   execandlog "$AG update" && \
+  sed -i "s%^#deb http://deb.debian.org/debian "$debian_release"-backports%deb http://deb.debian.org/debian "$debian_release"-backports%" /etc/apt/sources.list && \
+  execandlog "$AG update"
+  if apt-cache policy zfsutils-linux zfs-dkms zfs-zed | sed -n '/Version table:/{n;p;}' | grep '~bpo' &> /dev/null; then
+    displayandexec "Installation de ZFS                                 " "\
+    echo 'zfs-dkms	zfs-dkms/stop-build-for-32bit-kernel	boolean	true' | debconf-set-selections && \
+    echo 'zfs-dkms	zfs-dkms/note-incompatible-licenses	note' | debconf-set-selections && \
+    echo 'zfs-dkms	zfs-dkms/stop-build-for-unknown-kernel	boolean	true'| debconf-set-selections && \
+    $AG -t "$debian_release"-backports install -y zfsutils-linux zfs-dkms zfs-zed && \
+    modprobe zfs"
+    sed -i "s%^deb http://deb.debian.org/debian "$debian_release"-backports%#deb http://deb.debian.org/debian "$debian_release"-backports%" /etc/apt/sources.list && \
+    execandlog "$AG update"
+  else
+    sed -i "s%^deb http://deb.debian.org/debian "$debian_release"-backports%#deb http://deb.debian.org/debian "$debian_release"-backports%" /etc/apt/sources.list && \
+    execandlog "$AG update" && \
     displayandexec "Installation de ZFS                                 " "\
     echo 'zfs-dkms	zfs-dkms/stop-build-for-32bit-kernel	boolean	true' | debconf-set-selections && \
     echo 'zfs-dkms	zfs-dkms/note-incompatible-licenses	note' | debconf-set-selections && \
     echo 'zfs-dkms	zfs-dkms/stop-build-for-unknown-kernel	boolean	true'| debconf-set-selections && \
     $AGI zfsutils-linux zfs-dkms zfs-zed && \
     modprobe zfs"
-  # fi
+  fi
 }
 
 if [ "$buster" == 1 ]; then
