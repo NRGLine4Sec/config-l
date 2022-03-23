@@ -1092,6 +1092,7 @@ displayandexec "Installation de chkrootkit                          " "$AGI chkr
 displayandexec "Installation de chromium                            " "$AGI chromium-l10n"
 displayandexec "Installation de clamav                              " "$AGI clamav clamtk clamtk-gnome libclamunrar"
 displayandexec "Installation de colordiff                           " "$AGI colordiff"
+displayandexec "Installation de linux-cpupower                      " "$AGI linux-cpupower"
 displayandexec "Installation de cups                                " "$AGI cups"
 displayandexec "Installation de curl                                " "$AGI curl"
 displayandexec "Installation de debconf-utils                       " "$AGI debconf-utils"
@@ -1129,6 +1130,7 @@ displayandexec "Installation de inkscape                            " "$AGI inks
 displayandexec "Installation de iotop                               " "$AGI iotop"
 displayandexec "Installation de ipcalc                              " "$AGI ipcalc"
 displayandexec "Installation de jq                                  " "$AGI jq"
+displayandexec "Installation de linux-cpupower                      " "$AGI linux-cpupower"
 displayandexec "Installation de lnav                                " "$AGI lnav"
 displayandexec "Installation de lshw                                " "$AGI lshw"
 displayandexec "Installation de lynx                                " "$AGI lynx"
@@ -1162,6 +1164,7 @@ displayandexec "Installation de sdparm                              " "$AGI sdpa
 displayandexec "Installation de secure-delete                       " "$AGI secure-delete"
 displayandexec "Installation de shotwell                            " "$AGI shotwell"
 displayandexec "Installation de sqlitebrowser                       " "$AGI sqlitebrowser"
+displayandexec "Installation de screen                              " "$AGI screen"
 displayandexec "Installation de ssh                                 " "$AGI ssh"
 displayandexec "Installation de sshfs                               " "$AGI sshfs"
 displayandexec "Installation de strace                              " "$AGI strace"
@@ -1224,30 +1227,29 @@ install_zfs_buster() {
 }
 
 install_zfs_bullseye() {
-  # sed -i "s%^#deb http://deb.debian.org/debian "$debian_release"-backports%deb http://deb.debian.org/debian "$debian_release"-backports%" /etc/apt/sources.list && \
-  # execandlog "$AG update"
-  # if apt-cache policy zfsutils-linux zfs-dkms zfs-zed | sed -n '/Version table:/{n;p;}' | grep '~bpo' &> /dev/null; then
-  #   displayandexec "Installation de ZFS                                 " "\
-  #   echo 'zfs-dkms	zfs-dkms/stop-build-for-32bit-kernel	boolean	true' | debconf-set-selections && \
-  #   echo 'zfs-dkms	zfs-dkms/note-incompatible-licenses	note' | debconf-set-selections && \
-  #   echo 'zfs-dkms	zfs-dkms/stop-build-for-unknown-kernel	boolean	true'| debconf-set-selections && \
-  #   $AG -t "$debian_release"-backports install -y zfsutils-linux zfs-dkms zfs-zed && \
-  #   modprobe zfs"
-  #   sed -i "s%^deb http://deb.debian.org/debian "$debian_release"-backports%#deb http://deb.debian.org/debian "$debian_release"-backports%" /etc/apt/sources.list && \
-  #   execandlog "$AG update"
-    # il peut arriver que l'install ne fonctionne pas (notamment juste après l'install de debian) car il manque le paquet linux-headers-"$(uname -r)"
-    # il faudra donc certainement rajouter $AGI linux-headers-"$(uname -r)" avant l'install des paquets ZFS
-  # else
-    # sed -i "s%^deb http://deb.debian.org/debian "$debian_release"-backports%#deb http://deb.debian.org/debian "$debian_release"-backports%" /etc/apt/sources.list && \
-    # execandlog "$AG update" && \
+  sed -i "s%^#deb http://deb.debian.org/debian "$debian_release"-backports%deb http://deb.debian.org/debian "$debian_release"-backports%" /etc/apt/sources.list && \
+  execandlog "$AG update"
+  if apt-cache policy zfsutils-linux zfs-dkms zfs-zed | sed -n '/Version table:/{n;p;}' | grep '~bpo' &> /dev/null; then
+    # il peut arriver que l'install ne fonctionne pas (notamment juste après l'install de debian) car il manque le paquet linux-headers-"$(uname -r)", il faut donc s'assurer qu'il soit présent avant l'install des paquets ZFS
+    execandlog "$AGI linux-headers-"$(uname -r)""
     displayandexec "Installation de ZFS                                 " "\
     echo 'zfs-dkms	zfs-dkms/stop-build-for-32bit-kernel	boolean	true' | debconf-set-selections && \
     echo 'zfs-dkms	zfs-dkms/note-incompatible-licenses	note' | debconf-set-selections && \
-    echo 'zfs-dkms	zfs-dkms/stop-build-for-unknown-kernel	boolean	true'| debconf-set-selections"
-    # echo 'zfs-dkms	zfs-dkms/stop-build-for-unknown-kernel	boolean	true'| debconf-set-selections && \
-    # $AGI zfsutils-linux zfs-dkms zfs-zed && \
-    # modprobe zfs"
-  # fi
+    echo 'zfs-dkms	zfs-dkms/stop-build-for-unknown-kernel	boolean	true'| debconf-set-selections && \
+    $AG -t "$debian_release"-backports install -y zfsutils-linux zfs-dkms zfs-zed && \
+    modprobe zfs"
+    sed -i "s%^deb http://deb.debian.org/debian "$debian_release"-backports%#deb http://deb.debian.org/debian "$debian_release"-backports%" /etc/apt/sources.list && \
+    execandlog "$AG update"
+  else
+    sed -i "s%^deb http://deb.debian.org/debian "$debian_release"-backports%#deb http://deb.debian.org/debian "$debian_release"-backports%" /etc/apt/sources.list && \
+    execandlog "$AG update" && \
+    displayandexec "Installation de ZFS                                 " "\
+    echo 'zfs-dkms	zfs-dkms/stop-build-for-32bit-kernel	boolean	true' | debconf-set-selections && \
+    echo 'zfs-dkms	zfs-dkms/note-incompatible-licenses	note' | debconf-set-selections && \
+    echo 'zfs-dkms	zfs-dkms/stop-build-for-unknown-kernel	boolean	true'| debconf-set-selections && \
+    $AGI zfsutils-linux zfs-dkms zfs-zed && \
+    modprobe zfs"
+  fi
 }
 
 if [ "$buster" == 1 ]; then
@@ -1377,8 +1379,8 @@ install_apt-fast_bullseye() {
   displayandexec "Installation de apt-fast                            " "\
 $WGET --output-document - 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xA2166B8DE8BDC3367D1901C11EE2FF37CA8DA16B' | gpg --dearmor --output /usr/share/keyrings/apt-fast-archive-keyring.gpg && \
 cat> /etc/apt/sources.list.d/apt-fast.list << 'EOF'
-deb [arch=amd64 signed-by=/usr/share/keyrings/apt-fast-archive-keyring.gpg] http://ppa.launchpad.net/apt-fast/stable/ubuntu focal main
-#deb-src http://ppa.launchpad.net/apt-fast/stable/ubuntu focal main
+deb [arch=amd64 signed-by=/usr/share/keyrings/apt-fast-archive-keyring.gpg] http://ppa.launchpad.net/apt-fast/stable/ubuntu hirsute main
+#deb-src http://ppa.launchpad.net/apt-fast/stable/ubuntu hirsute main
 EOF
 $AG update
 $AGI apt-fast"
@@ -1755,7 +1757,7 @@ deb [arch=amd64] https://packagecloud.io/asbru-cm/asbru-cm/debian/ buster main
 EOF
 $CURL --location 'https://packagecloud.io/asbru-cm/asbru-cm/gpgkey' | apt-key add - && \
 $AG update && \
-$AGI asbru-cm"
+$AGI asbru-cm keepassxc-"
 }
 install_asbru_bullseye() {
   displayandexec "Installation des dépendances de Asbru               " "$AGI perl libvte-2.91-0 libcairo-perl libglib-perl libpango-perl libsocket6-perl libexpect-perl libnet-proxy-perl libyaml-perl libcrypt-cbc-perl libcrypt-blowfish-perl libgtk3-perl libnet-arp-perl libossp-uuid-perl openssh-client telnet ftp libcrypt-rijndael-perl libxml-parser-perl libcanberra-gtk-module dbus-x11 libx11-guitest-perl libgtk3-simplelist-perl gir1.2-wnck-3.0 gir1.2-vte-2.91"
@@ -1769,8 +1771,10 @@ deb [arch=amd64 signed-by=/usr/share/keyrings/asbru-archive-keyring.gpg] https:/
 EOF
 $CURL --location 'https://packagecloud.io/asbru-cm/asbru-cm/gpgkey' | gpg --dearmor --output /usr/share/keyrings/asbru-archive-keyring.gpg && \
 $AG update && \
-$AGI asbru-cm"
+$AGI asbru-cm keepassxc-"
 }
+
+# On rajoute keepassxc- dans la commande d'install du paquet pour pas que asbru install keepassxc en tant que dépendance (même si il n'est seulement que dans les recommmends (apt-cache show asbru-cm | grep keepassxc))
 
 # a priori le nouveau dépot serrait celui de cloudsmith.io d'après https://docs.asbru-cm.net/General/Installation/#debian
 # https://dl.cloudsmith.io/public/asbru-cm/release/gpg.7684B0670B1C65E8.key
@@ -1906,7 +1910,7 @@ EOF
 install_ansible_bullseye() {
   displayandexec "Installation de Ansible                             " "\
 $WGET --output-document - 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x93C4A3FD7BB9C367' | gpg --dearmor --output /usr/share/keyrings/ansible-archive-keyring.gpg && \
-echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/ansible-archive-keyring.gpg] http://ppa.launchpad.net/ansible/ansible-4/ubuntu focal main' > /etc/apt/sources.list.d/ansible.list && \
+echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/ansible-archive-keyring.gpg] http://ppa.launchpad.net/ansible/ansible-5/ubuntu hirsute main' > /etc/apt/sources.list.d/ansible.list && \
 $AG update && \
 $AGI ansible"
 $ExeAsUser cat>> /home/"$local_user"/.bashrc << 'EOF'
@@ -1996,8 +2000,8 @@ install_timeshift_bullseye() {
   displayandexec "Installation de timeshift                           " "\
 $WGET --output-document - 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x1B32B87ABAEE357218F6B48CB5B116B72D0F61F0' | gpg --dearmor --output /usr/share/keyrings/timeshift-archive-keyring.gpg && \
 cat> /etc/apt/sources.list.d/timeshift.list << 'EOF'
-deb [arch=amd64 signed-by=/usr/share/keyrings/timeshift-archive-keyring.gpg] http://ppa.launchpad.net/teejee2008/timeshift/ubuntu focal main
-#deb-src http://ppa.launchpad.net/teejee2008/timeshift/ubuntu focal main
+deb [arch=amd64 signed-by=/usr/share/keyrings/timeshift-archive-keyring.gpg] http://ppa.launchpad.net/teejee2008/timeshift/ubuntu hirsute main
+#deb-src http://ppa.launchpad.net/teejee2008/timeshift/ubuntu hirsute main
 EOF
 $AG update
 $AGI timeshift"
