@@ -574,19 +574,19 @@ check_latest_version_manual_install_apps() {
     veracrypt_version="$($CURL 'https://www.veracrypt.fr/en/Downloads.html' | grep 'tar.bz2' | grep -v '.sig\|x86\|Source\|freebsd' | grep -Po '(?<=veracrypt-)([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+-[[:alnum:]]+|[[:digit:]]+\.[[:digit:]]+-[[:alnum:]]+|[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+|[[:digit:]]+\.[[:digit:]]+)(?=-setup)')"
     # permet de récupérer la version lorsque la release est du type 'veracrypt-1.24-Update3-setup.tar.bz2' ainsi que 'veracrypt-1.24.3-Update3-setup.tar.bz2' ou 'veracrypt-1.24-setup.tar.bz2' ou 'veracrypt-1.24.4-setup.tar.bz2'
     if [ $? != 0 ] || [ -z "$veracrypt_version" ]; then
-          veracrypt_version='1.25.4'
+          veracrypt_version='1.25.9'
     fi
     # check version : https://www.veracrypt.fr/en/Downloads.html
 
     drawio_version="$($CURL 'https://api.github.com/repos/jgraph/drawio-desktop/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
     if [ $? != 0 ] || [ -z "$drawio_version" ]; then
-        drawio_version='15.2.7'
+        drawio_version='16.5.1'
     fi
     # check version : https://github.com/jgraph/drawio-desktop/releases
 
     freefilesync_version="$($CURL 'https://freefilesync.org/download.php' | grep 'Linux.tar.gz' | grep -Po '(?<=FreeFileSync_)([[:digit:]]+\.+[[:digit:]]+)')"
     if [ $? != 0 ] || [ -z "$freefilesync_version" ]; then
-        freefilesync_version='11.14'
+        freefilesync_version='11.18'
     fi
     # check version : https://freefilesync.org/download.php"
 
@@ -598,17 +598,17 @@ check_latest_version_manual_install_apps() {
 
     etcher_version="$($CURL 'https://api.github.com/repos/balena-io/etcher/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
     if [ $? != 0 ] || [ -z "$etcher_version" ]; then
-        etcher_version='1.5.112'
+        etcher_version='1.7.8'
     fi
     # check version : https://github.com/balena-io/etcher/releases/
 
     shotcut_version="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
     if [ $? != 0 ] || [ -z "$shotcut_version" ]; then
-        shotcut_version='21.09.20'
+        shotcut_version='22.01.30'
     fi
     shotcut_appimage="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"name": "\K.*?(?=")' | grep 'AppImage')"
     if [ $? != 0 ] || [ -z "$shotcut_appimage" ]; then
-        shotcut_appimage='shotcut-linux-x86_64-210920.AppImage'
+        shotcut_appimage='shotcut-linux-x86_64-220130.AppImage'
     fi
     # check version : https://github.com/mltframework/shotcut/releases/
 
@@ -620,25 +620,25 @@ check_latest_version_manual_install_apps() {
 
     keepassxc_version="$($CURL 'https://api.github.com/repos/keepassxreboot/keepassxc/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
     if [ $? != 0 ] || [ -z "$keepassxc_version" ]; then
-        keepassxc_version='2.6.6'
+        keepassxc_version='2.7.0'
     fi
     # check version : https://github.com/keepassxreboot/keepassxc/releases/
 
     bat_version="$($CURL 'https://api.github.com/repos/sharkdp/bat/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
     if [ $? != 0 ] || [ -z "$bat_version" ]; then
-        bat_version='0.18.3'
+        bat_version='0.20.0'
     fi
     # check version : https://github.com/sharkdp/bat/releases/
 
     youtubedl_version="$($CURL 'https://api.github.com/repos/ytdl-org/youtube-dl/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
     if [ $? != 0 ] || [ -z "$youtubedl_version" ]; then
-        youtubedl_version='2021.06.06'
+        youtubedl_version='2021.12.17'
     fi
     # check version : https://github.com/ytdl-org/youtube-dl/releases/
 
     joplin_version="$($CURL 'https://api.github.com/repos/laurent22/joplin/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
     if [ $? != 0 ] || [ -z "$joplin_version" ]; then
-        joplin_version='2.3.5'
+        joplin_version='2.7.15'
     fi
     # check version : https://github.com/laurent22/joplin/releases/
 
@@ -650,38 +650,38 @@ check_latest_version_manual_install_apps() {
 
     opensnitch_stable_version="$($CURL 'https://api.github.com/repos/evilsocket/opensnitch/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
     if [ $? != 0 ] || [ -z "$opensnitch_stable_version" ]; then
-        opensnitch_stable_version='1.4.0'
+        opensnitch_stable_version='1.5.0'
     fi
     # check version : https://github.com/evilsocket/opensnitch/releases/
 
     opensnitch_latest_version="$(curl --silent 'https://api.github.com/repos/evilsocket/opensnitch/releases' | grep -m 1 -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
     if [ $? != 0 ] || [ -z "$opensnitch_latest_version" ]; then
-        opensnitch_latest_version='1.4.0-rc.2'
+        opensnitch_latest_version='1.5.0'
     fi
     # check version : https://github.com/evilsocket/opensnitch/releases/
     # je suis obligé de ne pas utilisé l'option --show-error car sinon j'obtiens une erreur : curl: (23) Failure writing output to destination
 
     hashcat_version="$($CURL 'https://api.github.com/repos/hashcat/hashcat/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
     if [ $? != 0 ] || [ -z "$hashcat_version" ]; then
-        hashcat_version='6.2.4'
+        hashcat_version='6.2.5'
     fi
     # check version : https://github.com/hashcat/hashcat/releases/
 
     winscp_version="$($CURL 'https://winscp.net/eng/downloads.php' | grep 'Portable.zip' | grep -Po '(?<=WinSCP-)([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)(?=-Portable.zip")')"
     if [ $? != 0 ] || [ -z "$winscp_version" ]; then
-        winscp_version='5.19.5'
+        winscp_version='5.19.6'
     fi
     # check version : https://winscp.net/eng/downloads.php
 
     geeqie_version="$($CURL 'https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/AppImage/appimages.txt' | head -n1 | grep -Po '(?<=Geeqie-v)([[:digit:]]\.[[:digit:]]+\+[[:digit:]]+)(?=.AppImage)')"
     if [ $? != 0 ] || [ -z "$geeqie_version" ]; then
-        geeqie_version='1.6+20210924'
+        geeqie_version='1.7.1+20220117'
     fi
     # check version : https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/AppImage/appimages.txt
 
     ytdlp_version="$($CURL 'https://api.github.com/repos/yt-dlp/yt-dlp/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
     if [ $? != 0 ] || [ -z "$ytdlp_version" ]; then
-        ytdlp_version='2021.10.10'
+        ytdlp_version='2022.03.08.1'
     fi
     # check version : https://github.com/yt-dlp/yt-dlp/releases/
 
