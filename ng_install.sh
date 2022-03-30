@@ -3740,6 +3740,12 @@ locations=[<(uint32 2, <('Le Mans', 'LFRM', true, [(0.83659448230485101, 0.00349
 automatic-location=true
 locations=[<(uint32 2, <('Le Mans', 'LFRM', true, [(0.83659448230485101, 0.0034906585039886592)], [(0.83775804095727813, 0.0034906585039886592)])>)>]
 
+[gnome/gedit/preferences/editor]
+highlight-current-line=false
+scheme='classic'
+use-default-font=false
+wrap-last-split-mode='word'
+
 [gnome/nautilus/preferences]
 search-view='list-view'
 default-folder-viewer='icon-view'
