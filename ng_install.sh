@@ -2887,6 +2887,13 @@ EOF
 displayandexec "Installation du script sysupdate                    " "\
 chmod +x /usr/bin/sysupdate"
 }
+
+# Pour mettre à jour asbru lorsqu'il y a une mise à jour de KeePassXC :
+# grep 'pathcli' .config/asbru/asbru.yml
+#     pathcli: /opt/manual_install/KeePassXC/KeePassXC-2.7.0-x86_64.AppImage
+
+# dans sysupdate :
+# [ -f /home/"$local_user"/.config/asbru/asbru.yml ] && sed -i "s,pathcli: /opt/manual_install/KeePassXC/KeePassXC-.*.AppImage,pathcli: "$manual_install_dir"/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage,g" /home/"$local_user"/.config/asbru/asbru.yml
 ################################################################################
 
 ################################################################################
@@ -3966,6 +3973,7 @@ video/x-matroska=mpv.desktop;
 video/webm=mpv.desktop;
 video/x-flv=mpv.desktop;
 video/mp4=mpv.desktop;org.gnome.Totem.desktop;vlc.desktop;
+image/webp=geeqie.desktop;
 
 [Default Applications]
 application/x-mswinurl=launch_url_file.desktop;
@@ -3984,6 +3992,7 @@ x-scheme-handler/http=chromium.desktop
 x-scheme-handler/https=chromium.desktop
 x-scheme-handler/about=chromium.desktop
 x-scheme-handler/unknown=chromium.desktop
+image/webp=geeqie.desktop
 EOF
 ################################################################################
 
