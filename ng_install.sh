@@ -254,7 +254,6 @@
 # Peut être un problème dans l'utilisation de ExeAsUser ?, essayer de monitorer avec des tests.
 # - regarder de près concernant l'intéret de d'installer le librairie du wivedine de google dans le chromium de debian
 # - rajouter une variable qui contient l'usage du script pour afficher de quel manière l'utiliser lorsque d'un des arguments n'est pas correct (l'équivalent d'un --help)
-# - ils ont changer l'install de FreeFileSync avec maintenant un binaire pour l'install (indice : bat -A /opt/manual_install/FreeFileSync_11.6_Install.run | more)
 # - potentiellement intégrer l'installation de l'outil xdotool
 # - potentiellement installer le paquet iozone3
 # - potentiellement installer qview (https://interversehq.com/qview/download/)
@@ -584,10 +583,10 @@ check_latest_version_manual_install_apps() {
     fi
     # check version : https://github.com/jgraph/drawio-desktop/releases
 
-    freefilesync_version="$($CURL 'https://freefilesync.org/download.php' | grep 'Linux.tar.gz' | grep -Po '(?<=FreeFileSync_)([[:digit:]]+\.+[[:digit:]]+)')"
-    if [ $? != 0 ] || [ -z "$freefilesync_version" ]; then
-        freefilesync_version='11.18'
-    fi
+    # freefilesync_version="$($CURL 'https://freefilesync.org/download.php' | grep 'Linux.tar.gz' | grep -Po '(?<=FreeFileSync_)([[:digit:]]+\.+[[:digit:]]+)')"
+    # if [ $? != 0 ] || [ -z "$freefilesync_version" ]; then
+    #     freefilesync_version='11.18'
+    # fi
     # check version : https://freefilesync.org/download.php"
 
     boostnote_version="$($CURL 'https://api.github.com/repos/BoostIO/boost-releases/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
@@ -883,23 +882,6 @@ echo ''
 # systemctl stop unattended-upgrades
 
 # remise au propre de /etc/apt/sources.list
-make_apt_source_list_clean_buster() {
-cat> /etc/apt/sources.list << EOF
-deb http://deb.debian.org/debian/ $debian_release main contrib non-free
-deb-src http://deb.debian.org/debian/ $debian_release main contrib non-free
-
-deb http://security.debian.org/debian-security $debian_release/updates main contrib
-deb-src http://security.debian.org/debian-security $debian_release/updates main contrib
-
-# $debian_release-updates, previously known as 'volatile'
-deb http://deb.debian.org/debian/ $debian_release-updates main contrib
-deb-src http://deb.debian.org/debian/ $debian_release-updates main contrib
-
-#backport
-#deb http://deb.debian.org/debian $debian_release-backports main contrib non-free
-EOF
-}
-# ne pas mettre les variable entre guillemet
 
 make_apt_source_list_clean_bullseye() {
 cat> /etc/apt/sources.list << EOF
@@ -919,9 +901,6 @@ EOF
 }
 # ne pas mettre les variable entre double quote
 
-if [ "$buster" == 1 ]; then
- make_apt_source_list_clean_buster
-fi
 if [ "$bullseye" == 1 ]; then
   make_apt_source_list_clean_bullseye
 fi
@@ -1213,19 +1192,6 @@ install_from_backports() {
 # On permet toutefois l'install de la dernière version disponnible dans backport si elle existe (vérification avec la commande apt-cache policy firejail | sed -n '/Version table:/{n;p;}' | grep '~bpo')
 install_from_backports
 
-install_zfs_buster() {
-  sed -i "s%^#deb http://deb.debian.org/debian "$debian_release"-backports%deb http://deb.debian.org/debian "$debian_release"-backports%" /etc/apt/sources.list
-  displayandexec "Installation de ZFS                                 " "\
-  $AG update && \
-  echo 'zfs-dkms	zfs-dkms/stop-build-for-32bit-kernel	boolean	true' | debconf-set-selections && \
-  echo 'zfs-dkms	zfs-dkms/note-incompatible-licenses	note' | debconf-set-selections && \
-  echo 'zfs-dkms	zfs-dkms/stop-build-for-unknown-kernel	boolean	true'| debconf-set-selections && \
-  $AG -t "$debian_release"-backports install -y zfsutils-linux zfs-dkms zfs-zed && \
-  modprobe zfs"
-  sed -i "s%^deb http://deb.debian.org/debian "$debian_release"-backports%#deb http://deb.debian.org/debian "$debian_release"-backports%" /etc/apt/sources.list && \
-  execandlog "$AG update"
-}
-
 install_zfs_bullseye() {
   sed -i "s%^#deb http://deb.debian.org/debian "$debian_release"-backports%deb http://deb.debian.org/debian "$debian_release"-backports%" /etc/apt/sources.list && \
   execandlog "$AG update"
@@ -1252,9 +1218,6 @@ install_zfs_bullseye() {
   fi
 }
 
-if [ "$buster" == 1 ]; then
- install_zfs_buster
-fi
 if [ "$bullseye" == 1 ]; then
   install_zfs_bullseye
 fi
@@ -1287,14 +1250,6 @@ execandlog "[ -d "$manual_install_dir" ] || mkdir "$manual_install_dir""
 ################################################################################
 ## instalation de atom
 ##------------------------------------------------------------------------------
-install_atom_buster() {
-  displayandexec "Installation des dépendances de atom                " "$AGI libgconf-2-4 gvfs-bin gconf2-common"
-  displayandexec "Installation de atom                                " "\
-$WGET --output-document - 'https://packagecloud.io/AtomEditor/atom/gpgkey' | apt-key add - && \
-echo 'deb [arch=amd64] https://packagecloud.io/AtomEditor/atom/any/ any main' > /etc/apt/sources.list.d/atom.list && \
-$AG update && \
-$AGI atom"
-}
 install_atom_bullseye() {
   displayandexec "Installation des dépendances de atom                " "$AGI libgconf-2-4 gvfs-bin gconf2-common"
   displayandexec "Installation de atom                                " "\
@@ -1346,13 +1301,6 @@ rm -rf "$tmp_dir""
 ################################################################################
 ## instalation de Spotify
 ##------------------------------------------------------------------------------
-install_spotify_buster() {
-  displayandexec "Installation de spotify                             " "\
-$CURL 'https://download.spotify.com/debian/pubkey_5E3C45D7B312C643.gpg' | apt-key add - && \
-echo 'deb http://repository.spotify.com stable non-free' > /etc/apt/sources.list.d/spotify.list && \
-$AG update && \
-$AGI spotify-client"
-}
 install_spotify_bullseye() {
   displayandexec "Installation de spotify                             " "\
 $CURL 'https://download.spotify.com/debian/pubkey_5E3C45D7B312C643.gpg' | gpg --dearmor --output /usr/share/keyrings/spotify-archive-keyring.gpg && \
@@ -1365,16 +1313,6 @@ $AGI spotify-client"
 ################################################################################
 ## instalation de apt-fast
 ##------------------------------------------------------------------------------
-install_apt-fast_buster() {
-  displayandexec "Installation de apt-fast                            " "\
-cat> /etc/apt/sources.list.d/apt-fast.list << 'EOF'
-deb [arch=amd64] http://ppa.launchpad.net/apt-fast/stable/ubuntu focal main
-#deb-src http://ppa.launchpad.net/apt-fast/stable/ubuntu focal main
-EOF
-apt-key adv --keyserver keyserver.ubuntu.com --recv-keys A2166B8DE8BDC3367D1901C11EE2FF37CA8DA16B
-$AG update
-$AGI apt-fast"
-}
 install_apt-fast_bullseye() {
   displayandexec "Installation de apt-fast                            " "\
 $WGET --output-document - 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xA2166B8DE8BDC3367D1901C11EE2FF37CA8DA16B' | gpg --dearmor --output /usr/share/keyrings/apt-fast-archive-keyring.gpg && \
@@ -1418,25 +1356,25 @@ EOF
 ################################################################################
 ## instalation de FreeFileSync
 ##------------------------------------------------------------------------------
-install_freefilesync() {
-  displayandexec "Installation de FreeFileSync                        " "\
-$WGET -P "$tmp_dir" https://freefilesync.org/download/FreeFileSync_"$freefilesync_version"_Linux.tar.gz -O FreeFileSync_"$freefilesync_version"_Linux.tar.gz && \
-tar xvf "$tmp_dir"/FreeFileSync_"$freefilesync_version"_Linux.tar.gz --directory "$manual_install_dir" && \
-echo ""$manual_install_dir"/FreeFileSync/FreeFileSync" > /usr/bin/FreeFileSync && \
-chmod +x /usr/bin/FreeFileSync"
-cat> /usr/share/applications/freefilesync.desktop << EOF
-[Desktop Entry]
-Type=Application
-Name=FreeFileSync
-GenericName=Folder Comparison and Synchronization
-Exec=$manual_install_dir/FreeFileSync/FreeFileSync %F
-Icon=$manual_install_dir/FreeFileSync/Resources/FreeFileSync.png
-NoDisplay=false
-Terminal=false
-Categories=Utility;FileTools;
-StartupNotify=true
-EOF
-}
+# install_freefilesync() {
+#   displayandexec "Installation de FreeFileSync                        " "\
+# $WGET -P "$tmp_dir" https://freefilesync.org/download/FreeFileSync_"$freefilesync_version"_Linux.tar.gz -O FreeFileSync_"$freefilesync_version"_Linux.tar.gz && \
+# tar xvf "$tmp_dir"/FreeFileSync_"$freefilesync_version"_Linux.tar.gz --directory "$manual_install_dir" && \
+# echo ""$manual_install_dir"/FreeFileSync/FreeFileSync" > /usr/bin/FreeFileSync && \
+# chmod +x /usr/bin/FreeFileSync"
+# cat> /usr/share/applications/freefilesync.desktop << EOF
+# [Desktop Entry]
+# Type=Application
+# Name=FreeFileSync
+# GenericName=Folder Comparison and Synchronization
+# Exec=$manual_install_dir/FreeFileSync/FreeFileSync %F
+# Icon=$manual_install_dir/FreeFileSync/Resources/FreeFileSync.png
+# NoDisplay=false
+# Terminal=false
+# Categories=Utility;FileTools;
+# StartupNotify=true
+# EOF
+# }
 # Pour faire les nouvelles install avec freefilesynx :
 # tar xvf "$tmp_dir"/FreeFileSync_"$freefilesync_version"_Linux.tar.gz --directory "$tmp_dir" && \
 # Pour l'instant on est obligé de faire un chown -R $local_user:$local_user "$manual_install_dir"/FreeFileSync sinon le bianire ne s'installe pas
@@ -1460,16 +1398,6 @@ rm -rf "$tmp_dir""
 ################################################################################
 ## instalation de Typora
 ##------------------------------------------------------------------------------
-install_typora_buster() {
-  displayandexec "Installation des dépendances de Typora              " "\
-cat> /etc/apt/sources.list.d/typora.list << 'EOF'
-deb https://typora.io/linux ./
-# deb-src https://typora.io/linux ./
-EOF
-$WGET --output-document - 'https://typora.io/linux/public-key.asc' | apt-key add - && \
-$AG update && \
-$AGI typora"
-}
 install_typora_bullseye() {
   displayandexec "Installation de Typora                              " "\
 cat> /etc/apt/sources.list.d/typora.list << 'EOF'
@@ -1485,71 +1413,6 @@ $AGI typora"
 ################################################################################
 ## instalation de VirtualBox
 ##------------------------------------------------------------------------------
-install_virtualbox_buster() {
-  displayandexec "Installation des dépendances de VirtualBox          " "$AGI dkms"
-  displayandexec "Installation de VirtualBox                          " "\
-echo 'deb https://download.virtualbox.org/virtualbox/debian buster contrib' > /etc/apt/sources.list.d/virtualbox.list && \
-$WGET --output-document - 'https://www.virtualbox.org/download/oracle_vbox_2016.asc' | apt-key add - && \
-$WGET --output-document - 'https://www.virtualbox.org/download/oracle_vbox.asc' | apt-key add - && \
-$AG update && \
-$AGI virtualbox-6.1"
-# virtualbox_version=$(virtualbox --help | grep v[0-9] | cut -c 35-) # ancienne version
-virtualbox_version="$(virtualbox --help | grep -Po ' v\K[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+')"
-displayandexec "Installation de VM VirtualBox Extension Pack        " "\
-$WGET -P "$tmp_dir" https://download.virtualbox.org/virtualbox/"$virtualbox_version"/Oracle_VM_VirtualBox_Extension_Pack-"$virtualbox_version".vbox-extpack && \
-echo y | /usr/bin/VBoxManage extpack install --replace "$tmp_dir"/Oracle_VM_VirtualBox_Extension_Pack-"$virtualbox_version".vbox-extpack"
-  # Une solution qui devrait marché mais il faut avoir le hachage de la licence pour pouvoir l'executer et on obtient le hachage qu'en lançant une première fois la commande
-  # VBoxManage extpack install --replace Oracle_VM_VirtualBox_Extension_Pack-$virtualbox_version.vbox-extpack --accept-license --accept-license=56be48f923303c8cababb0bb4c478284b688ed23f16d775d729b89a2e8e5f9eb
-  # https://www.virtualbox.org/ticket/16674
-  # Pour lister les extensions virutlabox une fois l'installation terminé : VBoxManage list extpacks
-  # VBoxManage list extpacks
-
-  configure_SecureBoot_params() {
-# création du dossier qui contiendra les signatures pour le SecureBoot
-[ -d /usr/share/manual_sign_kernel_module ] || mkdir /usr/share/manual_sign_kernel_module
-# création du script qui permet de signer les modules vboxdrv vboxnetflt vboxnetadp vboxpci pour VirtualBox
-cat> /opt/sign_virtualbox_kernel_module.sh << 'EOF'
-#!/bin/bash
-
-# Test que le script est lancer en root
-if [ $EUID != 0 ]; then
-    echo "Le script doit être executer en root: # sudo $0" 1>&2
-    exit 1
-fi
-
-UNAMER="$(uname -r)"
-mkdir -p /usr/share/manual_sign_kernel_module/virtualbox
-cd /usr/share/manual_sign_kernel_module/virtualbox
-openssl req -new -x509 -newkey rsa:2048 -keyout vboxdrv.priv -outform DER -out vboxdrv.der -nodes -days 36500 -subj "/CN=vboxdrv/"
-/usr/src/linux-headers-$UNAMER/scripts/sign-file sha256 ./vboxdrv.priv ./vboxdrv.der /lib/modules/$UNAMER/misc/vboxdrv.ko
-openssl req -new -x509 -newkey rsa:2048 -keyout vboxnetflt.priv -outform DER -out vboxnetflt.der -nodes -days 36500 -subj "/CN=vboxnetflt/"
-/usr/src/linux-headers-$UNAMER/scripts/sign-file sha256 ./vboxnetflt.priv ./vboxnetflt.der /lib/modules/$UNAMER/misc/vboxnetflt.ko
-openssl req -new -x509 -newkey rsa:2048 -keyout vboxnetadp.priv -outform DER -out vboxnetadp.der -nodes -days 36500 -subj "/CN=vboxnetadp/"
-/usr/src/linux-headers-$UNAMER/scripts/sign-file sha256 ./vboxnetadp.priv ./vboxnetadp.der /lib/modules/$UNAMER/misc/vboxnetadp.ko
-openssl req -new -x509 -newkey rsa:2048 -keyout vboxpci.priv -outform DER -out vboxpci.der -nodes -days 36500 -subj "/CN=vboxpci/"
-/usr/src/linux-headers-$UNAMER/scripts/sign-file sha256 ./vboxpci.priv ./vboxpci.der /lib/modules/$UNAMER/misc/vboxpci.ko
-mokutil --import vboxdrv.der
-mokutil --import vboxnetflt.der
-mokutil --import vboxnetadp.der
-mokutil --import vboxpci.der
-# normallement on peut faire le mokutil avec l'import de plusieurs fichiers en même temps, il faudra tester si c'est possible avant d'intégrer la ligne suivante dans le script
-#mokutil --import vboxdrv.der vboxnetflt.der vboxnetadp.der vboxpci.der
-reboot
-EOF
-    chmod +x /opt/sign_virtualbox_kernel_module.sh
-  }
-  # ref : [Debian, SecureBoot et les modules noyaux DKMS - Where is it?](https://medspx.fr/blog/Debian/secure_boot_dkms/)
-
-  # test qui vérifie l'activation du SecureBoot
-  if command -v mokutil > /dev/null; then
-      test_secure_boot="$(mokutil --sb-state 2> /dev/null | grep 'SecureBoot')"
-      if [ "$test_secure_boot" == 'SecureBoot enabled' ]; then
-          configure_SecureBoot_params
-          # displayandexec "Install du script pour signer module (SecureBoot)   " "$AGI dkms"
-      fi
-  fi
-}
-
 install_virtualbox_bullseye() {
   displayandexec "Installation des dépendances de VirtualBox          " "$AGI dkms"
   displayandexec "Installation de VirtualBox                          " "\
@@ -1642,16 +1505,6 @@ EOF
 ################################################################################
 ## instalation de MKVToolNix
 ##------------------------------------------------------------------------------
-install_mkvtoolnix_buster() {
-  displayandexec "Installation de MKVToolNix                          " "\
-cat> /etc/apt/sources.list.d/mkvtoolnix.download.list << 'EOF'
-deb https://mkvtoolnix.download/debian/ buster main
-#deb-src https://mkvtoolnix.download/debian/ buster main
-EOF
-$WGET --output-document - 'https://mkvtoolnix.download/gpg-pub-moritzbunkus.txt' | apt-key add - && \
-$AG update && \
-$AGI mkvtoolnix mkvtoolnix-gui"
-}
 install_mkvtoolnix_bullseye() {
   displayandexec "Installation de MKVToolNix                          " "\
 cat> /etc/apt/sources.list.d/mkvtoolnix.download.list << 'EOF'
@@ -1714,13 +1567,6 @@ EOF
 ################################################################################
 ## instalation de Signal
 ##------------------------------------------------------------------------------
-install_signal_buster() {
-  displayandexec "Installation de Signal                              " "\
-echo 'deb [arch=amd64] https://updates.signal.org/desktop/apt xenial main' > /etc/apt/sources.list.d/signal-xenial.list && \
-$CURL 'https://updates.signal.org/desktop/apt/keys.asc' | apt-key add - && \
-$AG update && \
-$AGI signal-desktop"
-}
 install_signal_bullseye() {
   displayandexec "Installation de Signal                              " "\
 echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/signal-archive-keyring.gpg] https://updates.signal.org/desktop/apt xenial main' > /etc/apt/sources.list.d/signal-xenial.list && \
@@ -1745,20 +1591,6 @@ rm -rf "$tmp_dir""
 ################################################################################
 ## instalation de asbru
 ##------------------------------------------------------------------------------
-install_asbru_buster() {
-  displayandexec "Installation des dépendances de Asbru               " "$AGI perl libvte-2.91-0 libcairo-perl libglib-perl libpango-perl libsocket6-perl libexpect-perl libnet-proxy-perl libyaml-perl libcrypt-cbc-perl libcrypt-blowfish-perl libgtk3-perl libnet-arp-perl libossp-uuid-perl openssh-client telnet ftp libcrypt-rijndael-perl libxml-parser-perl libcanberra-gtk-module dbus-x11 libx11-guitest-perl libgtk3-simplelist-perl gir1.2-wnck-3.0 gir1.2-vte-2.91"
-  displayandexec "Installation de Asbru                               " "\
-cat> /etc/apt/sources.list.d/asbru-cm_asbru-cm.list << 'EOF'
-# this file was generated by packagecloud.io for
-# the repository at https://packagecloud.io/asbru-cm/asbru-cm
-
-deb [arch=amd64] https://packagecloud.io/asbru-cm/asbru-cm/debian/ buster main
-#deb-src https://packagecloud.io/asbru-cm/asbru-cm/debian/ buster main
-EOF
-$CURL --location 'https://packagecloud.io/asbru-cm/asbru-cm/gpgkey' | apt-key add - && \
-$AG update && \
-$AGI asbru-cm keepassxc-"
-}
 install_asbru_bullseye() {
   displayandexec "Installation des dépendances de Asbru               " "$AGI perl libvte-2.91-0 libcairo-perl libglib-perl libpango-perl libsocket6-perl libexpect-perl libnet-proxy-perl libyaml-perl libcrypt-cbc-perl libcrypt-blowfish-perl libgtk3-perl libnet-arp-perl libossp-uuid-perl openssh-client telnet ftp libcrypt-rijndael-perl libxml-parser-perl libcanberra-gtk-module dbus-x11 libx11-guitest-perl libgtk3-simplelist-perl gir1.2-wnck-3.0 gir1.2-vte-2.91"
   displayandexec "Installation de Asbru                               " "\
@@ -1895,18 +1727,6 @@ install_opensnitch() {
 ################################################################################
 ## instalation de Ansible
 ##------------------------------------------------------------------------------
-install_ansible_buster() {
-  displayandexec "Installation de Ansible                             " "\
-echo 'deb [arch=amd64] http://ppa.launchpad.net/ansible/ansible-4/ubuntu bionic main' > /etc/apt/sources.list.d/ansible.list && \
-apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 93C4A3FD7BB9C367 && \
-$AG update && \
-$AGI ansible"
-$ExeAsUser cat>> /home/"$local_user"/.bashrc << 'EOF'
-
-# for Ansible vault editor
-export EDITOR=nano
-EOF
-}
 install_ansible_bullseye() {
   displayandexec "Installation de Ansible                             " "\
 $WGET --output-document - 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x93C4A3FD7BB9C367' | gpg --dearmor --output /usr/share/keyrings/ansible-archive-keyring.gpg && \
@@ -1986,16 +1806,6 @@ EOF
 ################################################################################
 ## instalation de timeshift
 ##------------------------------------------------------------------------------
-install_timeshift_buster() {
-  displayandexec "Installation de timeshift                           " "\
-cat> /etc/apt/sources.list.d/timeshift.list << 'EOF'
-deb http://ppa.launchpad.net/teejee2008/timeshift/ubuntu focal main
-#deb-src http://ppa.launchpad.net/teejee2008/timeshift/ubuntu focal main
-EOF
-apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 1B32B87ABAEE357218F6B48CB5B116B72D0F61F0
-$AG update
-$AGI timeshift"
-}
 install_timeshift_bullseye() {
   displayandexec "Installation de timeshift                           " "\
 $WGET --output-document - 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x1B32B87ABAEE357218F6B48CB5B116B72D0F61F0' | gpg --dearmor --output /usr/share/keyrings/timeshift-archive-keyring.gpg && \
@@ -2042,36 +1852,6 @@ $AGI brave-browser"
 # apelle à la fonction qui permet de récupérer toutes les versions des logiciels qui s'installent manuellement
 check_latest_version_manual_install_apps
 
-install_all_manual_install_apps_buster() {
-  install_atom_buster
-  install_winscp
-  install_veracrypt
-  install_spotify_buster
-  install_apt-fast_buster
-  install_drawio
-  install_freefilesync
-  install_boostnote
-  install_typora_buster
-  install_virtualbox_buster
-  install_keepassxc
-  install_mkvtoolnix_buster
-  install_etcher
-  install_shotcut
-  install_signal_buster
-  install_stacer
-  install_asbru_buster
-  install_bat
-  install_youtubedl
-  install_yt-dlp
-  install_joplin
-  install_krita
-  install_opensnitch
-  install_ansible_buster
-  install_hashcat
-  install_sshuttle
-  install_timeshift_buster
-  install_brave
-}
 install_all_manual_install_apps_bullseye() {
   install_atom_bullseye
   install_winscp
@@ -2079,7 +1859,7 @@ install_all_manual_install_apps_bullseye() {
   install_spotify_bullseye
   install_apt-fast_bullseye
   install_drawio
-  install_freefilesync
+  # install_freefilesync
   install_boostnote
   install_typora_bullseye
   install_virtualbox_bullseye
@@ -2105,9 +1885,6 @@ install_all_manual_install_apps_bullseye() {
   install_brave
 }
 
-if [ "$buster" == 1 ]; then
- install_all_manual_install_apps_buster
-fi
 if [ "$bullseye" == 1 ]; then
   install_all_manual_install_apps_bullseye
 fi
@@ -2184,87 +1961,6 @@ displayandexec "Désinstalation de Gnome Parental Control            " "$AG remo
 # gnome-extensions est disponnible a partir de Gnome 34
 # should restart gdm with Alt+F2+r
 
-install_GSE_buster() {
-#Screenshot Tool
-install_GSE_screenshot_tool() {
-  local tmp_dir="$(mktemp -d)"
-  local GnomeShellExtensionUUID='gnome-shell-screenshot@ttll.de' && \
-  [ -d "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" ] || mkdir -p "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
-  $WGET -P "$tmp_dir" 'https://extensions.gnome.org/extension-data/gnome-shell-screenshotttll.de.v40.shell-extension.zip' && \
-  unzip -q "$tmp_dir"/gnome-shell-screenshotttll.de.v40.shell-extension.zip -d "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
-  chown -R "$local_user":"$local_user" "$gnome_shell_extension_path"
-  rm -rf "$tmp_dir"
-}
-
-#system-monitor
-install_GSE_system_monitor() {
-  $AGI gnome-shell-extension-system-monitor
-  $ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/memory-style "'digit'"
-  # on configure avec la commande ci-dessus l'affichage de la métrique de la RAM sous forme de pourcentage plustôt que de graph
-}
-
-#Sound Input & Output Device Chooser
-install_GSE_sound_output_device_chooser() {
-  local tmp_dir="$(mktemp -d)"
-  local GnomeShellExtensionUUID='sound-output-device-chooser@kgshank.net' && \
-  [ -d "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" ] || mkdir -p "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
-  $WGET -P "$tmp_dir" 'https://extensions.gnome.org/extension-data/sound-output-device-chooserkgshank.net.v40.shell-extension.zip' && \
-  unzip -q "$tmp_dir"/sound-output-device-chooserkgshank.net.v40.shell-extension.zip -d "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
-  chown -R "$local_user":"$local_user" "$gnome_shell_extension_path"
-  rm -rf "$tmp_dir"
-}
-# to check the latest version : https://extensions.gnome.org/extension/906/sound-output-device-chooser/
-# https://github.com/kgshank/gse-sound-output-device-chooser
-
-enable_GSE() {
-  $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")' > /dev/null && \
-  $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-shell-extension-tool -e 'gnome-shell-screenshot@ttll.de'
-  $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-shell-extension-tool -e 'system-monitor@paradoxxx.zero.gmail.com'
-  $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-shell-extension-tool -e 'sound-output-device-chooser@kgshank.net'
-}
-
-check_for_enable_GSE() {
-  if [ -z "$script_is_launch_with_gnome_terminal" ]; then
-    	enable_GSE
-  else
-    cat> /tmp/reload_GnomeShell.sh << 'EOF'
-#!/bin/bash
-
-local_user="$(awk -F':' '/1000/{print $1}' /etc/passwd)"
-local_user_UID="$(id -u "$local_user")"
-ExeAsUser="sudo -u "$local_user""
-
-$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")' > /dev/null
-EOF
-chmod +x /tmp/reload_GnomeShell.sh && \
-chown "$local_user":"$local_user" /tmp/reload_GnomeShell.sh
-cat> /tmp/enable_GSE.sh << 'EOF'
-#!/bin/bash
-
-local_user="$(awk -F':' '/1000/{print $1}' /etc/passwd)"
-local_user_UID="$(id -u "$local_user")"
-ExeAsUser="sudo -u "$local_user""
-
-$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-shell-extension-tool -e 'gnome-shell-screenshot@ttll.de'
-$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-shell-extension-tool -e 'system-monitor@paradoxxx.zero.gmail.com'
-$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-shell-extension-tool -e 'sound-output-device-chooser@kgshank.net'
-EOF
-chmod +x /tmp/enable_GSE.sh && \
-chown "$local_user":"$local_user" /tmp/enable_GSE.sh
-  fi
-}
-
-install_GSE_screenshot_tool
-install_GSE_system_monitor
-install_GSE_sound_output_device_chooser
-check_for_enable_GSE
-
-displayandexec "Installation des Gnome Shell Extension              " "\
-stat "$gnome_shell_extension_path"/gnome-shell-screenshot@ttll.de/metadata.json && \
-stat "$gnome_shell_extension_path"/sound-output-device-chooser@kgshank.net/metadata.json && \
-stat /usr/share/gnome-shell/extensions/system-monitor@paradoxxx.zero.gmail.com/metadata.json"
-}
-
 install_GSE_bullseye() {
 #Screenshot Tool
 install_GSE_screenshot_tool() {
@@ -2282,6 +1978,10 @@ install_GSE_system_monitor() {
   $AGI gnome-shell-extension-system-monitor &> /dev/null
   $ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/memory-style "'digit'"
   # on configure avec la commande ci-dessus l'affichage de la métrique de la RAM sous forme de pourcentage plustôt que de graph
+  $ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/gpu-show-menu "true"
+  # on active la vue de l'utilisation du GPU dans le menu
+  $ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/disk-usage-style "'bar'"
+  # on chosie l'option de l'affichage de l'utilisation des disk par des barres horizontales à la place du graph en demi cercle
 }
 
 #Sound Input & Output Device Chooser
@@ -2353,9 +2053,6 @@ stat /usr/share/gnome-shell/extensions/system-monitor@paradoxxx.zero.gmail.com/m
 # il n'est pas nécessaire de recharger Gnome Shell après avoir activé les extensions pour les voir apparaitre dans la barre supérieure
 
 
-if [ "$buster" == 1 ]; then
-  install_GSE_buster
-fi
 if [ "$bullseye" == 1 ]; then
   install_GSE_bullseye
 fi
@@ -2549,12 +2246,12 @@ CheckUpdateBoostnote() {
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
-CheckUpdateFreefilesync() {
-  local SoftwareName='FreeFileSync'
-  local v1="$(head "$manual_install_dir"/FreeFileSync/CHANGELOG -n 1 | grep -Po 'FreeFileSync \K([[:digit:]]+\.[[:digit:]]+)')"
-  local v2="$($CURL 'https://freefilesync.org/download.php' | grep 'Linux.tar.gz' | grep -Po '(FreeFileSync_)\K([[:digit:]]+\.[[:digit:]]+)')"
-  CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
-}
+# CheckUpdateFreefilesync() {
+#   local SoftwareName='FreeFileSync'
+#   local v1="$(head "$manual_install_dir"/FreeFileSync/CHANGELOG -n 1 | grep -Po 'FreeFileSync \K([[:digit:]]+\.[[:digit:]]+)')"
+#   local v2="$($CURL 'https://freefilesync.org/download.php' | grep 'Linux.tar.gz' | grep -Po '(FreeFileSync_)\K([[:digit:]]+\.[[:digit:]]+)')"
+#   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
+# }
 
 CheckUpdateKeepassxc() {
   local SoftwareName='KeePassXC'
@@ -2681,14 +2378,14 @@ UpdateBoostnote() {
   rm -rf "$tmp_dir"
 }
 
-UpdateFreefilesync() {
-  local freefilesync_version="$($CURL 'https://freefilesync.org/download.php' | grep 'Linux.tar.gz' | grep -Po "(FreeFileSync_)\K([[:digit:]]+\.+[[:digit:]]+)")" && \
-  rm -rf "$manual_install_dir"/FreeFileSync && \
-  local tmp_dir="$(mktemp -d)" && \
-  aria2c -d "$tmp_dir" https://freefilesync.org/download/FreeFileSync_"$freefilesync_version"_Linux.tar.gz -o /FreeFileSync_"$freefilesync_version"_Linux.tar.gz && \
-  tar xvf "$tmp_dir"/FreeFileSync_"$freefilesync_version"_Linux.tar.gz --directory "$manual_install_dir" > /dev/null
-  rm -rf "$tmp_dir"
-}
+# UpdateFreefilesync() {
+#   local freefilesync_version="$($CURL 'https://freefilesync.org/download.php' | grep 'Linux.tar.gz' | grep -Po "(FreeFileSync_)\K([[:digit:]]+\.+[[:digit:]]+)")" && \
+#   rm -rf "$manual_install_dir"/FreeFileSync && \
+#   local tmp_dir="$(mktemp -d)" && \
+#   aria2c -d "$tmp_dir" https://freefilesync.org/download/FreeFileSync_"$freefilesync_version"_Linux.tar.gz -o /FreeFileSync_"$freefilesync_version"_Linux.tar.gz && \
+#   tar xvf "$tmp_dir"/FreeFileSync_"$freefilesync_version"_Linux.tar.gz --directory "$manual_install_dir" > /dev/null
+#   rm -rf "$tmp_dir"
+# }
 
 UpdateKeepassxc() {
   local keepassxc_version="$($CURL 'https://api.github.com/repos/keepassxreboot/keepassxc/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')" && \
@@ -2700,6 +2397,9 @@ UpdateKeepassxc() {
   [ -f "$manual_install_dir"/KeePassXC/keepassxc-logo.svg ] || $WGET -P "$manual_install_dir"/KeePassXC/ 'https://keepassxc.org/images/keepassxc-logo.svg'
   # [ -f /home/"$local_user"/.config/asbru/asbru.yml ] && sed -i "s,pathcli: /opt/manual_install/KeePassXC/KeePassXC-.*.AppImage,pathcli: "$manual_install_dir"/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage,g" /home/"$local_user"/.config/asbru/asbru.yml
   # bon a priori la commande précendante ne fonctionne pas, elle change bien la version dans le fichier de conf de asbru, mais cette modification ne permet pas de changer réellement la conf de asbru
+  # pour voir la partie qui concerne la configuraion de keepassxc dans asbru : sed -n '/keepass:/,/use_keepass:/p' .config/asbru/asbru.yml
+  # donc il semble qu'il faille supprimer ce fichier avant de lancer asbru graphiquement : .config/asbru/asbru.nfreeze
+  # on peut donc réintégrer le sed en le couplant avec la suppression de ce fichier pour les prochaines update et voir comment ça se passe
 }
 
 UpdateJoplin() {
@@ -2838,7 +2538,6 @@ software_list='
 Shotcut
 Youtube-dl
 Boostnote
-Freefilesync
 Keepassxc
 Joplin
 Stacer
@@ -2852,6 +2551,7 @@ Yt-dlp
 Hashcat
 Veracrypt
 Winscp'
+# Freefilesync
 
 CheckUpdate() {
 for software in $software_list; do
