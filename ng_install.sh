@@ -583,12 +583,6 @@ check_latest_version_manual_install_apps() {
     fi
     # check version : https://github.com/jgraph/drawio-desktop/releases
 
-    # freefilesync_version="$($CURL 'https://freefilesync.org/download.php' | grep 'Linux.tar.gz' | grep -Po '(?<=FreeFileSync_)([[:digit:]]+\.+[[:digit:]]+)')"
-    # if [ $? != 0 ] || [ -z "$freefilesync_version" ]; then
-    #     freefilesync_version='11.18'
-    # fi
-    # check version : https://freefilesync.org/download.php"
-
     boostnote_version="$($CURL 'https://api.github.com/repos/BoostIO/boost-releases/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
     if [ $? != 0 ] || [ -z "$boostnote_version" ]; then
         boostnote_version='0.16.1'
@@ -641,9 +635,9 @@ check_latest_version_manual_install_apps() {
     fi
     # check version : https://github.com/laurent22/joplin/releases/
 
-    krita_version="$($CURL 'https://krita.org/fr/telechargement/krita-desktop/' | grep 'stable' | grep 'appimage>' | grep -Po '(?<=/stable/krita/)([[:digit:]]+\.+[[:digit:]]+\.[[:digit:]]+)')"
+    krita_version="$($CURL 'https://krita.org/fr/telechargement/krita-desktop/' | grep 'stable' | grep -m1 'appimage ' | grep -Po '(?<=/stable/krita/)([[:digit:]]+\.+[[:digit:]]+\.[[:digit:]]+)')"
     if [ $? != 0 ] || [ -z "$krita_version" ]; then
-        krita_version='4.4.8'
+        krita_version='5.0.6'
     fi
     # check version : https://krita.org/fr/telechargement/krita-desktop/
 
@@ -672,7 +666,7 @@ check_latest_version_manual_install_apps() {
     fi
     # check version : https://winscp.net/eng/downloads.php
 
-    geeqie_version="$($CURL 'https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/AppImage/appimages.txt' | head -n1 | grep -Po '(?<=Geeqie-v)([[:digit:]]\.[[:digit:]]+\+[[:digit:]]+)(?=.AppImage)')"
+    geeqie_version="$($CURL 'https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/AppImage/appimages.txt' | head -n1 | grep -Po '(?<=Geeqie-v)([[:digit:]]\.[[:digit:]]+\+[[:digit:]]+)(?=.AppImage)|(?<=Geeqie-v)([[:digit:]]\.[[:digit:]]+\.[[:digit:]]+\+[[:digit:]]+)(?=.AppImage)')"
     if [ $? != 0 ] || [ -z "$geeqie_version" ]; then
         geeqie_version='1.7.1+20220117'
     fi
@@ -701,8 +695,6 @@ manual_check_latest_version() {
   echo 'VeraCrypt '"$veracrypt_version"
   drawio_version="$($CURL 'https://api.github.com/repos/jgraph/drawio-desktop/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   echo 'drawio '"$drawio_version"
-  freefilesync_version="$($CURL 'https://freefilesync.org/download.php' | grep 'Linux.tar.gz' | grep -Po '(?<=FreeFileSync_)([[:digit:]]+\.+[[:digit:]]+)')"
-  echo 'FreeFileSync '"$freefilesync_version"
   boostnote_version="$($CURL 'https://api.github.com/repos/BoostIO/boost-releases/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   echo 'Boosnote '"$boostnote_version"
   etcher_version="$($CURL 'https://api.github.com/repos/balena-io/etcher/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
@@ -719,7 +711,7 @@ manual_check_latest_version() {
   echo 'bat '"$bat_version"
   joplin_version="$($CURL 'https://api.github.com/repos/laurent22/joplin/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   echo 'Joplin '"$joplin_version"
-  krita_version="$($CURL 'https://krita.org/fr/telechargement/krita-desktop/' | grep 'stable' | grep 'appimage>' | grep -Po '(?<=/stable/krita/)([[:digit:]]+\.+[[:digit:]]+\.[[:digit:]]+)')"
+  krita_version="$($CURL 'https://krita.org/fr/telechargement/krita-desktop/' | grep 'stable' | grep -m1 'appimage ' | grep -Po '(?<=/stable/krita/)([[:digit:]]+\.+[[:digit:]]+\.[[:digit:]]+)')"
   echo 'Krita '"$krita_version"
   opensnitch_stable_version="$($CURL 'https://api.github.com/repos/evilsocket/opensnitch/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
   echo 'OpenSnitch stable '"$opensnitch_stable_version"
@@ -729,7 +721,7 @@ manual_check_latest_version() {
   echo 'hashcat '"$hashcat_version"
   winscp_version="$($CURL 'https://winscp.net/eng/downloads.php' | grep 'Portable.zip' | grep -Po '(?<=WinSCP-)([[:digit:]]+\.+[[:digit:]]+\.[[:digit:]]+)(?=-Portable.zip")')"
   echo 'WinSCP '"$winscp_version"
-  geeqie_version="$($CURL 'https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/AppImage/appimages.txt' | head -n1 | grep -Po '(?<=Geeqie-v)([[:digit:]]\.[[:digit:]]+\+[[:digit:]]+)(?=.AppImage)')"
+  geeqie_version="$($CURL 'https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/AppImage/appimages.txt' | head -n1 | grep -Po '(?<=Geeqie-v)([[:digit:]]\.[[:digit:]]+\+[[:digit:]]+)(?=.AppImage)|(?<=Geeqie-v)([[:digit:]]\.[[:digit:]]+\.[[:digit:]]+\+[[:digit:]]+)(?=.AppImage)')"
   echo 'Geeqie '"$geeqie_version"
   ytdlp_version="$($CURL 'https://api.github.com/repos/yt-dlp/yt-dlp/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
   echo 'yt-dlp '"$ytdlp_version"
@@ -1071,7 +1063,6 @@ displayandexec "Installation de chkrootkit                          " "$AGI chkr
 displayandexec "Installation de chromium                            " "$AGI chromium-l10n"
 displayandexec "Installation de clamav                              " "$AGI clamav clamtk clamtk-gnome libclamunrar"
 displayandexec "Installation de colordiff                           " "$AGI colordiff"
-displayandexec "Installation de linux-cpupower                      " "$AGI linux-cpupower"
 displayandexec "Installation de cups                                " "$AGI cups"
 displayandexec "Installation de curl                                " "$AGI curl"
 displayandexec "Installation de debconf-utils                       " "$AGI debconf-utils"
@@ -1121,12 +1112,14 @@ displayandexec "Installation de mpv                                 " "$AGI mpv 
 # ref : [ubuntu - How do I get apt-get to ignore some dependencies? - Server Fault](https://serverfault.com/questions/250224/how-do-i-get-apt-get-to-ignore-some-dependencies/663803#663803)
 displayandexec "Installation de nautilus-gtkhash                    " "$AGI nautilus-gtkhash"
 displayandexec "Installation de nautilus-wipe                       " "$AGI nautilus-wipe"
+displayandexec "Installation de ncdu                                " "$AGI ncdu"
 displayandexec "Installation de netdiscover                         " "$AGI netdiscover"
 displayandexec "Installation de network-manager-openvpn-gnome       " "$AGI network-manager-openvpn-gnome"
 displayandexec "Installation de network-manager-vpnc-gnome          " "$AGI network-manager-vpnc-gnome"
 displayandexec "Installation de nextcloud-desktop                   " "$AGI nextcloud-desktop"
 displayandexec "Installation de ngrep                               " "$AGI ngrep"
 displayandexec "Installation de nikto                               " "$AGI nikto"
+displayandexec "Installation de nnn                                 " "$AGI nnn"
 displayandexec "Installation de nmap                                " "$AGI nmap"
 displayandexec "Installation de nvme-cli                            " "$AGI nvme-cli"
 displayandexec "Installation de oathtool                            " "$AGI oathtool"
@@ -1136,6 +1129,7 @@ displayandexec "Installation de p7zip-rar                           " "$AGI p7zi
 displayandexec "Installation de printer-driver-all                  " "$AGI printer-driver-all"
 displayandexec "Installation de python3-pip                         " "$AGI python3-pip"
 displayandexec "Installation de python3-scapy                       " "$AGI python3-scapy"
+displayandexec "Installation de rclone                              " "$AGI rclone"
 displayandexec "Installation de rdesktop                            " "$AGI rdesktop"
 displayandexec "Installation de rkhunter                            " "$AGI rkhunter"
 displayandexec "Installation de rsync                               " "$AGI rsync"
@@ -1351,35 +1345,6 @@ MimeType=application/vnd.jgraph.mxfile;application/vnd.visio;
 Categories=Graphics;
 EOF
 }
-################################################################################
-
-################################################################################
-## instalation de FreeFileSync
-##------------------------------------------------------------------------------
-# install_freefilesync() {
-#   displayandexec "Installation de FreeFileSync                        " "\
-# $WGET -P "$tmp_dir" https://freefilesync.org/download/FreeFileSync_"$freefilesync_version"_Linux.tar.gz -O FreeFileSync_"$freefilesync_version"_Linux.tar.gz && \
-# tar xvf "$tmp_dir"/FreeFileSync_"$freefilesync_version"_Linux.tar.gz --directory "$manual_install_dir" && \
-# echo ""$manual_install_dir"/FreeFileSync/FreeFileSync" > /usr/bin/FreeFileSync && \
-# chmod +x /usr/bin/FreeFileSync"
-# cat> /usr/share/applications/freefilesync.desktop << EOF
-# [Desktop Entry]
-# Type=Application
-# Name=FreeFileSync
-# GenericName=Folder Comparison and Synchronization
-# Exec=$manual_install_dir/FreeFileSync/FreeFileSync %F
-# Icon=$manual_install_dir/FreeFileSync/Resources/FreeFileSync.png
-# NoDisplay=false
-# Terminal=false
-# Categories=Utility;FileTools;
-# StartupNotify=true
-# EOF
-# }
-# Pour faire les nouvelles install avec freefilesynx :
-# tar xvf "$tmp_dir"/FreeFileSync_"$freefilesync_version"_Linux.tar.gz --directory "$tmp_dir" && \
-# Pour l'instant on est obligé de faire un chown -R $local_user:$local_user "$manual_install_dir"/FreeFileSync sinon le bianire ne s'installe pas
-# $ExeAsUser "$tmp_dir"/FreeFileSync_11.10_Install.run --accept-license --skip-overview --for-all-users false --directory "$manual_install_dir"/FreeFileSync
-# il faudra potentiellemnt supprimer /home/$local_user/.profile qui est créé lors de l'install de FreeFileSync et qui permet  priori de renseigner le path pour l'execution des commande qui lancent les binaires de FreeFileSync (/home/$local_user/.local/bin)
 ################################################################################
 
 ################################################################################
@@ -2246,13 +2211,6 @@ CheckUpdateBoostnote() {
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
-# CheckUpdateFreefilesync() {
-#   local SoftwareName='FreeFileSync'
-#   local v1="$(head "$manual_install_dir"/FreeFileSync/CHANGELOG -n 1 | grep -Po 'FreeFileSync \K([[:digit:]]+\.[[:digit:]]+)')"
-#   local v2="$($CURL 'https://freefilesync.org/download.php' | grep 'Linux.tar.gz' | grep -Po '(FreeFileSync_)\K([[:digit:]]+\.[[:digit:]]+)')"
-#   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
-# }
-
 CheckUpdateKeepassxc() {
   local SoftwareName='KeePassXC'
   local v1="$(grep -Po '^Exec.*-\K[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+' /usr/share/applications/keepassxc.desktop)"
@@ -2284,7 +2242,7 @@ CheckUpdateBat() {
 CheckUpdateKrita() {
   local SoftwareName='Krita'
   local v1="$(grep -Po '^Exec.*-\K[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+' /usr/share/applications/krita.desktop)"
-  local v2="$($CURL 'https://krita.org/fr/telechargement/krita-desktop/' | grep 'stable' | grep 'appimage>' | grep -Po '(?<=/stable/krita/)(\d+\.+\d\.\d+)')"
+  local v2="$($CURL 'https://krita.org/fr/telechargement/krita-desktop/' | grep 'stable' | grep -m1 'appimage ' | grep -Po '(?<=/stable/krita/)([[:digit:]]+\.+[[:digit:]]+\.[[:digit:]]+)')"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
@@ -2313,7 +2271,7 @@ CheckUpdateEtcher() {
 CheckUpdateGeeqie() {
   local SoftwareName='Geeqie'
   local v1="$(grep -Po '^Exec.*-v\K[[:digit:]]+\.[[:digit:]]+\+[[:digit:]]+' /usr/share/applications/geeqie.desktop)"
-  local v2="$($CURL 'https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/AppImage/appimages.txt' | head -n1 | grep -Po '(?<=Geeqie-v)([[:digit:]]\.[[:digit:]]+\+[[:digit:]]+)(?=.AppImage)')"
+  local v2="$($CURL 'https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/AppImage/appimages.txt' | head -n1 | grep -Po '(?<=Geeqie-v)([[:digit:]]\.[[:digit:]]+\+[[:digit:]]+)(?=.AppImage)|(?<=Geeqie-v)([[:digit:]]\.[[:digit:]]+\.[[:digit:]]+\+[[:digit:]]+)(?=.AppImage)')"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
@@ -2378,15 +2336,6 @@ UpdateBoostnote() {
   rm -rf "$tmp_dir"
 }
 
-# UpdateFreefilesync() {
-#   local freefilesync_version="$($CURL 'https://freefilesync.org/download.php' | grep 'Linux.tar.gz' | grep -Po "(FreeFileSync_)\K([[:digit:]]+\.+[[:digit:]]+)")" && \
-#   rm -rf "$manual_install_dir"/FreeFileSync && \
-#   local tmp_dir="$(mktemp -d)" && \
-#   aria2c -d "$tmp_dir" https://freefilesync.org/download/FreeFileSync_"$freefilesync_version"_Linux.tar.gz -o /FreeFileSync_"$freefilesync_version"_Linux.tar.gz && \
-#   tar xvf "$tmp_dir"/FreeFileSync_"$freefilesync_version"_Linux.tar.gz --directory "$manual_install_dir" > /dev/null
-#   rm -rf "$tmp_dir"
-# }
-
 UpdateKeepassxc() {
   local keepassxc_version="$($CURL 'https://api.github.com/repos/keepassxreboot/keepassxc/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')" && \
   rm -f "$manual_install_dir"/KeePassXC/KeePassXC-*.AppImage && \
@@ -2429,7 +2378,7 @@ UpdateBat() {
 }
 
 UpdateKrita() {
-  local krita_version="$($CURL 'https://krita.org/fr/telechargement/krita-desktop/' | grep 'stable' | grep 'appimage>' | grep -Po '(?<=/stable/krita/)([[:digit:]]+\.+[[:digit:]]+\.[[:digit:]]+)')" && \
+  local krita_version="$($CURL 'https://krita.org/fr/telechargement/krita-desktop/' | grep 'stable' | grep -m1 'appimage ' | grep -Po '(?<=/stable/krita/)([[:digit:]]+\.+[[:digit:]]+\.[[:digit:]]+)')" && \
   rm -f "$manual_install_dir"/Krita/krita-*.appimage && \
   $WGET -P "$manual_install_dir"/Krita/ https://download.kde.org/stable/krita/"$krita_version"/krita-"$krita_version"-x86_64.appimage && \
   chmod +x "$manual_install_dir"/Krita/krita-"$krita_version"-x86_64.appimage && \
@@ -2467,7 +2416,7 @@ UpdateEtcher() {
 }
 
 UpdateGeeqie() {
-  local geeqie_version="$($CURL 'https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/AppImage/appimages.txt' | head -n1 | grep -Po '(?<=Geeqie-v)([[:digit:]]\.[[:digit:]]+\+[[:digit:]]+)(?=.AppImage)')" && \
+  local geeqie_version="$($CURL 'https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/AppImage/appimages.txt' | head -n1 | grep -Po '(?<=Geeqie-v)([[:digit:]]\.[[:digit:]]+\+[[:digit:]]+)(?=.AppImage)|(?<=Geeqie-v)([[:digit:]]\.[[:digit:]]+\.[[:digit:]]+\+[[:digit:]]+)(?=.AppImage)')" && \
   rm -f "$manual_install_dir"/Geeqie/Geeqie-v*.AppImage && \
   geeqie_download_link="$($CURL 'https://www.geeqie.org/AppImage/index.html' | grep -i 'appimage' | grep -Po 'href=\K[^"]*')" && \
   $WGET -P "$manual_install_dir"/Geeqie/ "$geeqie_download_link"Geeqie-v"$geeqie_version".AppImage && \
