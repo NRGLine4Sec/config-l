@@ -3819,7 +3819,7 @@ alias sysupdate='sudo sysupdate'
 alias bat='bat -pp'
 alias free='free -ht'
 alias showshortcut='dconf dump /org/gnome/settings-daemon/plugins/media-keys/'
-alias bitcoin='curl -s "http://api.coindesk.com/v1/bpi/currentprice.json"  | jq ".bpi.EUR.rate" | tr -d \"'
+alias bitcoin='curl -s "http://api.coindesk.com/v1/bpi/currentprice.json" | jq ".bpi.EUR.rate" | tr -d \"'
 alias sshuttle='sudo sshuttle'
 HISTTIMEFORMAT="%Y/%m/%d %T   "
 is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/\$1 ;}
@@ -3829,6 +3829,13 @@ export EDITOR=nano
 
 # for python binnary
 export PATH="\$PATH:/home/$local_user/.local/bin"
+
+# share history between terminals
+# ref : https://subbass.blogspot.com/2009/10/howto-sync-bash-history-between.html
+shopt -s histappend
+PROMPT_COMMAND="history -n; history -a"
+unset HISTFILESIZE
+HISTSIZE=2000
 EOF
 
 # alias for root
@@ -3858,6 +3865,13 @@ alias spyme='lnav /var/log/syslog /var/log/auth.log'
 alias bat='bat -pp'
 alias free='free -ht'
 HISTTIMEFORMAT=\"%Y/%m/%d %T   \"
+
+# share history between terminals
+# ref : https://subbass.blogspot.com/2009/10/howto-sync-bash-history-between.html
+shopt -s histappend
+PROMPT_COMMAND="history -n; history -a"
+unset HISTFILESIZE
+HISTSIZE=2000
 EOF
 displayandexec "Configuration du bashrc                             " "stat /root/.bashrc && stat /home/"$local_user"/.bashrc"
 
@@ -3890,7 +3904,7 @@ alias sysupdate='sudo sysupdate'
 alias bat='bat -pp'
 alias free='free -ht'
 alias showshortcut='dconf dump /org/gnome/settings-daemon/plugins/media-keys/'
-alias bitcoin='curl -s "http://api.coindesk.com/v1/bpi/currentprice.json"  | jq ".bpi.EUR.rate" | tr -d \"'
+alias bitcoin='curl -s "http://api.coindesk.com/v1/bpi/currentprice.json" | jq ".bpi.EUR.rate" | tr -d \"'
 alias sshuttle='sudo sshuttle'
 HISTTIMEFORMAT="%Y/%m/%d %T   "
 is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/\$1 ;}
