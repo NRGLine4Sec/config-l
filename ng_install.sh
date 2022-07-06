@@ -3832,6 +3832,7 @@ export PATH="\$PATH:/home/$local_user/.local/bin"
 
 # share history between terminals
 # ref : https://subbass.blogspot.com/2009/10/howto-sync-bash-history-between.html
+# ref : https://stackoverflow.com/questions/15116806/how-can-i-see-all-of-the-bash-history
 shopt -s histappend
 PROMPT_COMMAND="history -n; history -a"
 unset HISTFILESIZE
@@ -3868,6 +3869,7 @@ HISTTIMEFORMAT=\"%Y/%m/%d %T   \"
 
 # share history between terminals
 # ref : https://subbass.blogspot.com/2009/10/howto-sync-bash-history-between.html
+# ref : https://stackoverflow.com/questions/15116806/how-can-i-see-all-of-the-bash-history
 shopt -s histappend
 PROMPT_COMMAND="history -n; history -a"
 unset HISTFILESIZE

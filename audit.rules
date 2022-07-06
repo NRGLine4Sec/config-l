@@ -217,6 +217,7 @@
 # Systemd
 -w /bin/systemctl -p x -k systemd
 -w /etc/systemd/ -p wa -k systemd
+-w /usr/lib/systemd -p wa -k systemd
 
 ## SELinux events that modify the system's Mandatory Access Controls (MAC)
 -w /etc/selinux/ -p wa -k mac_policy
@@ -293,6 +294,8 @@
 -w /bin/nc -p x -k susp_activity
 -w /bin/netcat -p x -k susp_activity
 -w /usr/bin/ncat -p x -k susp_activity
+-w /usr/bin/ss -p x -k susp_activity
+-w /usr/bin/netstat -p x -k susp_activity
 -w /usr/bin/ssh -p x -k susp_activity
 -w /usr/bin/scp -p x -k susp_activity
 -w /usr/bin/sftp -p x -k susp_activity
@@ -395,6 +398,7 @@
 # -w /etc/sysconfig/docker -k docker # ne fonctionne pas
 # -w /etc/sysconfig/docker-storage -k docker # ne fonctionne pas
 -w /usr/lib/systemd/system/docker.service -k docker
+-w /usr/lib/systemd/system/docker.socket -k docker
 
 # High Volume Events ----------------------------------------------------------
 
