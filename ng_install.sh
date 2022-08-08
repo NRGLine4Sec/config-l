@@ -2790,33 +2790,33 @@ displayandexec "Installation du script play_pause_chromium          " "chmod +x 
 ################################################################################
 
 ################################################################################
-## install du script ex
+## install du script decomp
 ##------------------------------------------------------------------------------
-install_ex() {
-cat> /usr/bin/ex << 'EOF'
+install_decomp() {
+cat> /usr/bin/decomp << 'EOF'
 #!/bin/bash
 
 if [ -f $1 ]; then
   case $1 in
-    *.tar.bz2)   tar xjf $1   ;;
-    *.tar.gz)    tar xzf $1   ;;
-    *.tar.xz)		 tar xf $1			;;
-    *.bz2)       bunzip2 $1   ;;
-    *.rar)       unrar x $1     ;;
-    *.gz)        gunzip $1    ;;
-    *.tar)       tar xf $1    ;;
-    *.tbz2)      tar xjf $1   ;;
-    *.tgz)       tar xzf $1   ;;
-    *.zip)       unzip $1     ;;
-    *.Z)         uncompress $1;;
-    *.7z)        7z x $1      ;;
-    *)           echo "'$1' ne peut etre extrait par ex()" ;;
+    *.tar.bz2)   tar xjf $1 ;;
+    *.tar.gz)    tar xzf $1 ;;
+    *.tar.xz)    tar xf $1 ;;
+    *.bz2)       bunzip2 $1 ;;
+    *.rar)       unrar x $1 ;;
+    *.gz)        gunzip $1 ;;
+    *.tar)       tar xf $1 ;;
+    *.tbz2)      tar xjf $1 ;;
+    *.tgz)       tar xzf $1 ;;
+    *.zip)       unzip $1 ;;
+    *.Z)         uncompress $1 ;;
+    *.7z)        7z x $1 ;;
+    *)           echo "'$1' can not be extracted by decomp()" ;;
   esac
 else
-  echo "'$1' fichier invalide"
+  echo "'$1' invalid file"
 fi
 EOF
-displayandexec "Installation du script ex                           " "chmod +x /usr/bin/ex"
+displayandexec "Installation du script decomp                       " "chmod +x /usr/bin/decomp"
 }
 ################################################################################
 
@@ -2833,7 +2833,7 @@ install_all_perso_script() {
   install_appairmebt
   install_desactivebt
   install_play_pause_chromium
-  install_ex
+  install_decomp
 }
 install_all_perso_script
 ################################################################################
