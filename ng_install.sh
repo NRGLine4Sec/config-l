@@ -3211,7 +3211,10 @@ $ExeAsUser sed -i -E 's/image.alpha_color_1 = "#[[:digit:]]+"/image.alpha_color_
 $ExeAsUser sed -i -E 's/image.alpha_color_2 = "#[[:digit:]]+"/image.alpha_color_2 = "#FFFFFFFFFFFF"/g' /home/"$local_user"/.config/geeqie/geeqierc.xml
 
 # on désactive la capacité de geekie d'ouvrir des .pdf
-$ExeAsUser sed -i -E 's%<file_type key = "pdf" enabled = "true" extensions = ".pdf" description = "Portable Document Format" file_class = "6" writable = "false" allow_sidecar = "false" />%<file_type key = "pdf" enabled = "false" extensions = ".pdf" description = "Portable Document Format" file_class = "6" writable = "false" allow_sidecar = "false" />%g' .config/geeqie/geeqierc.xml
+$ExeAsUser sed -i -E 's%<file_type key = "pdf" enabled = "true" extensions = ".pdf" description = "Portable Document Format" file_class = "6" writable = "false" allow_sidecar = "false" />%<file_type key = "pdf" enabled = "false" extensions = ".pdf" description = "Portable Document Format" file_class = "6" writable = "false" allow_sidecar = "false" />%g' /home/"$local_user"/.config/geeqie/geeqierc.xml
+# on désactive la capacité de geekie d'ouvrir des fichiers compréssés
+$ExeAsUser sed -i -E 's%<file_type key = "zip" enabled = "true" extensions = ".zip;.rar;.tar;.tar.gz;.tar.bz2;.tar.xz;.tgz;.tbz;.txz;.cbr;.cbz;.gz;.bz2;.xz;.lzh;.lza;.7z" description = "Archive files" file_class = "7" writable = "false" allow_sidecar = "false" />%<file_type key = "zip" enabled = "false" extensions = ".zip;.rar;.tar;.tar.gz;.tar.bz2;.tar.xz;.tgz;.tbz;.txz;.cbr;.cbz;.gz;.bz2;.xz;.lzh;.lza;.7z" description = "Archive files" file_class = "7" writable = "false" allow_sidecar = "false" />%g' /home/"$local_user"/.config/geeqie/geeqierc.xml
+# Pour voir les différents formats supportés par Geeqie : sed -n '/<filter>/,/<\/filter>/p' ~/.config/geeqie/geeqierc.xml
 
 $ExeAsUser sed -i 's/image.zoom_to_fit_allow_expand = "false"/image.zoom_to_fit_allow_expand = "true"/g' /home/"$local_user"/.config/geeqie/geeqierc.xml
 
