@@ -257,6 +257,7 @@
 # - potentiellement intégrer l'installation de l'outil xdotool
 # - potentiellement installer le paquet iozone3
 # - potentiellement installer qview (https://interversehq.com/qview/download/)
+# - regarder pour voir si on peut gérer la taille de la ligne affiché avec fmt --width=60 en se basant sur la longueur max donné par la fonction check_available_columns_in_terminal
 
 
 
@@ -877,18 +878,18 @@ echo ''
 
 make_apt_source_list_clean_bullseye() {
 cat> /etc/apt/sources.list << EOF
-deb http://deb.debian.org/debian/ $debian_release main contrib non-free
-deb-src http://deb.debian.org/debian/ $debian_release main contrib non-free
+deb https://deb.debian.org/debian/ $debian_release main contrib non-free
+deb-src https://deb.debian.org/debian/ $debian_release main contrib non-free
 
-deb http://security.debian.org/debian-security $debian_release-security main contrib
-deb-src http://security.debian.org/debian-security $debian_release-security main contrib
+deb https://security.debian.org/debian-security $debian_release-security main contrib
+deb-src https://security.debian.org/debian-security $debian_release-security main contrib
 
 # $debian_release-updates, previously known as 'volatile'
-deb http://deb.debian.org/debian/ $debian_release-updates main contrib non-free
-deb-src http://deb.debian.org/debian/ $debian_release-updates main contrib non-free
+deb https://deb.debian.org/debian/ $debian_release-updates main contrib non-free
+deb-src https://deb.debian.org/debian/ $debian_release-updates main contrib non-free
 
 #backport
-#deb http://deb.debian.org/debian $debian_release-backports main contrib non-free
+#deb https://deb.debian.org/debian $debian_release-backports main contrib non-free
 EOF
 }
 # ne pas mettre les variable entre double quote
