@@ -258,6 +258,10 @@
 # - potentiellement installer le paquet iozone3
 # - potentiellement installer qview (https://interversehq.com/qview/download/)
 # - regarder pour voir si on peut gérer la taille de la ligne affiché avec fmt --width=60 en se basant sur la longueur max donné par la fonction check_available_columns_in_terminal
+# regarder si on ajoute les commandes suivantes :
+# Stop and disable apt-daily upgrade services;
+# systemctl stop apt-daily.timer
+# systemctl stop apt-daily-upgrade.timer
 
 
 
@@ -1141,6 +1145,7 @@ displayandexec "Installation de sqlitebrowser                       " "$AGI sqli
 displayandexec "Installation de screen                              " "$AGI screen"
 displayandexec "Installation de ssh                                 " "$AGI ssh"
 displayandexec "Installation de sshfs                               " "$AGI sshfs"
+displayandexec "Installation de sshpass                             " "$AGI sshpass"
 displayandexec "Installation de strace                              " "$AGI strace"
 displayandexec "Installation de sudo                                " "$AGI sudo"
 displayandexec "Installation de sysstat                             " "$AGI sysstat"
@@ -2448,8 +2453,9 @@ UpdateVeracrypt() {
 }
 
 UpdateWinscp() {
+  local winscp_version="$($CURL 'https://winscp.net/eng/downloads.php' | grep 'Portable.zip' | grep -Po '(?<=WinSCP-)([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)(?=-Portable.zip")')"
   local tmp_dir="$(mktemp -d)" && \
-  [ -d "$manual_install_dir"/winscp/ ] || rm -rf "$manual_install_dir"/winscp/ && \
+  [ -d "$manual_install_dir"/winscp/ ] && rm -rf "$manual_install_dir"/winscp/ && \
   mkdir "$manual_install_dir"/winscp/ && \
   $WGET -P "$tmp_dir" https://winscp.net/download/WinSCP-"$winscp_version"-Portable.zip && \
   unzip "$tmp_dir"/WinSCP-"$winscp_version"-Portable.zip -d "$manual_install_dir"/winscp/
@@ -3091,7 +3097,8 @@ $ExeAsUser apm install script && \
 $ExeAsUser apm install vertical-tabs && \
 $ExeAsUser apm install tab-title && \
 $ExeAsUser apm install language-ansible && \
-$ExeAsUser apm install language-diff"
+$ExeAsUser apm install language-diff && \
+$ExeAsUser apm install language-yara"
 }
 configure_atom
 # Les plugins atom en commentaire sont encore en cour de validation
