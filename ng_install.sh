@@ -3029,12 +3029,6 @@ create_template_for_new_file
 ##------------------------------------------------------------------------------
 # conf de Libreoffice
 execandlog "sed -i --follow-symlinks '/^export LC_ALL/a export GTK_THEME=Adwaita' /usr/bin/libreoffice"
-# variante avec awk :
-# awk '1;/^export LC_ALL/{print "export GTK_THEME=Adwaita"}' /usr/bin/libreoffice
-# avec awk, on ne peut pas écrire directement dans le fichier, mais ce hack permet d'obtenir le même résultat
-# echo "$(awk '1;/^export LC_ALL/{print "export GTK_THEME=Adwaita"}' /usr/bin/libreoffice)" > /usr/bin/libreoffice
-# variante en perl (permet d'écrire directement dans le fichier, comme avec sed -i):
-# perl -pi -e '$_ .= qq(export GTK_THEME=Adwaita\n) if /export LC_ALL/' /usr/bin/libreoffice
 
 #if you want to use this in a .desktop file, you have to prepend 'env' for setting the env variable. I.e. copy the libreoffice-*.desktop files from /usr/share/applications to ~.local/share/applications, then open them in a text editor and change the line saying 'Exec' so it looks like this:
 # Exec=env GTK_THEME=Adwaita:light libreoffice --writer
@@ -3043,12 +3037,13 @@ execandlog "sed -i --follow-symlinks '/^export LC_ALL/a export GTK_THEME=Adwaita
 # $ExeAsUser sed -i 's%<enabled xsi:nil="false">true</enabled>%<enabled xsi:nil="false">false</enabled>%g' /home/"$local_user"/.config/libreoffice/4/user/config/javasettings_Linux_X86_64.xml
 # il faut potentiellement le mettre comme ça :
 [ -f /home/"$local_user"/.config/libreoffice/4/user/config/javasettings_Linux_X86_64.xml ] && \
-$ExeAsUser sed -i 's%<enabled xsi:nil="true"></enabled>%<enabled xsi:nil="false">false</enabled>%g' /home/"$local_user"/.config/libreoffice/4/user/config/javasettings_Linux_X86_64.xml
+$ExeAsUser sed -i 's%<enabled xsi:nil=".*>$%<enabled xsi:nil="false">false</enabled>%g' /home/"$local_user"/.config/libreoffice/4/user/config/javasettings_Linux_X86_64.xml
 
 # ref : https://ask.libreoffice.org/en/question/167622/how-to-disable-java-in-configuration-files/
 # Pour aider à chercher les fichiers concernés par la modification de la configuration
-# find /home/$USER/.config/libreoffice/*/ -type f -mmin -5 -exec grep -l "java" {} \;
-# find /usr/lib/libreoffice/share/ -type f -mmin -5 -exec grep -l "java" {} \;
+# find /home/$USER/.config/libreoffice/ -type f -mmin -5 -exec grep -l "java" {} \; && find /usr/lib/libreoffice/share/ -type f -mmin -5 -exec grep -l "java" {} \;
+# find /usr/lib/libreoffice/share/ -type f -mmin -5 -exec grep -i -l "autosave" {} \; && find /home/$USER/.config/libreoffice/ -type f -mmin -5 -exec grep -i -l "autosave" {} \;
+# find /usr/lib/libreoffice/share/ -type f -mmin -5 && find /home/$USER/.config/libreoffice/ -type f -mmin -5
 
 # Disable startup logo
 execandlog "sed -i 's/Logo=1/Logo=0/g' /etc/libreoffice/sofficerc"
@@ -3059,6 +3054,10 @@ execandlog "sed -i 's/Logo=1/Logo=0/g' /etc/libreoffice/sofficerc"
 [ -f /home/"$local_user"/.config/libreoffice/4/user/registrymodifications.xcu ] && \
 $ExeAsUser sed -i 's%<item oor:path="/org.openoffice.Office.Common/Security/Scripting"><prop oor:name="MacroSecurityLevel" oor:op="fuse"><value>2</value></prop></item>%<item oor:path="/org.openoffice.Office.Common/Security/Scripting"><prop oor:name="MacroSecurityLevel" oor:op="fuse"><value>3</value></prop></item>%g' /home/"$local_user"/.config/libreoffice/4/user/registrymodifications.xcu
 # rajouter || créer le contenu du fichier avec un cat EOF
+
+# Pour faire en sorte que l'autosave se fasse toute les 1 minute (à la place des 10 minutes par défaut)
+# grep -n -i autosave.*TimeIntervall /home/"$local_user"/.config/libreoffice/4/user/registrymodifications.xcu
+# il faudra changer la value de 10 à 1
 
 # Pour insérer la ligne lorsque le fichier existe :
 # sed -i '\%</oor:items>%i <item oor:path="/org.openoffice.Office.Common/Security/Scripting"><prop oor:name="MacroSecurityLevel" oor:op="fuse"><value>3</value></prop></item>' /home/"$local_user"/.config/libreoffice/4/user/registrymodifications.xcu
@@ -3804,6 +3803,7 @@ alias free='free -ht'
 alias showshortcut='dconf dump /org/gnome/settings-daemon/plugins/media-keys/'
 alias bitcoin='curl -s "http://api.coindesk.com/v1/bpi/currentprice.json" | jq ".bpi.EUR.rate" | tr -d \"'
 alias sshuttle='sudo sshuttle'
+alias last_apt_kernel='apt-cache search "linux-(headers|image)-5.1.*[[:digit:]]-(amd64\$|amd64-unsigned\$)"'
 HISTTIMEFORMAT="%Y/%m/%d %T   "
 is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/\$1 ;}
 
@@ -3893,6 +3893,7 @@ alias free='free -ht'
 alias showshortcut='dconf dump /org/gnome/settings-daemon/plugins/media-keys/'
 alias bitcoin='curl -s "http://api.coindesk.com/v1/bpi/currentprice.json" | jq ".bpi.EUR.rate" | tr -d \"'
 alias sshuttle='sudo sshuttle'
+alias last_apt_kernel='apt-cache search "linux-(headers|image)-5.1.*[[:digit:]]-(amd64\$|amd64-unsigned\$)"'
 HISTTIMEFORMAT="%Y/%m/%d %T   "
 is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/\$1 ;}
 
@@ -4038,12 +4039,14 @@ cd
 ## Création d'un snapshot avec Timeshift
 ##------------------------------------------------------------------------------
 displayandexec "Création d'un snapshot avec Timeshift               " "\
-timeshift --scripted --create --rsync --comments 'first snapshot, after postinstall script'"
+timeshift --scripted --create --rsync --comments 'first snapshot, after postinstall script' --snapshot-device /dev/"$(lsblk -o MOUNTPOINT,KNAME --json | grep -e 'mountpoint":"/"' | grep -Po '("kname":")\K([A-Za-z0-9\-]+)(?=")')""
 # cette étape est très longue lorsqu'il faut faire un premier snapshot (car timeshift doit faire en fait un miroir du système existant)
 # sur un HDD pas très rapide, il y en a pour à peu près une heure
 execandlog "timeshift --list"
 # On fait le timeshift --list qu'on redirige dans le fichier de log juste pour avoir les infos de la création du snapshot.
-# Après l'execution du script ng_install et du snapshot avec timeshift, il y a environ 26 Go d'utilisé sur /
+# Après l'execution du script ng_install et du snapshot avec timeshift, il y a environ 26 Go d'utilisé sur / pour un système basé sur bullseye
+execandlog "umount -l /run/timeshift/backup"
+# on démonte le point de montage de timeshift car il n'est plus nécessaire
 ################################################################################
 
 echo '--------------------------------------------------------------------' >> "$log_file"
