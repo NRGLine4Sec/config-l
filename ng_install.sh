@@ -3803,7 +3803,7 @@ alias free='free -ht'
 alias showshortcut='dconf dump /org/gnome/settings-daemon/plugins/media-keys/'
 alias bitcoin='curl -s "http://api.coindesk.com/v1/bpi/currentprice.json" | jq ".bpi.EUR.rate" | tr -d \"'
 alias sshuttle='sudo sshuttle'
-alias last_apt_kernel='apt-cache search "linux-(headers|image)-5.1.*[[:digit:]]-(amd64\$|amd64-unsigned\$)"'
+alias last_apt_kernel='apt-cache search "linux-(headers|image)-5.1.*[[:digit:]]-(amd64\$|amd64-unsigned\$)" | sort'
 HISTTIMEFORMAT="%Y/%m/%d %T   "
 is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/\$1 ;}
 
@@ -3893,7 +3893,7 @@ alias free='free -ht'
 alias showshortcut='dconf dump /org/gnome/settings-daemon/plugins/media-keys/'
 alias bitcoin='curl -s "http://api.coindesk.com/v1/bpi/currentprice.json" | jq ".bpi.EUR.rate" | tr -d \"'
 alias sshuttle='sudo sshuttle'
-alias last_apt_kernel='apt-cache search "linux-(headers|image)-5.1.*[[:digit:]]-(amd64\$|amd64-unsigned\$)"'
+alias last_apt_kernel='apt-cache search "linux-(headers|image)-5.1.*[[:digit:]]-(amd64\$|amd64-unsigned\$)" | sort'
 HISTTIMEFORMAT="%Y/%m/%d %T   "
 is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/\$1 ;}
 
@@ -4047,6 +4047,7 @@ execandlog "timeshift --list"
 # Après l'execution du script ng_install et du snapshot avec timeshift, il y a environ 26 Go d'utilisé sur / pour un système basé sur bullseye
 execandlog "umount -l /run/timeshift/backup"
 # on démonte le point de montage de timeshift car il n'est plus nécessaire
+# peut être qu'à terme il serait intéressant de voir pour ajouer une partition dédié pour les backups
 ################################################################################
 
 echo '--------------------------------------------------------------------' >> "$log_file"
