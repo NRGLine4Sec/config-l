@@ -1796,6 +1796,7 @@ $AG update && \
 $AGI code"
 }
 # Pour installer des extensions en ligne de commande : [Managing Extensions in Visual Studio Code](https://code.visualstudio.com/docs/editor/extension-marketplace#_command-line-extension-management)
+# installer cette extension : [Marp for VS Code - Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=marp-team.marp-vscode)
 ################################################################################
 
 ################################################################################
@@ -3068,9 +3069,31 @@ $ExeAsUser sed -i 's%<item oor:path="/org.openoffice.Office.Common/Security/Scri
 ##------------------------------------------------------------------------------
 # la configuration de nano s'effectue dans le fichier /etc/nanorc
 configure_nano() {
-execandlog "sed -i 's/# set linenumbers/set linenumbers/g' /etc/nanorc"
+execandlog "sed -i 's/^# set linenumbers/set linenumbers/' /etc/nanorc"
 }
 configure_nano
+# on test pour l'instant la mise ne place de softwrap et on l'ajoutera définitivement si c'est concluant
+# execandlog "sed -i 's/^# set softwrap/set softwrap/' /etc/nanorc"
+################################################################################
+
+################################################################################
+## configuration de apt-fast
+##------------------------------------------------------------------------------
+configure_apt-fast() {
+cat>> /etc/apt-fast.conf << 'EOF'
+
+
+# Verbose output
+#
+# Show aria2 download file instead of package listing before download confirmation.
+# Unset to show package listing.
+#
+VERBOSE_OUTPUT=
+}
+EOF
+configure_apt-fast
+# On est obligé d'ajouter la conf pour désactiver le mode verbose de apt-fast car il semble qu'elle ne soit pas dispo dans la conf par défaut et qu'elle ne se configure pas non plus comme les autres éléments de config de apt-fast (avec debconf-set-selections)
+# a vérifier si cette conf est ajouté dans les futurs release de apt-fast
 ################################################################################
 
 ################################################################################

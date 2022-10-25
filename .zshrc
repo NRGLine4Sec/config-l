@@ -77,7 +77,7 @@ fi
 if [ "$color_prompt" = yes ]; then
     PROMPT=$'%F{%(#.blue.green)}┌──${debian_chroot:+($debian_chroot)──}(%B%F{%(#.red.blue)}%n%(#.@.@)%m%b%F{%(#.blue.green)})-[%B%F{reset}%(6~.%-1~/…/%4~.%5~)%b%F{%(#.blue.green)}]\n└─%B%(#.%F{red}#.%F{blue}$)%b%F{reset} '
 
-    # enable syntax-highlighting
+    # enable syntax-highlighting (need apt-get install -y zsh-syntax-highlighting)
     if [ -f /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ] && [ "$color_prompt" = yes ]; then
 	. /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 	ZSH_HIGHLIGHT_HIGHLIGHTERS=(main brackets pattern)
@@ -156,9 +156,6 @@ precmd() {
 if [ -x /usr/bin/dircolors ]; then
     test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
     alias ls='ls --color=auto'
-    #alias dir='dir --color=auto'
-    #alias vdir='vdir --color=auto'
-
     alias grep='grep --color=auto'
     alias diff='diff --color=auto'
     alias ip='ip --color=auto'
