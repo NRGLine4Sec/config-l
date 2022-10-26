@@ -254,7 +254,7 @@
 # Peut être un problème dans l'utilisation de ExeAsUser ?, essayer de monitorer avec des tests.
 # - regarder de près concernant l'intéret de d'installer le librairie du wivedine de google dans le chromium de debian
 # - rajouter une variable qui contient l'usage du script pour afficher de quel manière l'utiliser lorsque d'un des arguments n'est pas correct (l'équivalent d'un --help)
-# - potentiellement intégrer l'installation de l'outil xdotool
+# - potentiellement intégrer l'installation de l'outil xdotool (pour wayland il faut plutot ydotool)
 # - potentiellement installer le paquet iozone3
 # - potentiellement installer qview (https://interversehq.com/qview/download/)
 # - regarder pour voir si on peut gérer la taille de la ligne affiché avec fmt --width=60 en se basant sur la longueur max donné par la fonction check_available_columns_in_terminal
@@ -262,6 +262,7 @@
 # Stop and disable apt-daily upgrade services;
 # systemctl stop apt-daily.timer
 # systemctl stop apt-daily-upgrade.timer
+# - rajouter dans le script sysupdate la possibilité de n'update qu'un seul paquet en particulier en le méttant en argument de l'apelle au script
 
 
 
@@ -509,6 +510,8 @@ check_internet_access() {
 }
 check_internet_access
 # avec ce test, on vérifie aussi bien la connectivité réseau que la résolution DNS
+# probalement qu'il pourrait être intéressant de faire un autre test qui valide la connectivité HTTP pour les ports 80 et 443, par exemple avec :
+# if $(curl --location --fail --connect-timeout 3 --retry 0 --silent --output /dev/null --write-out %{http_code} 'https://www.google.com' | grep '200' &> /dev/null); then echo OK; fi
 ################################################################################
 
 ################################################################################
@@ -582,25 +585,25 @@ check_latest_version_manual_install_apps() {
     fi
     # check version : https://www.veracrypt.fr/en/Downloads.html
 
-    drawio_version="$($CURL 'https://api.github.com/repos/jgraph/drawio-desktop/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+    drawio_version="$($CURL 'https://api.github.com/repos/jgraph/drawio-desktop/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
     if [ $? != 0 ] || [ -z "$drawio_version" ]; then
         drawio_version='16.5.1'
     fi
     # check version : https://github.com/jgraph/drawio-desktop/releases
 
-    boostnote_version="$($CURL 'https://api.github.com/repos/BoostIO/boost-releases/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+    boostnote_version="$($CURL 'https://api.github.com/repos/BoostIO/boost-releases/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
     if [ $? != 0 ] || [ -z "$boostnote_version" ]; then
         boostnote_version='0.16.1'
     fi
     # check version : https://github.com/BoostIO/boost-releases/releases/
 
-    etcher_version="$($CURL 'https://api.github.com/repos/balena-io/etcher/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+    etcher_version="$($CURL 'https://api.github.com/repos/balena-io/etcher/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
     if [ $? != 0 ] || [ -z "$etcher_version" ]; then
         etcher_version='1.7.8'
     fi
     # check version : https://github.com/balena-io/etcher/releases/
 
-    shotcut_version="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+    shotcut_version="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
     if [ $? != 0 ] || [ -z "$shotcut_version" ]; then
         shotcut_version='22.01.30'
     fi
@@ -610,7 +613,7 @@ check_latest_version_manual_install_apps() {
     fi
     # check version : https://github.com/mltframework/shotcut/releases/
 
-    stacer_version="$($CURL 'https://api.github.com/repos/oguzhaninan/Stacer/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+    stacer_version="$($CURL 'https://api.github.com/repos/oguzhaninan/Stacer/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
     if [ $? != 0 ] || [ -z "$stacer_version" ]; then
         stacer_version='1.1.0'
     fi
@@ -622,7 +625,7 @@ check_latest_version_manual_install_apps() {
     fi
     # check version : https://github.com/keepassxreboot/keepassxc/releases/
 
-    bat_version="$($CURL 'https://api.github.com/repos/sharkdp/bat/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+    bat_version="$($CURL 'https://api.github.com/repos/sharkdp/bat/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
     if [ $? != 0 ] || [ -z "$bat_version" ]; then
         bat_version='0.20.0'
     fi
@@ -634,44 +637,45 @@ check_latest_version_manual_install_apps() {
     fi
     # check version : https://github.com/ytdl-org/youtube-dl/releases/
 
-    joplin_version="$($CURL 'https://api.github.com/repos/laurent22/joplin/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+    joplin_version="$($CURL 'https://api.github.com/repos/laurent22/joplin/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
     if [ $? != 0 ] || [ -z "$joplin_version" ]; then
         joplin_version='2.7.15'
     fi
     # check version : https://github.com/laurent22/joplin/releases/
 
-    krita_version="$($CURL 'https://krita.org/fr/telechargement/krita-desktop/' | grep 'stable' | grep -m1 'appimage ' | grep -Po '(?<=/stable/krita/)([[:digit:]]+\.+[[:digit:]]+\.[[:digit:]]+)')"
+    krita_version="$($CURL 'https://krita.org/fr/telechargement/krita-desktop/' | grep 'stable' | grep -m1 -e '.appimage' | grep -Po '(?<=/stable/krita/)([[:digit:]]+\.+[[:digit:]]+\.[[:digit:]]+)')"
     if [ $? != 0 ] || [ -z "$krita_version" ]; then
         krita_version='5.0.6'
     fi
     # check version : https://krita.org/fr/telechargement/krita-desktop/
 
-    opensnitch_stable_version="$($CURL 'https://api.github.com/repos/evilsocket/opensnitch/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+    opensnitch_stable_version="$($CURL 'https://api.github.com/repos/evilsocket/opensnitch/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
     if [ $? != 0 ] || [ -z "$opensnitch_stable_version" ]; then
         opensnitch_stable_version='1.5.0'
     fi
     # check version : https://github.com/evilsocket/opensnitch/releases/
 
-    opensnitch_latest_version="$(curl --silent 'https://api.github.com/repos/evilsocket/opensnitch/releases' | grep -m 1 -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+    opensnitch_latest_version="$(curl --silent 'https://api.github.com/repos/evilsocket/opensnitch/releases' | awk 'BEGIN{RS="}"} /"prerelease": true,/ {for (x=1;x<=NF;x++) if ($x~"tag_name") {gsub(/[v|"|,$]/,"");print $(x);exit;}}')"
     if [ $? != 0 ] || [ -z "$opensnitch_latest_version" ]; then
         opensnitch_latest_version='1.5.0'
     fi
     # check version : https://github.com/evilsocket/opensnitch/releases/
     # je suis obligé de ne pas utilisé l'option --show-error car sinon j'obtiens une erreur : curl: (23) Failure writing output to destination
+    # il semble qu'il faille ajouté 2>&1 à la fin de la commande curl pour pouvoir utiliser --show-error sans obtenir l'érreur mentionnée
 
-    hashcat_version="$($CURL 'https://api.github.com/repos/hashcat/hashcat/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+    hashcat_version="$($CURL 'https://api.github.com/repos/hashcat/hashcat/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
     if [ $? != 0 ] || [ -z "$hashcat_version" ]; then
         hashcat_version='6.2.5'
     fi
     # check version : https://github.com/hashcat/hashcat/releases/
 
-    winscp_version="$($CURL 'https://winscp.net/eng/downloads.php' | grep 'Portable.zip' | grep -Po '(?<=WinSCP-)([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)(?=-Portable.zip")')"
+    winscp_version="$($CURL 'https://winscp.net/eng/downloads.php' | grep -Po '(?<=WinSCP-)([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)(?=-Portable.zip")')"
     if [ $? != 0 ] || [ -z "$winscp_version" ]; then
         winscp_version='5.19.6'
     fi
     # check version : https://winscp.net/eng/downloads.php
 
-    geeqie_version="$($CURL 'https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/AppImage/appimages.txt' | head -n1 | grep -Po '(?<=Geeqie-v)([[:digit:]]\.[[:digit:]]+\+[[:digit:]]+)(?=.AppImage)|(?<=Geeqie-v)([[:digit:]]\.[[:digit:]]+\.[[:digit:]]+\+[[:digit:]]+)(?=.AppImage)')"
+    geeqie_version="$($CURL 'https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/AppImage/appimages.txt' | head -n1 | grep -Po '(?<=Geeqie-v)([[:digit:]]\.[[:digit:]]+\+[[:digit:]]+|[[:digit:]]\.[[:digit:]]+\.[[:digit:]]+\+[[:digit:]]+|[[:digit:]]\.[[:digit:]]+\+[[:digit:]]+\-x86_64)(?=.AppImage)')"
     if [ $? != 0 ] || [ -z "$geeqie_version" ]; then
         geeqie_version='1.7.1+20220117'
     fi
@@ -694,42 +698,42 @@ check_latest_version_manual_install_apps() {
 ################################################################################
 ## Pour obtenir un listing des logiciels avec les dernières versions disponnibles
 ##------------------------------------------------------------------------------
-CURL='curl --silent --show-error'
+CURL='curl --silent --location --show-error'
 manual_check_latest_version() {
   veracrypt_version="$($CURL 'https://www.veracrypt.fr/en/Downloads.html' | grep 'tar.bz2' | grep -v '.sig\|x86\|Source\|freebsd' | grep -Po '(?<=veracrypt-)([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+-[[:alnum:]]+|[[:digit:]]+\.[[:digit:]]+-[[:alnum:]]+|[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+|[[:digit:]]+\.[[:digit:]]+)(?=-setup)')"
-  echo 'VeraCrypt '"$veracrypt_version"
-  drawio_version="$($CURL 'https://api.github.com/repos/jgraph/drawio-desktop/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
-  echo 'drawio '"$drawio_version"
-  boostnote_version="$($CURL 'https://api.github.com/repos/BoostIO/boost-releases/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
-  echo 'Boosnote '"$boostnote_version"
-  etcher_version="$($CURL 'https://api.github.com/repos/balena-io/etcher/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
-  echo 'Etcher '"$etcher_version"
-  shotcut_version="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
-  echo 'Shotcut '"$shotcut_version"
-  stacer_version="$($CURL 'https://api.github.com/repos/oguzhaninan/Stacer/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
-  echo 'Stacer '"$stacer_version"
+  echo 'VeraCrypt : '"$veracrypt_version"
+  drawio_version="$($CURL 'https://api.github.com/repos/jgraph/drawio-desktop/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
+  echo 'drawio : '"$drawio_version"
+  boostnote_version="$($CURL 'https://api.github.com/repos/BoostIO/boost-releases/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
+  echo 'Boosnote : '"$boostnote_version"
+  etcher_version="$($CURL 'https://api.github.com/repos/balena-io/etcher/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
+  echo 'Etcher : '"$etcher_version"
+  shotcut_version="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
+  echo 'Shotcut : '"$shotcut_version"
+  stacer_version="$($CURL 'https://api.github.com/repos/oguzhaninan/Stacer/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
+  echo 'Stacer : '"$stacer_version"
   keepassxc_version="$($CURL 'https://api.github.com/repos/keepassxreboot/keepassxc/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
-  echo 'KeePassXC '"$keepassxc_version"
+  echo 'KeePassXC : '"$keepassxc_version"
   youtubedl_version="$($CURL 'https://api.github.com/repos/ytdl-org/youtube-dl/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
-  echo 'youtube-dl '"$youtubedl_version"
-  bat_version="$($CURL 'https://api.github.com/repos/sharkdp/bat/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
-  echo 'bat '"$bat_version"
-  joplin_version="$($CURL 'https://api.github.com/repos/laurent22/joplin/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
-  echo 'Joplin '"$joplin_version"
-  krita_version="$($CURL 'https://krita.org/fr/telechargement/krita-desktop/' | grep 'stable' | grep -m1 'appimage ' | grep -Po '(?<=/stable/krita/)([[:digit:]]+\.+[[:digit:]]+\.[[:digit:]]+)')"
-  echo 'Krita '"$krita_version"
-  opensnitch_stable_version="$($CURL 'https://api.github.com/repos/evilsocket/opensnitch/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
-  echo 'OpenSnitch stable '"$opensnitch_stable_version"
-  opensnitch_latest_version="$(curl --silent 'https://api.github.com/repos/evilsocket/opensnitch/releases' | grep -m 1 -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
-  echo 'OpenSnitch latest (dev) '"$opensnitch_latest_version"
-  hashcat_version="$($CURL 'https://api.github.com/repos/hashcat/hashcat/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
-  echo 'hashcat '"$hashcat_version"
-  winscp_version="$($CURL 'https://winscp.net/eng/downloads.php' | grep 'Portable.zip' | grep -Po '(?<=WinSCP-)([[:digit:]]+\.+[[:digit:]]+\.[[:digit:]]+)(?=-Portable.zip")')"
-  echo 'WinSCP '"$winscp_version"
-  geeqie_version="$($CURL 'https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/AppImage/appimages.txt' | head -n1 | grep -Po '(?<=Geeqie-v)([[:digit:]]\.[[:digit:]]+\+[[:digit:]]+)(?=.AppImage)|(?<=Geeqie-v)([[:digit:]]\.[[:digit:]]+\.[[:digit:]]+\+[[:digit:]]+)(?=.AppImage)')"
-  echo 'Geeqie '"$geeqie_version"
+  echo 'youtube-dl : '"$youtubedl_version"
+  bat_version="$($CURL 'https://api.github.com/repos/sharkdp/bat/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
+  echo 'bat : '"$bat_version"
+  joplin_version="$($CURL 'https://api.github.com/repos/laurent22/joplin/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
+  echo 'Joplin : '"$joplin_version"
+  krita_version="$($CURL 'https://krita.org/fr/telechargement/krita-desktop/' | grep 'stable' | grep -m1 -e '.appimage' | grep -Po '(?<=/stable/krita/)([[:digit:]]+\.+[[:digit:]]+\.[[:digit:]]+)')"
+  echo 'Krita : '"$krita_version"
+  opensnitch_stable_version="$($CURL 'https://api.github.com/repos/evilsocket/opensnitch/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
+  echo 'OpenSnitch stable : '"$opensnitch_stable_version"
+  opensnitch_latest_version="$(curl --silent 'https://api.github.com/repos/evilsocket/opensnitch/releases' | awk 'BEGIN{RS="}"} /"prerelease": true,/ {for (x=1;x<=NF;x++) if ($x~"tag_name") {gsub(/[v|"|,$]/,"");print $(x);exit;}}')"
+  echo 'OpenSnitch latest (dev) : '"$opensnitch_latest_version"
+  hashcat_version="$($CURL 'https://api.github.com/repos/hashcat/hashcat/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
+  echo 'hashcat : '"$hashcat_version"
+  winscp_version="$($CURL 'https://winscp.net/eng/downloads.php' | grep -Po '(?<=WinSCP-)([[:digit:]]+\.+[[:digit:]]+\.[[:digit:]]+)(?=-Portable.zip")')"
+  echo 'WinSCP : '"$winscp_version"
+  geeqie_version="$($CURL 'https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/AppImage/appimages.txt' | head -n1 | grep -Po '(?<=Geeqie-v)([[:digit:]]\.[[:digit:]]+\+[[:digit:]]+|[[:digit:]]\.[[:digit:]]+\.[[:digit:]]+\+[[:digit:]]+|[[:digit:]]\.[[:digit:]]+\+[[:digit:]]+\-x86_64)(?=.AppImage)')"
+  echo 'Geeqie : '"$geeqie_version"
   ytdlp_version="$($CURL 'https://api.github.com/repos/yt-dlp/yt-dlp/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
-  echo 'yt-dlp '"$ytdlp_version"
+  echo 'yt-dlp : '"$ytdlp_version"
 }
 # manual_check_latest_version
 ################################################################################
@@ -753,7 +757,7 @@ network_int_name="$(awk 'NR==1,/default/{print $5}' <(ip route))"
 # une autre commande qui permet de se passer de la commande ip en utilisant uniquement les infos lspci et depuis /sys
 # pci=`lspci  | awk '/Ethernet/{print $1}'`; find /sys/class/net ! -type d | xargs --max-args=1 realpath | awk -v pciid=$pci -F\/ '{if($0 ~ pciid){print $NF}}'
 IPv4_local_address="$(ip -o -4 addr list "$network_int_name" | awk '{print $4}' | cut -d/ -f1)"
-IPv4_external_address="$(curl --silent 'https://ipinfo.io/ip')"
+IPv4_external_address="$(curl --silent --location 'https://ipinfo.io/ip')"
 if [ -z "$IPv4_external_address" ]; then
   IPv4_external_address="$($WGET --output-document - 'https://ifconfig.me')"
 fi
@@ -769,7 +773,7 @@ computer_proc_model_name="$(grep -Po -m 1 '^model name.*: \K.*' /proc/cpuinfo)"
 computer_proc_vendor_ID="$(grep -Po -m 1 '(^vendor_id\s: )\K(.*)' /proc/cpuinfo)"
 debian_release="$(lsb_release -sc)"
 if [ -z "$debian_release" ]; then
-  debian_release="$(awk -F'=' '/VERSION_CODENAME=/{print $2}' /etc/os-release)"
+  debian_release="$(awk -F'=' '/^VERSION_CODENAME=/{print $2}' /etc/os-release)"
 fi
 DCONF_write="DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" dconf write"
 DCONF_read="DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" dconf read"
@@ -802,6 +806,26 @@ exec_graphic_app_with_user_privileges() {
   export DISPLAY=:0
   sudo -u "$local_user" timeout 10 "$1"
 }
+# cette commande permet de lancer audacity depuis l'utilisateur root :
+# DISPLAY=:0 setsid sudo -u "$local_user" DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" audacity &> /dev/null
+# quit_graceffuly_graphic_apps_from_dbus () {
+#   graphic_application="$1"
+# DISPLAY=:0 sudo -u "$local_user" DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" sh -s << EOF
+# gdbus call \
+#   --session \
+#   --dest org.gnome.Shell \
+#   --object-path /org/gnome/Shell \
+#   --method org.gnome.Shell.Eval "
+# var mw =
+#   global.get_window_actors()
+#     .map(w=>w.meta_window)
+#     .find(mw=>mw.get_title().includes('$graphic_application'));
+#     mw.kill(0)" > /dev/null
+# EOF
+# }
+# quit_graceffuly_graphic_apps_from_dbus "Audacity"
+# Attention la valeur dans le includes() est sensible à la casse.
+# A noter aussi que l'utilisation de org.gnome.Shell.Eval avec dbus ne sera plus possible à partir de Gnome 41
 
 ################################################################################
 ## désactivation de la mise en veille automatique pendant l'installation
@@ -953,6 +977,13 @@ configure_debconf
 displayandexec "Mise à jour de la liste des ID PCI                  " "update-pciids"
 # This utility requires curl, wget or lynx to be installed.
 # le binnaire est situé ici : /usr/sbin/update-pciids
+################################################################################
+
+################################################################################
+## Update udev Hardware Database
+##------------------------------------------------------------------------------
+displayandexec "Mise à jour de udev Hardware Databse                " "systemd-hwdb update"
+# [hwdb(7) — udev — Debian testing — Debian Manpages](https://manpages.debian.org/testing/udev/hwdb.7.en.html)
 ################################################################################
 
 ################################################################################
@@ -1250,7 +1281,7 @@ execandlog "[ -d "$manual_install_dir" ] || mkdir "$manual_install_dir""
 ################################################################################
 ## instalation de atom
 ##------------------------------------------------------------------------------
-install_atom_bullseye() {
+install_atom() {
   displayandexec "Installation des dépendances de atom                " "$AGI libgconf-2-4 gvfs-bin gconf2-common"
   displayandexec "Installation de atom                                " "\
 $WGET --output-document - 'https://packagecloud.io/AtomEditor/atom/gpgkey' | gpg --dearmor --output /usr/share/keyrings/atom-archive-keyring.gpg && \
@@ -1301,7 +1332,7 @@ rm -rf "$tmp_dir""
 ################################################################################
 ## instalation de Spotify
 ##------------------------------------------------------------------------------
-install_spotify_bullseye() {
+install_spotify() {
   displayandexec "Installation de spotify                             " "\
 $CURL 'https://download.spotify.com/debian/pubkey_5E3C45D7B312C643.gpg' | gpg --dearmor --output /usr/share/keyrings/spotify-archive-keyring.gpg && \
 echo 'deb [signed-by=/usr/share/keyrings/spotify-archive-keyring.gpg] http://repository.spotify.com stable non-free' > /etc/apt/sources.list.d/spotify.list && \
@@ -1313,7 +1344,7 @@ $AGI spotify-client"
 ################################################################################
 ## instalation de apt-fast
 ##------------------------------------------------------------------------------
-install_apt-fast_bullseye() {
+install_apt-fast() {
   displayandexec "Installation de apt-fast                            " "\
 $WGET --output-document - 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xA2166B8DE8BDC3367D1901C11EE2FF37CA8DA16B' | gpg --dearmor --output /usr/share/keyrings/apt-fast-archive-keyring.gpg && \
 cat> /etc/apt/sources.list.d/apt-fast.list << 'EOF'
@@ -1369,7 +1400,7 @@ rm -rf "$tmp_dir""
 ################################################################################
 ## instalation de Typora
 ##------------------------------------------------------------------------------
-install_typora_bullseye() {
+install_typora() {
   displayandexec "Installation de Typora                              " "\
 cat> /etc/apt/sources.list.d/typora.list << 'EOF'
 deb [signed-by=/usr/share/keyrings/typora-archive-keyring.gpg] https://typora.io/linux ./
@@ -1384,7 +1415,7 @@ $AGI typora"
 ################################################################################
 ## instalation de VirtualBox
 ##------------------------------------------------------------------------------
-install_virtualbox_bullseye() {
+install_virtualbox() {
   displayandexec "Installation des dépendances de VirtualBox          " "$AGI dkms"
   displayandexec "Installation de VirtualBox                          " "\
 echo 'deb [signed-by=/usr/share/keyrings/virtualbox-archive-keyring.gpg] https://download.virtualbox.org/virtualbox/debian bullseye contrib' > /etc/apt/sources.list.d/virtualbox.list && \
@@ -1476,7 +1507,7 @@ EOF
 ################################################################################
 ## instalation de MKVToolNix
 ##------------------------------------------------------------------------------
-install_mkvtoolnix_bullseye() {
+install_mkvtoolnix() {
   displayandexec "Installation de MKVToolNix                          " "\
 cat> /etc/apt/sources.list.d/mkvtoolnix.list << 'EOF'
 deb [signed-by=/usr/share/keyrings/mkvtoolnix-archive-keyring.gpg] https://mkvtoolnix.download/debian/ bullseye main
@@ -1538,7 +1569,7 @@ EOF
 ################################################################################
 ## instalation de Signal
 ##------------------------------------------------------------------------------
-install_signal_bullseye() {
+install_signal() {
   displayandexec "Installation de Signal                              " "\
 echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/signal-archive-keyring.gpg] https://updates.signal.org/desktop/apt xenial main' > /etc/apt/sources.list.d/signal-desktop.list && \
 $CURL 'https://updates.signal.org/desktop/apt/keys.asc' | gpg --dearmor --output /usr/share/keyrings/signal-archive-keyring.gpg && \
@@ -1562,7 +1593,7 @@ rm -rf "$tmp_dir""
 ################################################################################
 ## instalation de asbru
 ##------------------------------------------------------------------------------
-install_asbru_bullseye() {
+install_asbru() {
   displayandexec "Installation des dépendances de Asbru               " "$AGI perl libvte-2.91-0 libcairo-perl libglib-perl libpango-perl libsocket6-perl libexpect-perl libnet-proxy-perl libyaml-perl libcrypt-cbc-perl libcrypt-blowfish-perl libgtk3-perl libnet-arp-perl libossp-uuid-perl openssh-client telnet ftp libcrypt-rijndael-perl libxml-parser-perl libcanberra-gtk-module dbus-x11 libx11-guitest-perl libgtk3-simplelist-perl gir1.2-wnck-3.0 gir1.2-vte-2.91"
   displayandexec "Installation de Asbru                               " "\
 cat> /etc/apt/sources.list.d/asbru-cm.list << 'EOF'
@@ -1695,7 +1726,7 @@ install_opensnitch() {
 ################################################################################
 ## instalation de Ansible
 ##------------------------------------------------------------------------------
-install_ansible_bullseye() {
+install_ansible() {
   displayandexec "Installation de Ansible                             " "\
 $WGET --output-document - 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x93C4A3FD7BB9C367' | gpg --dearmor --output /usr/share/keyrings/ansible-archive-keyring.gpg && \
 echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/ansible-archive-keyring.gpg] http://ppa.launchpad.net/ansible/ansible-5/ubuntu hirsute main' > /etc/apt/sources.list.d/ansible.list && \
@@ -1739,7 +1770,7 @@ install_sshuttle() {
 ################################################################################
 ## instalation de Geeqie
 ##------------------------------------------------------------------------------
-install_geeqie_bullseye() {
+install_geeqie() {
   geeqie_download_link="$($CURL 'https://www.geeqie.org/AppImage/index.html' | grep -i 'appimage' | grep -Po 'href=\K[^"]*')"
   displayandexec "Installation de Geeqie                              " "\
 [ -d "$manual_install_dir"/Geeqie/ ] || mkdir "$manual_install_dir"/Geeqie/ && \
@@ -1771,7 +1802,7 @@ EOF
 ################################################################################
 ## instalation de timeshift
 ##------------------------------------------------------------------------------
-install_timeshift_bullseye() {
+install_timeshift() {
   displayandexec "Installation de timeshift                           " "\
 $WGET --output-document - 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x1B32B87ABAEE357218F6B48CB5B116B72D0F61F0' | gpg --dearmor --output /usr/share/keyrings/timeshift-archive-keyring.gpg && \
 cat> /etc/apt/sources.list.d/timeshift.list << 'EOF'
@@ -1788,7 +1819,7 @@ $AGI timeshift"
 ################################################################################
 ## instalation de Visual Studio Code
 ##------------------------------------------------------------------------------
-install_vscode_bullseye() {
+install_vscode() {
   displayandexec "Installation de vscode                              " "\
 echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/vscode-archive-keyring.gpg] https://packages.microsoft.com/repos/code stable main' > /etc/apt/sources.list.d/vscode.list && \
 $CURL 'https://packages.microsoft.com/keys/microsoft.asc' | gpg --dearmor --output /usr/share/keyrings/vscode-archive-keyring.gpg && \
@@ -1818,40 +1849,40 @@ $AGI brave-browser"
 # apelle à la fonction qui permet de récupérer toutes les versions des logiciels qui s'installent manuellement
 check_latest_version_manual_install_apps
 
-install_all_manual_install_apps_bullseye() {
-  install_atom_bullseye
+install_all_manual_install_apps() {
+  install_atom
   install_winscp
   install_veracrypt
-  install_spotify_bullseye
-  install_apt-fast_bullseye
+  install_spotify
+  install_apt-fast
   install_drawio
   install_boostnote
-  install_typora_bullseye
-  install_virtualbox_bullseye
+  install_typora
+  install_virtualbox
   install_keepassxc
-  install_mkvtoolnix_bullseye
+  install_mkvtoolnix
   install_etcher
   install_shotcut
-  install_signal_bullseye
+  install_signal
   install_stacer
-  install_asbru_bullseye
+  install_asbru
   install_bat
   install_youtubedl
   install_yt-dlp
   install_joplin
   install_krita
   install_opensnitch
-  install_ansible_bullseye
+  install_ansible
   install_hashcat
   install_sshuttle
-  install_geeqie_bullseye
-  install_timeshift_bullseye
-  install_vscode_bullseye
+  install_geeqie
+  install_timeshift
+  install_vscode
   install_brave
 }
 
 if [ "$bullseye" == 1 ]; then
-  install_all_manual_install_apps_bullseye
+  install_all_manual_install_apps
 fi
 ################################################################################
 
@@ -1963,7 +1994,7 @@ install_GSE_sound_output_device_chooser() {
 # https://github.com/kgshank/gse-sound-output-device-chooser
 
 enable_GSE() {
-  $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")' > /dev/null && \
+  $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")' &> /dev/null && \
   $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'gnome-shell-screenshot@ttll.de'
   $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'system-monitor@paradoxxx.zero.gmail.com'
   $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'sound-output-device-chooser@kgshank.net'
@@ -1980,7 +2011,7 @@ local_user="$(awk -F':' '/1000/{print $1}' /etc/passwd)"
 local_user_UID="$(id -u "$local_user")"
 ExeAsUser="sudo -u "$local_user""
 
-$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")' > /dev/null
+$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")' &> /dev/null
 EOF
 chmod +x /tmp/reload_GnomeShell.sh && \
 chown "$local_user":"$local_user" /tmp/reload_GnomeShell.sh
@@ -2017,6 +2048,14 @@ stat /usr/share/gnome-shell/extensions/system-monitor@paradoxxx.zero.gmail.com/m
 # elle fait l'quivalent de la fermeture + réouverture de la session sans avoir à renseigner le mdp
 # il n'est pas nécessaire de recharger Gnome Shell après avoir activé les extensions pour les voir apparaitre dans la barre supérieure
 
+# Il est aussi possible d'installer les extensions à partir d'un appel dbus grâce à leurs UUID, avec cette méthode, l'extensions est télécharger depuis le site https://extensions.gnome.org/
+# exemple :
+# gdbus call --session \
+           # --dest org.gnome.Shell.Extensions \
+           # --object-path /org/gnome/Shell/Extensions \
+           # --method org.gnome.Shell.Extensions.InstallRemoteExtension \
+           # "gsconnect@andyholmes.github.io"
+# ref: [Enable Gnome Extensions without session restart - Desktop - GNOME Discourse](https://discourse.gnome.org/t/enable-gnome-extensions-without-session-restart/7936/4)
 
 if [ "$bullseye" == 1 ]; then
   install_GSE_bullseye
@@ -2106,7 +2145,7 @@ cat> /usr/bin/sysupdate << 'EOF'
 # pour executer les fonctions dans la fonction displayandexec :
 # il faut les mettre sous la forme :
 install_opensnitch() {
-  local opensnitch_version="$($CURL 'https://api.github.com/repos/evilsocket/opensnitch/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)" && \
+  local opensnitch_version="$($CURL 'https://api.github.com/repos/evilsocket/opensnitch/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
   local tmp_dir="$(mktemp -d)"
   displayandexec "Installation de OpenSnitch                          " "\
   $WGET -P "$tmp_dir" https://github.com/evilsocket/opensnitch/releases/download/v"$opensnitch_version"/python3-opensnitch-ui_"$opensnitch_version"-1_all.deb && \
@@ -2156,6 +2195,7 @@ displayandexec "Mise à jour des paquets debian                      " "$AG upda
 # displayandexec "Mise à jour de la base de donnée de rkhunter        " "rkhunter --versioncheck && rkhunter --update && rkhunter --propupd"
 displayandexec "Mise à jour des paquets de pip3                     " "$ExeAsUser pip3 install --upgrade pip"
 displayandexec "Suppression du cache de apt-get                     " "$AG clean"
+displayandexec "Mise à jour des certificats racine                  " "update-ca-certificates"
 
 # if [ $1 = "--log" ]; then
 #     more "$log_file"
@@ -2189,11 +2229,8 @@ CheckAvailableUpdate() {
 
 CheckUpdateShotcut() {
   local SoftwareName='Shotcut'
-  # local v1="$(shotcut --version | cut -c 9-)"
-  local v1="$(shotcut --version 2>&1 | cut -c 9- | grep -v 'Gtk-WARNING' | sed '/^$/d')"
-  # pour éviter les warnings gtk
-  # ref : [Ubuntu – How to stop gedit (and other programs) from outputting GTK warnings and the like in the terminal – iTecTec](https://itectec.com/ubuntu/ubuntu-how-to-stop-gedit-and-other-programs-from-outputting-gtk-warnings-and-the-like-in-the-terminal/)
-  local v2="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  local v1="$("$(grep -Po '(^Exec=)\K(.*\.AppImage$)' /usr/share/applications/shotcut.desktop)" --version 2> /dev/null  | cut -c 9-)"
+  local v2="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
@@ -2207,7 +2244,7 @@ CheckUpdateYoutube-dl() {
 CheckUpdateBoostnote() {
   local SoftwareName='Boostnote'
   local v1="$(grep -Po '"version": "\K[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+(?=")' /usr/lib/boostnote/resources/app/package.json)"
-  local v2="$($CURL 'https://api.github.com/repos/BoostIO/boost-releases/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  local v2="$($CURL 'https://api.github.com/repos/BoostIO/boost-releases/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
@@ -2221,57 +2258,58 @@ CheckUpdateKeepassxc() {
 CheckUpdateJoplin() {
   local SoftwareName='Joplin'
   local v1="$(grep -Po '^Exec.*-\K[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+' /usr/share/applications/joplin.desktop)"
-  local v2="$($CURL 'https://api.github.com/repos/laurent22/joplin/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  local v2="$($CURL 'https://api.github.com/repos/laurent22/joplin/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
 CheckUpdateStacer() {
   local SoftwareName='Stacer'
   local v1="$(strings /usr/share/stacer/stacer | grep -Po '(Stacer v)\K([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)')"
-  local v2="$($CURL 'https://api.github.com/repos/oguzhaninan/Stacer/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  local v2="$($CURL 'https://api.github.com/repos/oguzhaninan/Stacer/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
 CheckUpdateBat() {
   local SoftwareName='Bat'
   local v1="$(bat --version | grep -Po '(bat )\K[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+')"
-  local v2="$($CURL 'https://api.github.com/repos/sharkdp/bat/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  local v2="$($CURL 'https://api.github.com/repos/sharkdp/bat/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
 CheckUpdateKrita() {
   local SoftwareName='Krita'
   local v1="$(grep -Po '^Exec.*-\K[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+' /usr/share/applications/krita.desktop)"
-  local v2="$($CURL 'https://krita.org/fr/telechargement/krita-desktop/' | grep 'stable' | grep -m1 'appimage ' | grep -Po '(?<=/stable/krita/)([[:digit:]]+\.+[[:digit:]]+\.[[:digit:]]+)')"
+  local v2="$($CURL 'https://krita.org/fr/telechargement/krita-desktop/' | grep 'stable' | grep -m1 -e '.appimage' | grep -Po '(?<=/stable/krita/)([[:digit:]]+\.+[[:digit:]]+\.[[:digit:]]+)')"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
 CheckUpdateOpensnitch() {
   local SoftwareName='OpenSnitch'
   local v1="$(opensnitchd --version)"
-  local v2="$($CURL 'https://api.github.com/repos/evilsocket/opensnitch/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
-  # Pour récupérer la dernière release non-stable : local v2="$($CURL 'https://api.github.com/repos/evilsocket/opensnitch/releases' | grep -m 1 -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  local v2="$($CURL 'https://api.github.com/repos/evilsocket/opensnitch/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
+  # Pour récupérer la dernière release non-stable (prerelease):
+  # local v2="$(curl --silent 'https://api.github.com/repos/evilsocket/opensnitch/releases' | awk 'BEGIN{RS="}"} /"prerelease": true,/ {for (x=1;x<=NF;x++) if ($x~"tag_name") {gsub(/[v|"|,$]/,"");print $(x);exit;}}')"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
 CheckUpdateDrawio() {
   local SoftwareName='Drawio'
   local v1="$(grep -Po '^Exec.*-\K[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+' /usr/share/applications/drawio.desktop)"
-  local v2="$($CURL 'https://api.github.com/repos/jgraph/drawio-desktop/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  local v2="$($CURL 'https://api.github.com/repos/jgraph/drawio-desktop/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
 CheckUpdateEtcher() {
   local SoftwareName='Etcher'
   local v1="$(grep -Po '^Exec.*-\K[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+' /usr/share/applications/balena-etcher-electron.desktop)"
-  local v2="$($CURL 'https://api.github.com/repos/balena-io/etcher/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  local v2="$($CURL 'https://api.github.com/repos/balena-io/etcher/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
 CheckUpdateGeeqie() {
   local SoftwareName='Geeqie'
   local v1="$(grep -Po '^Exec.*-v\K[[:digit:]]+\.[[:digit:]]+\+[[:digit:]]+' /usr/share/applications/geeqie.desktop)"
-  local v2="$($CURL 'https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/AppImage/appimages.txt' | head -n1 | grep -Po '(?<=Geeqie-v)([[:digit:]]\.[[:digit:]]+\+[[:digit:]]+)(?=.AppImage)|(?<=Geeqie-v)([[:digit:]]\.[[:digit:]]+\.[[:digit:]]+\+[[:digit:]]+)(?=.AppImage)')"
+  local v2="$($CURL 'https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/AppImage/appimages.txt' | head -n1 | grep -Po '(?<=Geeqie-v)([[:digit:]]\.[[:digit:]]+\+[[:digit:]]+|[[:digit:]]\.[[:digit:]]+\.[[:digit:]]+\+[[:digit:]]+|[[:digit:]]\.[[:digit:]]+\+[[:digit:]]+\-x86_64)(?=.AppImage)')"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
@@ -2285,7 +2323,7 @@ CheckUpdateYt-dlp() {
 CheckUpdateHashcat() {
   local SoftwareName='Hashcat'
   local v1="$(hashcat --version | grep -Po '(v)\K([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)')"
-  local v2="$($CURL 'https://api.github.com/repos/hashcat/hashcat/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)"
+  local v2="$($CURL 'https://api.github.com/repos/hashcat/hashcat/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
@@ -2307,7 +2345,7 @@ CheckUpdateWinscp() {
 
   # autre méthode, plus simple
   # local v1="$(7z l "$manual_install_dir"/winscp/WinSCP.exe | grep -Po '(ProductVersion: )\K([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)')"
-  local v2="$($CURL 'https://winscp.net/eng/downloads.php' | grep 'Portable.zip' | grep -Po '(?<=WinSCP-)([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)(?=-Portable.zip")')"
+  local v2="$($CURL 'https://winscp.net/eng/downloads.php' | grep -Po '(?<=WinSCP-)([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)(?=-Portable.zip")')"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
@@ -2315,7 +2353,7 @@ CheckUpdateWinscp() {
 ################################################################################
 
 UpdateShotcut() {
-  local shotcut_version="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)" && \
+  local shotcut_version="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
   local shotcut_appimage="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"name": "\K.*?(?=")' | grep 'AppImage')" && \
   rm -f "$manual_install_dir"/shotcut/*.AppImage && \
 	$WGET -P "$manual_install_dir"/shotcut/ https://github.com/mltframework/shotcut/releases/download/v"$shotcut_version"/"$shotcut_appimage" && \
@@ -2329,7 +2367,7 @@ UpdateYoutube-dl() {
 }
 
 UpdateBoostnote() {
-  local boostnote_version="$($CURL 'https://api.github.com/repos/BoostIO/boost-releases/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)" && \
+  local boostnote_version="$($CURL 'https://api.github.com/repos/BoostIO/boost-releases/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
   local tmp_dir="$(mktemp -d)" && \
   $WGET -P "$tmp_dir" https://github.com/BoostIO/boost-releases/releases/download/v$boostnote_version/boostnote_"$boostnote_version"_amd64.deb && \
   dpkg -i "$tmp_dir"/boostnote_"$boostnote_version"_amd64.deb
@@ -2352,7 +2390,7 @@ UpdateKeepassxc() {
 }
 
 UpdateJoplin() {
-  local joplin_version="$($CURL 'https://api.github.com/repos/laurent22/joplin/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)" && \
+  local joplin_version="$($CURL 'https://api.github.com/repos/laurent22/joplin/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
   rm -f "$manual_install_dir"/Joplin/Joplin-*.AppImage && \
   $WGET -P "$manual_install_dir"/Joplin/ https://github.com/laurent22/joplin/releases/download/v"$joplin_version"/Joplin-"$joplin_version".AppImage && \
   chmod +x "$manual_install_dir"/Joplin/Joplin-"$joplin_version".AppImage && \
@@ -2362,7 +2400,7 @@ UpdateJoplin() {
 }
 
 UpdateStacer() {
-  local stacer_version="$($CURL 'https://api.github.com/repos/oguzhaninan/Stacer/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)" && \
+  local stacer_version="$($CURL 'https://api.github.com/repos/oguzhaninan/Stacer/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
   local tmp_dir="$(mktemp -d)" && \
   $WGET -P "$tmp_dir" https://github.com/oguzhaninan/Stacer/releases/download/v$stacer_version/stacer_"$stacer_version"_amd64.deb && \
   dpkg -i "$tmp_dir"/stacer_"$stacer_version"_amd64.deb
@@ -2370,7 +2408,7 @@ UpdateStacer() {
 }
 
 UpdateBat() {
-  local bat_version="$($CURL 'https://api.github.com/repos/sharkdp/bat/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)" && \
+  local bat_version="$($CURL 'https://api.github.com/repos/sharkdp/bat/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
   local tmp_dir="$(mktemp -d)" && \
   $WGET -P "$tmp_dir" https://github.com/sharkdp/bat/releases/download/v"$bat_version"/bat_"$bat_version"_amd64.deb && \
   dpkg -i "$tmp_dir"/bat_"$bat_version"_amd64.deb
@@ -2378,7 +2416,7 @@ UpdateBat() {
 }
 
 UpdateKrita() {
-  local krita_version="$($CURL 'https://krita.org/fr/telechargement/krita-desktop/' | grep 'stable' | grep -m1 'appimage ' | grep -Po '(?<=/stable/krita/)([[:digit:]]+\.+[[:digit:]]+\.[[:digit:]]+)')" && \
+  local krita_version="$($CURL 'https://krita.org/fr/telechargement/krita-desktop/' | grep 'stable' | grep -m1 -e '.appimage' | grep -Po '(?<=/stable/krita/)([[:digit:]]+\.+[[:digit:]]+\.[[:digit:]]+)')" && \
   rm -f "$manual_install_dir"/Krita/krita-*.appimage && \
   $WGET -P "$manual_install_dir"/Krita/ https://download.kde.org/stable/krita/"$krita_version"/krita-"$krita_version"-x86_64.appimage && \
   chmod +x "$manual_install_dir"/Krita/krita-"$krita_version"-x86_64.appimage && \
@@ -2387,7 +2425,7 @@ UpdateKrita() {
 }
 
 UpdateOpensnitch() {
-  local opensnitch_version="$($CURL 'https://api.github.com/repos/evilsocket/opensnitch/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)" && \
+  local opensnitch_version="$($CURL 'https://api.github.com/repos/evilsocket/opensnitch/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
   local tmp_dir="$(mktemp -d)" && \
   $WGET -P "$tmp_dir" https://github.com/evilsocket/opensnitch/releases/download/v"$opensnitch_version"/python3-opensnitch-ui_"$opensnitch_version"-1_all.deb && \
   $WGET -P "$tmp_dir" https://github.com/evilsocket/opensnitch/releases/download/v"$opensnitch_version"/opensnitch_"$opensnitch_version"-1_amd64.deb && \
@@ -2398,7 +2436,7 @@ UpdateOpensnitch() {
 }
 
 UpdateDrawio() {
-  local drawio_version="$($CURL 'https://api.github.com/repos/jgraph/drawio-desktop/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)" && \
+  local drawio_version="$($CURL 'https://api.github.com/repos/jgraph/drawio-desktop/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
   rm -f "$manual_install_dir"/drawio/drawio-*.AppImage && \
   $WGET -P "$manual_install_dir"/drawio/ https://github.com/jgraph/drawio-desktop/releases/download/v"$drawio_version"/drawio-x86_64-"$drawio_version".AppImage && \
   chmod +x "$manual_install_dir"/drawio/drawio-x86_64-"$drawio_version".AppImage && \
@@ -2407,7 +2445,7 @@ UpdateDrawio() {
 }
 
 UpdateEtcher() {
-  local etcher_version="$($CURL 'https://api.github.com/repos/balena-io/etcher/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)" && \
+  local etcher_version="$($CURL 'https://api.github.com/repos/balena-io/etcher/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
   rm -f "$manual_install_dir"/balenaEtcher/balenaEtcher-*.AppImage && \
   $WGET -P "$manual_install_dir"/balenaEtcher/ https://github.com/balena-io/etcher/releases/download/v"$etcher_version"/balenaEtcher-"$etcher_version"-x64.AppImage && \
   chmod +x "$manual_install_dir"/balenaEtcher/balenaEtcher-"$etcher_version"-x64.AppImage && \
@@ -2416,7 +2454,7 @@ UpdateEtcher() {
 }
 
 UpdateGeeqie() {
-  local geeqie_version="$($CURL 'https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/AppImage/appimages.txt' | head -n1 | grep -Po '(?<=Geeqie-v)([[:digit:]]\.[[:digit:]]+\+[[:digit:]]+)(?=.AppImage)|(?<=Geeqie-v)([[:digit:]]\.[[:digit:]]+\.[[:digit:]]+\+[[:digit:]]+)(?=.AppImage)')" && \
+  local geeqie_version="$($CURL 'https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/AppImage/appimages.txt' | head -n1 | grep -Po '(?<=Geeqie-v)([[:digit:]]\.[[:digit:]]+\+[[:digit:]]+|[[:digit:]]\.[[:digit:]]+\.[[:digit:]]+\+[[:digit:]]+|[[:digit:]]\.[[:digit:]]+\+[[:digit:]]+\-x86_64)(?=.AppImage)')" && \
   rm -f "$manual_install_dir"/Geeqie/Geeqie-v*.AppImage && \
   geeqie_download_link="$($CURL 'https://www.geeqie.org/AppImage/index.html' | grep -i 'appimage' | grep -Po 'href=\K[^"]*')" && \
   $WGET -P "$manual_install_dir"/Geeqie/ "$geeqie_download_link"Geeqie-v"$geeqie_version".AppImage && \
@@ -2430,7 +2468,7 @@ UpdateYt-dlp() {
 }
 
 UpdateHashcat() {
-  local hashcat_version="$($CURL 'https://api.github.com/repos/hashcat/hashcat/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")' | cut -c 2-)" && \
+  local hashcat_version="$($CURL 'https://api.github.com/repos/hashcat/hashcat/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
   local tmp_dir="$(mktemp -d)" && \
   rm -rf "$manual_install_dir"/hashcat/ && \
   rm -f /usr/bin/hashcat && \
@@ -2454,7 +2492,7 @@ UpdateVeracrypt() {
 }
 
 UpdateWinscp() {
-  local winscp_version="$($CURL 'https://winscp.net/eng/downloads.php' | grep 'Portable.zip' | grep -Po '(?<=WinSCP-)([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)(?=-Portable.zip")')"
+  local winscp_version="$($CURL 'https://winscp.net/eng/downloads.php' | grep -Po '(?<=WinSCP-)([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)(?=-Portable.zip")')"
   local tmp_dir="$(mktemp -d)" && \
   [ -d "$manual_install_dir"/winscp/ ] && rm -rf "$manual_install_dir"/winscp/ && \
   mkdir "$manual_install_dir"/winscp/ && \
@@ -3089,8 +3127,8 @@ cat>> /etc/apt-fast.conf << 'EOF'
 # Unset to show package listing.
 #
 VERBOSE_OUTPUT=
-}
 EOF
+}
 configure_apt-fast
 # On est obligé d'ajouter la conf pour désactiver le mode verbose de apt-fast car il semble qu'elle ne soit pas dispo dans la conf par défaut et qu'elle ne se configure pas non plus comme les autres éléments de config de apt-fast (avec debconf-set-selections)
 # a vérifier si cette conf est ajouté dans les futurs release de apt-fast
@@ -3435,6 +3473,18 @@ had-bluetooth-devices-setup=false
 [gtk/settings/file-chooser]
 sort-directories-first=true
 show-hidden=true
+
+[gnome/evince]
+allow-links-change-zoom=false
+fullscreen=true
+page-cache-size=400
+
+[gnome/evince/default]
+dual-page=false
+dual-page-odd-left=false
+fullscreen=true
+show-sidebar=true
+sizing-mode='fit-page'
 EOF
 # ref : https://superuser.com/questions/726550/use-dconf-or-comparable-to-set-configs-for-another-user/1265786#1265786
 
