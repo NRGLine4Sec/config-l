@@ -1,0 +1,437 @@
+#!/bin/bash
+
+# a priori on ne peut pas executer de fonction (tel que CheckUpdate) dans l'appel de fonction displayandexec
+# displayandexec "test d'execution de la fonction CheckUpdate      " "CheckUpdate" ne fonctionne pas
+
+# essayer avec export -f CheckUpdate
+# ref : [ubuntu - Bash function gives "command not found" when used within a bash script? - Super User](https://superuser.com/questions/1493404/bash-function-gives-command-not-found-when-used-within-a-bash-script)
+# bon ça fonctionne mais il faudrait faire l'export de toute les fonctions, et on n'aurait pas les retours des commandes mais simplement le retour des echos
+
+# pour executer les fonctions dans la fonction displayandexec :
+# il faut les mettre sous la forme :
+install_opensnitch() {
+  local opensnitch_version="$($CURL 'https://api.github.com/repos/evilsocket/opensnitch/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
+  local tmp_dir="$(mktemp -d)"
+  displayandexec "Installation de OpenSnitch                          " "\
+  $WGET -P "$tmp_dir" https://github.com/evilsocket/opensnitch/releases/download/v"$opensnitch_version"/python3-opensnitch-ui_"$opensnitch_version"-1_all.deb && \
+  $WGET -P "$tmp_dir" https://github.com/evilsocket/opensnitch/releases/download/v"$opensnitch_version"/opensnitch_"$opensnitch_version"-1_amd64.deb && \
+  dpkg -i "$tmp_dir"/opensnitch_"$opensnitch_version"-1_amd64.deb && \
+  dpkg -i "$tmp_dir"/python3-opensnitch-ui_"$opensnitch_version"-1_all.deb && \
+  rm -rf "$tmp_dir" && \
+  $AG install -f -y"
+}
+# bien faire attention a déclarer les variables avant l'appel à la fonction dispalyandexec
+
+# Définition des variables de couleur
+GREEN='\e[0;32m'
+RED='\e[0;31m'
+RESET='\e[0m'
+NOIR='\e[0;30m'
+
+manual_install_dir='/opt/manual_install'
+AG='apt-get'
+WGET='wget -q'
+CURL='curl --silent --show-error'
+local_user="$(awk -F':' '/1000/{print $1}' /etc/passwd)"
+ExeAsUser="sudo -u "$local_user""
+now="$(date +"%d-%m-%Y")"
+[ -d /var/log/sysupdate ] || mkdir /var/log/sysupdate
+log_file="/var/log/sysupdate/update-"$now".log"
+touch "$log_file"
+
+# Premier parametre: MESSAGE
+# Autres parametres: COMMAND
+displayandexec() {
+  local message=$1
+  echo -n "[En cours] $message"
+  shift
+  echo ">>> $*" >> "$log_file" 2>&1
+  bash -c "$*" >> "$log_file" 2>&1
+  local ret=$?
+  if [ $ret != 0 ]; then
+    echo -e "\r $message                ${RED}[ERROR]${RESET} "
+  else
+    echo -e "\r $message                ${GREEN}[OK]${RESET} "
+  fi
+  return $ret
+}
+
+displayandexec "Mise à jour des paquets debian                      " "$AG update && $AG upgrade -y"
+# displayandexec "Mise à jour de la base de donnée de rkhunter        " "rkhunter --versioncheck && rkhunter --update && rkhunter --propupd"
+displayandexec "Mise à jour des paquets de pip3                     " "$ExeAsUser pip3 install --upgrade pip"
+displayandexec "Suppression du cache de apt-get                     " "$AG clean"
+displayandexec "Mise à jour des certificats racine                  " "update-ca-certificates"
+
+# if [ $1 = "--log" ]; then
+#     more "$log_file"
+# else
+#     exit 0
+# fi
+
+
+################################################################################
+
+CheckAvailableUpdate() {
+  local PREFIX_1="$(echo $2 | sed -e 's/[a-z]//' )"
+  local SUFFIX_1="$(echo $2 | sed -e 's/[0-9]//' )"
+  local PREFIX_2="$(echo $3 | sed -e 's/[a-z]//' )"
+  local SUFFIX_2="$(echo $3 | sed -e 's/[0-9]//' )"
+
+  if [[ $PREFIX_1 > $PREFIX_2 ]] || ([[ $PREFIX_1 == $PREFIX_2 ]] && [[ $SUFFIX_1 > $SUFFIX_2 ]]); then
+    # echo "$2 est plus grand que $3"
+    echo "une mise à jour de $1 est disponible"
+    retval=$1
+  else
+    echo "aucune mise à jour de $1 n'est disponible"
+  fi
+}
+# vérifier que ça fonctionne bien avec le cas spécidifque $2=0.17.1 et $3=0.16.1
+# pour faire des tests :
+# [[ 2020.12.22 > 2020.12.25 ]] && echo oui || echo non
+# [[ 0.17.1 > 0.16.1 ]] && echo oui || echo non
+
+################################################################################
+
+CheckUpdateShotcut() {
+  local SoftwareName='Shotcut'
+  local v1="$("$(grep -Po '(^Exec=)\K(.*\.AppImage$)' /usr/share/applications/shotcut.desktop)" --version 2> /dev/null  | cut -c 9-)"
+  local v2="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
+  CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
+}
+
+CheckUpdateYoutube-dl() {
+  local SoftwareName='youtube-dl'
+  local v1="$(youtube-dl --version)"
+  local v2="$($CURL 'https://api.github.com/repos/ytdl-org/youtube-dl/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
+  CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
+}
+
+CheckUpdateBoostnote() {
+  local SoftwareName='Boostnote'
+  local v1="$(grep -Po '"version": "\K[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+(?=")' /usr/lib/boostnote/resources/app/package.json)"
+  local v2="$($CURL 'https://api.github.com/repos/BoostIO/boost-releases/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
+  CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
+}
+
+CheckUpdateKeepassxc() {
+  local SoftwareName='KeePassXC'
+  local v1="$(grep -Po '^Exec.*-\K[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+' /usr/share/applications/keepassxc.desktop)"
+  local v2="$($CURL 'https://api.github.com/repos/keepassxreboot/keepassxc/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
+  CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
+}
+
+CheckUpdateJoplin() {
+  local SoftwareName='Joplin'
+  local v1="$(grep -Po '^Exec.*-\K[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+' /usr/share/applications/joplin.desktop)"
+  local v2="$($CURL 'https://api.github.com/repos/laurent22/joplin/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
+  CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
+}
+
+CheckUpdateStacer() {
+  local SoftwareName='Stacer'
+  local v1="$(strings /usr/share/stacer/stacer | grep -Po '(Stacer v)\K([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)')"
+  local v2="$($CURL 'https://api.github.com/repos/oguzhaninan/Stacer/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
+  CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
+}
+
+CheckUpdateBat() {
+  local SoftwareName='Bat'
+  local v1="$(bat --version | grep -Po '(bat )\K[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+')"
+  local v2="$($CURL 'https://api.github.com/repos/sharkdp/bat/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
+  CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
+}
+
+CheckUpdateKrita() {
+  local SoftwareName='Krita'
+  local v1="$(grep -Po '^Exec.*-\K[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+' /usr/share/applications/krita.desktop)"
+  local v2="$($CURL 'https://krita.org/fr/telechargement/krita-desktop/' | grep 'stable' | grep -m1 -e '.appimage' | grep -Po '(?<=/stable/krita/)([[:digit:]]+\.+[[:digit:]]+\.[[:digit:]]+)')"
+  CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
+}
+
+CheckUpdateOpensnitch() {
+  local SoftwareName='OpenSnitch'
+  local v1="$(opensnitchd --version)"
+  local v2="$($CURL 'https://api.github.com/repos/evilsocket/opensnitch/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
+  # Pour récupérer la dernière release non-stable (prerelease):
+  # local v2="$(curl --silent 'https://api.github.com/repos/evilsocket/opensnitch/releases' | awk 'BEGIN{RS="}"} /"prerelease": true,/ {for (x=1;x<=NF;x++) if ($x~"tag_name") {gsub(/[v|"|,$]/,"");print $(x);exit;}}')"
+  CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
+}
+
+CheckUpdateDrawio() {
+  local SoftwareName='Drawio'
+  local v1="$(grep -Po '^Exec.*-\K[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+' /usr/share/applications/drawio.desktop)"
+  local v2="$($CURL 'https://api.github.com/repos/jgraph/drawio-desktop/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
+  CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
+}
+
+CheckUpdateEtcher() {
+  local SoftwareName='Etcher'
+  local v1="$(grep -Po '^Exec.*-\K[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+' /usr/share/applications/balena-etcher-electron.desktop)"
+  local v2="$($CURL 'https://api.github.com/repos/balena-io/etcher/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
+  CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
+}
+
+CheckUpdateGeeqie() {
+  local SoftwareName='Geeqie'
+  local v1="$(grep -Po '^Exec.*-v\K[[:digit:]]+\.[[:digit:]]+\+[[:digit:]]+' /usr/share/applications/geeqie.desktop)"
+  local v2="$($CURL 'https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/AppImage/appimages.txt' | head -n1 | grep -Po '(?<=Geeqie-v)([[:digit:]]\.[[:digit:]]+\+[[:digit:]]+|[[:digit:]]\.[[:digit:]]+\.[[:digit:]]+\+[[:digit:]]+|[[:digit:]]\.[[:digit:]]+\+[[:digit:]]+\-x86_64)(?=.AppImage)')"
+  CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
+}
+
+CheckUpdateYt-dlp() {
+  local SoftwareName='yt-dlp'
+  local v1="$(yt-dlp --version)"
+  local v2="$($CURL 'https://api.github.com/repos/yt-dlp/yt-dlp/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
+  CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
+}
+
+CheckUpdateHashcat() {
+  local SoftwareName='Hashcat'
+  local v1="$(hashcat --version | grep -Po '(v)\K([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)')"
+  local v2="$($CURL 'https://api.github.com/repos/hashcat/hashcat/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
+  CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
+}
+
+CheckUpdateVeracrypt() {
+  local SoftwareName='Veracrypt'
+  local v1="$(veracrypt --text --version | grep -Poi '(?<=veracrypt )\K([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+-[[:alnum:]]+|[[:digit:]]+\.[[:digit:]]+-[[:alnum:]]+|[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+|[[:digit:]]+\.[[:digit:]]+)(?=$)')"
+  local v2="$($CURL 'https://www.veracrypt.fr/en/Downloads.html' | grep 'tar.bz2' | grep -v '.sig\|x86\|Source\|freebsd' | grep -Po '(?<=veracrypt-)([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+-[[:alnum:]]+|[[:digit:]]+\.[[:digit:]]+-[[:alnum:]]+|[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+|[[:digit:]]+\.[[:digit:]]+)(?=-setup)')"
+  CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
+}
+
+CheckUpdateWinscp() {
+  local SoftwareName='WinSCP'
+  local v1="$()"
+  # execute WinSCP
+  # dump the process with the PID of the WinSCP process : gcore -o winscp.dump "$(pgrep WinSCP.exe)"
+  # extract the version from the dump memory of the process :
+  # grep --text -Po '(WinSCP-release-)\K([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)' winscp.pid.86694
+  # find . -type f -regex '.*winscp.dump\.[0-9]+$' -exec grep --text -Po '(WinSCP-release-)\K([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)' {} \;
+
+  # autre méthode, plus simple
+  # local v1="$(7z l "$manual_install_dir"/winscp/WinSCP.exe | grep -Po '(ProductVersion: )\K([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)')"
+  local v2="$($CURL 'https://winscp.net/eng/downloads.php' | grep -Po '(?<=WinSCP-)([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)(?=-Portable.zip")')"
+  CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
+}
+
+
+################################################################################
+
+UpdateShotcut() {
+  local shotcut_version="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
+  local shotcut_appimage="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"name": "\K.*?(?=")' | grep 'AppImage')" && \
+  rm -f "$manual_install_dir"/shotcut/*.AppImage && \
+	$WGET -P "$manual_install_dir"/shotcut/ https://github.com/mltframework/shotcut/releases/download/v"$shotcut_version"/"$shotcut_appimage" && \
+	chmod +x "$manual_install_dir"/shotcut/"$shotcut_appimage" && \
+  sed -i "s,.*Exec=.*,Exec="$manual_install_dir"/shotcut/"$shotcut_appimage",g" /usr/share/applications/shotcut.desktop && \
+  [ -f "$manual_install_dir"/shotcut/shotcut-logo-64.png ] || $WGET -P "$manual_install_dir"/shotcut/ 'https://github.com/mltframework/shotcut/raw/master/icons/shotcut-logo-64.png'
+}
+
+UpdateYoutube-dl() {
+  youtube-dl --update
+}
+
+UpdateBoostnote() {
+  local boostnote_version="$($CURL 'https://api.github.com/repos/BoostIO/boost-releases/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
+  local tmp_dir="$(mktemp -d)" && \
+  $WGET -P "$tmp_dir" https://github.com/BoostIO/boost-releases/releases/download/v$boostnote_version/boostnote_"$boostnote_version"_amd64.deb && \
+  dpkg -i "$tmp_dir"/boostnote_"$boostnote_version"_amd64.deb
+  rm -rf "$tmp_dir"
+}
+
+UpdateKeepassxc() {
+  local keepassxc_version="$($CURL 'https://api.github.com/repos/keepassxreboot/keepassxc/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')" && \
+  rm -f "$manual_install_dir"/KeePassXC/KeePassXC-*.AppImage && \
+  $WGET -P "$manual_install_dir"/KeePassXC/ https://github.com/keepassxreboot/keepassxc/releases/download/"$keepassxc_version"/KeePassXC-"$keepassxc_version"-x86_64.AppImage && \
+  chmod +x "$manual_install_dir"/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage && \
+  sed -i "s,.*Exec=.*,Exec="$manual_install_dir"/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage,g" /usr/share/applications/keepassxc.desktop && \
+  [ -f /home/"$local_user"/.config/autostart/keepassxc.desktop ] && sed -i s,.*Exec=.*,Exec="$manual_install_dir"/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage,g /home/"$local_user"/.config/autostart/keepassxc.desktop && \
+  [ -f "$manual_install_dir"/KeePassXC/keepassxc-logo.svg ] || $WGET -P "$manual_install_dir"/KeePassXC/ 'https://keepassxc.org/images/keepassxc-logo.svg'
+  [ -f /home/"$local_user"/.config/asbru/asbru.yml ] && rm -f /home/"$local_user"/.config/asbru/asbru.nfreeze && sed -i "s,pathcli: /opt/manual_install/KeePassXC/KeePassXC-.*.AppImage,pathcli: "$manual_install_dir"/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage,g" /home/"$local_user"/.config/asbru/asbru.yml
+}
+# bon a priori la commande précendante ne fonctionne pas, elle change bien la version dans le fichier de conf de asbru, mais cette modification ne permet pas de changer réellement la conf de asbru
+# pour voir la partie qui concerne la configuraion de keepassxc dans asbru : sed -n '/keepass:/,/use_keepass:/p' .config/asbru/asbru.yml
+# donc il semble qu'il faille supprimer ce fichier avant de lancer asbru graphiquement : .config/asbru/asbru.nfreeze
+# on peut donc réintégrer le sed en le couplant avec la suppression de ce fichier pour les prochaines update et voir comment ça se passe
+
+UpdateJoplin() {
+  local joplin_version="$($CURL 'https://api.github.com/repos/laurent22/joplin/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
+  rm -f "$manual_install_dir"/Joplin/Joplin-*.AppImage && \
+  $WGET -P "$manual_install_dir"/Joplin/ https://github.com/laurent22/joplin/releases/download/v"$joplin_version"/Joplin-"$joplin_version".AppImage && \
+  chmod +x "$manual_install_dir"/Joplin/Joplin-"$joplin_version".AppImage && \
+  sed -i "s,^Exec=.*,Exec="$manual_install_dir"/Joplin/Joplin-"$joplin_version".AppImage --no-sandbox,g" /usr/share/applications/joplin.desktop && \
+  [ -f /home/"$local_user"/.config/autostart/joplin.desktop ] && sed -i "s,^Exec=.*,Exec="$manual_install_dir"/Joplin/Joplin-"$joplin_version".AppImage --no-sandbox,g" /home/"$local_user"/.config/autostart/joplin.desktop && \
+  [ -f "$manual_install_dir"/Joplin/256x256.png ] || $WGET -P "$manual_install_dir"/Joplin/ 'https://raw.githubusercontent.com/laurent22/joplin/master/Assets/LinuxIcons/256x256.png'
+}
+
+UpdateStacer() {
+  local stacer_version="$($CURL 'https://api.github.com/repos/oguzhaninan/Stacer/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
+  local tmp_dir="$(mktemp -d)" && \
+  $WGET -P "$tmp_dir" https://github.com/oguzhaninan/Stacer/releases/download/v$stacer_version/stacer_"$stacer_version"_amd64.deb && \
+  dpkg -i "$tmp_dir"/stacer_"$stacer_version"_amd64.deb
+  # rm -rf "$tmp_dir"
+}
+
+UpdateBat() {
+  local bat_version="$($CURL 'https://api.github.com/repos/sharkdp/bat/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
+  local tmp_dir="$(mktemp -d)" && \
+  $WGET -P "$tmp_dir" https://github.com/sharkdp/bat/releases/download/v"$bat_version"/bat_"$bat_version"_amd64.deb && \
+  dpkg -i "$tmp_dir"/bat_"$bat_version"_amd64.deb
+  # rm -rf "$tmp_dir"
+}
+
+UpdateKrita() {
+  local krita_version="$($CURL 'https://krita.org/fr/telechargement/krita-desktop/' | grep 'stable' | grep -m1 -e '.appimage' | grep -Po '(?<=/stable/krita/)([[:digit:]]+\.+[[:digit:]]+\.[[:digit:]]+)')" && \
+  rm -f "$manual_install_dir"/Krita/krita-*.appimage && \
+  $WGET -P "$manual_install_dir"/Krita/ https://download.kde.org/stable/krita/"$krita_version"/krita-"$krita_version"-x86_64.appimage && \
+  chmod +x "$manual_install_dir"/Krita/krita-"$krita_version"-x86_64.appimage && \
+  sed -i "s,^Exec=.*,Exec="$manual_install_dir"/Krita/krita-"$krita_version"-x86_64.appimage,g" /usr/share/applications/krita.desktop && \
+  [ -f "$manual_install_dir"/Krita/krita.png ] || $WGET -P "$manual_install_dir"/Krita/ 'https://invent.kde.org/graphics/krita/-/raw/master/pics/krita.png'
+}
+
+UpdateOpensnitch() {
+  local opensnitch_version="$($CURL 'https://api.github.com/repos/evilsocket/opensnitch/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
+  local tmp_dir="$(mktemp -d)" && \
+  $WGET -P "$tmp_dir" https://github.com/evilsocket/opensnitch/releases/download/v"$opensnitch_version"/python3-opensnitch-ui_"$opensnitch_version"-1_all.deb && \
+  $WGET -P "$tmp_dir" https://github.com/evilsocket/opensnitch/releases/download/v"$opensnitch_version"/opensnitch_"$opensnitch_version"-1_amd64.deb && \
+  dpkg -i "$tmp_dir"/opensnitch_"$opensnitch_version"-1_amd64.deb && \
+  dpkg -i "$tmp_dir"/python3-opensnitch-ui_"$opensnitch_version"-1_all.deb && \
+  rm -rf "$tmp_dir" && \
+  $AG install -f -y
+}
+
+UpdateDrawio() {
+  local drawio_version="$($CURL 'https://api.github.com/repos/jgraph/drawio-desktop/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
+  rm -f "$manual_install_dir"/drawio/drawio-*.AppImage && \
+  $WGET -P "$manual_install_dir"/drawio/ https://github.com/jgraph/drawio-desktop/releases/download/v"$drawio_version"/drawio-x86_64-"$drawio_version".AppImage && \
+  chmod +x "$manual_install_dir"/drawio/drawio-x86_64-"$drawio_version".AppImage && \
+  sed -i "s,^Exec=.*,Exec=$manual_install_dir/drawio/drawio-x86_64-"$drawio_version".AppImage,g" /usr/share/applications/drawio.desktop
+  [ -f "$manual_install_dir"/drawio/drawlogo256.png ] || $WGET -P "$manual_install_dir"/drawio/ 'https://raw.githubusercontent.com/jgraph/drawio/master/src/main/webapp/images/drawlogo256.png'
+}
+
+UpdateEtcher() {
+  local etcher_version="$($CURL 'https://api.github.com/repos/balena-io/etcher/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
+  rm -f "$manual_install_dir"/balenaEtcher/balenaEtcher-*.AppImage && \
+  $WGET -P "$manual_install_dir"/balenaEtcher/ https://github.com/balena-io/etcher/releases/download/v"$etcher_version"/balenaEtcher-"$etcher_version"-x64.AppImage && \
+  chmod +x "$manual_install_dir"/balenaEtcher/balenaEtcher-"$etcher_version"-x64.AppImage && \
+  sed -i "s,^Exec=.*,Exec=$manual_install_dir/balenaEtcher/balenaEtcher-"$etcher_version"-x64.AppImage,g" /usr/share/applications/balena-etcher-electron.desktop
+  [ -f "$manual_install_dir"/balenaEtcher/icon.png ] || $WGET -P "$manual_install_dir"/balenaEtcher/ 'https://github.com/balena-io/etcher/raw/master/assets/icon.png'
+}
+
+UpdateGeeqie() {
+  local geeqie_version="$($CURL 'https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/AppImage/appimages.txt' | head -n1 | grep -Po '(?<=Geeqie-v)([[:digit:]]\.[[:digit:]]+\+[[:digit:]]+|[[:digit:]]\.[[:digit:]]+\.[[:digit:]]+\+[[:digit:]]+|[[:digit:]]\.[[:digit:]]+\+[[:digit:]]+\-x86_64)(?=.AppImage)')" && \
+  rm -f "$manual_install_dir"/Geeqie/Geeqie-v*.AppImage && \
+  geeqie_download_link="$($CURL 'https://www.geeqie.org/AppImage/index.html' | grep -i 'appimage' | grep -Po 'href=\K[^"]*')" && \
+  $WGET -P "$manual_install_dir"/Geeqie/ "$geeqie_download_link"Geeqie-v"$geeqie_version".AppImage && \
+  chmod +x "$manual_install_dir"/Geeqie/Geeqie-v"$geeqie_version".AppImage && \
+  sed -i "s,^Exec=.*,Exec=$manual_install_dir/Geeqie/Geeqie-v"$geeqie_version".AppImage,g" /usr/share/applications/geeqie.desktop
+  [ -f "$manual_install_dir"/Geeqie/geeqie.svg ] || $WGET -P "$manual_install_dir"/Geeqie/ 'https://github.com/geeqie/geeqie.github.io/raw/master/geeqie.svg'
+}
+
+UpdateYt-dlp() {
+  yt-dlp --update
+}
+
+UpdateHashcat() {
+  local hashcat_version="$($CURL 'https://api.github.com/repos/hashcat/hashcat/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
+  local tmp_dir="$(mktemp -d)" && \
+  rm -rf "$manual_install_dir"/hashcat/ && \
+  rm -f /usr/bin/hashcat && \
+  mkdir "$manual_install_dir"/hashcat/ && \
+  $WGET -P "$tmp_dir" https://github.com/hashcat/hashcat/releases/download/v"$hashcat_version"/hashcat-"$hashcat_version".7z && \
+  7z x "$tmp_dir"/hashcat-"$hashcat_version".7z -o"$manual_install_dir"/hashcat > /dev/null && \
+  chown -R "$local_user":"$local_user" "$manual_install_dir"/hashcat && \
+  ln -s "$manual_install_dir"/hashcat/hashcat-"$hashcat_version"/hashcat.bin /usr/bin/hashcat
+  rm -rf "$tmp_dir"
+}
+
+UpdateVeracrypt() {
+  local veracrypt_version="$($CURL 'https://www.veracrypt.fr/en/Downloads.html' | grep 'tar.bz2' | grep -v '.sig\|x86\|Source\|freebsd' | grep -Po '(?<=veracrypt-)([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+-[[:alnum:]]+|[[:digit:]]+\.[[:digit:]]+-[[:alnum:]]+|[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+|[[:digit:]]+\.[[:digit:]]+)(?=-setup)')" && \
+  local tmp_dir="$(mktemp -d)" && \
+  $WGET -P "$tmp_dir" https://launchpad.net/veracrypt/trunk/"$(tr '[:upper:]' '[:lower:]' <<< "$veracrypt_version")"/+download/veracrypt-"$veracrypt_version"-setup.tar.bz2 && \
+  tar xjf "$tmp_dir"/veracrypt-"$veracrypt_version"-setup.tar.bz2 --directory="$tmp_dir" && \
+  "$tmp_dir"/veracrypt-"$veracrypt_version"-setup-gui-x64 --nox11 --noexec --target "$tmp_dir" && \
+  tail -n +$(sed -n 's/.*PACKAGE_START=\([0-9]*\).*/\1/p' "$tmp_dir"/veracrypt_install_gui_x64.sh) "$tmp_dir"/veracrypt_install_gui_x64.sh > "$tmp_dir"/veracrypt_installer.tar && \
+  tar -C / --no-overwrite-dir -xpzvf "$tmp_dir"/veracrypt_installer.tar
+  rm -rf "$tmp_dir"
+}
+
+UpdateWinscp() {
+  local winscp_version="$($CURL 'https://winscp.net/eng/downloads.php' | grep -Po '(?<=WinSCP-)([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)(?=-Portable.zip")')"
+  local tmp_dir="$(mktemp -d)" && \
+  [ -d "$manual_install_dir"/winscp/ ] && rm -rf "$manual_install_dir"/winscp/ && \
+  mkdir "$manual_install_dir"/winscp/ && \
+  $WGET -P "$tmp_dir" https://winscp.net/download/WinSCP-"$winscp_version"-Portable.zip && \
+  unzip "$tmp_dir"/WinSCP-"$winscp_version"-Portable.zip -d "$manual_install_dir"/winscp/
+  rm -rf "$tmp_dir"
+}
+
+
+################################################################################
+
+# on déclare le tableau qui contiendra les logiciels qui ont besoin d'être mis à jour
+software_that_needs_updating=()
+
+# on déclare la fonction permettant d'ajouter des valeurs dans le tableau software_that_needs_updating
+AddTo_software_that_needs_updating() {
+  software_that_needs_updating["${#software_that_needs_updating[*]}"]=$1
+}
+
+# on déclare le tableau qui contiendra les logiciels qui ont été mis à jour
+software_update_failed=()
+
+# on déclare la fonction permettant d'ajouter des valeurs dans le tableau software_update_failed
+AddTo_software_update_failed() {
+  software_update_failed["${#software_update_failed[*]}"]=$1
+}
+
+################################################################################
+
+software_list='
+Shotcut
+Youtube-dl
+Boostnote
+Keepassxc
+Joplin
+Bat
+Krita
+Opensnitch
+Drawio
+Etcher
+Geeqie
+Yt-dlp
+Hashcat
+Veracrypt
+Winscp'
+#Stacer
+
+CheckUpdate() {
+for software in $software_list; do
+	CheckUpdate"$software"
+	if [ "$retval" ]; then
+		AddTo_software_that_needs_updating "$retval"
+		Update"$software" || AddTo_software_update_failed "$retval"
+		unset retval
+	fi
+done
+
+  # echo ${software_that_needs_updating[*]}
+
+if [ "${#software_that_needs_updating[*]}" == 0 ]; then
+  echo 'Tous les logiciels sont à jour.'
+else
+  echo 'Les logiciels suivants nécessitent une mise à jour :' "${software_that_needs_updating[*]}"
+fi
+
+if [ "${#software_update_failed[*]}" != 0 ]; then
+  echo 'Les logiciels suivants ne se sont pas mis à jour correctement :' "${software_update_failed[*]}"
+else
+  echo 'Les logiciels se sont mis à jour correctement.'
+fi
+}
+
+################################################################################
+
+CheckUpdate
+
+exit 0
