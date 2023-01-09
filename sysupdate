@@ -201,7 +201,7 @@ CheckUpdateVeracrypt() {
 
 CheckUpdateWinscp() {
   local SoftwareName='WinSCP'
-  local v1="$()"
+  local v1="$(7z l "$manual_install_dir"/winscp/WinSCP.exe | grep -Po '(ProductVersion: )\K([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)')"
   # execute WinSCP
   # dump the process with the PID of the WinSCP process : gcore -o winscp.dump "$(pgrep WinSCP.exe)"
   # extract the version from the dump memory of the process :
@@ -405,7 +405,7 @@ Veracrypt
 Winscp'
 #Stacer
 
-CheckUpdate() {
+CheckUpdateAndUpgrade() {
 for software in $software_list; do
 	CheckUpdate"$software"
 	if [ "$retval" ]; then
@@ -430,8 +430,41 @@ else
 fi
 }
 
+CheckUpdate() {
+for software in $software_list; do
+	CheckUpdate"$software"
+	if [ "$retval" ]; then
+		AddTo_software_that_needs_updating "$retval"
+		unset retval
+	fi
+done
+
+if [ "${#software_that_needs_updating[*]}" == 0 ]; then
+  echo 'Tous les logiciels sont à jour.'
+else
+  echo 'Les logiciels suivants nécessitent une mise à jour :' "${software_that_needs_updating[*]}"
+fi
+}
+
+to_do() {
+  echo "to do"
+}
+
 ################################################################################
 
-CheckUpdate
+case "$1" in
+     update)
+         CheckUpdateAndUpgrade
+         ;;
+     check)
+         CheckUpdate
+         ;;
+     only_one)
+         to_do
+         ;;
+     *)
+         CheckUpdateAndUpgrade
+         ;;
+esac
 
 exit 0
