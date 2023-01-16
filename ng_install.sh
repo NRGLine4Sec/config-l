@@ -738,7 +738,7 @@ manual_check_latest_version() {
 # manual_check_latest_version
 ################################################################################
 
-local_user="$(awk -F':' '/1000/{print $1}' /etc/passwd)"
+local_user="$(awk -F':' '/:1000:/{print $1}' /etc/passwd)"
 # peut aussi se faire avec "$(grep '1000' /etc/passwd | cut -d: -f 1)"
 # autre méthode pour obtenir le user, lorsqu'il est à l'origine de la session en cour : "$(who | awk 'FNR == 1 {print $1}')"
 # on peut potentiellemnt remplacer la valeur 1000 par le retour de la commande "$(cat /proc/self/loginuid)"

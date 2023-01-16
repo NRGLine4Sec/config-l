@@ -32,7 +32,7 @@ manual_install_dir='/opt/manual_install'
 AG='apt-get'
 WGET='wget -q'
 CURL='curl --silent --show-error'
-local_user="$(awk -F':' '/1000/{print $1}' /etc/passwd)"
+local_user="$(awk -F':' '/:1000:/{print $1}' /etc/passwd)"
 ExeAsUser="sudo -u "$local_user""
 now="$(date +"%d-%m-%Y")"
 [ -d /var/log/sysupdate ] || mkdir /var/log/sysupdate
@@ -56,11 +56,19 @@ displayandexec() {
   return $ret
 }
 
-displayandexec "Mise à jour des paquets debian                      " "$AG update && $AG upgrade -y"
-# displayandexec "Mise à jour de la base de donnée de rkhunter        " "rkhunter --versioncheck && rkhunter --update && rkhunter --propupd"
-displayandexec "Mise à jour des paquets de pip3                     " "$ExeAsUser pip3 install --upgrade pip"
-displayandexec "Suppression du cache de apt-get                     " "$AG clean"
-displayandexec "Mise à jour des certificats racine                  " "update-ca-certificates"
+UpdateSystem() {
+  displayandexec "Mise à jour des paquets debian                      " "$AG update && $AG upgrade -y"
+  # displayandexec "Mise à jour de la base de donnée de rkhunter        " "rkhunter --versioncheck && rkhunter --update && rkhunter --propupd"
+  displayandexec "Mise à jour de pip3                                 " "$ExeAsUser pip3 install --upgrade pip"
+  displayandexec "Mise à jour des paquets de pip                      " "pip3 list --outdated | awk 'NR>2 {print $1}' | xargs -n1 $ExeAsUser pip install --upgrade"
+  displayandexec "Suppression du cache de apt-get                     " "$AG clean"
+  displayandexec "Mise à jour des certificats racine                  " "update-ca-certificates"
+}
+
+CheckUpdateSystem() {
+  $AG update &>/dev/null && apt list --upgradable 2>/dev/null | grep -e 'upgradable from:'
+  pip3 list --outdated | awk 'NR>2 {print $1}'
+}
 
 # if [ $1 = "--log" ]; then
 #     more "$log_file"
@@ -406,48 +414,81 @@ Winscp'
 #Stacer
 
 CheckUpdateAndUpgrade() {
-for software in $software_list; do
-	CheckUpdate"$software"
-	if [ "$retval" ]; then
-		AddTo_software_that_needs_updating "$retval"
-		Update"$software" || AddTo_software_update_failed "$retval"
-		unset retval
-	fi
-done
+  UpdateSystem
+  for software in $software_list; do
+  	CheckUpdate"$software"
+  	if [ "$retval" ]; then
+  		AddTo_software_that_needs_updating "$retval"
+  		Update"$software" || AddTo_software_update_failed "$retval"
+  		unset retval
+  	fi
+  done
 
-  # echo ${software_that_needs_updating[*]}
+    # echo ${software_that_needs_updating[*]}
 
-if [ "${#software_that_needs_updating[*]}" == 0 ]; then
-  echo 'Tous les logiciels sont à jour.'
-else
-  echo 'Les logiciels suivants nécessitent une mise à jour :' "${software_that_needs_updating[*]}"
-fi
+  if [ "${#software_that_needs_updating[*]}" == 0 ]; then
+    echo 'Tous les logiciels sont à jour.'
+  else
+    echo 'Les logiciels suivants nécessitent une mise à jour :' "${software_that_needs_updating[*]}"
+  fi
 
-if [ "${#software_update_failed[*]}" != 0 ]; then
-  echo 'Les logiciels suivants ne se sont pas mis à jour correctement :' "${software_update_failed[*]}"
-else
-  echo 'Les logiciels se sont mis à jour correctement.'
-fi
+  if [ "${#software_update_failed[*]}" != 0 ]; then
+    echo 'Les logiciels suivants ne se sont pas mis à jour correctement :' "${software_update_failed[*]}"
+  else
+    echo 'Les logiciels se sont mis à jour correctement.'
+  fi
 }
 
 CheckUpdate() {
-for software in $software_list; do
-	CheckUpdate"$software"
-	if [ "$retval" ]; then
-		AddTo_software_that_needs_updating "$retval"
-		unset retval
-	fi
-done
+  CheckUpdateSystem
+  for software in $software_list; do
+  	CheckUpdate"$software"
+  	if [ "$retval" ]; then
+  		AddTo_software_that_needs_updating "$retval"
+  		unset retval
+  	fi
+  done
 
-if [ "${#software_that_needs_updating[*]}" == 0 ]; then
-  echo 'Tous les logiciels sont à jour.'
-else
-  echo 'Les logiciels suivants nécessitent une mise à jour :' "${software_that_needs_updating[*]}"
-fi
+  if [ "${#software_that_needs_updating[*]}" == 0 ]; then
+    echo 'Tous les logiciels sont à jour.'
+  else
+    echo 'Les logiciels suivants nécessitent une mise à jour :' "${software_that_needs_updating[*]}"
+  fi
 }
 
-to_do() {
-  echo "to do"
+OnlyOneCheckUpdate() {
+  local software="$1"
+  if $(grep -i "$software" <<< $software_list); then
+    CheckUpdate"$software"
+    if [ "$retval" ]; then
+  		echo "Une mise à jour est disponnible pour "$software"."
+  		unset retval
+  	fi
+  fi
+}
+
+OnlyOneUpdate() {
+  local software="$1"
+  if $(grep -i "$software" <<< $software_list); then
+    CheckUpdate"$software"
+    if [ "$retval" ]; then
+  		AddTo_software_that_needs_updating "$retval"
+  		Update"$software" || AddTo_software_update_failed "$retval"
+  		unset retval
+  	fi
+  fi
+
+  if [ "${#software_that_needs_updating[*]}" == 0 ]; then
+    echo ""$software" est déjà dans la dernière version disponnible."
+  else
+    echo "Une mise à jour est disponnible pour "${software_that_needs_updating[*]}"."
+  fi
+
+  if [ "${#software_update_failed[*]}" != 0 ]; then
+    echo 'La mise à jour a échouée pour' "${software_update_failed[*]}"
+  else
+    echo "La mise à jour de "$software" s'est éffectuée correctement"
+  fi
 }
 
 ################################################################################
@@ -459,8 +500,11 @@ case "$1" in
      check)
          CheckUpdate
          ;;
-     only_one)
-         to_do
+     only_one_check)
+         OnlyOneCheckUpdate "$2"
+         ;;
+     only_one_update)
+         OnlyOneUpdate "$2"
          ;;
      *)
          CheckUpdateAndUpgrade
