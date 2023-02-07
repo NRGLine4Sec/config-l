@@ -31,13 +31,21 @@ NOIR='\e[0;30m'
 manual_install_dir='/opt/manual_install'
 AG='apt-get'
 WGET='wget -q'
-CURL='curl --silent --show-error'
+CURL='curl --silent --location --show-error'
 local_user="$(awk -F':' '/:1000:/{print $1}' /etc/passwd)"
 ExeAsUser="sudo -u "$local_user""
+program_name="$0"
+program_options="$@"
 now="$(date +"%d-%m-%Y")"
-[ -d /var/log/sysupdate ] || mkdir /var/log/sysupdate
-log_file="/var/log/sysupdate/update-"$now".log"
-touch "$log_file"
+
+# make debian non-interactive
+export DEBIAN_FRONTEND='noninteractive'
+
+create_log_file() {
+  [ -d /var/log/sysupdate ] || mkdir /var/log/sysupdate
+  log_file="/var/log/sysupdate/update-"$now".log"
+  touch "$log_file"
+}
 
 # Premier parametre: MESSAGE
 # Autres parametres: COMMAND
@@ -54,6 +62,12 @@ displayandexec() {
     echo -e "\r $message                ${GREEN}[OK]${RESET} "
   fi
   return $ret
+}
+
+run_with_sudo() {
+if [[ $EUID -ne 0 ]]; then
+    exec sudo /bin/bash "$program_name" "$program_options"
+fi
 }
 
 UpdateSystem() {
@@ -181,8 +195,8 @@ CheckUpdateEtcher() {
 
 CheckUpdateGeeqie() {
   local SoftwareName='Geeqie'
-  local v1="$(grep -Po '^Exec.*-v\K[[:digit:]]+\.[[:digit:]]+\+[[:digit:]]+' /usr/share/applications/geeqie.desktop)"
-  local v2="$($CURL 'https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/AppImage/appimages.txt' | head -n1 | grep -Po '(?<=Geeqie-v)([[:digit:]]\.[[:digit:]]+\+[[:digit:]]+|[[:digit:]]\.[[:digit:]]+\.[[:digit:]]+\+[[:digit:]]+|[[:digit:]]\.[[:digit:]]+\+[[:digit:]]+\-x86_64)(?=.AppImage)')"
+  local v1="$(grep -Po '^Exec.*-v\K([[:digit:]]\.[[:digit:]]+\+[[:digit:]]+|[[:digit:]]\.[[:digit:]]+\.[[:digit:]]+\+[[:digit:]]+)(?=\-x86_64.AppImage)' /usr/share/applications/geeqie.desktop)"
+  local v2="$($CURL 'https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/AppImage/appimages.txt' | head -n1 | grep -Po '(?<=Geeqie-v)([[:digit:]]\.[[:digit:]]+\+[[:digit:]]+|[[:digit:]]\.[[:digit:]]+\.[[:digit:]]+\+[[:digit:]]+)(?=\-x86_64.AppImage)')"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
@@ -222,6 +236,12 @@ CheckUpdateWinscp() {
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
+CheckUpdateVentoy() {
+  local SoftwareName='Ventoy'
+  local v1="$(cat "$manual_install_dir"/winscp/ventoy-*/ventoy/version)"
+  local v2="$($CURL 'https://api.github.com/repos/ventoy/Ventoy/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
+  CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
+}
 
 ################################################################################
 
@@ -327,12 +347,12 @@ UpdateEtcher() {
 }
 
 UpdateGeeqie() {
-  local geeqie_version="$($CURL 'https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/AppImage/appimages.txt' | head -n1 | grep -Po '(?<=Geeqie-v)([[:digit:]]\.[[:digit:]]+\+[[:digit:]]+|[[:digit:]]\.[[:digit:]]+\.[[:digit:]]+\+[[:digit:]]+|[[:digit:]]\.[[:digit:]]+\+[[:digit:]]+\-x86_64)(?=.AppImage)')" && \
+  local geeqie_version="$($CURL 'https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/AppImage/appimages.txt' | head -n1 | grep -Po '(?<=Geeqie-v)([[:digit:]]\.[[:digit:]]+\+[[:digit:]]+|[[:digit:]]\.[[:digit:]]+\.[[:digit:]]+\+[[:digit:]]+)(?=\-x86_64.AppImage)')" && \
   rm -f "$manual_install_dir"/Geeqie/Geeqie-v*.AppImage && \
   geeqie_download_link="$($CURL 'https://www.geeqie.org/AppImage/index.html' | grep -i 'appimage' | grep -Po 'href=\K[^"]*')" && \
-  $WGET -P "$manual_install_dir"/Geeqie/ "$geeqie_download_link"Geeqie-v"$geeqie_version".AppImage && \
-  chmod +x "$manual_install_dir"/Geeqie/Geeqie-v"$geeqie_version".AppImage && \
-  sed -i "s,^Exec=.*,Exec=$manual_install_dir/Geeqie/Geeqie-v"$geeqie_version".AppImage,g" /usr/share/applications/geeqie.desktop
+  $WGET -P "$manual_install_dir"/Geeqie/ "$geeqie_download_link"Geeqie-v"$geeqie_version"-x86_64.AppImage && \
+  chmod +x "$manual_install_dir"/Geeqie/Geeqie-v"$geeqie_version"-x86_64.AppImage && \
+  sed -i "s,^Exec=.*,Exec=$manual_install_dir/Geeqie/Geeqie-v"$geeqie_version"-x86_64.AppImage,g" /usr/share/applications/geeqie.desktop
   [ -f "$manual_install_dir"/Geeqie/geeqie.svg ] || $WGET -P "$manual_install_dir"/Geeqie/ 'https://github.com/geeqie/geeqie.github.io/raw/master/geeqie.svg'
 }
 
@@ -374,6 +394,16 @@ UpdateWinscp() {
   rm -rf "$tmp_dir"
 }
 
+UpdateVentoy() {
+  local ventoy_version="$($CURL 'https://api.github.com/repos/ventoy/Ventoy/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
+  local tmp_dir="$(mktemp -d)" && \
+  $WGET -P "$tmp_dir" https://github.com/ventoy/Ventoy/releases/download/v"$ventoy_version"/ventoy-"$ventoy_version"-linux.tar.gz && \
+  [ -d "$manual_install_dir"/ventoy/ ] && rm -rf "$manual_install_dir"/ventoy/ && \
+  mkdir "$manual_install_dir"/ventoy/ && \
+  tar --directory "$manual_install_dir"/ventoy -xzf "$tmp_dir"/ventoy-"$ventoy_version"-linux.tar.gz && \
+  echo "sudo "$manual_install_dir"/ventoy/ventoy-"$ventoy_version"/VentoyGUI.x86_64" > /usr/bin/ventoy && \
+  rm -rf "$tmp_dir"
+}
 
 ################################################################################
 
@@ -412,8 +442,11 @@ Hashcat
 Veracrypt
 Winscp'
 #Stacer
+#Ventoy
 
 CheckUpdateAndUpgrade() {
+  run_with_sudo
+  create_log_file
   UpdateSystem
   for software in $software_list; do
   	CheckUpdate"$software"
@@ -468,6 +501,8 @@ OnlyOneCheckUpdate() {
 }
 
 OnlyOneUpdate() {
+  run_with_sudo
+  create_log_file
   local software="$1"
   if $(grep -i "$software" <<< $software_list); then
     CheckUpdate"$software"
@@ -491,24 +526,38 @@ OnlyOneUpdate() {
   fi
 }
 
+ListSoftware() {
+  awk 'NF' <<< "$software_list"
+}
+
 ################################################################################
 
-case "$1" in
-     update)
-         CheckUpdateAndUpgrade
-         ;;
-     check)
-         CheckUpdate
-         ;;
-     only_one_check)
-         OnlyOneCheckUpdate "$2"
-         ;;
-     only_one_update)
-         OnlyOneUpdate "$2"
-         ;;
-     *)
-         CheckUpdateAndUpgrade
-         ;;
-esac
+while [[ $# -gt 0 ]];
+do
+    opt="$1";
+    shift;              #expose next argument
+    case "$opt" in
+        "--" ) break 2;;
+        "only_one_check" )
+           OnlyOneCheckUpdate "$1"; shift;;
+        "only_one_update" )
+           OnlyOneUpdate "$1"; shift;;
+        "only_one_check="* )     # alternate format: --first=date
+           OnlyOneCheckUpdate "${opt#*=}";;
+        "only_one_update="* )
+           OnlyOneUpdate "${opt#*=}";;
+        "update" )
+           CheckUpdateAndUpgrade;;
+        "check" )
+           CheckUpdate;;
+         "list" )
+            ListSoftware;;
+        "--optional" )
+           OPTION;;     #set to some default value
+        "--optional=*" )
+           OPTIONAL="${opt#*=}";;             #take argument
+        *) echo >&2 "Invalid option: $@"; exit 1;;
+   esac
+done
 
 exit 0

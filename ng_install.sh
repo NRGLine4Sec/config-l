@@ -675,9 +675,9 @@ check_latest_version_manual_install_apps() {
     fi
     # check version : https://winscp.net/eng/downloads.php
 
-    geeqie_version="$($CURL 'https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/AppImage/appimages.txt' | head -n1 | grep -Po '(?<=Geeqie-v)([[:digit:]]\.[[:digit:]]+\+[[:digit:]]+|[[:digit:]]\.[[:digit:]]+\.[[:digit:]]+\+[[:digit:]]+|[[:digit:]]\.[[:digit:]]+\+[[:digit:]]+\-x86_64)(?=.AppImage)')"
+    geeqie_version="$($CURL 'https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/AppImage/appimages.txt' | head -n1 | grep -Po '(?<=Geeqie-v)([[:digit:]]\.[[:digit:]]+\+[[:digit:]]+|[[:digit:]]\.[[:digit:]]+\.[[:digit:]]+\+[[:digit:]]+)(?=\-x86_64.AppImage)')"
     if [ $? != 0 ] || [ -z "$geeqie_version" ]; then
-        geeqie_version='1.7.1+20220117'
+        geeqie_version='2.0+20230103'
     fi
     # check version : https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/AppImage/appimages.txt
 
@@ -686,6 +686,12 @@ check_latest_version_manual_install_apps() {
         ytdlp_version='2022.03.08.1'
     fi
     # check version : https://github.com/yt-dlp/yt-dlp/releases/
+
+    ventoy_version="$($CURL 'https://api.github.com/repos/ventoy/Ventoy/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
+    if [ $? != 0 ] || [ -z "$ventoy_version" ]; then
+        ventoy_version='1.0.88'
+    fi
+    # check version : https://github.com/ventoy/Ventoy/releases
 
 }
 
@@ -730,10 +736,12 @@ manual_check_latest_version() {
   echo 'hashcat : '"$hashcat_version"
   winscp_version="$($CURL 'https://winscp.net/eng/downloads.php' | grep -Po '(?<=WinSCP-)([[:digit:]]+\.+[[:digit:]]+\.[[:digit:]]+)(?=-Portable.zip")')"
   echo 'WinSCP : '"$winscp_version"
-  geeqie_version="$($CURL 'https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/AppImage/appimages.txt' | head -n1 | grep -Po '(?<=Geeqie-v)([[:digit:]]\.[[:digit:]]+\+[[:digit:]]+|[[:digit:]]\.[[:digit:]]+\.[[:digit:]]+\+[[:digit:]]+|[[:digit:]]\.[[:digit:]]+\+[[:digit:]]+\-x86_64)(?=.AppImage)')"
+  geeqie_version="$($CURL 'https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/AppImage/appimages.txt' | head -n1 | grep -Po '(?<=Geeqie-v)([[:digit:]]\.[[:digit:]]+\+[[:digit:]]+|[[:digit:]]\.[[:digit:]]+\.[[:digit:]]+\+[[:digit:]]+)(?=\-x86_64.AppImage)')"
   echo 'Geeqie : '"$geeqie_version"
   ytdlp_version="$($CURL 'https://api.github.com/repos/yt-dlp/yt-dlp/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
   echo 'yt-dlp : '"$ytdlp_version"
+  ventoy_version="$($CURL 'https://api.github.com/repos/ventoy/Ventoy/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
+  echo 'Ventoy : '"$ventoy_version"
 }
 # manual_check_latest_version
 ################################################################################
@@ -1337,11 +1345,12 @@ rm -rf "$tmp_dir""
 ##------------------------------------------------------------------------------
 install_spotify() {
   displayandexec "Installation de spotify                             " "\
-$CURL 'https://download.spotify.com/debian/pubkey_5E3C45D7B312C643.gpg' | gpg --dearmor --output /usr/share/keyrings/spotify-archive-keyring.gpg && \
+$CURL 'https://download.spotify.com/debian/pubkey_7A3A762FAFD4A51F.gpg' | gpg --dearmor --output /usr/share/keyrings/spotify-archive-keyring.gpg && \
 echo 'deb [signed-by=/usr/share/keyrings/spotify-archive-keyring.gpg] http://repository.spotify.com stable non-free' > /etc/apt/sources.list.d/spotify.list && \
 $AG update && \
 $AGI spotify-client"
 }
+# pour obtenir la clé publique lorsqu'elle expire : https://www.spotify.com/fr/download/linux/
 ################################################################################
 
 ################################################################################
@@ -1424,8 +1433,7 @@ install_virtualbox() {
 echo 'deb [signed-by=/usr/share/keyrings/virtualbox-archive-keyring.gpg] https://download.virtualbox.org/virtualbox/debian bullseye contrib' > /etc/apt/sources.list.d/virtualbox.list && \
 $WGET --output-document - 'https://www.virtualbox.org/download/oracle_vbox_2016.asc' | gpg --dearmor --output /usr/share/keyrings/virtualbox-archive-keyring.gpg && \
 $AG update && \
-$AGI virtualbox-6.1"
-# virtualbox_version=$(virtualbox --help | grep v[0-9] | cut -c 35-) # ancienne version
+$AGI virtualbox-7.0"
 virtualbox_version="$(virtualbox --help | grep -Po ' v\K[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+')"
 displayandexec "Installation de VM VirtualBox Extension Pack        " "\
 $WGET -P "$tmp_dir" https://download.virtualbox.org/virtualbox/"$virtualbox_version"/Oracle_VM_VirtualBox_Extension_Pack-"$virtualbox_version".vbox-extpack && \
@@ -1777,9 +1785,9 @@ install_geeqie() {
   geeqie_download_link="$($CURL 'https://www.geeqie.org/AppImage/index.html' | grep -i 'appimage' | grep -Po 'href=\K[^"]*')"
   displayandexec "Installation de Geeqie                              " "\
 [ -d "$manual_install_dir"/Geeqie/ ] || mkdir "$manual_install_dir"/Geeqie/ && \
-$WGET -P "$manual_install_dir"/Geeqie/ "$geeqie_download_link"Geeqie-v"$geeqie_version".AppImage && \
+$WGET -P "$manual_install_dir"/Geeqie/ "$geeqie_download_link"Geeqie-v"$geeqie_version"-x86_64.AppImage && \
 $WGET -P "$manual_install_dir"/Geeqie/ 'https://github.com/geeqie/geeqie.github.io/raw/master/geeqie.svg' && \
-chmod +x "$manual_install_dir"/Geeqie/Geeqie-v"$geeqie_version".AppImage"
+chmod +x "$manual_install_dir"/Geeqie/Geeqie-v"$geeqie_version"-x86_64.AppImage"
 cat> /usr/share/applications/geeqie.desktop << EOF
 [Desktop Entry]
 Name=Geeqie
@@ -1787,7 +1795,7 @@ GenericName=Image Viewer
 GenericName[fr]=Visualisateur d'images
 Comment=View and manage images
 Comment[fr]=Voir et gérer des images
-Exec=$manual_install_dir/Geeqie/Geeqie-v$geeqie_version.AppImage
+Exec=$manual_install_dir/Geeqie/Geeqie-v$geeqie_version-x86_64.AppImage
 Icon=$manual_install_dir/Geeqie/geeqie.svg
 Type=Application
 Terminal=false
@@ -1848,6 +1856,21 @@ $AGI brave-browser"
 # La conf de Brave est dans /home/$USER/.config/BraveSoftware/Brave-Browser/Default
 ################################################################################
 
+################################################################################
+## instalation de Ventoy
+##------------------------------------------------------------------------------
+install_ventoy() {
+  local tmp_dir="$(mktemp -d)"
+  displayandexec "Installation de ventoy                              " "\
+  $WGET -P "$tmp_dir" https://github.com/ventoy/Ventoy/releases/download/v"$ventoy_version"/ventoy-"$ventoy_version"-linux.tar.gz && \
+  [ -d "$manual_install_dir"/ventoy/ ] || mkdir "$manual_install_dir"/ventoy/ && \
+  tar --directory "$manual_install_dir"/ventoy -xzf "$tmp_dir"/ventoy-"$ventoy_version"-linux.tar.gz && \
+  echo "sudo "$manual_install_dir"/ventoy/ventoy-"$ventoy_version"/VentoyGUI.x86_64" > /usr/bin/ventoy && \
+  chmod +x /usr/bin/ventoy && \
+  rm -rf "$tmp_dir""
+}
+################################################################################
+
 
 # apelle à la fonction qui permet de récupérer toutes les versions des logiciels qui s'installent manuellement
 check_latest_version_manual_install_apps
@@ -1882,6 +1905,7 @@ install_all_manual_install_apps() {
   install_timeshift
   install_vscode
   install_brave
+  install_ventoy
 }
 
 if [ "$bullseye" == 1 ]; then
@@ -2010,7 +2034,7 @@ if [ -z "$script_is_launch_with_gnome_terminal" ]; then
     cat> /tmp/reload_GnomeShell.sh << 'EOF'
 #!/bin/bash
 
-local_user="$(awk -F':' '/1000/{print $1}' /etc/passwd)"
+local_user="$(awk -F':' '/:1000:/{print $1}' /etc/passwd)"
 local_user_UID="$(id -u "$local_user")"
 ExeAsUser="sudo -u "$local_user""
 
@@ -2021,7 +2045,7 @@ chown "$local_user":"$local_user" /tmp/reload_GnomeShell.sh
 cat> /tmp/enable_GSE.sh << 'EOF'
 #!/bin/bash
 
-local_user="$(awk -F':' '/1000/{print $1}' /etc/passwd)"
+local_user="$(awk -F':' '/:1000:/{print $1}' /etc/passwd)"
 local_user_UID="$(id -u "$local_user")"
 ExeAsUser="sudo -u "$local_user""
 
@@ -2418,6 +2442,24 @@ displayandexec "Installation du script decomp                       " "chmod +x 
 }
 ################################################################################
 
+################################################################################
+## install du script waitforssh
+##------------------------------------------------------------------------------
+install_waitforssh() {
+cat> /usr/bin/waitforssh << 'EOF'
+#!/bin/bash
+
+ssh_target="$1"
+ssh_port="$2"
+until ssh -o ConnectTimeout=2 -p "$ssh_port" "$ssh_target" 2>/dev/null; do
+  echo -n '.'
+  sleep 3
+done
+EOF
+displayandexec "Installation du script waitforssh                   " "chmod +x /usr/bin/waitforssh"
+}
+################################################################################
+
 install_all_perso_script() {
   install_gitupdate
   install_sysupdate
@@ -2432,6 +2474,7 @@ install_all_perso_script() {
   install_desactivebt
   install_play_pause_chromium
   install_decomp
+  install_waitforssh
 }
 install_all_perso_script
 ################################################################################
@@ -2512,6 +2555,7 @@ echo '
 displayandexec "Configuration de auditd                             " "\
 rm -f /etc/audit/rules.d/audit.rules && \
 mv "$script_path"/audit.rules /etc/audit/rules.d/audit.rules && \
+augenrules --check && \
 systemctl restart auditd"
 # rules mostly based on https://github.com/Neo23x0/auditd/blob/master/audit.rules
 # les règles vont être généré (lors du restart) à l'aide de augenrules et seront ensuite dans le fichier /etc/audit/audit.rules
@@ -2730,6 +2774,20 @@ configure_atom
 # regarder pour faire du collaboratif avec atom : https://atom.io/packages/teletype
 
 # pour voir la liste des plugins installés : apm ls
+################################################################################
+
+################################################################################
+## configuration de Firefox
+##------------------------------------------------------------------------------
+# on ajoute la possibilité d'ouvrir directement la navigateur firefox dans une fenêtre de navigation privée
+configure_firefox() {
+execandlog "sed -i 's/^# set linenumbers/set linenumbers/' /etc/nanorc"
+cp /usr/share/applications/firefox-esr.desktop /usr/share/applications/firefox-esr-private.desktop
+sed -i 's%^Exec=/usr/lib/firefox-esr/firefox-esr%& --private-window%' /usr/share/applications/firefox-esr-private.desktop
+sed -E -i '/(^Name=|^Name\[.*\]=)/s/Firefox .*/Firefox private/g' /usr/share/applications/firefox-esr-private.desktop
+sed -E -i '/(^X-GNOME-FullName=|^X-GNOME-FullName\[.*\]=)/s/Firefox ESR/Firefox private/g' /usr/share/applications/firefox-esr-private.desktop
+}
+configure_firefox
 ################################################################################
 
 ################################################################################
@@ -2991,13 +3049,6 @@ numlock-state='on'
 [org/gnome/GWeather]
 temperature-unit='centigrade'
 
-[gnome/Weather/Application]
-locations=[<(uint32 2, <('Le Mans', 'LFRM', true, [(0.83659448230485101, 0.0034906585039886592)], [(0.83775804095727813, 0.0034906585039886592)])>)>]
-
-[shell/weather]
-automatic-location=true
-locations=[<(uint32 2, <('Le Mans', 'LFRM', true, [(0.83659448230485101, 0.0034906585039886592)], [(0.83775804095727813, 0.0034906585039886592)])>)>]
-
 [gnome/gedit/preferences/editor]
 highlight-current-line=false
 scheme='classic'
@@ -3027,7 +3078,7 @@ button-layout='appmenu:minimize,maximize,close'
 
 [gnome/shell]
 app-picker-view=uint32 1
-favorite-apps=['chromium.desktop', 'org.gnome.Terminal.desktop', 'org.gnome.Nautilus.desktop', 'signal-desktop.desktop', 'joplin.desktop', 'firefox-esr.desktop', 'boostnote.desktop', 'atom.desktop', 'org.gnome.Todo.desktop', 'veracrypt.desktop', 'spotify.desktop', 'libreoffice-writer.desktop', 'asbru-cm.desktop']
+favorite-apps=['chromium.desktop', 'org.gnome.Terminal.desktop', 'org.gnome.Nautilus.desktop', 'signal-desktop.desktop', 'joplin.desktop', 'firefox-esr.desktop', 'firefox-esr-private.desktop', 'brave-browser.desktop', 'atom.desktop', 'org.gnome.Todo.desktop', 'veracrypt.desktop', 'spotify.desktop', 'libreoffice-writer.desktop', 'asbru-cm.desktop']
 had-bluetooth-devices-setup=false
 
 [gtk/settings/file-chooser]
