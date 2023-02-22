@@ -74,7 +74,7 @@ UpdateSystem() {
   displayandexec "Mise à jour des paquets debian                      " "$AG update && $AG upgrade -y"
   # displayandexec "Mise à jour de la base de donnée de rkhunter        " "rkhunter --versioncheck && rkhunter --update && rkhunter --propupd"
   displayandexec "Mise à jour de pip3                                 " "$ExeAsUser pip3 install --upgrade pip"
-  displayandexec "Mise à jour des paquets de pip                      " "pip3 list --outdated | awk 'NR>2 {print $1}' | xargs -n1 $ExeAsUser pip install --upgrade"
+  # displayandexec "Mise à jour des paquets de pip                      " "pip3 list --outdated | awk 'NR>2 {print $1}' | xargs -n1 $ExeAsUser pip install --upgrade"
   displayandexec "Suppression du cache de apt-get                     " "$AG clean"
   displayandexec "Mise à jour des certificats racine                  " "update-ca-certificates"
 }
