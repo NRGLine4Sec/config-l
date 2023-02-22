@@ -36,7 +36,7 @@ local_user="$(awk -F':' '/:1000:/{print $1}' /etc/passwd)"
 ExeAsUser="sudo -u "$local_user""
 program_name="$0"
 program_options="$@"
-now="$(date +"%d-%m-%Y")"
+now="$(date +"%d-%m-%Y-%H-%M")"
 
 # make debian non-interactive
 export DEBIAN_FRONTEND='noninteractive'
