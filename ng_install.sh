@@ -3487,7 +3487,7 @@ alias free='free -ht'
 alias showshortcut='dconf dump /org/gnome/settings-daemon/plugins/media-keys/'
 alias bitcoin='curl -s "http://api.coindesk.com/v1/bpi/currentprice.json" | jq ".bpi.EUR.rate" | tr -d \"'
 alias sshuttle='sudo sshuttle'
-alias last_apt_kernel='apt-cache search "linux-(headers|image)-5.1.*[[:digit:]]-(amd64\$|amd64-unsigned\$)" | sort'
+alias last_apt_kernel='apt-cache search --names-only "linux-(headers|image)-[[:digit:]].[[:digit:]]+.[[:digit:]]+.*[[:digit:]]-(amd64$|amd64-unsigned$)" | sort'
 HISTTIMEFORMAT="%Y/%m/%d %T   "
 is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/\$1 ;}
 
@@ -3577,7 +3577,7 @@ alias free='free -ht'
 alias showshortcut='dconf dump /org/gnome/settings-daemon/plugins/media-keys/'
 alias bitcoin='curl -s "http://api.coindesk.com/v1/bpi/currentprice.json" | jq ".bpi.EUR.rate" | tr -d \"'
 alias sshuttle='sudo sshuttle'
-alias last_apt_kernel='apt-cache search "linux-(headers|image)-5.1.*[[:digit:]]-(amd64\$|amd64-unsigned\$)" | sort'
+alias last_apt_kernel='apt-cache search --names-only "linux-(headers|image)-[[:digit:]].[[:digit:]]+.[[:digit:]]+.*[[:digit:]]-(amd64$|amd64-unsigned$)" | sort'
 HISTTIMEFORMAT="%Y/%m/%d %T   "
 is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/\$1 ;}
 
