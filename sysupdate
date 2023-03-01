@@ -37,14 +37,21 @@ ExeAsUser="sudo -u "$local_user""
 program_name="$0"
 program_options="$@"
 now="$(date +"%d-%m-%Y-%H-%M")"
+log_dir_path='/var/log/sysupdate'
 
 # make debian non-interactive
 export DEBIAN_FRONTEND='noninteractive'
 
 create_log_file() {
-  [ -d /var/log/sysupdate ] || mkdir /var/log/sysupdate
-  log_file="/var/log/sysupdate/update-"$now".log"
+  [ -d "$log_dir_path" ] || mkdir "$log_dir_path"
+  log_file=""$log_dir_path"/sysupdate-"$now".log"
   touch "$log_file"
+}
+
+log_with_bash_x() {
+  exec 18>"$log_file"
+  BASH_XTRACEFD='18'
+  set -x
 }
 
 # Premier parametre: MESSAGE
@@ -84,13 +91,6 @@ CheckUpdateSystem() {
   pip3 list --outdated | awk 'NR>2 {print $1}'
 }
 
-# if [ $1 = "--log" ]; then
-#     more "$log_file"
-# else
-#     exit 0
-# fi
-
-
 ################################################################################
 
 CheckAvailableUpdate() {
@@ -116,7 +116,7 @@ CheckAvailableUpdate() {
 
 CheckUpdateShotcut() {
   local SoftwareName='Shotcut'
-  local v1="$("$(grep -Po '(^Exec=)\K(.*\.AppImage$)' /usr/share/applications/shotcut.desktop)" --version 2> /dev/null  | cut -c 9-)"
+  local v1="$("$(grep -Po '(^Exec=)\K(.*\.AppImage$)' /usr/share/applications/shotcut.desktop)" --version 2> /dev/null | grep -Po '(Shotcut )\K([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)')"
   local v2="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
@@ -174,8 +174,13 @@ CheckUpdateOpensnitch() {
   local SoftwareName='OpenSnitch'
   local v1="$(opensnitchd --version)"
   local v2="$($CURL 'https://api.github.com/repos/evilsocket/opensnitch/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
-  # Pour récupérer la dernière release non-stable (prerelease):
-  # local v2="$(curl --silent 'https://api.github.com/repos/evilsocket/opensnitch/releases' | awk 'BEGIN{RS="}"} /"prerelease": true,/ {for (x=1;x<=NF;x++) if ($x~"tag_name") {gsub(/[v|"|,$]/,"");print $(x);exit;}}')"
+  CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
+}
+
+CheckUpdateOpensnitchRC() {
+  local SoftwareName='OpenSnitch'
+  local v1="$(opensnitchd --version)"
+  local v2="$(curl --silent --location 'https://api.github.com/repos/evilsocket/opensnitch/releases' | awk 'BEGIN{RS="}"} /"prerelease": true,/ {for (x=1;x<=NF;x++) if ($x~"tag_name") {gsub(/[v|"|,$]/,"");print $(x);exit;}}')"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
@@ -224,24 +229,24 @@ CheckUpdateVeracrypt() {
 CheckUpdateWinscp() {
   local SoftwareName='WinSCP'
   local v1="$(7z l "$manual_install_dir"/winscp/WinSCP.exe | grep -Po '(ProductVersion: )\K([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)')"
+  # autre méthode plus compliqué pour récuperer la version avec un dump du process en utilisant gcore
   # execute WinSCP
   # dump the process with the PID of the WinSCP process : gcore -o winscp.dump "$(pgrep WinSCP.exe)"
   # extract the version from the dump memory of the process :
   # grep --text -Po '(WinSCP-release-)\K([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)' winscp.pid.86694
   # find . -type f -regex '.*winscp.dump\.[0-9]+$' -exec grep --text -Po '(WinSCP-release-)\K([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)' {} \;
-
-  # autre méthode, plus simple
-  # local v1="$(7z l "$manual_install_dir"/winscp/WinSCP.exe | grep -Po '(ProductVersion: )\K([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)')"
   local v2="$($CURL 'https://winscp.net/eng/downloads.php' | grep -Po '(?<=WinSCP-)([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)(?=-Portable.zip")')"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
 CheckUpdateVentoy() {
   local SoftwareName='Ventoy'
-  local v1="$(cat "$manual_install_dir"/winscp/ventoy-*/ventoy/version)"
+  local v1="$(cat "$manual_install_dir"/ventoy/ventoy-*/ventoy/version)"
   local v2="$($CURL 'https://api.github.com/repos/ventoy/Ventoy/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
+# remplacer le v1 avec un realpath sur le binnaire en lien symbolique dans /usr/bin
+# head -n 10 "$(dirname "$(realpath /usr/bin/ventoy)")"/ventoy/version
 
 ################################################################################
 
@@ -281,6 +286,7 @@ UpdateKeepassxc() {
 # pour voir la partie qui concerne la configuraion de keepassxc dans asbru : sed -n '/keepass:/,/use_keepass:/p' .config/asbru/asbru.yml
 # donc il semble qu'il faille supprimer ce fichier avant de lancer asbru graphiquement : .config/asbru/asbru.nfreeze
 # on peut donc réintégrer le sed en le couplant avec la suppression de ce fichier pour les prochaines update et voir comment ça se passe
+# il faut valider à la prochaine update de KeePassXC que l'update de la version dans la conf de asbru fonctionne corectement pour pouvoir supprimer ces commentaires !
 
 UpdateJoplin() {
   local joplin_version="$($CURL 'https://api.github.com/repos/laurent22/joplin/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
@@ -319,6 +325,17 @@ UpdateKrita() {
 
 UpdateOpensnitch() {
   local opensnitch_version="$($CURL 'https://api.github.com/repos/evilsocket/opensnitch/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
+  local tmp_dir="$(mktemp -d)" && \
+  $WGET -P "$tmp_dir" https://github.com/evilsocket/opensnitch/releases/download/v"$opensnitch_version"/python3-opensnitch-ui_"$opensnitch_version"-1_all.deb && \
+  $WGET -P "$tmp_dir" https://github.com/evilsocket/opensnitch/releases/download/v"$opensnitch_version"/opensnitch_"$opensnitch_version"-1_amd64.deb && \
+  dpkg -i "$tmp_dir"/opensnitch_"$opensnitch_version"-1_amd64.deb && \
+  dpkg -i "$tmp_dir"/python3-opensnitch-ui_"$opensnitch_version"-1_all.deb && \
+  rm -rf "$tmp_dir" && \
+  $AG install -f -y
+}
+
+UpdateOpensnitchRC() {
+  local opensnitch_version="$(curl --silent --location 'https://api.github.com/repos/evilsocket/opensnitch/releases' | awk 'BEGIN{RS="}"} /"prerelease": true,/ {for (x=1;x<=NF;x++) if ($x~"tag_name") {gsub(/[v|"|,$]/,"");print $(x);exit;}}')" && \
   local tmp_dir="$(mktemp -d)" && \
   $WGET -P "$tmp_dir" https://github.com/evilsocket/opensnitch/releases/download/v"$opensnitch_version"/python3-opensnitch-ui_"$opensnitch_version"-1_all.deb && \
   $WGET -P "$tmp_dir" https://github.com/evilsocket/opensnitch/releases/download/v"$opensnitch_version"/opensnitch_"$opensnitch_version"-1_amd64.deb && \
@@ -433,20 +450,28 @@ Keepassxc
 Joplin
 Bat
 Krita
-Opensnitch
+OpensnitchRC
 Drawio
 Etcher
-Geeqie
 Yt-dlp
 Hashcat
 Veracrypt
-Winscp'
+Winscp
+Ventoy'
 #Stacer
-#Ventoy
+#Geeqie
+# on supprimer Geeqie de la liste temporairement car les nouveaux AppImage ne fonctionnent pas, la dernière version qui fonctionne correctement sur bullseye est celle la : Geeqie-v2.0+20220921.AppImage
+# cf le lien du bug ci-dessous :
+# [Latest AppImages fail to run on Debian 11 · Issue #1055 · BestImageViewer/geeqie](https://github.com/BestImageViewer/geeqie/issues/1055)
+
+# si on veut avoir les latest stable de Opensnitch, il faut remplacer OpensnitchRC par Opensnitch
+
+################################################################################
 
 CheckUpdateAndUpgrade() {
   run_with_sudo
   create_log_file
+  log_with_bash_x
   UpdateSystem
   for software in $software_list; do
   	CheckUpdate"$software"
@@ -472,6 +497,8 @@ CheckUpdateAndUpgrade() {
   fi
 }
 
+################################################################################
+
 CheckUpdate() {
   CheckUpdateSystem
   for software in $software_list; do
@@ -489,6 +516,8 @@ CheckUpdate() {
   fi
 }
 
+################################################################################
+
 OnlyOneCheckUpdate() {
   local software="$1"
   if $(grep -i "$software" <<< $software_list); then
@@ -500,9 +529,12 @@ OnlyOneCheckUpdate() {
   fi
 }
 
+################################################################################
+
 OnlyOneUpdate() {
   run_with_sudo
   create_log_file
+  log_with_bash_x
   local software="$1"
   if $(grep -i "$software" <<< $software_list); then
     CheckUpdate"$software"
@@ -525,6 +557,8 @@ OnlyOneUpdate() {
     echo "La mise à jour de "$software" s'est éffectuée correctement"
   fi
 }
+
+################################################################################
 
 ListSoftware() {
   awk 'NF' <<< "$software_list"
