@@ -178,7 +178,7 @@ CheckUpdateOpensnitch() {
 }
 
 CheckUpdateOpensnitchRC() {
-  local SoftwareName='OpenSnitch'
+  local SoftwareName='OpensnitchRC'
   local v1="$(opensnitchd --version)"
   local v2="$(curl --silent --location 'https://api.github.com/repos/evilsocket/opensnitch/releases' | awk 'BEGIN{RS="}"} /"prerelease": true,/ {for (x=1;x<=NF;x++) if ($x~"tag_name") {gsub(/[v|"|,$]/,"");print $(x);exit;}}')"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
@@ -241,12 +241,12 @@ CheckUpdateWinscp() {
 
 CheckUpdateVentoy() {
   local SoftwareName='Ventoy'
-  local v1="$(cat "$manual_install_dir"/ventoy/ventoy-*/ventoy/version)"
+  local v1="$(cat "$(sed -n 's/^sudo \(.*\)\/.*/\1/p' /usr/bin/ventoy)"/ventoy/version)"
   local v2="$($CURL 'https://api.github.com/repos/ventoy/Ventoy/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 # remplacer le v1 avec un realpath sur le binnaire en lien symbolique dans /usr/bin
-# head -n 10 "$(dirname "$(realpath /usr/bin/ventoy)")"/ventoy/version
+# head -n 10 "$(sed -n 's/^sudo \(.*\)\/.*/\1/p' /usr/bin/ventoy)"/ventoy/version
 
 ################################################################################
 
@@ -418,7 +418,8 @@ UpdateVentoy() {
   [ -d "$manual_install_dir"/ventoy/ ] && rm -rf "$manual_install_dir"/ventoy/ && \
   mkdir "$manual_install_dir"/ventoy/ && \
   tar --directory "$manual_install_dir"/ventoy -xzf "$tmp_dir"/ventoy-"$ventoy_version"-linux.tar.gz && \
-  echo "sudo "$manual_install_dir"/ventoy/ventoy-"$ventoy_version"/VentoyGUI.x86_64" > /usr/bin/ventoy && \
+  echo "#!/bin/bash\nsudo "$manual_install_dir"/ventoy/ventoy-"$ventoy_version"/VentoyGUI.x86_64" > /usr/bin/ventoy && \
+  chmod +x /usr/bin/ventoy
   rm -rf "$tmp_dir"
 }
 

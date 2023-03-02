@@ -1855,7 +1855,7 @@ $AGI brave-browser"
 }
 # La conf de Brave est dans /home/$USER/.config/BraveSoftware/Brave-Browser/Default
 ################################################################################
-
+echo "#!/bin/bash\nsudo "$manual_install_dir"/ventoy/ventoy-"$ventoy_version"/VentoyGUI.x86_64" > /usr/bin/ventoy
 ################################################################################
 ## instalation de Ventoy
 ##------------------------------------------------------------------------------
@@ -1865,7 +1865,10 @@ install_ventoy() {
   $WGET -P "$tmp_dir" https://github.com/ventoy/Ventoy/releases/download/v"$ventoy_version"/ventoy-"$ventoy_version"-linux.tar.gz && \
   [ -d "$manual_install_dir"/ventoy/ ] || mkdir "$manual_install_dir"/ventoy/ && \
   tar --directory "$manual_install_dir"/ventoy -xzf "$tmp_dir"/ventoy-"$ventoy_version"-linux.tar.gz && \
-  echo "sudo "$manual_install_dir"/ventoy/ventoy-"$ventoy_version"/VentoyGUI.x86_64" > /usr/bin/ventoy && \
+cat> /usr/bin/ventoy << EOF
+#!/bin/bash
+sudo $manual_install_dir/ventoy/ventoy-$ventoy_version/VentoyGUI.x86_64
+EOF
   chmod +x /usr/bin/ventoy && \
   rm -rf "$tmp_dir""
 }
