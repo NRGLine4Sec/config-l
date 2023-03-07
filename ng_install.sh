@@ -3,11 +3,6 @@
 ## Made by NRGLine4Sec
 ##
 
-## Les .desktop créés par alacarte sont dans .local/share/applications
-
-## Pour retrouver la date d'installation d'un paquet avec apt-get : sudo zgrep 'linux-image' /var/log/dpkg.log* | grep ' install\| installed '
-## c'est un exemple qui permet d'obtenir la date d'install de tous les paquets linux-image.
-
 ## les règles udev sont situés dans /etc/udev/rules.d/ mais aussi dans /usr/lib/udev/rules.d/
 
 ## Pour ajouter des modules au démarrage du système, il faut les ajouter dans ce fichier /etc/initramfs-tools/modules
@@ -44,9 +39,6 @@
 
 
 
-##
-## à garder de côté et à regarder pour l'utilité : https://github.com/lunaryorn/mdcat
-##
 
 
 # Regarder comment ils font avec le script shell de remediation : http://static.open-scap.org/ssg-guides/ssg-debian8-guide-anssi_np_nt28_high.html#xccdf_org.ssgproject.content_rule_sshd_disable_root_login
@@ -101,10 +93,6 @@
 ## ça fonctionne vriament bien et c'est simple d'utilisation, il faudrait simplement créer les cheatsheats en fonction des besoins
 ##
 ## a garder dans un coin en cas d'upgrade de Gnome ( pour installer des gnom-extension) : https://github.com/gustavo-iniguez-goya/opensnitch/issues/44#issuecomment-654373737
-##
-## Firejail et asbru-cm (firejail --noprofile asbru-cm)
-##
-## Pour executer les programmes qui disposent de profile firejail automatiquement faire sudo firecfg
 ##
 ## Tester l'outil ultracopier (apt-get install ultracopier) et notamment son intégration avec nautilus
 ##
@@ -173,10 +161,6 @@
 # ref : [How to start a service automatically when Arch Linux boots? - Super User](https://superuser.com/questions/755937/how-to-start-a-service-automatically-when-arch-linux-boots)
 
 
-
-## regarder aussi .local/share/solaar/udev-rules.d/42-logitech-unify-permissions.rules
-
-
 ## pour désinstaller le driver de realtek du dongle bluetooth
 # ll /lib/modules/$(uname -r)/kernel/drivers/bluetooth/ | grep "hci_uart.ko\|rtk_btusb.ko"
 # ll /lib/firmware/rtlbt/
@@ -196,9 +180,6 @@
 
 ## regarder de plus près cette outil : https://github.com/jwyllie83/tcpping (ou au moins trouver la commande équivalente pour faire du ping TCP avec nmap)
 ## https://hub.packtpub.com/discovering-network-hosts-with-tcp-syn-and-tcp-ack-ping-scans-in-nmaptutorial/
-
-## Download only the 1080p video/audio stream from a video.
-## youtube-dl -f "bestvideo[height<=1080]+bestaudio/best[height<=1080]" {URL}
 
 ## utiliser dbus-monitor pour monitorer les appels dbus
 
@@ -541,7 +522,7 @@ check_distrib_is_debian
 
 script_version='2.0'
 system_version="$(cat /etc/debian_version)"
-CURL='curl --silent --show-error'
+CURL='curl --silent --location --show-error'
 # la variable $CURL ne doit pas être appelé avec des double quote
 
 # https://github.com/shiftkey/desktop/releases
@@ -747,35 +728,38 @@ manual_check_latest_version() {
 ################################################################################
 
 local_user="$(awk -F':' '/:1000:/{print $1}' /etc/passwd)"
-# peut aussi se faire avec "$(grep '1000' /etc/passwd | cut -d: -f 1)"
+# l'inconvénient des autres méthodes ci-dessous c'est que leur execution suppose qu'on se soit loggé avec le user avant de lancer le script (ce n'est pas le cas s'il est executer directement en post-install du preseed par exemple)
 # autre méthode pour obtenir le user, lorsqu'il est à l'origine de la session en cour : "$(who | awk 'FNR == 1 {print $1}')"
 # on peut potentiellemnt remplacer la valeur 1000 par le retour de la commande "$(cat /proc/self/loginuid)"
 # encore une autre méthode qui fonctionne aussi dans un sudo : who | awk -v vt=tty$(fgconsole 2>/dev/null) '$0 ~ vt {print $1}'
+
 local_user_UID="$(id -u "$local_user")"
 gnome_shell_extension_path="/home/"$local_user"/.local/share/gnome-shell/extensions"
 ExeAsUser="sudo -u "$local_user""
 AGI='apt-get install -y'
 AG='apt-get'
 WGET='wget -q'
-computer_proc_architecture="$(uname -r | grep -Po '.*-\K.*')" # peut aussi se faire avec : "$(uname -r | /usr/bin/cut -d '-' -f 3)"
-network_int_name="$(awk 'NR==1,/default/{print $5}' <(ip route))"
+computer_proc_architecture="$(uname -r | grep -Po '(.*-)\K.*')"
+# peut aussi se faire avec : "$(uname -r | /usr/bin/cut -d '-' -f 3)"
+
+network_int_name="$(ip route | awk 'NR==1,/^default/{print $5}')"
 # on remplace l'ancienne commande par celle qui prend le retour de ip route car celle ci permet d'éviter les cas ou il y a plusieurs interfaces qui commencent par en et de prendre en priorité celle qui est utilisé pour se connecter à la default gateway, en admettant donc que ce sois l'interface principale. Cela permet aussi de récupérer le nom de l'interface lorsque c'est une interface wifi
 # ancienne commande qui faisait le travail : $(ip addr | grep 'UP' | cut -d " " -f 2 | cut -d ":" -f 1 | grep 'en')
 # peut potentillement se faire aussi avec ip addr | awk -F':' '/UP/ && / en/ {sub(/[[:blank:]]/,""); print $2}'
-# une autre commande qui permet de se passer de la commande ip en utilisant uniquement les infos lspci et depuis /sys
+# une autre commande qui permet de se passer de la commande ip en utilisant uniquement les infos lspci et depuis /sys (ne fonctionne qu'avec une interface Ethernet connecté en PCI)
 # pci=`lspci  | awk '/Ethernet/{print $1}'`; find /sys/class/net ! -type d | xargs --max-args=1 realpath | awk -v pciid=$pci -F\/ '{if($0 ~ pciid){print $NF}}'
+
 IPv4_local_address="$(ip -o -4 addr list "$network_int_name" | awk '{print $4}' | cut -d/ -f1)"
 IPv4_external_address="$(curl --silent --location 'https://ipinfo.io/ip')"
 if [ -z "$IPv4_external_address" ]; then
   IPv4_external_address="$($WGET --output-document - 'https://ifconfig.me')"
 fi
-#autres méthodes :
-#IPv4_external_address="$($AGI curl > /dev/null && $CURL 'https://ipinfo.io/ip')"
 IPv6_local_address="$(ip -o -6 addr list "$network_int_name" | awk '/fe80/{print $4}' | cut -d/ -f1)"
 IPv6_external_address="$(ip -o -6 addr list "$network_int_name" | grep -v 'noprefixroute' | awk '{print $4}' | cut -d/ -f1)"
 computer_RAM="$(awk '/MemTotal/{printf("%.0f", $2/1024/1024+1);}' /proc/meminfo)"
 # grep "MemTotal" /proc/meminfo | awk '{print $2}' | sed -r 's/.{3}$//'
 # potentiellement à remplacer avec free -g | awk '/^Mem:/{print $2}'
+
 computer_proc_nb="$(grep -c '^processor' /proc/cpuinfo)"
 computer_proc_model_name="$(grep -Po -m 1 '^model name.*: \K.*' /proc/cpuinfo)"
 computer_proc_vendor_ID="$(grep -Po -m 1 '(^vendor_id\s: )\K(.*)' /proc/cpuinfo)"
@@ -788,15 +772,16 @@ DCONF_read="DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus"
 DCONF_list="DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" dconf list"
 DCONF_dump="DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" dconf dump"
 DCONF_load="DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" dconf load"
+DCONF_reset="DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" dconf reset"
 # les variables DCONF_* ne doivent pas être appelés entre parenthèses
 
 # on active le mode case insensitive de bash
 shopt -s nocasematch
-if [[ "$debian_release" =~ buster ]]; then
-    buster=1
-fi
 if [[ "$debian_release" =~ bullseye ]]; then
     bullseye=1
+fi
+if [[ "$debian_release" =~ bookworm ]]; then
+    bookworm=1
 fi
 # on déscactive le mode case insensitive de bash
 shopt -u nocasematch
@@ -876,10 +861,10 @@ echo ''
 echo ''
 echo '     ================================================================'
 echo ''
-echo '                 nom du script       : DEBIAN_POSTINSTALL            '
-echo '                 auteur              : NRGLine4Sec                   '
+echo '                 nom du script       : DEBIAN_POSTINSTALL'
+echo '                 auteur              : NRGLine4Sec'
 echo '                 version             : '"$script_version"
-echo '                 lancement du script : sudo bash ng_install.sh       '
+echo '                 lancement du script : sudo bash '"$script_name"
 echo '                 version du système  : '"$version_linux" "$system_version" "($debian_release)"
 echo '                 architecture CPU    : '"$computer_proc_architecture"
 echo '                 nombre de coeur CPU : '"$computer_proc_nb"
@@ -925,7 +910,7 @@ deb https://deb.debian.org/debian/ $debian_release-updates main contrib non-free
 deb-src https://deb.debian.org/debian/ $debian_release-updates main contrib non-free
 
 #backport
-#deb https://deb.debian.org/debian $debian_release-backports main contrib non-free
+deb https://deb.debian.org/debian $debian_release-backports main contrib non-free
 EOF
 }
 # ne pas mettre les variable entre double quote
@@ -1220,22 +1205,16 @@ displayandexec "Installation de wireguard                           " "$AGI wire
 displayandexec "Installation de whois                               " "$AGI whois"
 
 install_from_backports() {
-  sed -i "s%^#deb http://deb.debian.org/debian "$debian_release"-backports%deb http://deb.debian.org/debian "$debian_release"-backports%" /etc/apt/sources.list && \
-  execandlog "$AG update" && \
-  if apt-cache policy firejail | sed -n '/Version table:/{n;p;}' | grep '~bpo' &> /dev/null; then
+  if apt-cache policy firejail | sed -n '/Version table:/{n;n;p;}' | grep -e '-backports' &> /dev/null; then
     displayandexec "Installation de firejail                            " "$AG -t "$debian_release"-backports install -y firejail firejail-profiles"
   fi
-  sed -i "s%^deb http://deb.debian.org/debian "$debian_release"-backports%#deb http://deb.debian.org/debian "$debian_release"-backports%" /etc/apt/sources.list
-  execandlog "$AG update"
 }
 # a savoir que juste après la release de la latest stable de debian, les paquets ne sont probablement pas disponnibles dans les backports et qu'il faut donc les garder aussi dans l'installation des paquets depuis le main standard pour pouvoir être compatible avec une instable from scratch apès une nouvelle release de debian.
-# On permet toutefois l'install de la dernière version disponnible dans backport si elle existe (vérification avec la commande apt-cache policy firejail | sed -n '/Version table:/{n;p;}' | grep '~bpo')
+# On permet toutefois l'install de la dernière version disponnible dans backport si elle existe (vérification avec la commande apt-cache policy firejail | sed -n '/Version table:/{n;n;p;}' | grep -e '-backports')
 install_from_backports
 
 install_zfs_bullseye() {
-  sed -i "s%^#deb http://deb.debian.org/debian "$debian_release"-backports%deb http://deb.debian.org/debian "$debian_release"-backports%" /etc/apt/sources.list && \
-  execandlog "$AG update"
-  if apt-cache policy zfsutils-linux zfs-dkms zfs-zed | sed -n '/Version table:/{n;p;}' | grep '~bpo' &> /dev/null; then
+  if apt-cache policy zfsutils-linux zfs-dkms zfs-zed | sed -n '/Version table:/{n;n;p;}' | grep -e '-backports' &> /dev/null; then
     # il peut arriver que l'install ne fonctionne pas (notamment juste après l'install de debian) car il manque le paquet linux-headers-"$(uname -r)", il faut donc s'assurer qu'il soit présent avant l'install des paquets ZFS
     execandlog "$AGI linux-headers-"$(uname -r)""
     displayandexec "Installation de ZFS                                 " "\
@@ -1244,11 +1223,7 @@ install_zfs_bullseye() {
     echo 'zfs-dkms	zfs-dkms/stop-build-for-unknown-kernel	boolean	true'| debconf-set-selections && \
     $AG -t "$debian_release"-backports install -y zfsutils-linux zfs-dkms zfs-zed && \
     modprobe zfs"
-    sed -i "s%^deb http://deb.debian.org/debian "$debian_release"-backports%#deb http://deb.debian.org/debian "$debian_release"-backports%" /etc/apt/sources.list && \
-    execandlog "$AG update"
   else
-    sed -i "s%^deb http://deb.debian.org/debian "$debian_release"-backports%#deb http://deb.debian.org/debian "$debian_release"-backports%" /etc/apt/sources.list && \
-    execandlog "$AG update" && \
     displayandexec "Installation de ZFS                                 " "\
     echo 'zfs-dkms	zfs-dkms/stop-build-for-32bit-kernel	boolean	true' | debconf-set-selections && \
     echo 'zfs-dkms	zfs-dkms/note-incompatible-licenses	note' | debconf-set-selections && \
@@ -1442,7 +1417,8 @@ echo y | /usr/bin/VBoxManage extpack install --replace "$tmp_dir"/Oracle_VM_Virt
   # VBoxManage extpack install --replace Oracle_VM_VirtualBox_Extension_Pack-$virtualbox_version.vbox-extpack --accept-license --accept-license=56be48f923303c8cababb0bb4c478284b688ed23f16d775d729b89a2e8e5f9eb
   # https://www.virtualbox.org/ticket/16674
   # Pour lister les extensions virutlabox une fois l'installation terminé : VBoxManage list extpacks
-  # VBoxManage list extpacks
+  # Pour supprimer une ancienne version du pack d'extension :
+  # sudo VBoxManage extpack uninstall "Oracle VM VirtualBox Extension Pack" && sudo VBoxManage extpack cleanup
 
   configure_SecureBoot_params() {
 # création du dossier qui contiendra les signatures pour le SecureBoot
@@ -1611,7 +1587,7 @@ cat> /etc/apt/sources.list.d/asbru-cm.list << 'EOF'
 deb [arch=amd64 signed-by=/usr/share/keyrings/asbru-archive-keyring.gpg] https://packagecloud.io/asbru-cm/asbru-cm/debian/ bullseye main
 #deb-src https://packagecloud.io/asbru-cm/asbru-cm/debian/ bullseye main
 EOF
-$CURL --location 'https://packagecloud.io/asbru-cm/asbru-cm/gpgkey' | gpg --dearmor --output /usr/share/keyrings/asbru-archive-keyring.gpg && \
+$CURL 'https://packagecloud.io/asbru-cm/asbru-cm/gpgkey' | gpg --dearmor --output /usr/share/keyrings/asbru-archive-keyring.gpg && \
 $AG update && \
 $AGI asbru-cm keepassxc-"
 }
@@ -1855,7 +1831,7 @@ $AGI brave-browser"
 }
 # La conf de Brave est dans /home/$USER/.config/BraveSoftware/Brave-Browser/Default
 ################################################################################
-echo "#!/bin/bash\nsudo "$manual_install_dir"/ventoy/ventoy-"$ventoy_version"/VentoyGUI.x86_64" > /usr/bin/ventoy
+
 ################################################################################
 ## instalation de Ventoy
 ##------------------------------------------------------------------------------
@@ -1869,7 +1845,7 @@ cat> /usr/bin/ventoy << EOF
 #!/bin/bash
 sudo $manual_install_dir/ventoy/ventoy-$ventoy_version/VentoyGUI.x86_64
 EOF
-  chmod +x /usr/bin/ventoy && \
+  chmod +x /usr/bin/ventoy
   rm -rf "$tmp_dir""
 }
 ################################################################################
@@ -2396,6 +2372,8 @@ displayandexec "Installation du script appairmebt                   " "chmod +x 
 ##------------------------------------------------------------------------------
 install_desactivebt() {
 cat> /usr/bin/desactivebt << 'EOF'
+#!/bin/bash
+
 gdbus call --session --dest org.gnome.SettingsDaemon.Rfkill --object-path /org/gnome/SettingsDaemon/Rfkill --method org.freedesktop.DBus.Properties.Set "org.gnome.SettingsDaemon.Rfkill" "BluetoothAirplaneMode" "<true>" > /dev/null
 EOF
 displayandexec "Installation du script desactivebt                  " "chmod +x /usr/bin/desactivebt"
@@ -2407,6 +2385,8 @@ displayandexec "Installation du script desactivebt                  " "chmod +x 
 ##------------------------------------------------------------------------------
 install_play_pause_chromium() {
 cat> /usr/bin/play_pause_chromium << 'EOF'
+#!/bin/bash
+
 dbus_dest_org="$(dbus-send --session --dest=org.freedesktop.DBus --type=method_call --print-reply /org/freedesktop/DBus org.freedesktop.DBus.ListNames | awk '/org.mpris.MediaPlayer2.chromium/{gsub(/\"/,"");print $2}')" && \
 dbus-send --print-reply --dest="$dbus_dest_org" /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player.PlayPause > /dev/null
 EOF
@@ -2534,7 +2514,7 @@ execandlog "[ -d /home/"$local_user"/.mnt/sshfs/ ] || $ExeAsUser mkdir -p /home/
 ################################################################################
 ## configuration du logrotate pour le auth.log
 ##------------------------------------------------------------------------------
-# cette conf permet de garder 12 mois de log de auth.log. Cela permet donc de garder pendant un an toutes les commandes utilisées ainsi que toutes les connexions d'utilisateur
+# cette conf permet de garder 12 mois de log de auth.log. Cela permet donc de garder pendant un an toutes les commandes utilisées (par root ou à travers sudo) ainsi que toutes les connexions d'utilisateur
 execandlog "sed -i '\/var\/log\/auth\.log/d' /etc/logrotate.d/rsyslog"
 echo '
 /var/log/auth.log
@@ -2553,6 +2533,15 @@ echo '
 ################################################################################
 
 ################################################################################
+## configuration du logrotate
+##------------------------------------------------------------------------------
+# on augmente la rétention des logs à 8 semaines
+# par défaut elle est à 4 (debian bullseye)
+execandlog "sed -E -i 's/^# keep 4 weeks worth of backlogs/# keep 8 weeks worth of backlogs/' /etc/logrotate.conf && \
+sed -E -i 's/^rotate [[:digit:]]+/rotate 8/' /etc/logrotate.conf"
+################################################################################
+
+################################################################################
 ## configuration des règles auditd
 ##------------------------------------------------------------------------------
 displayandexec "Configuration de auditd                             " "\
@@ -2561,7 +2550,15 @@ mv "$script_path"/audit.rules /etc/audit/rules.d/audit.rules && \
 augenrules --check && \
 systemctl restart auditd"
 # rules mostly based on https://github.com/Neo23x0/auditd/blob/master/audit.rules
-# les règles vont être généré (lors du restart) à l'aide de augenrules et seront ensuite dans le fichier /etc/audit/audit.rules
+# les règles vont être générées (lors du restart) à l'aide de augenrules et seront ensuite dans le fichier /etc/audit/audit.rules
+################################################################################
+
+################################################################################
+## configuration du service auditd
+##------------------------------------------------------------------------------
+execandlog "sed -E -i 's/^space_left = [[:digit:]]+/space_left = 20%/' /etc/audit/auditd.conf && \
+systemctl restart auditd"
+# ref : [7.3. Configuring the audit Service Red Hat Enterprise Linux 7 | Red Hat Customer Portal](https://access.redhat.com/documentation/fr-fr/red_hat_enterprise_linux/7/html/security_guide/sec-configuring_the_audit_service#:~:text=from%20being%20overwritten.-,space_left,-Specifies%20the%20amount)
 ################################################################################
 
 ################################################################################
@@ -2575,7 +2572,7 @@ execandlog "sed -i 's/# set bell-style none/set bell-style none/' /etc/inputrc"
 ## configuration de freshclam (clamav)
 ##------------------------------------------------------------------------------
 configure_freshclam() {
-execandlog "sed -E -i 's/^Checks [[:digit:]]+/Checks 1/g' /etc/clamav/freshclam.conf"
+execandlog "sed -E -i 's/^Checks [[:digit:]]+/Checks 1/' /etc/clamav/freshclam.conf"
 }
 configure_freshclam
 # Check for new database 1 times a day (insteed of 24)
@@ -2588,9 +2585,15 @@ configure_freshclam
 ##------------------------------------------------------------------------------
 configure_wireshark() {
   local conf_wireshark_tls_sni='	"TLS_SNI", "%Cus:tls.handshake.extensions_server_name:0:R"' && \
-  [ -f /root/.config/wireshark/preferences ] && sed -i '/^gui.column.format:/,/^$/{s/\"$/\",/;s/^$/'"$conf_wireshark_tls_sni"'\n/}' /root/.config/wireshark/preferences
+  [ -f /root/.config/wireshark/preferences ] && \
+  if ! sed -n '/^gui.column.format:/,/^$/p' /root/.config/wireshark/preferences | grep -q "$conf_wireshark_tls_sni" 2>/dev/null
+    then sed -i '/^gui.column.format:/,/^$/{s/\"$/\",/;s/^$/'"$conf_wireshark_tls_sni"'\n/}' /root/.config/wireshark/preferences
+  fi
   local conf_wireshark_dst_port='	"Destination Port", "%D"' && \
-  [ -f /root/.config/wireshark/preferences ] && sed -i '/^gui.column.format:/,/^$/{s/\"$/\",/;s/^$/'"$conf_wireshark_dst_port"'\n/}' /root/.config/wireshark/preferences
+  [ -f /root/.config/wireshark/preferences ] && \
+  if ! sed -n '/^gui.column.format:/,/^$/p' /root/.config/wireshark/preferences | grep -q "$conf_wireshark_tls_sni" 2>/dev/null
+    then sed -i '/^gui.column.format:/,/^$/{s/\"$/\",/;s/^$/'"$conf_wireshark_dst_port"'\n/}' /root/.config/wireshark/preferences
+  fi
 }
 configure_wireshark
 # on ajoute les colonnes "TLS_SNI" et "Destination Port" dans l'affichage principal de wireshark car elles sont très pratique lors de l'utilisation de wireshark.
@@ -2692,7 +2695,7 @@ $ExeAsUser sed -i 's%<enabled xsi:nil=".*>$%<enabled xsi:nil="false">false</enab
 # find /usr/lib/libreoffice/share/ -type f -mmin -5 && find /home/$USER/.config/libreoffice/ -type f -mmin -5
 
 # Disable startup logo
-execandlog "sed -i 's/Logo=1/Logo=0/g' /etc/libreoffice/sofficerc"
+execandlog "sed -i 's/^Logo=1/Logo=0/' /etc/libreoffice/sofficerc"
 # ref : https://wiki.archlinux.org/title/LibreOffice#Disable_startup_logo
 
 # cette configuration n'existe pas dans le fichier après une install, il faut donc trouver le moyen de l'ajouter en insérant la ligne
@@ -2714,11 +2717,10 @@ $ExeAsUser sed -i 's%<item oor:path="/org.openoffice.Office.Common/Security/Scri
 ##------------------------------------------------------------------------------
 # la configuration de nano s'effectue dans le fichier /etc/nanorc
 configure_nano() {
-execandlog "sed -i 's/^# set linenumbers/set linenumbers/' /etc/nanorc"
+execandlog "sed -i 's/^# set linenumbers/set linenumbers/' /etc/nanorc && \
+sed -i 's/^# set softwrap/set softwrap/' /etc/nanorc"
 }
 configure_nano
-# on test pour l'instant la mise ne place de softwrap et on l'ajoutera définitivement si c'est concluant
-# execandlog "sed -i 's/^# set softwrap/set softwrap/' /etc/nanorc"
 ################################################################################
 
 ################################################################################
@@ -2784,11 +2786,10 @@ configure_atom
 ##------------------------------------------------------------------------------
 # on ajoute la possibilité d'ouvrir directement la navigateur firefox dans une fenêtre de navigation privée
 configure_firefox() {
-execandlog "sed -i 's/^# set linenumbers/set linenumbers/' /etc/nanorc"
-cp /usr/share/applications/firefox-esr.desktop /usr/share/applications/firefox-esr-private.desktop
-sed -i 's%^Exec=/usr/lib/firefox-esr/firefox-esr%& --private-window%' /usr/share/applications/firefox-esr-private.desktop
-sed -E -i '/(^Name=|^Name\[.*\]=)/s/Firefox .*/Firefox private/g' /usr/share/applications/firefox-esr-private.desktop
-sed -E -i '/(^X-GNOME-FullName=|^X-GNOME-FullName\[.*\]=)/s/Firefox ESR/Firefox private/g' /usr/share/applications/firefox-esr-private.desktop
+execandlog "[ -f /usr/share/applications/firefox-esr-private.desktop ] || cp /usr/share/applications/firefox-esr.desktop /usr/share/applications/firefox-esr-private.desktop && \
+sed -i 's%^Exec=/usr/lib/firefox-esr/firefox-esr%& --private-window%' /usr/share/applications/firefox-esr-private.desktop && \
+sed -E -i '/(^Name=|^Name\[.*\]=)/s/Firefox .*/Firefox private/g' /usr/share/applications/firefox-esr-private.desktop && \
+sed -E -i '/(^X-GNOME-FullName=|^X-GNOME-FullName\[.*\]=)/s/Firefox ESR/Firefox private/g' /usr/share/applications/firefox-esr-private.desktop"
 }
 configure_firefox
 ################################################################################
@@ -2798,7 +2799,7 @@ configure_firefox
 ##------------------------------------------------------------------------------
 configure_vscode() {
   execandlog "[ -d /home/"$local_user"/.config/Code/ ] || $ExeAsUser mkdir -p /home/"$local_user"/.config/Code/"
-[ -f /home/"$local_user"/.config/Code/User/settings.json ] && $ExeAsUser cat> /home/"$local_user"/.config/Code/User/settings.json << 'EOF'
+$ExeAsUser cat> /home/"$local_user"/.config/Code/User/settings.json << 'EOF'
 {
     "workbench.colorTheme": "Default Dark+",
     "update.mode": "none",
@@ -2867,20 +2868,23 @@ execandlog "[ -d /home/"$local_user"/.config/ghb/ ] || $ExeAsUser mkdir /home/"$
 # On est obliger de créer le fichier de conf (/home/"$local_user"/.config/geeqie/geeqierc.xml) en lancant geeqie graphiquement et ensuite en allant dans Edit -> Preference -> cliquer sur OK
 # Il semblerait que le fichier de conf se créer aussi lorsqu'on lance Geeqie et qu'on le quitte proprement (en appuyant sur la croix en haut de la fenêtre)
 configure_geeqie() {
-$ExeAsUser sed -i -E 's/image.alpha_color_1 = "#[[:digit:]]+"/image.alpha_color_1 = "#FFFFFFFFFFFF"/g' /home/"$local_user"/.config/geeqie/geeqierc.xml
-$ExeAsUser sed -i -E 's/image.alpha_color_2 = "#[[:digit:]]+"/image.alpha_color_2 = "#FFFFFFFFFFFF"/g' /home/"$local_user"/.config/geeqie/geeqierc.xml
+if [ -f /home/"$local_user"/.config/geeqie/geeqierc.xml ]; then
+  $ExeAsUser sed -i -E 's/image.alpha_color_1 = "#[[:digit:]]+"/image.alpha_color_1 = "#FFFFFFFFFFFF"/' /home/"$local_user"/.config/geeqie/geeqierc.xml
+  $ExeAsUser sed -i -E 's/image.alpha_color_2 = "#[[:digit:]]+"/image.alpha_color_2 = "#FFFFFFFFFFFF"/' /home/"$local_user"/.config/geeqie/geeqierc.xml
 
 # on désactive la capacité de geekie d'ouvrir des .pdf
-$ExeAsUser sed -i -E 's%<file_type key = "pdf" enabled = "true" extensions = ".pdf" description = "Portable Document Format" file_class = "6" writable = "false" allow_sidecar = "false" />%<file_type key = "pdf" enabled = "false" extensions = ".pdf" description = "Portable Document Format" file_class = "6" writable = "false" allow_sidecar = "false" />%g' /home/"$local_user"/.config/geeqie/geeqierc.xml
+  $ExeAsUser sed -i -E 's%<file_type key = "pdf" enabled = "true" extensions = ".pdf" description = "Portable Document Format" file_class = "6" writable = "false" allow_sidecar = "false" />%<file_type key = "pdf" enabled = "false" extensions = ".pdf" description = "Portable Document Format" file_class = "6" writable = "false" allow_sidecar = "false" />%' /home/"$local_user"/.config/geeqie/geeqierc.xml
+
 # on désactive la capacité de geekie d'ouvrir des fichiers compréssés
-$ExeAsUser sed -i -E 's%<file_type key = "zip" enabled = "true" extensions = ".zip;.rar;.tar;.tar.gz;.tar.bz2;.tar.xz;.tgz;.tbz;.txz;.cbr;.cbz;.gz;.bz2;.xz;.lzh;.lza;.7z" description = "Archive files" file_class = "7" writable = "false" allow_sidecar = "false" />%<file_type key = "zip" enabled = "false" extensions = ".zip;.rar;.tar;.tar.gz;.tar.bz2;.tar.xz;.tgz;.tbz;.txz;.cbr;.cbz;.gz;.bz2;.xz;.lzh;.lza;.7z" description = "Archive files" file_class = "7" writable = "false" allow_sidecar = "false" />%g' /home/"$local_user"/.config/geeqie/geeqierc.xml
+  $ExeAsUser sed -i -E 's%<file_type key = "zip" enabled = "true" extensions = ".zip;.rar;.tar;.tar.gz;.tar.bz2;.tar.xz;.tgz;.tbz;.txz;.cbr;.cbz;.gz;.bz2;.xz;.lzh;.lza;.7z" description = "Archive files" file_class = "7" writable = "false" allow_sidecar = "false" />%<file_type key = "zip" enabled = "false" extensions = ".zip;.rar;.tar;.tar.gz;.tar.bz2;.tar.xz;.tgz;.tbz;.txz;.cbr;.cbz;.gz;.bz2;.xz;.lzh;.lza;.7z" description = "Archive files" file_class = "7" writable = "false" allow_sidecar = "false" />%' /home/"$local_user"/.config/geeqie/geeqierc.xml
 # Pour voir les différents formats supportés par Geeqie : sed -n '/<filter>/,/<\/filter>/p' ~/.config/geeqie/geeqierc.xml
 
-$ExeAsUser sed -i 's/image.zoom_to_fit_allow_expand = "false"/image.zoom_to_fit_allow_expand = "true"/g' /home/"$local_user"/.config/geeqie/geeqierc.xml
+  $ExeAsUser sed -i 's/image.zoom_to_fit_allow_expand = "false"/image.zoom_to_fit_allow_expand = "true"/' /home/"$local_user"/.config/geeqie/geeqierc.xml
 
-$ExeAsUser sed -i 's/image.zoom_quality = "[[:digit:]]"/image.zoom_quality = "3"/g' /home/"$local_user"/.config/geeqie/geeqierc.xml
+  $ExeAsUser sed -i 's/image.zoom_quality = "[[:digit:]]+"/image.zoom_quality = "3"/' /home/"$local_user"/.config/geeqie/geeqierc.xml
+fi
 }
-# configure_geeqie
+configure_geeqie
 ################################################################################
 
 # ajout du dossier partagé pour VirtualBox
@@ -3021,11 +3025,13 @@ configure_keepassxc
 ################################################################################
 ## configuration de audacity
 ##------------------------------------------------------------------------------
-# configure_audacity() {
-# sed -i '/Enabled=1/a [GUI]' /home/$local_user/.audacity-data/audacity.cfg
-# sed -i '/[GUI]/a ShowSplashScreen=0' /home/$local_user/.audacity-data/audacity.cfg
-# }
-# configure_audacity
+configure_audacity() {
+if [ -f /home/"$local_user"/.audacity-data/audacity.cfg ]; then
+  sed -i '/^Enabled=1/a [GUI]' /home/"$local_user"/.audacity-data/audacity.cfg && \
+  sed -i '/^[GUI]/a ShowSplashScreen=0' /home/"$local_user"/.audacity-data/audacity.cfg
+fi
+}
+configure_audacity
 # on est obligé de lancer audacity pour que le repertoire /home/$local_user/.audacity-data/ soit créé ainsi que les fichiers qu'il contient
 # une solution pourrait être d'utiliser la commande suivante :
 # timeout 10 bash -c "audacity"
@@ -3102,17 +3108,12 @@ sizing-mode='fit-page'
 EOF
 # ref : https://superuser.com/questions/726550/use-dconf-or-comparable-to-set-configs-for-another-user/1265786#1265786
 
+# Il pourrait être intéressant de rajouter un reset avant de load la nouvelle conf
+# $ExeAsUser DCONF_reset -f /
+
 # le fait de positionner le theme Adwaita-dark en graphique (avec gnome-tweaks) a créer les fichiers /home/"$local_user"/.config/gtk-4.0/settings.ini  et /home/"$local_user"/.config/gtk-3.0/settings.ini avec le contenu suivant
 # [Settings]
 # gtk-application-prefer-dark-theme=0
-
-# Il semblerait que dans les nouvelles versions de Gnome, il faille mettre
-# [Weather]
-# locations=[<(uint32 2, <('Le Mans', 'LFRM', true, [(0.83659448230485101, 0.0034906585039886592)], [(0.83775804095727813, 0.0034906585039886592)])>)>]
-# alors qu'avant il fallait mettre :
-# [gnome/Weather/Application]
-# locations=[<(uint32 2, <('Le Mans', 'LFRM', true, [(0.83659448230485101, 0.0034906585039886592)], [(0.83775804095727813, 0.0034906585039886592)])>)>]
-# Peut être aussi qu'il faut mettre les deux
 
 # à voir donc s'il est nécessaire de le créer manuellement en positionnement uniquement la valeur à travers le dconf ou s'il est généré automatiquement avec le dconf
 
@@ -3321,7 +3322,7 @@ EOF
 # ref : [gnome - Edit/Remove existing File Manager (right-click/context menu) actions - Ask Ubuntu](https://askubuntu.com/questions/1300049/edit-remove-existing-file-manager-right-click-context-menu-actions/1300079#1300079)
 # par exemple le paquet nautilus-wipe rajoute des entrés dans le clic droit assez dangereuses comme "Ecraser" et "Ecraser l'espace disque disponnible"
 # pour supprimer ces entrées des options de clic droit de nautilus, il faut soit désinstaller le paquet nautilus-wipe, soit supprimer le .so correspondant dans le répertoire des extensions de nautilus
-execandlog "mv /usr/lib/x86_64-linux-gnu/nautilus/extensions-3.0/libnautilus-wipe.so /usr/lib/x86_64-linux-gnu/nautilus/extensions-3.0/libnautilus-wipe.so.backup"
+execandlog "[ -f /usr/lib/x86_64-linux-gnu/nautilus/extensions-3.0/libnautilus-wipe.so ] && mv /usr/lib/x86_64-linux-gnu/nautilus/extensions-3.0/libnautilus-wipe.so /usr/lib/x86_64-linux-gnu/nautilus/extensions-3.0/libnautilus-wipe.so.backup"
 
 # pour supprimer des options internes à nautilus, il faudrait modifier son code source et le recompiler
 # ref : [Comment supprimer Change Desktop Background du clic droit?](https://qastack.fr/ubuntu/34803/how-to-remove-change-desktop-background-from-right-click)
@@ -3488,7 +3489,7 @@ alias sysupdate='sudo sysupdate'
 alias bat='bat -pp'
 alias free='free -ht'
 alias showshortcut='dconf dump /org/gnome/settings-daemon/plugins/media-keys/'
-alias bitcoin='curl -s "http://api.coindesk.com/v1/bpi/currentprice.json" | jq ".bpi.EUR.rate" | tr -d \"'
+alias bitcoin='curl -s "https://api.coindesk.com/v1/bpi/currentprice.json" | jq ".bpi.EUR.rate" | tr -d \"'
 alias sshuttle='sudo sshuttle'
 alias last_apt_kernel='apt-cache search --names-only "linux-(headers|image)-[[:digit:]].[[:digit:]]+.[[:digit:]]+.*[[:digit:]]-(amd64$|amd64-unsigned$)" | sort'
 HISTTIMEFORMAT="%Y/%m/%d %T   "
@@ -3578,7 +3579,7 @@ alias sysupdate='sudo sysupdate'
 alias bat='bat -pp'
 alias free='free -ht'
 alias showshortcut='dconf dump /org/gnome/settings-daemon/plugins/media-keys/'
-alias bitcoin='curl -s "http://api.coindesk.com/v1/bpi/currentprice.json" | jq ".bpi.EUR.rate" | tr -d \"'
+alias bitcoin='curl -s "https://api.coindesk.com/v1/bpi/currentprice.json" | jq ".bpi.EUR.rate" | tr -d \"'
 alias sshuttle='sudo sshuttle'
 alias last_apt_kernel='apt-cache search --names-only "linux-(headers|image)-[[:digit:]].[[:digit:]]+.[[:digit:]]+.*[[:digit:]]-(amd64$|amd64-unsigned$)" | sort'
 HISTTIMEFORMAT="%Y/%m/%d %T   "
@@ -3725,8 +3726,9 @@ cd
 ################################################################################
 ## Création d'un snapshot avec Timeshift
 ##------------------------------------------------------------------------------
+# on s'assure dans un premier temps qu'il n'y a pas déjà eu un premier snapshot d'éffectuée
 displayandexec "Création d'un snapshot avec Timeshift               " "\
-timeshift --scripted --create --rsync --comments 'first snapshot, after postinstall script' --snapshot-device /dev/"$(lsblk -o MOUNTPOINT,KNAME --json | grep -e 'mountpoint":"/"' | grep -Po '("kname":")\K([A-Za-z0-9\-]+)(?=")')""
+umount -l /run/timeshift/backup; if timeshift --list --snapshot-device /dev/"$(lsblk -o MOUNTPOINT,KNAME --json | grep -e 'mountpoint":"/"' | grep -Po '("kname":")\K([A-Za-z0-9\-]+)(?=")')" | grep -q '^No snapshots found' 2>/dev/null; then timeshift --scripted --create --rsync --comments 'first snapshot, after postinstall script' --snapshot-device /dev/"$(lsblk -o MOUNTPOINT,KNAME --json | grep -e 'mountpoint":"/"' | grep -Po '("kname":")\K([A-Za-z0-9\-]+)(?=")')"; fi"
 # cette étape est très longue lorsqu'il faut faire un premier snapshot (car timeshift doit faire en fait un miroir du système existant)
 # sur un HDD pas très rapide, il y en a pour à peu près une heure
 execandlog "timeshift --list"
