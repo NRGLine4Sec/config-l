@@ -266,13 +266,30 @@ if [ $EUID != 0 ]; then
 fi
 ################################################################################
 
+################################################################################
+## Initialisation de la variable qui permet le calcul du temps d'execution du script
+##------------------------------------------------------------------------------
 #juste pour vérifier que la fonction de calcul du temps d'execution fonctionne correctement, essayer ensuite de trouver une meilleur solution et de supprimer cette ligne
 systemctl restart systemd-timesyncd > /dev/null
 # utilisé à des fin de stats pour l'éxecution du script
 start_time="$(date +%s)"
-# pose problème lorsque la date et l'heure ne sont pas à jour, il faudrait récuperer le start_time une fois la resyncro éffectué, sinon la valeur du temps d'éexecution du script est abérante
+# pose problème lorsque la date et l'heure ne sont pas à jour (ce qui arrive souvent lors de reprise de snapshot)
+# on est obliger de récuperer le start_time une fois la resyncro éffectué, sinon la valeur du temps d'éxecution du script est abérante
+################################################################################
 
 script_name='ng_install.sh'
+log_dir_path='/var/log/postinstall'
+
+################################################################################
+## Vérification que le script s'execute pour la première fois
+##------------------------------------------------------------------------------
+check_if_fisrt_time_script_executed() {
+  if $(grep -qE '[[:blank:]]+Fin du script[[:blank:]]+' "$log_dir_path"/*/log_script_install*.log 2>/dev/null); then
+    fisrt_time_script_executed=1
+  fi
+}
+check_if_fisrt_time_script_executed
+################################################################################
 
 ################################################################################
 ## usage guide
@@ -316,7 +333,7 @@ for param in "$@"; do
             show_only_error=1 ;;
         '-r'|'--reboot')
             reboot_after_install=1 ;;
-        *)
+        *) && \
             # echo 'Invalid option' ;;
             # print_usage_guide; exit 1 ;;
     esac
@@ -332,14 +349,14 @@ RESET='\e[0m'
 NOIR='\e[0;30m'
 
 ################################################################################
-## création d'un fichier de log
+## création des fichiers de log
 ##------------------------------------------------------------------------------
-now="$(date +"%d-%m-%Y")" && \
-log_dir="/var/log/postinstall/"$now"" && \
-[ -d "$log_dir" ] || mkdir -p "$log_dir" && \
-log_file=""$log_dir"/log_script_install-"$now".log" && \
-touch "$log_file" && \
-stdout_file=""$log_dir"/stdout_on_script_execution-"$now".log" && \
+now="$(date +"%d-%m-%Y")"
+log_dir=""$log_dir_path"/"$now""
+[ -d "$log_dir" ] || mkdir -p "$log_dir"
+log_file=""$log_dir"/log_script_install-"$now".log"
+touch "$log_file"
+stdout_file=""$log_dir"/stdout_on_script_execution-"$now".log"
 touch "$stdout_file"
 
 echo '####################################################################' > "$log_file"
@@ -350,7 +367,7 @@ echo '--------------------------------------------------------------------' >> "
 ################################################################################
 
 ################################################################################
-## copie du script ng_install dans "$log_dir"
+## copie du script ng_install.sh dans "$log_dir"
 ##------------------------------------------------------------------------------
 cp "$(readlink -f "${BASH_SOURCE[0]}")" "$log_dir"/"$(basename "${BASH_SOURCE[0]}")-"$now"" && \
 chmod 600 "$log_dir"/"$(basename "${BASH_SOURCE[0]}")-"$now""
@@ -365,16 +382,21 @@ script_path="$(dirname $(readlink -f "${BASH_SOURCE[0]}"))"
 # ref : [Determine the path of the executing BASH script - Stack Overflow](https://stackoverflow.com/questions/630372/determine-the-path-of-the-executing-bash-script/630645#630645)
 
 ################################################################################
-## création du dossier temporaire pour l'execution du script
+## redirection du current directory dans le HOME directory
 ##------------------------------------------------------------------------------
 cd
+################################################################################
+
+################################################################################
+## création du dossier temporaire pour l'execution du script
+##------------------------------------------------------------------------------
 tmp_dir='/tmp/install_tmp'
 [ -d "$tmp_dir" ] || mkdir "$tmp_dir" && \
 cd "$tmp_dir"
 ################################################################################
 
 ################################################################################
-## copie du script ng_install dans /var/log
+## définition de certaines variables
 ##------------------------------------------------------------------------------
 # importation des varaibles d'environnement
 #source ./env.sh
@@ -409,9 +431,6 @@ displayandexec() {
 
 # regarder ce que fait l'option echo -e "\r $message"
 # car lorsque j'ai executer le script sans cette option, il mettait deux fois sur la même ligne le contenu de $message et ensuite le [OK]
-
-# probablement qu'on peut remplacer le deuxième echo qui renvoit dans le fichier "$stdout_file" par | tee --append "$log_file"
-# && echo -e "\r $message                ${GREEN}[OK]${RESET} " >> "$stdout_file"
 ################################################################################
 
 ################################################################################
@@ -419,7 +438,7 @@ displayandexec() {
 ##------------------------------------------------------------------------------
 # Premier parametre: message
 # Autres parametres: command
-# fonction pour ne faire que les executions et envoyer les commandes ainsi que leurs résultats dans le fichier de log
+# fonction pour faire les executions et envoyer les commandes ainsi que leurs résultats dans le fichier de log (pas d'affichage sur stdout)
 execandlog() {
     echo ">>> $*" >> "$log_file" 2>&1
     bash -c "$*" >> "$log_file" 2>&1
@@ -442,7 +461,7 @@ check_available_space_in_root() {
   fi
 }
 check_available_space_in_root
-# On vérifie qu'il y a au minimum 10 Go de disponnible sur /
+# On vérifie qu'il y a au minimum 10 Go de disponnible sur / (partition root)
 ################################################################################
 
 ################################################################################
@@ -756,13 +775,13 @@ if [ -z "$IPv4_external_address" ]; then
 fi
 IPv6_local_address="$(ip -o -6 addr list "$network_int_name" | awk '/fe80/{print $4}' | cut -d/ -f1)"
 IPv6_external_address="$(ip -o -6 addr list "$network_int_name" | grep -v 'noprefixroute' | awk '{print $4}' | cut -d/ -f1)"
-computer_RAM="$(awk '/MemTotal/{printf("%.0f", $2/1024/1024+1);}' /proc/meminfo)"
+computer_RAM="$(awk '/^MemTotal:/{printf("%.0f", $2/1024/1024+1);}' /proc/meminfo)"
 # grep "MemTotal" /proc/meminfo | awk '{print $2}' | sed -r 's/.{3}$//'
 # potentiellement à remplacer avec free -g | awk '/^Mem:/{print $2}'
 
 computer_proc_nb="$(grep -c '^processor' /proc/cpuinfo)"
-computer_proc_model_name="$(grep -Po -m 1 '^model name.*: \K.*' /proc/cpuinfo)"
-computer_proc_vendor_ID="$(grep -Po -m 1 '(^vendor_id\s: )\K(.*)' /proc/cpuinfo)"
+computer_proc_model_name="$(grep -Po -m 1 '^model name\s*: \K.*' /proc/cpuinfo)"
+computer_proc_vendor_ID="$(grep -Po -m 1 '(^vendor_id\s*: )\K(.*)' /proc/cpuinfo)"
 debian_release="$(lsb_release -sc)"
 if [ -z "$debian_release" ]; then
   debian_release="$(awk -F'=' '/^VERSION_CODENAME=/{print $2}' /etc/os-release)"
@@ -991,7 +1010,7 @@ echo ''
 # si besoin de iwlwifi
 # awk '{print $2}' /proc/bus/pci/devices | grep '^8086'
 if awk '{print $2}' /proc/bus/pci/devices | grep '^8086' &> /dev/null; then
-  for intel_device in $(grep -Po "^[[:xdigit:]]{4}[[:blank:]]+8086\K[[:xdigit:]]{4}" /proc/bus/pci/devices); do
+  for intel_device in $(grep -Po '^[[:xdigit:]]{4}[[:blank:]]+8086\K[[:xdigit:]]{4}' /proc/bus/pci/devices); do
     # on s'assure que le device intel est bien une carte wifi
     if grep "[[:blank:]]"$intel_device"[[:blank:]]" /usr/share/misc/pci.ids | grep -i -e 'wireless' -e 'Wi-Fi' -e 'WiFi' &> /dev/null; then
       displayandexec "Installation de firmware-iwlwifi                    " "$AGI firmware-iwlwifi"
@@ -1031,7 +1050,7 @@ fi
 # awk '!/^[[:blank:]]/ && /^1002/' /usr/share/misc/pci.ids
 # l'ID 1002 correspond à Advanced Micro Devices, Inc. [AMD/ATI]
 if awk '{print $2}' /proc/bus/pci/devices | grep '^1002' &> /dev/null; then
-  for amd_device in $(grep -Po "^[[:xdigit:]]{4}[[:blank:]]+1002\K[[:xdigit:]]{4}" /proc/bus/pci/devices); do
+  for amd_device in $(grep -Po '^[[:xdigit:]]{4}[[:blank:]]+1002\K[[:xdigit:]]{4}' /proc/bus/pci/devices); do
     # on s'assure que le device AMD est bien une carte graphique
     if grep "[[:blank:]]"$amd_device"[[:blank:]]" /usr/share/misc/pci.ids | grep -i 'Radeon' &> /dev/null; then
       displayandexec "Installation de firmware-amd-graphics               " "$AGI firmware-amd-graphics"
@@ -1045,7 +1064,7 @@ fi
 # awk '!/^[[:blank:]]/ && /^8086/' /usr/share/misc/pci.ids
 # l'ID 8086 correspond à Intel Corporation
 if awk '{print $2}' /proc/bus/pci/devices | grep '^8086' &> /dev/null; then
-  for intel_device in $(grep -Po "^[[:xdigit:]]{4}[[:blank:]]+8086\K[[:xdigit:]]{4}" /proc/bus/pci/devices); do
+  for intel_device in $(grep -Po '^[[:xdigit:]]{4}[[:blank:]]+8086\K[[:xdigit:]]{4}' /proc/bus/pci/devices); do
     # on s'assure que le device Intel est bien une carte graphique
     if grep "[[:blank:]]"$intel_device"[[:blank:]]" /usr/share/misc/pci.ids | grep -i 'Graphics' &> /dev/null; then
       displayandexec "Installation de intel-gpu-tools                     " "$AGI intel-gpu-tools"
@@ -1057,7 +1076,7 @@ fi
 # awk '!/^[[:blank:]]/ && /^10ec/' /usr/share/misc/pci.ids
 # l'ID 10ec correspond à Realtek Semiconductor Co., Ltd.
 if awk '{print $2}' /proc/bus/pci/devices | grep '^10ec' &> /dev/null; then
-  for realtek_device in $(grep -Po "^[[:xdigit:]]{4}[[:blank:]]+10ec\K[[:xdigit:]]{4}" /proc/bus/pci/devices); do
+  for realtek_device in $(grep -Po '^[[:xdigit:]]{4}[[:blank:]]+10ec\K[[:xdigit:]]{4}' /proc/bus/pci/devices); do
     # on s'assure que le device Realtek est bien une carte Ethernet
     if grep "[[:blank:]]"$realtek_device"[[:blank:]]" /usr/share/misc/pci.ids | grep -i 'Ethernet' &> /dev/null; then
       displayandexec "Installation de firmware-realtek                    " "$AGI firmware-realtek"
@@ -1887,9 +1906,12 @@ install_all_manual_install_apps() {
   install_ventoy
 }
 
-if [ "$bullseye" == 1 ]; then
-  install_all_manual_install_apps
+if [ -z "$fisrt_time_script_executed" ]; then
+  if [ "$bullseye" == 1 ]; then
+    install_all_manual_install_apps
+  fi
 fi
+# Pour l'instant on désactive l'installation des programmes avec une installation manuelle lorsque ce n'est pas la première fois que le script s'execute
 ################################################################################
 
 ################################################################################
