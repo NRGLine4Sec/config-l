@@ -207,7 +207,7 @@ CheckUpdateGeeqie() {
 
 CheckUpdateYt-dlp() {
   local SoftwareName='yt-dlp'
-  local v1="$(yt-dlp --version)"
+  local v1="$(yt-dlp --version 2>/dev/null)"
   local v2="$($CURL 'https://api.github.com/repos/yt-dlp/yt-dlp/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }

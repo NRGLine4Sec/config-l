@@ -500,7 +500,7 @@ force_dns_for_install
 ## vérification de l'accès à Internet (test avec ICMP)
 ##------------------------------------------------------------------------------
 check_internet_access() {
-  displayandexec "Vérification de la connection internet              " "ping -c 1 www.google.com"
+  displayandexec "Vérification de la connection internet (ICMP+DNS)   " "ping -c 1 www.google.com"
   if [ $? != 0 ]; then
       echo -e "${RED}######################################################################${RESET}" | tee --append "$log_file"
       echo -e "${RED}#${RESET} Pour executer ce script, il faut disposer d'une connexion Internet ${RED}#${RESET}" | tee --append "$log_file"
@@ -1150,6 +1150,7 @@ displayandexec "Installation de ipcalc                              " "$AGI ipca
 displayandexec "Installation de jq                                  " "$AGI jq"
 displayandexec "Installation de linux-cpupower                      " "$AGI linux-cpupower"
 displayandexec "Installation de lnav                                " "$AGI lnav"
+displayandexec "Installation de locate                              " "$AGI locate"
 displayandexec "Installation de lshw                                " "$AGI lshw"
 displayandexec "Installation de lynx                                " "$AGI lynx"
 displayandexec "Installation de macchanger                          " "$AGI macchanger"
@@ -1174,6 +1175,7 @@ displayandexec "Installation de oathtool                            " "$AGI oath
 displayandexec "Installation de openvpn                             " "$AGI openvpn"
 displayandexec "Installation de p7zip-full                          " "$AGI p7zip-full"
 displayandexec "Installation de p7zip-rar                           " "$AGI p7zip-rar"
+displayandexec "Installation de pavucontrol                         " "$AGI pavucontrol"
 displayandexec "Installation de printer-driver-all                  " "$AGI printer-driver-all"
 displayandexec "Installation de python3-pip                         " "$AGI python3-pip"
 displayandexec "Installation de python3-scapy                       " "$AGI python3-scapy"
@@ -1287,6 +1289,7 @@ execandlog "[ -d "$manual_install_dir" ] || mkdir "$manual_install_dir""
 install_atom() {
   displayandexec "Installation des dépendances de atom                " "$AGI libgconf-2-4 gvfs-bin gconf2-common"
   displayandexec "Installation de atom                                " "\
+[ -f /usr/share/keyrings/atom-archive-keyring.gpg ] && rm -f /usr/share/keyrings/atom-archive-keyring.gpg; \
 $WGET --output-document - 'https://packagecloud.io/AtomEditor/atom/gpgkey' | gpg --dearmor --output /usr/share/keyrings/atom-archive-keyring.gpg && \
 echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/atom-archive-keyring.gpg] https://packagecloud.io/AtomEditor/atom/any/ any main' > /etc/apt/sources.list.d/atom.list && \
 $AG update && \
@@ -1339,6 +1342,7 @@ rm -rf "$tmp_dir""
 ##------------------------------------------------------------------------------
 install_spotify() {
   displayandexec "Installation de spotify                             " "\
+[ -f /usr/share/keyrings/spotify-archive-keyring.gpg ] && rm -f /usr/share/keyrings/spotify-archive-keyring.gpg; \
 $CURL 'https://download.spotify.com/debian/pubkey_7A3A762FAFD4A51F.gpg' | gpg --dearmor --output /usr/share/keyrings/spotify-archive-keyring.gpg && \
 echo 'deb [signed-by=/usr/share/keyrings/spotify-archive-keyring.gpg] http://repository.spotify.com stable non-free' > /etc/apt/sources.list.d/spotify.list && \
 $AG update && \
@@ -1352,6 +1356,7 @@ $AGI spotify-client"
 ##------------------------------------------------------------------------------
 install_apt-fast() {
   displayandexec "Installation de apt-fast                            " "\
+[ -f /usr/share/keyrings/apt-fast-archive-keyring.gpg ] && rm -f /usr/share/keyrings/apt-fast-archive-keyring.gpg; \
 $WGET --output-document - 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xA2166B8DE8BDC3367D1901C11EE2FF37CA8DA16B' | gpg --dearmor --output /usr/share/keyrings/apt-fast-archive-keyring.gpg && \
 cat> /etc/apt/sources.list.d/apt-fast.list << 'EOF'
 deb [arch=amd64 signed-by=/usr/share/keyrings/apt-fast-archive-keyring.gpg] http://ppa.launchpad.net/apt-fast/stable/ubuntu hirsute main
@@ -1360,7 +1365,7 @@ EOF
 $AG update
 $AGI apt-fast"
 }
-# Pour remplacer l'import de la clé pgp avec la commande apt-key adv
+# Pour récupérer la clé PGP
 # il faut récupérer la clé avec l'URL qui a une forme suivante :
 # https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xA2166B8DE8BDC3367D1901C11EE2FF37CA8DA16B
 # Il suffit de mettre la clé (A2166B8DE8BDC3367D1901C11EE2FF37CA8DA16B) après le 0x du search
@@ -1412,6 +1417,7 @@ cat> /etc/apt/sources.list.d/typora.list << 'EOF'
 deb [signed-by=/usr/share/keyrings/typora-archive-keyring.gpg] https://typora.io/linux ./
 # deb-src https://typora.io/linux ./
 EOF
+[ -f /usr/share/keyrings/typora-archive-keyring.gpg ] && rm -f /usr/share/keyrings/typora-archive-keyring.gpg; \
 $WGET --output-document - 'https://typora.io/linux/public-key.asc' | gpg --dearmor --output /usr/share/keyrings/typora-archive-keyring.gpg && \
 $AG update && \
 $AGI typora"
@@ -1425,6 +1431,7 @@ install_virtualbox() {
   displayandexec "Installation des dépendances de VirtualBox          " "$AGI dkms"
   displayandexec "Installation de VirtualBox                          " "\
 echo 'deb [signed-by=/usr/share/keyrings/virtualbox-archive-keyring.gpg] https://download.virtualbox.org/virtualbox/debian bullseye contrib' > /etc/apt/sources.list.d/virtualbox.list && \
+[ -f /usr/share/keyrings/virtualbox-archive-keyring.gpg ] && rm -f /usr/share/keyrings/virtualbox-archive-keyring.gpg; \
 $WGET --output-document - 'https://www.virtualbox.org/download/oracle_vbox_2016.asc' | gpg --dearmor --output /usr/share/keyrings/virtualbox-archive-keyring.gpg && \
 $AG update && \
 $AGI virtualbox-7.0"
@@ -1441,7 +1448,8 @@ echo y | /usr/bin/VBoxManage extpack install --replace "$tmp_dir"/Oracle_VM_Virt
 
   configure_SecureBoot_params() {
 # création du dossier qui contiendra les signatures pour le SecureBoot
-[ -d /usr/share/manual_sign_kernel_module ] || mkdir /usr/share/manual_sign_kernel_module
+[ -d /usr/share/manual_sign_kernel_module ] && mv /usr/share/manual_sign_kernel_module /usr/share/manual_sign_kernel_module.bkp_"$now"
+mkdir /usr/share/manual_sign_kernel_module
 # création du script qui permet de signer les modules vboxdrv vboxnetflt vboxnetadp vboxpci pour VirtualBox
 cat> /opt/sign_virtualbox_kernel_module.sh << 'EOF'
 #!/bin/bash
@@ -1519,6 +1527,7 @@ cat> /etc/apt/sources.list.d/mkvtoolnix.list << 'EOF'
 deb [signed-by=/usr/share/keyrings/mkvtoolnix-archive-keyring.gpg] https://mkvtoolnix.download/debian/ bullseye main
 #deb-src https://mkvtoolnix.download/debian/ bullseye main
 EOF
+[ -f /usr/share/keyrings/mkvtoolnix-archive-keyring.gpg ] && rm -f /usr/share/keyrings/mkvtoolnix-archive-keyring.gpg; \
 $WGET --output-document - 'https://mkvtoolnix.download/gpg-pub-moritzbunkus.txt' | gpg --dearmor --output /usr/share/keyrings/mkvtoolnix-archive-keyring.gpg && \
 $AG update && \
 $AGI mkvtoolnix mkvtoolnix-gui"
@@ -1578,10 +1587,12 @@ EOF
 install_signal() {
   displayandexec "Installation de Signal                              " "\
 echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/signal-archive-keyring.gpg] https://updates.signal.org/desktop/apt xenial main' > /etc/apt/sources.list.d/signal-desktop.list && \
+[ -f /usr/share/keyrings/signal-archive-keyring.gpg ] && rm -f /usr/share/keyrings/signal-archive-keyring.gpg; \
 $CURL 'https://updates.signal.org/desktop/apt/keys.asc' | gpg --dearmor --output /usr/share/keyrings/signal-archive-keyring.gpg && \
 $AG update && \
 $AGI signal-desktop"
 }
+# https://signal.org/download/linux/
 ################################################################################
 
 ################################################################################
@@ -1606,6 +1617,7 @@ cat> /etc/apt/sources.list.d/asbru-cm.list << 'EOF'
 deb [arch=amd64 signed-by=/usr/share/keyrings/asbru-archive-keyring.gpg] https://packagecloud.io/asbru-cm/asbru-cm/debian/ bullseye main
 #deb-src https://packagecloud.io/asbru-cm/asbru-cm/debian/ bullseye main
 EOF
+[ -f /usr/share/keyrings/asbru-archive-keyring.gpg ] && rm -f /usr/share/keyrings/asbru-archive-keyring.gpg; \
 $CURL 'https://packagecloud.io/asbru-cm/asbru-cm/gpgkey' | gpg --dearmor --output /usr/share/keyrings/asbru-archive-keyring.gpg && \
 $AG update && \
 $AGI asbru-cm keepassxc-"
@@ -1638,6 +1650,7 @@ rm -rf "$tmp_dir""
 ##------------------------------------------------------------------------------
 install_youtubedl() {
   displayandexec "Installation de youtube-dl                          " "\
+[ -f /usr/bin/youtube-dl ] && rm -f /usr/bin/youtube-dl; \
 $WGET -P /usr/bin https://github.com/ytdl-org/youtube-dl/releases/download/"$youtubedl_version"/youtube-dl && \
 chmod +x /usr/bin/youtube-dl && \
 ln -s /usr/bin/python3 /usr/bin/python"
@@ -1651,6 +1664,7 @@ ln -s /usr/bin/python3 /usr/bin/python"
 ##------------------------------------------------------------------------------
 install_yt-dlp() {
   displayandexec "Installation de yt-dlp                              " "\
+[ -f /usr/bin/yt-dlp ] && rm -f /usr/bin/yt-dlp; \
 $WGET -P /usr/bin https://github.com/yt-dlp/yt-dlp/releases/download/"$ytdlp_version"/yt-dlp && \
 chmod +x /usr/bin/yt-dlp"
 }
@@ -1713,20 +1727,15 @@ install_opensnitch() {
   displayandexec "Installation des dépendances de OpenSnitch          " "$AGI libnetfilter-queue1"
   displayandexec "Installation de OpenSnitch                          " "\
   $AGI python3-pyqt5.qtsql python3-pyinotify python3-grpcio python3-slugify python3-notify2 && \
-  $WGET -P "$tmp_dir" https://github.com/evilsocket/opensnitch/releases/download/v"$opensnitch_latest_version"/python3-opensnitch-ui_"$(sed -e 's/\.//3' -e 's/-/\./' <<< "$opensnitch_latest_version")"-1_all.deb && \
-  $WGET -P "$tmp_dir" https://github.com/evilsocket/opensnitch/releases/download/v"$opensnitch_latest_version"/opensnitch_"$(sed -e 's/\.//3' -e 's/-/\./' <<< "$opensnitch_latest_version")"-1_amd64.deb && \
-  dpkg -i "$tmp_dir"/opensnitch_"$(sed -e 's/\.//3' -e 's/-/\./' <<< "$opensnitch_latest_version")"-1_amd64.deb && \
-  dpkg -i "$tmp_dir"/python3-opensnitch-ui_"$(sed -e 's/\.//3' -e 's/-/\./' <<< "$opensnitch_latest_version")"-1_all.deb && \
+  $WGET -P "$tmp_dir" https://github.com/evilsocket/opensnitch/releases/download/v"$opensnitch_latest_version"/python3-opensnitch-ui_"$opensnitch_latest_version"-1_all.deb && \
+  $WGET -P "$tmp_dir" https://github.com/evilsocket/opensnitch/releases/download/v"$opensnitch_latest_version"/opensnitch_"$opensnitch_latest_version"-1_amd64.deb && \
+  dpkg -i "$tmp_dir"/opensnitch_"$opensnitch_latest_version"-1_amd64.deb && \
+  dpkg -i "$tmp_dir"/python3-opensnitch-ui_"$opensnitch_latest_version"-1_all.deb && \
   $AG install -f -y
   rm -rf "$tmp_dir""
 }
 # l'installation de OpenSnitch est intérecatif mais n'utilise pas d'entrés dans debconf-set-selections
 # potentiellement qu'on peut corriger le problème avec debian non-interractive
-
-# attention, il y a un soucis dans la gestion de la valeur de la version par rapport au lien qu'il faut utiliser pour téléchrager les .deb
-# il y a un point qui est présent dans la valeur de la version mais qui ne l'est pas dans la deuxième partie de l'URL
-# par exemple avec un numéro de version 1.4.0-rc.2 la deuxième partie qui est utilisé dans l'URL est 1.4.0-rc2
-# c'est pour ça qu'on est obligé d'utiliser "$(sed 's/\.//3' <<< "$opensnitch_latest_version")" pour la deuxième partie de l'URL
 ################################################################################
 
 ################################################################################
@@ -1734,6 +1743,7 @@ install_opensnitch() {
 ##------------------------------------------------------------------------------
 install_ansible() {
   displayandexec "Installation de Ansible                             " "\
+[ -f /usr/share/keyrings/ansible-archive-keyring.gpg ] && rm -f /usr/share/keyrings/ansible-archive-keyring.gpg; \
 $WGET --output-document - 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x93C4A3FD7BB9C367' | gpg --dearmor --output /usr/share/keyrings/ansible-archive-keyring.gpg && \
 echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/ansible-archive-keyring.gpg] http://ppa.launchpad.net/ansible/ansible-5/ubuntu hirsute main' > /etc/apt/sources.list.d/ansible.list && \
 $AG update && \
@@ -1810,6 +1820,7 @@ EOF
 ##------------------------------------------------------------------------------
 install_timeshift() {
   displayandexec "Installation de timeshift                           " "\
+[ -f /usr/share/keyrings/timeshift-archive-keyring.gpg ] && rm -f /usr/share/keyrings/timeshift-archive-keyring.gpg; \
 $WGET --output-document - 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x1B32B87ABAEE357218F6B48CB5B116B72D0F61F0' | gpg --dearmor --output /usr/share/keyrings/timeshift-archive-keyring.gpg && \
 cat> /etc/apt/sources.list.d/timeshift.list << 'EOF'
 deb [arch=amd64 signed-by=/usr/share/keyrings/timeshift-archive-keyring.gpg] http://ppa.launchpad.net/teejee2008/timeshift/ubuntu hirsute main
@@ -1828,12 +1839,11 @@ $AGI timeshift"
 install_vscode() {
   displayandexec "Installation de vscode                              " "\
 echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/vscode-archive-keyring.gpg] https://packages.microsoft.com/repos/code stable main' > /etc/apt/sources.list.d/vscode.list && \
+[ -f /usr/share/keyrings/vscode-archive-keyring.gpg ] && rm -f /usr/share/keyrings/vscode-archive-keyring.gpg; \
 $CURL 'https://packages.microsoft.com/keys/microsoft.asc' | gpg --dearmor --output /usr/share/keyrings/vscode-archive-keyring.gpg && \
 $AG update && \
 $AGI code"
 }
-# Pour installer des extensions en ligne de commande : [Managing Extensions in Visual Studio Code](https://code.visualstudio.com/docs/editor/extension-marketplace#_command-line-extension-management)
-# installer cette extension : [Marp for VS Code - Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=marp-team.marp-vscode)
 ################################################################################
 
 ################################################################################
@@ -1841,6 +1851,7 @@ $AGI code"
 ##------------------------------------------------------------------------------
 install_brave() {
   displayandexec "Installation de brave                               " "\
+[ -f /usr/share/keyrings/brave-archive-keyring.gpg ] && rm -f /usr/share/keyrings/brave-archive-keyring.gpg; \
 $WGET --output-document - 'https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg' | gpg --dearmor --output /usr/share/keyrings/brave-archive-keyring.gpg && \
 cat> /etc/apt/sources.list.d/brave.list << 'EOF'
 deb [arch=amd64 signed-by=/usr/share/keyrings/brave-archive-keyring.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main
@@ -2284,7 +2295,7 @@ cat> /usr/bin/check_domain_creation_date << 'EOF'
 check_if_domain_exist() {
   if $(whois "$1" | grep 'No entries found' > /dev/null); then
     echo "Le domaine "$1" n'existe pas."
-    exit
+    exit 1
   fi
 }
 check_if_domain_exist "$1"
@@ -2293,6 +2304,9 @@ domain_creation_date="$(whois "$1" | grep -Po -m 1 '(Creation Date:[[:space:]])\
 
 if [[ -z "$domain_creation_date" ]]; then
 	domain_creation_date="$(whois "$1" | grep -Po -m 1 '(created:[[:space:]]+)\K([[:digit:]]+-[[:digit:]]+-[[:digit:]]+)')"
+  if [[ -z "$domain_creation_date" ]]; then
+  	exit 1
+  fi
 fi
 
 domain_creation_date_at_timestamp="$(date -d "$domain_creation_date" +%s)"
@@ -2622,8 +2636,8 @@ configure_wireshark
 
 # Le fichier n'existe pas avant d'avoir été dans  Edit → Preferences…​ (Wireshark → Preferences…) et d'avoir quitter la fenêtre avec OK.
 # C'est à dire qu'il n'est pas créer simplement en lançant wireshark en graphique
-#
-# normallement il y a ce contenu dans la configuration de base de wireshark :
+
+# par défaut, il y a ce contenu dans la configuration de base de wireshark :
 # gui.column.format:
 # 	"No.", "%m",
 # 	"Time", "%t",
@@ -2820,17 +2834,32 @@ configure_firefox
 ## configuration de VSCode
 ##------------------------------------------------------------------------------
 configure_vscode() {
-  execandlog "[ -d /home/"$local_user"/.config/Code/ ] || $ExeAsUser mkdir -p /home/"$local_user"/.config/Code/"
+  execandlog "[ -d /home/"$local_user"/.config/Code/User/ ] || $ExeAsUser mkdir -p /home/"$local_user"/.config/Code/User/"
+  execandlog "$ExeAsUser code --install-extension akamud.vscode-theme-onedark"
+  execandlog "$ExeAsUser code --install-extension redhat.vscode-yaml"
+  execandlog "$ExeAsUser code --install-extension ms-vscode.PowerShell"
+  execandlog "$ExeAsUser code --install-extension Y-Ysss.cisco-config-highlight"
 $ExeAsUser cat> /home/"$local_user"/.config/Code/User/settings.json << 'EOF'
 {
-    "workbench.colorTheme": "Default Dark+",
+    "workbench.colorTheme": "Atom One Dark",
     "update.mode": "none",
     "telemetry.telemetryLevel": "off",
-    "security.workspace.trust.untrustedFiles": "open"
+    "security.workspace.trust.untrustedFiles": "open",
+    "files.autoSave": "afterDelay",
+    "editor.wordWrap": "on"
 }
 EOF
 }
 configure_vscode
+# Pour installer des extensions en ligne de commande : [Managing Extensions in Visual Studio Code](https://code.visualstudio.com/docs/editor/extension-marketplace#_command-line-extension-management)
+# code --install-extension <extension-id>
+# code --install-extension marduc812.nmap-peek
+# code --install-extension redhat.ansible
+# code --install-extension donjayamanne.githistory
+# [Nmap Peek - Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=marduc812.nmap-peek)
+# installer cette extension : [Marp for VS Code - Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=marp-team.marp-vscode)
+# Pour lister les extensions utilisées : code --list-extensions
+
 # le répertoire /home/"$local_user"/.config/Code/ se créer uniquement après un premier lancement en graphique
 ################################################################################
 
@@ -3327,12 +3356,13 @@ text/markdown=typora.desktop
 video/mp4=mpv.desktop
 video/x-matroska=mpv.desktop
 video/webm=mpv.desktop
-video/x-flv=mpv.deskto
+video/x-flv=mpv.desktop
 x-scheme-handler/http=chromium.desktop
 x-scheme-handler/https=chromium.desktop
 x-scheme-handler/about=chromium.desktop
 x-scheme-handler/unknown=chromium.desktop
 image/webp=geeqie.desktop
+image/heif=geeqie.desktop
 EOF
 ################################################################################
 
