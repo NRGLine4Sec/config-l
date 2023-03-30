@@ -2818,6 +2818,21 @@ configure_atom
 ################################################################################
 
 ################################################################################
+## configuration de bat
+##------------------------------------------------------------------------------
+configure_bat() {
+execandlog "[ -f /home/"$local_user"/.config/bat/config ] || $ExeAsUser bat --generate-config-file"
+cat>> /home/"$local_user"/.config/bat/config << 'EOF'
+
+--paging=never
+--style=header-filename
+EOF
+}
+configure_bat
+# cette configuration permet de désactiver l'utilisation du pager ainsi que d'afficher le nom du fichier avant sa lecture
+################################################################################
+
+################################################################################
 ## configuration de Firefox
 ##------------------------------------------------------------------------------
 # on ajoute la possibilité d'ouvrir directement la navigateur firefox dans une fenêtre de navigation privée
@@ -2831,14 +2846,48 @@ configure_firefox
 ################################################################################
 
 ################################################################################
+## configuration de OpenSnitch
+##------------------------------------------------------------------------------
+configure_opensnitch() {
+execandlog "[ -d /opt/opensnitch/allow_list/vscode/domains/ ] || mkdir -p /opt/opensnitch/allow_list/vscode/domains/"
+execandlog "[ -d /opt/opensnitch/allow_list/vscode/regexp/ ] || mkdir -p /opt/opensnitch/allow_list/vscode/regexp/"
+cat> /opt/opensnitch/allow_list/vscode/domains/vscode.domains << 'EOF'
+# ref : [Setup Visual Studio Code's Network Connection](https://code.visualstudio.com/docs/setup/network)
+# Visual Studio Marketplace
+0.0.0.0 marketplace.visualstudio.com
+# Visual Studio Code download CDN
+0.0.0.0 az764295.vo.msecnd.net
+# GitHub repository raw file access
+0.0.0.0 raw.githubusercontent.com
+# Github repository
+0.0.0.0 github.com
+# Github API
+0.0.0.0 api.github.com
+# Used when logging in with GitHub or Microsoft for an extension or Settings Sync
+0.0.0.0 vscode.dev
+EOF
+cat> /opt/opensnitch/allow_list/vscode/regexp/vscode.regexp << 'EOF'
+# ref : [Setup Visual Studio Code's Network Connection](https://code.visualstudio.com/docs/setup/network)
+# Visual Studio Marketplace
+.*.gallery.vsassets.io
+# Visual Studio Marketplace
+.*.gallerycdn.vsassets.io
+EOF
+}
+configure_opensnitch
+################################################################################
+
+################################################################################
 ## configuration de VSCode
 ##------------------------------------------------------------------------------
 configure_vscode() {
   execandlog "[ -d /home/"$local_user"/.config/Code/User/ ] || $ExeAsUser mkdir -p /home/"$local_user"/.config/Code/User/"
-  execandlog "$ExeAsUser code --install-extension akamud.vscode-theme-onedark"
-  execandlog "$ExeAsUser code --install-extension redhat.vscode-yaml"
-  execandlog "$ExeAsUser code --install-extension ms-vscode.PowerShell"
-  execandlog "$ExeAsUser code --install-extension Y-Ysss.cisco-config-highlight"
+  execandlog "$ExeAsUser code --force --install-extension akamud.vscode-theme-onedark"
+  execandlog "$ExeAsUser code --force --install-extension redhat.vscode-yaml"
+  execandlog "$ExeAsUser code --force --install-extension ms-vscode.PowerShell"
+  execandlog "$ExeAsUser code --force --install-extension Y-Ysss.cisco-config-highlight"
+  execandlog "$ExeAsUser code --force --install-extension pustelto.bracketeer"
+  execandlog "$ExeAsUser code --force --install-extension mohsen1.prettify-json"
 $ExeAsUser cat> /home/"$local_user"/.config/Code/User/settings.json << 'EOF'
 {
     "workbench.colorTheme": "Atom One Dark",
@@ -2846,7 +2895,8 @@ $ExeAsUser cat> /home/"$local_user"/.config/Code/User/settings.json << 'EOF'
     "telemetry.telemetryLevel": "off",
     "security.workspace.trust.untrustedFiles": "open",
     "files.autoSave": "afterDelay",
-    "editor.wordWrap": "on"
+    "editor.wordWrap": "on",
+    "diffEditor.renderSideBySide": false
 }
 EOF
 }
@@ -2859,6 +2909,8 @@ configure_vscode
 # [Nmap Peek - Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=marduc812.nmap-peek)
 # installer cette extension : [Marp for VS Code - Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=marp-team.marp-vscode)
 # Pour lister les extensions utilisées : code --list-extensions
+
+# on utilise le --force pour pouvoir mettre à jour l'extension si elle est déjà installée (utile notamment dans le cas d'une relance du script ng_install.sh)
 
 # le répertoire /home/"$local_user"/.config/Code/ se créer uniquement après un premier lancement en graphique
 ################################################################################
@@ -3538,7 +3590,6 @@ alias yt-dlp='yt-dlp -o "%(title)s.%(ext)s"'
 alias yt-dlp_best='yt-dlp -o "%(title)s.%(ext)s" -f "bestvideo+bestaudio"'
 alias spyme='sudo lnav /var/log/syslog /var/log/auth.log'
 alias sysupdate='sudo sysupdate'
-alias bat='bat -pp'
 alias free='free -ht'
 alias showshortcut='dconf dump /org/gnome/settings-daemon/plugins/media-keys/'
 alias bitcoin='curl -s "https://api.coindesk.com/v1/bpi/currentprice.json" | jq ".bpi.EUR.rate" | tr -d \"'
@@ -3587,7 +3638,6 @@ alias uppr='ag update && ag dist-upgrade'
 alias xx='shutdown now'
 alias xwx='poweroff'
 alias spyme='lnav /var/log/syslog /var/log/auth.log'
-alias bat='bat -pp'
 alias free='free -ht'
 HISTTIMEFORMAT=\"%Y/%m/%d %T   \"
 
@@ -3628,7 +3678,6 @@ alias yt-dlp='yt-dlp -o "%(title)s.%(ext)s"'
 alias yt-dlp_best='yt-dlp -o "%(title)s.%(ext)s" -f "bestvideo+bestaudio"'
 alias spyme='sudo lnav /var/log/syslog /var/log/auth.log'
 alias sysupdate='sudo sysupdate'
-alias bat='bat -pp'
 alias free='free -ht'
 alias showshortcut='dconf dump /org/gnome/settings-daemon/plugins/media-keys/'
 alias bitcoin='curl -s "https://api.coindesk.com/v1/bpi/currentprice.json" | jq ".bpi.EUR.rate" | tr -d \"'
@@ -3668,7 +3717,6 @@ alias uppr='ag update && ag dist-upgrade'
 alias xx='shutdown now'
 alias xwx='poweroff'
 alias spyme='lnav /var/log/syslog /var/log/auth.log'
-alias bat='bat -pp'
 alias free='free -ht'
 HISTTIMEFORMAT=\"%Y/%m/%d %T   \"
 EOF

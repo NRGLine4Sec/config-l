@@ -94,23 +94,37 @@ CheckUpdateSystem() {
 ################################################################################
 
 CheckAvailableUpdate() {
-  local PREFIX_1="$(echo $2 | sed -e 's/[a-z]//' )"
-  local SUFFIX_1="$(echo $2 | sed -e 's/[0-9]//' )"
-  local PREFIX_2="$(echo $3 | sed -e 's/[a-z]//' )"
-  local SUFFIX_2="$(echo $3 | sed -e 's/[0-9]//' )"
-
-  if [[ $PREFIX_1 > $PREFIX_2 ]] || ([[ $PREFIX_1 == $PREFIX_2 ]] && [[ $SUFFIX_1 > $SUFFIX_2 ]]); then
-    # echo "$2 est plus grand que $3"
-    echo "une mise à jour de $1 est disponible"
-    retval=$1
+  if $(printf '%s\n%s\n' "$3" "$2" | sort --unique --check=quiet --version-sort); then
+    echo "une mise à jour de "$1" est disponible"
+    retval="$1"
   else
-    echo "aucune mise à jour de $1 n'est disponible"
+    echo "aucune mise à jour de "$1" n'est disponible"
   fi
 }
+# inspiré de [test - How to compare a program's version in a shell script? - Unix & Linux Stack Exchange](https://unix.stackexchange.com/questions/285924/how-to-compare-a-programs-version-in-a-shell-script/567537#567537)
+
+# ancienne méthode :
+# CheckAvailableUpdate() {
+#   local PREFIX_1="$(echo $2 | sed -e 's/[a-z]//' )"
+#   local SUFFIX_1="$(echo $2 | sed -e 's/[0-9]//' )"
+#   local PREFIX_2="$(echo $3 | sed -e 's/[a-z]//' )"
+#   local SUFFIX_2="$(echo $3 | sed -e 's/[0-9]//' )"
+
+#   if [[ $PREFIX_1 > $PREFIX_2 ]] || ([[ $PREFIX_1 == $PREFIX_2 ]] && [[ $SUFFIX_1 > $SUFFIX_2 ]]); then
+#     # echo "$2 est plus grand que $3"
+#     echo "une mise à jour de $1 est disponible"
+#     retval=$1
+#   else
+#     echo "aucune mise à jour de $1 n'est disponible"
+#   fi
+# }
+
 # vérifier que ça fonctionne bien avec le cas spécidifque $2=0.17.1 et $3=0.16.1
 # pour faire des tests :
 # [[ 2020.12.22 > 2020.12.25 ]] && echo oui || echo non
 # [[ 0.17.1 > 0.16.1 ]] && echo oui || echo non
+
+# j'ai un cas spécifique qui ne fonctionne pas avec CheckAvailableUpdate Etcher 1.18.4 1.8.9
 
 ################################################################################
 
@@ -451,7 +465,6 @@ Keepassxc
 Joplin
 Bat
 Krita
-OpensnitchRC
 Drawio
 Etcher
 Yt-dlp
@@ -464,6 +477,9 @@ Ventoy'
 # on supprimer Geeqie de la liste temporairement car les nouveaux AppImage ne fonctionnent pas, la dernière version qui fonctionne correctement sur bullseye est celle la : Geeqie-v2.0+20220921.AppImage
 # cf le lien du bug ci-dessous :
 # [Latest AppImages fail to run on Debian 11 · Issue #1055 · BestImageViewer/geeqie](https://github.com/BestImageViewer/geeqie/issues/1055)
+
+# OpensnitchRC
+# On supprime OpensnitchRC pour le moment tant qu'il n'y a pas une nouvelle release qui corrige le problème de différence entre les versions obtenues du binnaire et celle produite par Github
 
 # si on veut avoir les latest stable de Opensnitch, il faut remplacer OpensnitchRC par Opensnitch
 
@@ -567,31 +583,30 @@ ListSoftware() {
 
 ################################################################################
 
-while [[ $# -gt 0 ]];
-do
-    opt="$1";
-    shift;              #expose next argument
-    case "$opt" in
-        "--" ) break 2;;
-        "only_one_check" )
-           OnlyOneCheckUpdate "$1"; shift;;
-        "only_one_update" )
-           OnlyOneUpdate "$1"; shift;;
-        "only_one_check="* )     # alternate format: --first=date
-           OnlyOneCheckUpdate "${opt#*=}";;
-        "only_one_update="* )
-           OnlyOneUpdate "${opt#*=}";;
-        "update" )
-           CheckUpdateAndUpgrade;;
-        "check" )
-           CheckUpdate;;
-         "list" )
-            ListSoftware;;
-        "--optional" )
-           OPTION;;     #set to some default value
-        "--optional=*" )
-           OPTIONAL="${opt#*=}";;             #take argument
-        *) echo >&2 "Invalid option: $@"; exit 1;;
+while [[ $# -gt 0 ]]; do
+  opt="$1";
+  shift;              #expose next argument
+  case "$opt" in
+      "--" ) break 2;;
+      "only_one_check" )
+          OnlyOneCheckUpdate "$1"; shift;;
+      "only_one_update" )
+          OnlyOneUpdate "$1"; shift;;
+      "only_one_check="* )     # alternate format: --first=date
+          OnlyOneCheckUpdate "${opt#*=}";;
+      "only_one_update="* )
+          OnlyOneUpdate "${opt#*=}";;
+      "update" )
+          CheckUpdateAndUpgrade;;
+      "check" )
+          CheckUpdate;;
+      "list" )
+          ListSoftware;;
+      "--optional" )
+          OPTION;;     #set to some default value
+      "--optional=*" )
+          OPTIONAL="${opt#*=}";;             #take argument
+      *) echo >&2 "Invalid option: $@"; exit 1;;
    esac
 done
 
