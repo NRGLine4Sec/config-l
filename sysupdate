@@ -97,6 +97,7 @@ CheckAvailableUpdate() {
   if $(printf '%s\n%s\n' "$3" "$2" | sort --unique --check=quiet --version-sort); then
     echo "une mise à jour de "$1" est disponible"
     retval="$1"
+    latest_version="$3"
   else
     echo "aucune mise à jour de "$1" n'est disponible"
   fi
@@ -125,6 +126,8 @@ CheckAvailableUpdate() {
 # [[ 0.17.1 > 0.16.1 ]] && echo oui || echo non
 
 # j'ai un cas spécifique qui ne fonctionne pas avec CheckAvailableUpdate Etcher 1.18.4 1.8.9
+
+# autre lien très intéressant à regarder en cas de futurs nouveaux problèmes avec la fonction de check des version : [versioning - How to compare two strings in dot separated version format in Bash? - Stack Overflow](https://stackoverflow.com/questions/4023830/how-to-compare-two-strings-in-dot-separated-version-format-in-bash)
 
 ################################################################################
 
@@ -265,7 +268,7 @@ CheckUpdateVentoy() {
 ################################################################################
 
 UpdateShotcut() {
-  local shotcut_version="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
+  local shotcut_version="$1"
   local shotcut_appimage="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"name": "\K.*?(?=")' | grep 'AppImage')" && \
   rm -f "$manual_install_dir"/shotcut/*.AppImage && \
 	$WGET -P "$manual_install_dir"/shotcut/ https://github.com/mltframework/shotcut/releases/download/v"$shotcut_version"/"$shotcut_appimage" && \
@@ -279,7 +282,7 @@ UpdateYoutube-dl() {
 }
 
 UpdateBoostnote() {
-  local boostnote_version="$($CURL 'https://api.github.com/repos/BoostIO/boost-releases/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
+  local boostnote_version="$1"
   local tmp_dir="$(mktemp -d)" && \
   $WGET -P "$tmp_dir" https://github.com/BoostIO/boost-releases/releases/download/v$boostnote_version/boostnote_"$boostnote_version"_amd64.deb && \
   dpkg -i "$tmp_dir"/boostnote_"$boostnote_version"_amd64.deb
@@ -287,7 +290,7 @@ UpdateBoostnote() {
 }
 
 UpdateKeepassxc() {
-  local keepassxc_version="$($CURL 'https://api.github.com/repos/keepassxreboot/keepassxc/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')" && \
+  local keepassxc_version="$1"
   rm -f "$manual_install_dir"/KeePassXC/KeePassXC-*.AppImage && \
   $WGET -P "$manual_install_dir"/KeePassXC/ https://github.com/keepassxreboot/keepassxc/releases/download/"$keepassxc_version"/KeePassXC-"$keepassxc_version"-x86_64.AppImage && \
   chmod +x "$manual_install_dir"/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage && \
@@ -303,7 +306,7 @@ UpdateKeepassxc() {
 # il faut valider à la prochaine update de KeePassXC que l'update de la version dans la conf de asbru fonctionne corectement pour pouvoir supprimer ces commentaires !
 
 UpdateJoplin() {
-  local joplin_version="$($CURL 'https://api.github.com/repos/laurent22/joplin/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
+  local joplin_version="$1"
   rm -f "$manual_install_dir"/Joplin/Joplin-*.AppImage && \
   $WGET -P "$manual_install_dir"/Joplin/ https://github.com/laurent22/joplin/releases/download/v"$joplin_version"/Joplin-"$joplin_version".AppImage && \
   chmod +x "$manual_install_dir"/Joplin/Joplin-"$joplin_version".AppImage && \
@@ -313,7 +316,7 @@ UpdateJoplin() {
 }
 
 UpdateStacer() {
-  local stacer_version="$($CURL 'https://api.github.com/repos/oguzhaninan/Stacer/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
+  local stacer_version="$1"
   local tmp_dir="$(mktemp -d)" && \
   $WGET -P "$tmp_dir" https://github.com/oguzhaninan/Stacer/releases/download/v$stacer_version/stacer_"$stacer_version"_amd64.deb && \
   dpkg -i "$tmp_dir"/stacer_"$stacer_version"_amd64.deb
@@ -321,15 +324,15 @@ UpdateStacer() {
 }
 
 UpdateBat() {
-  local bat_version="$($CURL 'https://api.github.com/repos/sharkdp/bat/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
+  local bat_version="$1"
   local tmp_dir="$(mktemp -d)" && \
   $WGET -P "$tmp_dir" https://github.com/sharkdp/bat/releases/download/v"$bat_version"/bat_"$bat_version"_amd64.deb && \
   dpkg -i "$tmp_dir"/bat_"$bat_version"_amd64.deb
-  # rm -rf "$tmp_dir"
+  rm -rf "$tmp_dir"
 }
 
 UpdateKrita() {
-  local krita_version="$($CURL 'https://krita.org/fr/telechargement/krita-desktop/' | grep 'stable' | grep -m1 -e '.appimage' | grep -Po '(?<=/stable/krita/)([[:digit:]]+\.+[[:digit:]]+\.[[:digit:]]+)')" && \
+  local krita_version="$1"
   rm -f "$manual_install_dir"/Krita/krita-*.appimage && \
   $WGET -P "$manual_install_dir"/Krita/ https://download.kde.org/stable/krita/"$krita_version"/krita-"$krita_version"-x86_64.appimage && \
   chmod +x "$manual_install_dir"/Krita/krita-"$krita_version"-x86_64.appimage && \
@@ -338,7 +341,7 @@ UpdateKrita() {
 }
 
 UpdateOpensnitch() {
-  local opensnitch_version="$($CURL 'https://api.github.com/repos/evilsocket/opensnitch/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
+  local opensnitch_version="$1"
   local tmp_dir="$(mktemp -d)" && \
   $WGET -P "$tmp_dir" https://github.com/evilsocket/opensnitch/releases/download/v"$opensnitch_version"/python3-opensnitch-ui_"$opensnitch_version"-1_all.deb && \
   $WGET -P "$tmp_dir" https://github.com/evilsocket/opensnitch/releases/download/v"$opensnitch_version"/opensnitch_"$opensnitch_version"-1_amd64.deb && \
@@ -349,7 +352,7 @@ UpdateOpensnitch() {
 }
 
 UpdateOpensnitchRC() {
-  local opensnitch_version="$(curl --silent --location 'https://api.github.com/repos/evilsocket/opensnitch/releases' | awk 'BEGIN{RS="}"} /"prerelease": true,/ {for (x=1;x<=NF;x++) if ($x~"tag_name") {gsub(/[v|"|,$]/,"");print $(x);exit;}}')" && \
+  local opensnitch_version="$1"
   local tmp_dir="$(mktemp -d)" && \
   $WGET -P "$tmp_dir" https://github.com/evilsocket/opensnitch/releases/download/v"$opensnitch_version"/python3-opensnitch-ui_"$opensnitch_version"-1_all.deb && \
   $WGET -P "$tmp_dir" https://github.com/evilsocket/opensnitch/releases/download/v"$opensnitch_version"/opensnitch_"$opensnitch_version"-1_amd64.deb && \
@@ -360,7 +363,7 @@ UpdateOpensnitchRC() {
 }
 
 UpdateDrawio() {
-  local drawio_version="$($CURL 'https://api.github.com/repos/jgraph/drawio-desktop/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
+  local drawio_version="$1"
   rm -f "$manual_install_dir"/drawio/drawio-*.AppImage && \
   $WGET -P "$manual_install_dir"/drawio/ https://github.com/jgraph/drawio-desktop/releases/download/v"$drawio_version"/drawio-x86_64-"$drawio_version".AppImage && \
   chmod +x "$manual_install_dir"/drawio/drawio-x86_64-"$drawio_version".AppImage && \
@@ -369,7 +372,7 @@ UpdateDrawio() {
 }
 
 UpdateEtcher() {
-  local etcher_version="$($CURL 'https://api.github.com/repos/balena-io/etcher/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
+  local etcher_version="$1"
   rm -f "$manual_install_dir"/balenaEtcher/balenaEtcher-*.AppImage && \
   $WGET -P "$manual_install_dir"/balenaEtcher/ https://github.com/balena-io/etcher/releases/download/v"$etcher_version"/balenaEtcher-"$etcher_version"-x64.AppImage && \
   chmod +x "$manual_install_dir"/balenaEtcher/balenaEtcher-"$etcher_version"-x64.AppImage && \
@@ -378,7 +381,7 @@ UpdateEtcher() {
 }
 
 UpdateGeeqie() {
-  local geeqie_version="$($CURL 'https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/AppImage/appimages.txt' | head -n1 | grep -Po '(?<=Geeqie-v)([[:digit:]]\.[[:digit:]]+\+[[:digit:]]+|[[:digit:]]\.[[:digit:]]+\.[[:digit:]]+\+[[:digit:]]+)(?=\-x86_64.AppImage)')" && \
+  local geeqie_version="$1"
   rm -f "$manual_install_dir"/Geeqie/Geeqie-v*.AppImage && \
   geeqie_download_link="$($CURL 'https://www.geeqie.org/AppImage/index.html' | grep -i 'appimage' | grep -Po 'href=\K[^"]*')" && \
   $WGET -P "$manual_install_dir"/Geeqie/ "$geeqie_download_link"Geeqie-v"$geeqie_version"-x86_64.AppImage && \
@@ -388,11 +391,11 @@ UpdateGeeqie() {
 }
 
 UpdateYt-dlp() {
-  yt-dlp --update
+  displayandexec "Mise à jour de yt-dlp                               " "yt-dlp --update"
 }
 
 UpdateHashcat() {
-  local hashcat_version="$($CURL 'https://api.github.com/repos/hashcat/hashcat/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
+  local hashcat_version="$1"
   local tmp_dir="$(mktemp -d)" && \
   rm -rf "$manual_install_dir"/hashcat/ && \
   rm -f /usr/bin/hashcat && \
@@ -405,7 +408,7 @@ UpdateHashcat() {
 }
 
 UpdateVeracrypt() {
-  local veracrypt_version="$($CURL 'https://www.veracrypt.fr/en/Downloads.html' | grep 'tar.bz2' | grep -v '.sig\|x86\|Source\|freebsd' | grep -Po '(?<=veracrypt-)([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+-[[:alnum:]]+|[[:digit:]]+\.[[:digit:]]+-[[:alnum:]]+|[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+|[[:digit:]]+\.[[:digit:]]+)(?=-setup)')" && \
+  local veracrypt_version="$1"
   local tmp_dir="$(mktemp -d)" && \
   $WGET -P "$tmp_dir" https://launchpad.net/veracrypt/trunk/"$(tr '[:upper:]' '[:lower:]' <<< "$veracrypt_version")"/+download/veracrypt-"$veracrypt_version"-setup.tar.bz2 && \
   tar xjf "$tmp_dir"/veracrypt-"$veracrypt_version"-setup.tar.bz2 --directory="$tmp_dir" && \
@@ -416,7 +419,7 @@ UpdateVeracrypt() {
 }
 
 UpdateWinscp() {
-  local winscp_version="$($CURL 'https://winscp.net/eng/downloads.php' | grep -Po '(?<=WinSCP-)([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)(?=-Portable.zip")')"
+  local winscp_version="$1"
   local tmp_dir="$(mktemp -d)" && \
   [ -d "$manual_install_dir"/winscp/ ] && rm -rf "$manual_install_dir"/winscp/ && \
   mkdir "$manual_install_dir"/winscp/ && \
@@ -426,13 +429,13 @@ UpdateWinscp() {
 }
 
 UpdateVentoy() {
-  local ventoy_version="$($CURL 'https://api.github.com/repos/ventoy/Ventoy/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
+  local ventoy_version="$1"
   local tmp_dir="$(mktemp -d)" && \
   $WGET -P "$tmp_dir" https://github.com/ventoy/Ventoy/releases/download/v"$ventoy_version"/ventoy-"$ventoy_version"-linux.tar.gz && \
   [ -d "$manual_install_dir"/ventoy/ ] && rm -rf "$manual_install_dir"/ventoy/ && \
   mkdir "$manual_install_dir"/ventoy/ && \
   tar --directory "$manual_install_dir"/ventoy -xzf "$tmp_dir"/ventoy-"$ventoy_version"-linux.tar.gz && \
-  echo "#!/bin/bash\nsudo "$manual_install_dir"/ventoy/ventoy-"$ventoy_version"/VentoyGUI.x86_64" > /usr/bin/ventoy && \
+  echo -e "#!/bin/bash\nsudo "$manual_install_dir"/ventoy/ventoy-"$ventoy_version"/VentoyGUI.x86_64" > /usr/bin/ventoy && \
   chmod +x /usr/bin/ventoy
   rm -rf "$tmp_dir"
 }
@@ -494,8 +497,9 @@ CheckUpdateAndUpgrade() {
   	CheckUpdate"$software"
   	if [ "$retval" ]; then
   		AddTo_software_that_needs_updating "$retval"
-  		Update"$software" || AddTo_software_update_failed "$retval"
+  		Update"$software" "$latest_version" || AddTo_software_update_failed "$retval"
   		unset retval
+      unset latest_version
   	fi
   done
 
@@ -557,8 +561,9 @@ OnlyOneUpdate() {
     CheckUpdate"$software"
     if [ "$retval" ]; then
   		AddTo_software_that_needs_updating "$retval"
-  		Update"$software" || AddTo_software_update_failed "$retval"
+  		Update"$software" "$latest_version" || AddTo_software_update_failed "$retval"
   		unset retval
+      unset latest_version
   	fi
   fi
 
