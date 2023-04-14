@@ -270,6 +270,7 @@ fi
 ## Initialisation de la variable qui permet le calcul du temps d'execution du script
 ##------------------------------------------------------------------------------
 #juste pour vérifier que la fonction de calcul du temps d'execution fonctionne correctement, essayer ensuite de trouver une meilleur solution et de supprimer cette ligne
+timedatectl set-timezone Europe/Paris > /dev/null
 systemctl restart systemd-timesyncd > /dev/null
 # utilisé à des fin de stats pour l'éxecution du script
 start_time="$(date +%s)"
@@ -348,12 +349,37 @@ RED='\e[0;31m'
 RESET='\e[0m'
 NOIR='\e[0;30m'
 
+is_dir_present_or_mkdir() {
+  local dir="$1"
+  [ -d "$dir" ] || mkdir -p "$dir"
+}
+export -f is_dir_present_or_mkdir
+
+is_dir_present_and_rmdir() {
+  local dir="$1"
+  [ -d "$dir" ] && rm -rf "$dir"
+}
+export -f is_dir_present_and_rmdir
+
+reset_dir() {
+  local dir="$1"
+  is_dir_present_and_rmdir "$dir"
+  is_dir_present_or_mkdir "$dir"
+}
+export -f reset_dir
+
+is_file_present_and_rmfile() {
+  local file="$1"
+  [ -f "$file" ] && rm -f "$file"
+}
+export -f is_file_present_and_rmfile
+
 ################################################################################
 ## création des fichiers de log
 ##------------------------------------------------------------------------------
 now="$(date +"%d-%m-%Y")"
 log_dir=""$log_dir_path"/"$now""
-[ -d "$log_dir" ] || mkdir -p "$log_dir"
+is_dir_present_or_mkdir "$log_dir"
 log_file=""$log_dir"/log_script_install-"$now".log"
 touch "$log_file"
 stdout_file=""$log_dir"/stdout_on_script_execution-"$now".log"
@@ -451,34 +477,44 @@ execandlog() {
 ## vérification de l'espace disponnible minimum sur /
 ##------------------------------------------------------------------------------
 check_available_space_in_root() {
-  available_space="$(df --block-size=G / | awk '(NR>1){print $4}' | sed 's/.$//')"
+  local min_require_space="$1"
+  local available_space="$(df --block-size=G / | awk '(NR>1){print $4}' | sed 's/.$//')"
   # peut aussi se faire en utilisant une seule redirection : "$(df --block-size=G / | awk '(NR>1){gsub(/.$/,"",$4); print $4}')"
-  if [ "$available_space" -lt 10 ]; then
+  if [ "$available_space" -lt "$min_require_space" ]; then
       echo -e "${RED}######################################################################${RESET}" | tee --append "$log_file"
-      echo -e "${RED}#${RESET}  Il faut au minimum 10 Go d'espace libre pour executer le script.  ${RED}#${RESET}" | tee --append "$log_file"
+      echo -e "${RED}#${RESET}  Il faut au minimum "$min_require_space" Go d'espace libre pour executer le script.  ${RED}#${RESET}" | tee --append "$log_file"
       echo -e "${RED}######################################################################${RESET}" | tee --append "$log_file"
       exit 1
   fi
 }
-check_available_space_in_root
-# On vérifie qu'il y a au minimum 10 Go de disponnible sur / (partition root)
+if [ -z "$fisrt_time_script_executed" ]; then
+  check_available_space_in_root "10"
+else
+  check_available_space_in_root "8"
+fi
+# On vérifie qu'il y a au minimum 10 Go de disponnible sur / (partition root) lorsque le script s'execute pour la première fois
 ################################################################################
 
 ################################################################################
 ## vérification de l'espace disponnible minimum sur /var
 ##------------------------------------------------------------------------------
 check_available_space_in_var() {
-  available_space="$(df --block-size=G /var | awk '(NR>1){print $4}' | sed 's/.$//')"
+  local min_require_space="$1"
+  local available_space="$(df --block-size=G /var | awk '(NR>1){print $4}' | sed 's/.$//')"
   # peut aussi se faire en utilisant une seule redirection : "$(df --block-size=G /var | awk '(NR>1){gsub(/.$/,"",$4); print $4}')"
-  if [ "$available_space" -lt 5 ]; then
+  if [ "$available_space" -lt "$min_require_space" ]; then
       echo -e "${RED}######################################################################${RESET}" | tee --append "$log_file"
-      echo -e "${RED}#${RESET}  Il faut au minimum 5 Go d'espace libre pour executer le script.   ${RED}#${RESET}" | tee --append "$log_file"
+      echo -e "${RED}#${RESET}  Il faut au minimum "$min_require_space" Go d'espace libre pour executer le script.   ${RED}#${RESET}" | tee --append "$log_file"
       echo -e "${RED}######################################################################${RESET}" | tee --append "$log_file"
       exit 1
   fi
 }
-check_available_space_in_var
-# On vérifie qu'il y a au minimum 5 Go de disponnible sur /var
+if [ -z "$fisrt_time_script_executed" ]; then
+  check_available_space_in_var "5"
+else
+  check_available_space_in_var "2"
+fi
+# On vérifie qu'il y a au minimum 5 Go de disponnible sur /var lorsque le script s'execute pour la première fois
 ################################################################################
 
 ################################################################################
@@ -500,7 +536,8 @@ force_dns_for_install
 ## vérification de l'accès à Internet (test avec ICMP)
 ##------------------------------------------------------------------------------
 check_internet_access() {
-  displayandexec "Vérification de la connection internet (ICMP+DNS)   " "ping -c 1 www.google.com"
+  displayandexec "Vérification de la connection internet (ICMP+DNS)   " "ping -c 1 www.google.com" && \
+  displayandexec "Vérification de la connection internet (HTTPS)      " "curl --location --fail --connect-timeout 3 --retry 0 --silent --output /dev/null --write-out %{http_code} 'https://www.google.com' | grep -q '200'"
   if [ $? != 0 ]; then
       echo -e "${RED}######################################################################${RESET}" | tee --append "$log_file"
       echo -e "${RED}#${RESET} Pour executer ce script, il faut disposer d'une connexion Internet ${RED}#${RESET}" | tee --append "$log_file"
@@ -509,9 +546,6 @@ check_internet_access() {
   fi
 }
 check_internet_access
-# avec ce test, on vérifie aussi bien la connectivité réseau que la résolution DNS
-# probalement qu'il pourrait être intéressant de faire un autre test qui valide la connectivité HTTP pour les ports 80 et 443, par exemple avec :
-# if $(curl --location --fail --connect-timeout 3 --retry 0 --silent --output /dev/null --write-out %{http_code} 'https://www.google.com' | grep '200' &> /dev/null); then echo OK; fi
 ################################################################################
 
 ################################################################################
@@ -587,7 +621,7 @@ check_latest_version_manual_install_apps() {
 
     drawio_version="$($CURL 'https://api.github.com/repos/jgraph/drawio-desktop/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
     if [ $? != 0 ] || [ -z "$drawio_version" ]; then
-        drawio_version='16.5.1'
+        drawio_version='21.1.2'
     fi
     # check version : https://github.com/jgraph/drawio-desktop/releases
 
@@ -599,17 +633,17 @@ check_latest_version_manual_install_apps() {
 
     etcher_version="$($CURL 'https://api.github.com/repos/balena-io/etcher/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
     if [ $? != 0 ] || [ -z "$etcher_version" ]; then
-        etcher_version='1.7.8'
+        etcher_version='1.18.4'
     fi
     # check version : https://github.com/balena-io/etcher/releases/
 
     shotcut_version="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
     if [ $? != 0 ] || [ -z "$shotcut_version" ]; then
-        shotcut_version='22.01.30'
+        shotcut_version='22.12.21'
     fi
     shotcut_appimage="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"name": "\K.*?(?=")' | grep 'AppImage')"
     if [ $? != 0 ] || [ -z "$shotcut_appimage" ]; then
-        shotcut_appimage='shotcut-linux-x86_64-220130.AppImage'
+        shotcut_appimage='shotcut-linux-x86_64-221221.AppImage'
     fi
     # check version : https://github.com/mltframework/shotcut/releases/
 
@@ -621,13 +655,13 @@ check_latest_version_manual_install_apps() {
 
     keepassxc_version="$($CURL 'https://api.github.com/repos/keepassxreboot/keepassxc/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
     if [ $? != 0 ] || [ -z "$keepassxc_version" ]; then
-        keepassxc_version='2.7.0'
+        keepassxc_version='2.7.4'
     fi
     # check version : https://github.com/keepassxreboot/keepassxc/releases/
 
     bat_version="$($CURL 'https://api.github.com/repos/sharkdp/bat/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
     if [ $? != 0 ] || [ -z "$bat_version" ]; then
-        bat_version='0.20.0'
+        bat_version='0.23.0'
     fi
     # check version : https://github.com/sharkdp/bat/releases/
 
@@ -639,25 +673,25 @@ check_latest_version_manual_install_apps() {
 
     joplin_version="$($CURL 'https://api.github.com/repos/laurent22/joplin/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
     if [ $? != 0 ] || [ -z "$joplin_version" ]; then
-        joplin_version='2.7.15'
+        joplin_version='2.9.17'
     fi
     # check version : https://github.com/laurent22/joplin/releases/
 
     krita_version="$($CURL 'https://krita.org/fr/telechargement/krita-desktop/' | grep 'stable' | grep -m1 -e '.appimage' | grep -Po '(?<=/stable/krita/)([[:digit:]]+\.+[[:digit:]]+\.[[:digit:]]+)')"
     if [ $? != 0 ] || [ -z "$krita_version" ]; then
-        krita_version='5.0.6'
+        krita_version='5.1.5'
     fi
     # check version : https://krita.org/fr/telechargement/krita-desktop/
 
     opensnitch_stable_version="$($CURL 'https://api.github.com/repos/evilsocket/opensnitch/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
     if [ $? != 0 ] || [ -z "$opensnitch_stable_version" ]; then
-        opensnitch_stable_version='1.5.0'
+        opensnitch_stable_version='1.5.2'
     fi
     # check version : https://github.com/evilsocket/opensnitch/releases/
 
     opensnitch_latest_version="$(curl --silent 'https://api.github.com/repos/evilsocket/opensnitch/releases' | awk 'BEGIN{RS="}"} /"prerelease": true,/ {for (x=1;x<=NF;x++) if ($x~"tag_name") {gsub(/[v|"|,$]/,"");print $(x);exit;}}')"
     if [ $? != 0 ] || [ -z "$opensnitch_latest_version" ]; then
-        opensnitch_latest_version='1.5.0'
+        opensnitch_latest_version='1.6.0-rc.5'
     fi
     # check version : https://github.com/evilsocket/opensnitch/releases/
     # je suis obligé de ne pas utilisé l'option --show-error car sinon j'obtiens une erreur : curl: (23) Failure writing output to destination
@@ -665,13 +699,13 @@ check_latest_version_manual_install_apps() {
 
     hashcat_version="$($CURL 'https://api.github.com/repos/hashcat/hashcat/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
     if [ $? != 0 ] || [ -z "$hashcat_version" ]; then
-        hashcat_version='6.2.5'
+        hashcat_version='6.2.6'
     fi
     # check version : https://github.com/hashcat/hashcat/releases/
 
     winscp_version="$($CURL 'https://winscp.net/eng/downloads.php' | grep -Po '(?<=WinSCP-)([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)(?=-Portable.zip")')"
     if [ $? != 0 ] || [ -z "$winscp_version" ]; then
-        winscp_version='5.19.6'
+        winscp_version='5.21.8'
     fi
     # check version : https://winscp.net/eng/downloads.php
 
@@ -683,13 +717,13 @@ check_latest_version_manual_install_apps() {
 
     ytdlp_version="$($CURL 'https://api.github.com/repos/yt-dlp/yt-dlp/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
     if [ $? != 0 ] || [ -z "$ytdlp_version" ]; then
-        ytdlp_version='2022.03.08.1'
+        ytdlp_version='2023.03.04'
     fi
     # check version : https://github.com/yt-dlp/yt-dlp/releases/
 
     ventoy_version="$($CURL 'https://api.github.com/repos/ventoy/Ventoy/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
     if [ $? != 0 ] || [ -z "$ventoy_version" ]; then
-        ventoy_version='1.0.88'
+        ventoy_version='1.0.91'
     fi
     # check version : https://github.com/ventoy/Ventoy/releases
 
@@ -716,6 +750,8 @@ manual_check_latest_version() {
   echo 'Etcher : '"$etcher_version"
   shotcut_version="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
   echo 'Shotcut : '"$shotcut_version"
+  shotcut_appimage="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"name": "\K.*?(?=")' | grep 'AppImage')"
+  echo 'Shotcut AppImage : '"$shotcut_appimage"
   stacer_version="$($CURL 'https://api.github.com/repos/oguzhaninan/Stacer/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
   echo 'Stacer : '"$stacer_version"
   keepassxc_version="$($CURL 'https://api.github.com/repos/keepassxreboot/keepassxc/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
@@ -761,7 +797,7 @@ WGET='wget -q'
 computer_proc_architecture="$(uname -r | grep -Po '(.*-)\K.*')"
 # peut aussi se faire avec : "$(uname -r | /usr/bin/cut -d '-' -f 3)"
 
-network_int_name="$(ip route | awk 'NR==1,/^default/{print $5}')"
+network_int_name="$(ip route list default | awk 'NR==1,/^default/{print $5}')"
 # on remplace l'ancienne commande par celle qui prend le retour de ip route car celle ci permet d'éviter les cas ou il y a plusieurs interfaces qui commencent par en et de prendre en priorité celle qui est utilisé pour se connecter à la default gateway, en admettant donc que ce sois l'interface principale. Cela permet aussi de récupérer le nom de l'interface lorsque c'est une interface wifi
 # ancienne commande qui faisait le travail : $(ip addr | grep 'UP' | cut -d " " -f 2 | cut -d ":" -f 1 | grep 'en')
 # peut potentillement se faire aussi avec ip addr | awk -F':' '/UP/ && / en/ {sub(/[[:blank:]]/,""); print $2}'
@@ -780,8 +816,8 @@ computer_RAM="$(awk '/^MemTotal:/{printf("%.0f", $2/1024/1024+1);}' /proc/meminf
 # potentiellement à remplacer avec free -g | awk '/^Mem:/{print $2}'
 
 computer_proc_nb="$(grep -c '^processor' /proc/cpuinfo)"
-computer_proc_model_name="$(grep -Po -m 1 '^model name\s*: \K.*' /proc/cpuinfo)"
-computer_proc_vendor_ID="$(grep -Po -m 1 '(^vendor_id\s*: )\K(.*)' /proc/cpuinfo)"
+computer_proc_model_name="$(grep -Po -m 1 '(^model name\s*: )\K.*' /proc/cpuinfo)"
+computer_proc_vendor_ID="$(grep -Po -m 1 '(^vendor_id\s*: )\K.*' /proc/cpuinfo)"
 debian_release="$(lsb_release -sc)"
 if [ -z "$debian_release" ]; then
   debian_release="$(awk -F'=' '/^VERSION_CODENAME=/{print $2}' /etc/os-release)"
@@ -806,6 +842,25 @@ fi
 shopt -u nocasematch
 
 # DISPLAY="$(ps e | grep -Po ' DISPLAY=[\.0-9A-Za-z:]* ' | sort -u | grep -Po '(DISPLAY=)\K.*')"
+
+is_dir_present_or_mkdir_as_user() {
+  local dir="$1"
+  [ -d "$dir" ] || $ExeAsUser mkdir -p "$dir"
+}
+export -f is_dir_present_or_mkdir_as_user
+
+reset_dir_as_user() {
+  local dir="$1"
+  is_dir_present_and_rmdir "$dir"
+  is_dir_present_or_mkdir_as_user "$dir"
+}
+export -f reset_dir_as_user
+
+is_file_present_and_rmfile_as_user() {
+  local file="$1"
+  [ -f "$file" ] && $ExeAsUser rm -f "$file"
+}
+export -f is_file_present_and_rmfile_as_user
 
 exec_graphic_app_with_root_privileges() {
   export DISPLAY=:0
@@ -947,9 +1002,9 @@ echo ''
 displayandexec "Mise à jour des certificats racine                  " "update-ca-certificates"
 
 # make debian non-interactive
-export DEBIAN_FRONTEND='noninteractive'
+export DEBIAN_FRONTEND=noninteractive DEBCONF_ADMIN_EMAIL="" UCF_FORCE_CONFFNEW=1 UCF_FORCE_CONFFMISS=1
 
-displayandexec "Mise à jour du system                               " "$AG update && $AG upgrade -y"
+displayandexec "Mise à jour du system                               " "$AG update && $AG -o DPkg::Options::=--force-confnew -o DPkg::Options::=--force-confmiss upgrade -y"
 ################################################################################
 
 ################################################################################
@@ -1266,7 +1321,7 @@ install_hardware_acceleration
 ################################################################################
 
 
-displayandexec "Installation des dépendances manquantes             " "$AG install -f -y"
+displayandexec "Installation des dépendances manquantes             " "$AG -o DPkg::Options::=--force-confnew -o DPkg::Options::=--force-confmiss install -y"
 displayandexec "Désinstalation des paquets qui ne sont plus utilisés" "$AG autoremove -y"
 
 #//////////////////////////////////////////////////////////////////////////////#
@@ -1281,7 +1336,7 @@ echo ''
 
 # création du répertoire qui contiendra les logiciels avec une installation spéciale
 manual_install_dir='/opt/manual_install'
-execandlog "[ -d "$manual_install_dir" ] || mkdir "$manual_install_dir""
+execandlog "is_dir_present_or_mkdir "$manual_install_dir""
 
 ################################################################################
 ## instalation de atom
@@ -1303,7 +1358,7 @@ $AGI atom"
 install_winscp() {
   local tmp_dir="$(mktemp -d)"
   displayandexec "Installation de WinSCP                              " "\
-[ -d "$manual_install_dir"/winscp/ ] || mkdir "$manual_install_dir"/winscp/ && \
+reset_dir ""$manual_install_dir"/winscp/" && \
 $WGET -P "$tmp_dir" https://winscp.net/download/WinSCP-"$winscp_version"-Portable.zip && \
 unzip "$tmp_dir"/WinSCP-"$winscp_version"-Portable.zip -d "$manual_install_dir"/winscp/ && \
 echo "wine "$manual_install_dir"/winscp/WinSCP.exe" > /usr/bin/winscp && \
@@ -1342,7 +1397,7 @@ rm -rf "$tmp_dir""
 ##------------------------------------------------------------------------------
 install_spotify() {
   displayandexec "Installation de spotify                             " "\
-[ -f /usr/share/keyrings/spotify-archive-keyring.gpg ] && rm -f /usr/share/keyrings/spotify-archive-keyring.gpg; \
+is_file_present_and_rmfile "/usr/share/keyrings/spotify-archive-keyring.gpg" \
 $CURL 'https://download.spotify.com/debian/pubkey_7A3A762FAFD4A51F.gpg' | gpg --dearmor --output /usr/share/keyrings/spotify-archive-keyring.gpg && \
 echo 'deb [signed-by=/usr/share/keyrings/spotify-archive-keyring.gpg] http://repository.spotify.com stable non-free' > /etc/apt/sources.list.d/spotify.list && \
 $AG update && \
@@ -1356,7 +1411,7 @@ $AGI spotify-client"
 ##------------------------------------------------------------------------------
 install_apt-fast() {
   displayandexec "Installation de apt-fast                            " "\
-[ -f /usr/share/keyrings/apt-fast-archive-keyring.gpg ] && rm -f /usr/share/keyrings/apt-fast-archive-keyring.gpg; \
+is_file_present_and_rmfile "/usr/share/keyrings/apt-fast-archive-keyring.gpg" \
 $WGET --output-document - 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xA2166B8DE8BDC3367D1901C11EE2FF37CA8DA16B' | gpg --dearmor --output /usr/share/keyrings/apt-fast-archive-keyring.gpg && \
 cat> /etc/apt/sources.list.d/apt-fast.list << 'EOF'
 deb [arch=amd64 signed-by=/usr/share/keyrings/apt-fast-archive-keyring.gpg] http://ppa.launchpad.net/apt-fast/stable/ubuntu hirsute main
@@ -1376,7 +1431,7 @@ $AGI apt-fast"
 ##------------------------------------------------------------------------------
 install_drawio() {
   displayandexec "Installation de drawio                              " "\
-[ -d "$manual_install_dir"/drawio/ ] || mkdir "$manual_install_dir"/drawio/ && \
+reset_dir ""$manual_install_dir"/drawio/" && \
 $WGET -P "$manual_install_dir"/drawio/ https://github.com/jgraph/drawio-desktop/releases/download/v"$drawio_version"/drawio-x86_64-"$drawio_version".AppImage && \
 chmod +x "$manual_install_dir"/drawio/drawio-x86_64-"$drawio_version".AppImage && \
 $WGET -P "$manual_install_dir"/drawio/ 'https://raw.githubusercontent.com/jgraph/drawio/master/src/main/webapp/images/drawlogo256.png'"
@@ -1417,7 +1472,7 @@ cat> /etc/apt/sources.list.d/typora.list << 'EOF'
 deb [signed-by=/usr/share/keyrings/typora-archive-keyring.gpg] https://typora.io/linux ./
 # deb-src https://typora.io/linux ./
 EOF
-[ -f /usr/share/keyrings/typora-archive-keyring.gpg ] && rm -f /usr/share/keyrings/typora-archive-keyring.gpg; \
+is_file_present_and_rmfile "/usr/share/keyrings/typora-archive-keyring.gpg" \
 $WGET --output-document - 'https://typora.io/linux/public-key.asc' | gpg --dearmor --output /usr/share/keyrings/typora-archive-keyring.gpg && \
 $AG update && \
 $AGI typora"
@@ -1431,7 +1486,7 @@ install_virtualbox() {
   displayandexec "Installation des dépendances de VirtualBox          " "$AGI dkms"
   displayandexec "Installation de VirtualBox                          " "\
 echo 'deb [signed-by=/usr/share/keyrings/virtualbox-archive-keyring.gpg] https://download.virtualbox.org/virtualbox/debian bullseye contrib' > /etc/apt/sources.list.d/virtualbox.list && \
-[ -f /usr/share/keyrings/virtualbox-archive-keyring.gpg ] && rm -f /usr/share/keyrings/virtualbox-archive-keyring.gpg; \
+is_file_present_and_rmfile "/usr/share/keyrings/virtualbox-archive-keyring.gpg" \
 $WGET --output-document - 'https://www.virtualbox.org/download/oracle_vbox_2016.asc' | gpg --dearmor --output /usr/share/keyrings/virtualbox-archive-keyring.gpg && \
 $AG update && \
 $AGI virtualbox-7.0"
@@ -1499,7 +1554,7 @@ EOF
 ##------------------------------------------------------------------------------
 install_keepassxc() {
   displayandexec "Installation de KeePassXC                           " "\
-[ -d "$manual_install_dir"/KeePassXC/ ] || mkdir "$manual_install_dir"/KeePassXC/
+reset_dir ""$manual_install_dir"/KeePassXC/" && \
 $WGET -P "$manual_install_dir"/KeePassXC/ https://github.com/keepassxreboot/keepassxc/releases/download/"$keepassxc_version"/KeePassXC-"$keepassxc_version"-x86_64.AppImage && \
 $WGET -P "$manual_install_dir"/KeePassXC/ 'https://keepassxc.org/images/keepassxc-logo.svg' && \
 chmod +x "$manual_install_dir"/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage"
@@ -1527,7 +1582,7 @@ cat> /etc/apt/sources.list.d/mkvtoolnix.list << 'EOF'
 deb [signed-by=/usr/share/keyrings/mkvtoolnix-archive-keyring.gpg] https://mkvtoolnix.download/debian/ bullseye main
 #deb-src https://mkvtoolnix.download/debian/ bullseye main
 EOF
-[ -f /usr/share/keyrings/mkvtoolnix-archive-keyring.gpg ] && rm -f /usr/share/keyrings/mkvtoolnix-archive-keyring.gpg; \
+is_file_present_and_rmfile "/usr/share/keyrings/mkvtoolnix-archive-keyring.gpg" \
 $WGET --output-document - 'https://mkvtoolnix.download/gpg-pub-moritzbunkus.txt' | gpg --dearmor --output /usr/share/keyrings/mkvtoolnix-archive-keyring.gpg && \
 $AG update && \
 $AGI mkvtoolnix mkvtoolnix-gui"
@@ -1539,7 +1594,7 @@ $AGI mkvtoolnix mkvtoolnix-gui"
 ##------------------------------------------------------------------------------
 install_etcher() {
   displayandexec "Installation de Etcher                              " "\
-[ -d "$manual_install_dir"/balenaEtcher/ ] || mkdir "$manual_install_dir"/balenaEtcher/ && \
+reset_dir ""$manual_install_dir"/balenaEtcher/" && \
 $WGET -P "$manual_install_dir"/balenaEtcher/ https://github.com/balena-io/etcher/releases/download/v"$etcher_version"/balenaEtcher-"$etcher_version"-x64.AppImage && \
 $WGET -P "$manual_install_dir"/balenaEtcher/ 'https://github.com/balena-io/etcher/raw/master/assets/icon.png' && \
 chmod +x "$manual_install_dir"/balenaEtcher/balenaEtcher-"$etcher_version"-x64.AppImage"
@@ -1563,7 +1618,7 @@ EOF
 ##------------------------------------------------------------------------------
 install_shotcut() {
   displayandexec "Installation de Shotcut                             " "\
-[ -d "$manual_install_dir"/shotcut/ ] || mkdir "$manual_install_dir"/shotcut/ && \
+reset_dir ""$manual_install_dir"/shotcut/" && \
 $WGET -P "$manual_install_dir"/shotcut/ https://github.com/mltframework/shotcut/releases/download/v"$shotcut_version"/"$shotcut_appimage" && \
 $WGET -P "$manual_install_dir"/shotcut/ 'https://github.com/mltframework/shotcut/raw/master/icons/shotcut-logo-64.png' && \
 chmod +x "$manual_install_dir"/shotcut/"$shotcut_appimage""
@@ -1587,7 +1642,7 @@ EOF
 install_signal() {
   displayandexec "Installation de Signal                              " "\
 echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/signal-archive-keyring.gpg] https://updates.signal.org/desktop/apt xenial main' > /etc/apt/sources.list.d/signal-desktop.list && \
-[ -f /usr/share/keyrings/signal-archive-keyring.gpg ] && rm -f /usr/share/keyrings/signal-archive-keyring.gpg; \
+is_file_present_and_rmfile "/usr/share/keyrings/signal-archive-keyring.gpg" \
 $CURL 'https://updates.signal.org/desktop/apt/keys.asc' | gpg --dearmor --output /usr/share/keyrings/signal-archive-keyring.gpg && \
 $AG update && \
 $AGI signal-desktop"
@@ -1617,7 +1672,7 @@ cat> /etc/apt/sources.list.d/asbru-cm.list << 'EOF'
 deb [arch=amd64 signed-by=/usr/share/keyrings/asbru-archive-keyring.gpg] https://packagecloud.io/asbru-cm/asbru-cm/debian/ bullseye main
 #deb-src https://packagecloud.io/asbru-cm/asbru-cm/debian/ bullseye main
 EOF
-[ -f /usr/share/keyrings/asbru-archive-keyring.gpg ] && rm -f /usr/share/keyrings/asbru-archive-keyring.gpg; \
+is_file_present_and_rmfile "/usr/share/keyrings/asbru-archive-keyring.gpg" \
 $CURL 'https://packagecloud.io/asbru-cm/asbru-cm/gpgkey' | gpg --dearmor --output /usr/share/keyrings/asbru-archive-keyring.gpg && \
 $AG update && \
 $AGI asbru-cm keepassxc-"
@@ -1650,7 +1705,7 @@ rm -rf "$tmp_dir""
 ##------------------------------------------------------------------------------
 install_youtubedl() {
   displayandexec "Installation de youtube-dl                          " "\
-[ -f /usr/bin/youtube-dl ] && rm -f /usr/bin/youtube-dl; \
+is_file_present_and_rmfile "/usr/bin/youtube-dl" \
 $WGET -P /usr/bin https://github.com/ytdl-org/youtube-dl/releases/download/"$youtubedl_version"/youtube-dl && \
 chmod +x /usr/bin/youtube-dl && \
 ln -s /usr/bin/python3 /usr/bin/python"
@@ -1664,7 +1719,7 @@ ln -s /usr/bin/python3 /usr/bin/python"
 ##------------------------------------------------------------------------------
 install_yt-dlp() {
   displayandexec "Installation de yt-dlp                              " "\
-[ -f /usr/bin/yt-dlp ] && rm -f /usr/bin/yt-dlp; \
+is_file_present_and_rmfile "/usr/bin/yt-dlp" \
 $WGET -P /usr/bin https://github.com/yt-dlp/yt-dlp/releases/download/"$ytdlp_version"/yt-dlp && \
 chmod +x /usr/bin/yt-dlp"
 }
@@ -1675,7 +1730,7 @@ chmod +x /usr/bin/yt-dlp"
 ##------------------------------------------------------------------------------
 install_joplin() {
   displayandexec "Installation de joplin                              " "\
-[ -d "$manual_install_dir"/Joplin/ ] || mkdir "$manual_install_dir"/Joplin/ && \
+reset_dir ""$manual_install_dir"/Joplin/" && \
 $WGET -P "$manual_install_dir"/Joplin/ https://github.com/laurent22/joplin/releases/download/v"$joplin_version"/Joplin-"$joplin_version".AppImage && \
 chmod +x "$manual_install_dir"/Joplin/Joplin-"$joplin_version".AppImage && \
 $WGET -P "$manual_install_dir"/Joplin/ 'https://raw.githubusercontent.com/laurent22/joplin/master/Assets/LinuxIcons/256x256.png'"
@@ -1696,7 +1751,7 @@ EOF
 ##------------------------------------------------------------------------------
 install_krita() {
   displayandexec "Installation de Krita                               " "\
-[ -d "$manual_install_dir"/Krita/ ] || mkdir "$manual_install_dir"/Krita/ && \
+reset_dir ""$manual_install_dir"/Krita/" && \
 $WGET -P "$manual_install_dir"/Krita/ https://download.kde.org/stable/krita/"$krita_version"/krita-"$krita_version"-x86_64.appimage && \
 chmod +x "$manual_install_dir"/Krita/krita-"$krita_version"-x86_64.appimage
 $WGET -P "$manual_install_dir"/Krita/ 'https://invent.kde.org/graphics/krita/-/raw/master/pics/krita.png'"
@@ -1743,7 +1798,7 @@ install_opensnitch() {
 ##------------------------------------------------------------------------------
 install_ansible() {
   displayandexec "Installation de Ansible                             " "\
-[ -f /usr/share/keyrings/ansible-archive-keyring.gpg ] && rm -f /usr/share/keyrings/ansible-archive-keyring.gpg; \
+is_file_present_and_rmfile "/usr/share/keyrings/ansible-archive-keyring.gpg" \
 $WGET --output-document - 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x93C4A3FD7BB9C367' | gpg --dearmor --output /usr/share/keyrings/ansible-archive-keyring.gpg && \
 echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/ansible-archive-keyring.gpg] http://ppa.launchpad.net/ansible/ansible-5/ubuntu hirsute main' > /etc/apt/sources.list.d/ansible.list && \
 $AG update && \
@@ -1763,7 +1818,7 @@ install_hashcat() {
   local tmp_dir="$(mktemp -d)"
   displayandexec "Installation de Hashcat                             " "\
 $WGET -P "$tmp_dir" https://github.com/hashcat/hashcat/releases/download/v"$hashcat_version"/hashcat-"$hashcat_version".7z && \
-[ -d "$manual_install_dir"/hashcat/ ] || mkdir "$manual_install_dir"/hashcat/ && \
+reset_dir ""$manual_install_dir"/hashcat/" && \
 7z x "$tmp_dir"/hashcat-"$hashcat_version".7z -o"$manual_install_dir"/hashcat && \
 chown -R "$local_user":"$local_user" "$manual_install_dir"/hashcat && \
 ln -s "$manual_install_dir"/hashcat/hashcat-"$hashcat_version"/hashcat.bin /usr/bin/hashcat && \
@@ -1789,7 +1844,7 @@ install_sshuttle() {
 install_geeqie() {
   geeqie_download_link="$($CURL 'https://www.geeqie.org/AppImage/index.html' | grep -i 'appimage' | grep -Po 'href=\K[^"]*')"
   displayandexec "Installation de Geeqie                              " "\
-[ -d "$manual_install_dir"/Geeqie/ ] || mkdir "$manual_install_dir"/Geeqie/ && \
+reset_dir ""$manual_install_dir"/Geeqie/" && \
 $WGET -P "$manual_install_dir"/Geeqie/ "$geeqie_download_link"Geeqie-v"$geeqie_version"-x86_64.AppImage && \
 $WGET -P "$manual_install_dir"/Geeqie/ 'https://github.com/geeqie/geeqie.github.io/raw/master/geeqie.svg' && \
 chmod +x "$manual_install_dir"/Geeqie/Geeqie-v"$geeqie_version"-x86_64.AppImage"
@@ -1820,7 +1875,7 @@ EOF
 ##------------------------------------------------------------------------------
 install_timeshift() {
   displayandexec "Installation de timeshift                           " "\
-[ -f /usr/share/keyrings/timeshift-archive-keyring.gpg ] && rm -f /usr/share/keyrings/timeshift-archive-keyring.gpg; \
+is_file_present_and_rmfile "/usr/share/keyrings/timeshift-archive-keyring.gpg" \
 $WGET --output-document - 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x1B32B87ABAEE357218F6B48CB5B116B72D0F61F0' | gpg --dearmor --output /usr/share/keyrings/timeshift-archive-keyring.gpg && \
 cat> /etc/apt/sources.list.d/timeshift.list << 'EOF'
 deb [arch=amd64 signed-by=/usr/share/keyrings/timeshift-archive-keyring.gpg] http://ppa.launchpad.net/teejee2008/timeshift/ubuntu hirsute main
@@ -1839,7 +1894,7 @@ $AGI timeshift"
 install_vscode() {
   displayandexec "Installation de vscode                              " "\
 echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/vscode-archive-keyring.gpg] https://packages.microsoft.com/repos/code stable main' > /etc/apt/sources.list.d/vscode.list && \
-[ -f /usr/share/keyrings/vscode-archive-keyring.gpg ] && rm -f /usr/share/keyrings/vscode-archive-keyring.gpg; \
+is_file_present_and_rmfile "/usr/share/keyrings/vscode-archive-keyring.gpg" \
 $CURL 'https://packages.microsoft.com/keys/microsoft.asc' | gpg --dearmor --output /usr/share/keyrings/vscode-archive-keyring.gpg && \
 $AG update && \
 $AGI code"
@@ -1851,7 +1906,7 @@ $AGI code"
 ##------------------------------------------------------------------------------
 install_brave() {
   displayandexec "Installation de brave                               " "\
-[ -f /usr/share/keyrings/brave-archive-keyring.gpg ] && rm -f /usr/share/keyrings/brave-archive-keyring.gpg; \
+is_file_present_and_rmfile "/usr/share/keyrings/brave-archive-keyring.gpg" \
 $WGET --output-document - 'https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg' | gpg --dearmor --output /usr/share/keyrings/brave-archive-keyring.gpg && \
 cat> /etc/apt/sources.list.d/brave.list << 'EOF'
 deb [arch=amd64 signed-by=/usr/share/keyrings/brave-archive-keyring.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main
@@ -1869,7 +1924,7 @@ install_ventoy() {
   local tmp_dir="$(mktemp -d)"
   displayandexec "Installation de ventoy                              " "\
   $WGET -P "$tmp_dir" https://github.com/ventoy/Ventoy/releases/download/v"$ventoy_version"/ventoy-"$ventoy_version"-linux.tar.gz && \
-  [ -d "$manual_install_dir"/ventoy/ ] || mkdir "$manual_install_dir"/ventoy/ && \
+  reset_dir ""$manual_install_dir"/ventoy/" && \
   tar --directory "$manual_install_dir"/ventoy -xzf "$tmp_dir"/ventoy-"$ventoy_version"-linux.tar.gz && \
 cat> /usr/bin/ventoy << EOF
 #!/bin/bash
@@ -2173,7 +2228,7 @@ chmod +x /usr/bin/gitupdate"
 install_sysupdate() {
 
 displayandexec "Installation du script sysupdate                    " "\
-rm -f /usr/bin/sysupdate && \
+is_file_present_and_rmfile "/usr/bin/sysupdate" \
 cp "$script_path"/sysupdate /usr/bin/sysupdate && \
 chmod +x /usr/bin/sysupdate"
 }
@@ -2516,9 +2571,11 @@ echo ''
 ## configuration de SSH
 ##------------------------------------------------------------------------------
 # on change le port par défaut
-sed -i "s/#Port\ 22/Port\ "$SSH_Port"/g" /etc/ssh/sshd_config && \
-sed -E -i '/(^#PermitRootLogin|^PermitRootLogin) (yes|no|without-password|prohibit-password)/{s/yes/no/;t;s/without-password/no/;t;s/prohibit-password/no/;}' /etc/ssh/sshd_config && \
-sed -E -i 's/^#PermitRootLogin/PermitRootLogin/' /etc/ssh/sshd_config
+sed -i -E 's/^(#)?Port [[:digit:]]+/Port '"$SSH_Port"'/' /etc/ssh/sshd_config && \
+sed -i -E 's/^(#)?PermitRootLogin (yes|no|without-password|prohibit-password)/PermitRootLogin no/' /etc/ssh/sshd_config
+
+# sed -E -i '/(^#PermitRootLogin|^PermitRootLogin) (yes|no|without-password|prohibit-password)/{s/yes/no/;t;s/without-password/no/;t;s/prohibit-password/no/;}' /etc/ssh/sshd_config && \
+# sed -E -i 's/^#PermitRootLogin/PermitRootLogin/' /etc/ssh/sshd_config
 # (^#PermitRootLogin|^PermitRootLogin) : permet d'identifier que le ligne commence par #PermitRootLogin ou qu'elle commence par PermitRootLogin, uniquement
 # (yes|no|without-password|prohibit-password) : permet de donner les quatre possibilités différentes de valeur pour PermitRootLogin, à savoir yes, no, without-password, prohibit-password
 # {s/yes/no/;t;s/without-password/no/;t;s/prohibit-password/no/;} : permet de remplacer yes par no , without-password par no ainsi que prohibit-password par no
@@ -2544,7 +2601,7 @@ EOF
 ##------------------------------------------------------------------------------
 # création du répertoire qui servira de point de montage pour SSHFS
 # on le créer dans /home/"$local_user"/.mnt/sshfs/ car cela permet de lire et écrire sans élévation de privilège lors de l'execution de la session SSHFS
-execandlog "[ -d /home/"$local_user"/.mnt/sshfs/ ] || $ExeAsUser mkdir -p /home/"$local_user"/.mnt/sshfs/"
+execandlog "is_dir_present_or_mkdir_as_user "/home/"$local_user"/.mnt/sshfs/""
 ################################################################################
 
 ################################################################################
@@ -2581,7 +2638,7 @@ sed -E -i 's/^rotate [[:digit:]]+/rotate 8/' /etc/logrotate.conf"
 ## configuration des règles auditd
 ##------------------------------------------------------------------------------
 displayandexec "Configuration de auditd                             " "\
-rm -f /etc/audit/rules.d/audit.rules && \
+is_file_present_and_rmfile "/etc/audit/rules.d/audit.rules" && \
 mv "$script_path"/audit.rules /etc/audit/rules.d/audit.rules && \
 augenrules --check && \
 systemctl restart auditd"
@@ -2593,6 +2650,8 @@ systemctl restart auditd"
 ## configuration du service auditd
 ##------------------------------------------------------------------------------
 execandlog "sed -E -i 's/^space_left = [[:digit:]]+/space_left = 20%/' /etc/audit/auditd.conf && \
+sed -E -i 's/^max_log_file = [[:digit:]]+/max_log_file = 10/' /etc/audit/auditd.conf && \
+sed -E -i 's/^num_logs = [[:digit:]]+/num_logs = 50/' /etc/audit/auditd.conf && \
 systemctl restart auditd"
 # ref : [7.3. Configuring the audit Service Red Hat Enterprise Linux 7 | Red Hat Customer Portal](https://access.redhat.com/documentation/fr-fr/red_hat_enterprise_linux/7/html/security_guide/sec-configuring_the_audit_service#:~:text=from%20being%20overwritten.-,space_left,-Specifies%20the%20amount)
 ################################################################################
@@ -2663,7 +2722,7 @@ configure_stacer
 ## configuration de Etcher
 ##------------------------------------------------------------------------------
 configure_etcher() {
-execandlog "[ -d /home/"$local_user"/.config/balena-etcher-electron/ ] || $ExeAsUser mkdir /home/"$local_user"/.config/balena-etcher-electron/"
+execandlog "reset_dir_as_user "/home/"$local_user"/.config/balena-etcher-electron/""
 $ExeAsUser cat> /home/"$local_user"/.config/balena-etcher-electron/config.json << 'EOF'
 {
   "errorReporting": false,
@@ -2695,18 +2754,18 @@ configure_rkhunter
 create_template_for_new_file() {
   [ -d /home/"$local_user"/Modèles ] && template_dir="/home/"$local_user"/Modèles"
   [ -d /home/"$local_user"/Templates ] && template_dir="/home/"$local_user"/Templates"
-$ExeAsUser touch ""$template_dir"/Fichier Texte.txt" && \
-$ExeAsUser touch ""$template_dir"/Document ODT.txt" && \
-$ExeAsUser unoconv -f odt ""$template_dir"/Document ODT.txt" && \
-rm -f ""$template_dir"/Document ODT.txt" && \
-$ExeAsUser touch ""$template_dir"/Document ODS.txt" && \
-$ExeAsUser unoconv -f ods ""$template_dir"/Document ODS.txt" && \
-rm -f ""$template_dir"/Document ODS.txt"
+  $ExeAsUser touch ""$template_dir"/Fichier Texte.txt" && \
+  $ExeAsUser touch ""$template_dir"/Document ODT.txt" && \
+  $ExeAsUser unoconv -f odt ""$template_dir"/Document ODT.txt" && \
+  rm -f ""$template_dir"/Document ODT.txt" && \
+  $ExeAsUser touch ""$template_dir"/Document ODS.txt" && \
+  $ExeAsUser unoconv -f ods ""$template_dir"/Document ODS.txt" && \
+  rm -f ""$template_dir"/Document ODS.txt"
 # ref : https://ask.libreoffice.org/en/question/153444/how-to-create-empty-libreoffice-file-in-a-current-directory-on-the-command-line/
 # Pour voir tous les formats supportés par unoconv : unoconv --show
 }
 create_template_for_new_file
-# cette fonction permet d'obtnir dans le clique droit de nautilus l'accès à "Nouveau Document -> Ficher Texte"
+# cette fonction permet d'obtenir dans le clique droit de nautilus l'accès à "Nouveau Document -> Ficher Texte"
 ################################################################################
 
 ################################################################################
@@ -2783,7 +2842,7 @@ configure_apt-fast
 ## configuration de atom
 ##------------------------------------------------------------------------------
 configure_atom() {
-execandlog "[ -d /home/"$local_user"/.atom/ ] || $ExeAsUser mkdir /home/"$local_user"/.atom/"
+execandlog "reset_dir_as_user "/home/"$local_user"/.atom/""
 $ExeAsUser cat> /home/"$local_user"/.atom/config.cson << 'EOF'
 "*":
   autosave:
@@ -2821,7 +2880,8 @@ configure_atom
 ## configuration de bat
 ##------------------------------------------------------------------------------
 configure_bat() {
-execandlog "[ -f /home/"$local_user"/.config/bat/config ] || $ExeAsUser bat --generate-config-file"
+execandlog "is_file_present_and_rmfile "/home/"$local_user"/.config/bat/config"; \
+$ExeAsUser bat --generate-config-file"
 cat>> /home/"$local_user"/.config/bat/config << 'EOF'
 
 --paging=never
@@ -2849,8 +2909,63 @@ configure_firefox
 ## configuration de OpenSnitch
 ##------------------------------------------------------------------------------
 configure_opensnitch() {
-execandlog "[ -d /opt/opensnitch/allow_list/vscode/domains/ ] || mkdir -p /opt/opensnitch/allow_list/vscode/domains/"
-execandlog "[ -d /opt/opensnitch/allow_list/vscode/regexp/ ] || mkdir -p /opt/opensnitch/allow_list/vscode/regexp/"
+  execandlog "is_dir_present_or_mkdir_as_user "/home/"$local_user"/.config/opensnitch/""
+$ExeAsUser cat> /home/"$local_user"/.config/opensnitch/settings.conf << 'EOF'
+[General]
+statsDialog=0
+
+[database]
+file=:memory:
+max_days=1
+purge_interval=5
+purge_oldest=false
+type=0
+
+[global]
+default_action=0
+default_duration=6
+default_ignore_rules=false
+default_ignore_temporary_rules=0
+default_popup_advanced=true
+default_popup_advanced_dstip=true
+default_popup_advanced_dstport=false
+default_popup_advanced_uid=false
+default_popup_position=0
+default_target=0
+default_timeout=15
+disable_popups=false
+theme=dark_teal.xml
+
+[notifications]
+enabled=true
+type=0
+
+[promptDialog]
+geometry=@ByteArray(\x1\xd9\xd0\xcb\0\x3\0\0\0\0\x5x\0\0\x1V\0\0\a\x7f\0\0\x2\xd1\0\0\x5x\0\0\x1{\0\0\a\x7f\0\0\x2\xd1\0\0\0(\0\0\0\0\x16\x80\0\0\x5x\0\0\x1{\0\0\a\x7f\0\0\x2\xd1)
+
+[statsDialog]
+firewall_columns_state=@ByteArray(\0\0\0\xff\0\0\0\0\0\0\0\x1\0\0\0\x1\0\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\v\x3\0\0\0\0\x2\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\x64\0\0\a\x12\0\0\0\v\0\x1\x1\x1\0\0\0\0\0\0\0\0\0\0\0\0\x64\xff\xff\xff\xff\0\0\0\x84\0\0\0\0\0\0\0\v\0\0\0\0\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x1\xa4\0\0\0\x1\0\0\0\0\0\0\x1\x38\0\0\0\x1\0\0\0\0\0\0\x1\xde\0\0\0\x1\0\0\0\0\0\0\x3\xe8\0\0\0\0\x64)
+general_columns_state=@ByteArray(\0\0\0\xff\0\0\0\0\0\0\0\x1\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\b\x82\0\0\0\x2\0\0\0\x1\0\0\0\x64\0\0\0\a\0\0\0\x64\0\0\b\x11\0\0\0\b\0\x1\x1\x1\0\0\0\0\0\0\0\0\0\0\0\0\x64\xff\xff\xff\xff\0\0\0\x84\0\0\0\0\0\0\0\b\0\0\0\xca\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x2\xb1\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x2\x65\0\0\0\x1\0\0\0\0\0\0\x1i\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\x1\0\0\0\0\0\0\x3\xe8\0\0\0\x1i)
+general_filter_text=
+general_limit_results=4
+geometry=@ByteArray(\x1\xd9\xd0\xcb\0\x3\0\0\0\0\a\x80\0\0\0\x1b\0\0\xe\xff\0\0\x4\x37\0\0\x1\x13\0\0\x2\t\0\0\x6\xe3\0\0\x4w\0\0\0\0\x2\0\0\0\a\x80\0\0\a\x80\0\0\0@\0\0\xe\xff\0\0\x4\x37)
+last_tab=0
+nodes_columns_state=@ByteArray(\0\0\0\xff\0\0\0\0\0\0\0\x1\0\0\0\x1\0\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\as\0\0\0\n\0\x1\x1\x1\0\0\0\0\0\0\0\0\x1\0\0\0\x64\xff\xff\xff\xff\0\0\0\x84\0\0\0\0\0\0\0\n\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0}\0\0\0\x1\0\0\0\x3\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x3\xd6\0\0\0\x1\0\0\0\0\0\0\x3\xe8\0\0\0\0\x64)
+rules_columns_state=@ByteArray(\0\0\0\xff\0\0\0\0\0\0\0\x1\0\0\0\x1\0\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\a\x13\0\0\0\a\0\x1\x1\x1\0\0\0\0\0\0\0\0\0\0\0\0\x64\xff\xff\xff\xff\0\0\0\x84\0\0\0\0\0\0\0\a\0\0\0\xa4\0\0\0\x1\0\0\0\0\0\0\0\xc5\0\0\0\x1\0\0\0\0\0\0\x3%\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x1Y\0\0\0\x1\0\0\0\0\0\0\x3\xe8\0\0\0\x1Y)
+rules_splitter_pos=@ByteArray(\0\0\0\xff\0\0\0\x1\0\0\0\x2\0\0\0\0\0\0\aR\x1\xff\xff\xff\xff\x1\0\0\0\x1\0)
+rules_tree_0_expanded=false
+rules_tree_1_expanded=false
+show_columns=0, 2, 3, 4, 5, 6
+view_columns_state2=@ByteArray(\0\0\0\xff\0\0\0\0\0\0\0\x1\0\0\0\x1\0\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\a\x13\0\0\0\a\0\x1\x1\x1\0\0\0\0\0\0\0\0\0\0\0\0\x64\xff\xff\xff\xff\0\0\0\x84\0\0\0\0\0\0\0\a\0\0\0\xa4\0\0\0\x1\0\0\0\0\0\0\0\xc5\0\0\0\x1\0\0\0\0\0\0\x3%\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x1Y\0\0\0\x1\0\0\0\0\0\0\x3\xe8\0\0\0\x1Y)
+view_columns_state3=@ByteArray(\0\0\0\xff\0\0\0\0\0\0\0\x1\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\a!\0\0\0\x2\0\x1\x1\x1\0\0\0\0\0\0\0\0\x1\0\0\0\x64\xff\xff\xff\xff\0\0\0\x84\0\0\0\0\0\0\0\x2\0\0\0\xc0\0\0\0\x1\0\0\0\x3\0\0\x6\x61\0\0\0\x1\0\0\0\0\0\0\x3\xe8\0\0\0\0\x64)
+view_columns_state4=@ByteArray(\0\0\0\xff\0\0\0\0\0\0\0\x1\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\a1\0\0\0\x2\0\x1\x1\x1\0\0\0\0\0\0\0\0\x1\0\0\0\x64\xff\xff\xff\xff\0\0\0\x84\0\0\0\0\0\0\0\x2\0\0\x2%\0\0\0\x1\0\0\0\x3\0\0\x5\f\0\0\0\x1\0\0\0\0\0\0\x3\xe8\0\0\0\0\x64)
+view_details_columns_state0=@ByteArray(\0\0\0\xff\0\0\0\0\0\0\0\x1\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\xc8\0\0\0\x2\0\x1\x1\x1\0\0\0\0\0\0\0\0\x1\0\0\0\x64\xff\xff\xff\xff\0\0\0\x84\0\0\0\0\0\0\0\x2\0\0\0\x64\0\0\0\x1\0\0\0\x3\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x3\xe8\0\0\0\0\x64)
+view_details_columns_state2=@ByteArray(\0\0\0\xff\0\0\0\0\0\0\0\x1\0\0\0\x1\0\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x10\x30\0\0\0\n\0\x1\x1\x1\0\0\0\0\0\0\0\0\0\0\0\0\x64\xff\xff\xff\xff\0\0\0\x84\0\0\0\0\0\0\0\n\0\0\0\xa4\0\0\0\x1\0\0\0\0\0\0\0\xc5\0\0\0\x1\0\0\0\0\0\0\x3%\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x1Y\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\bU\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x3\xe8\0\0\0\x1Q)
+view_details_columns_state3=@ByteArray(\0\0\0\xff\0\0\0\0\0\0\0\x1\0\0\0\x1\xff\xff\xff\xff\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\av\0\0\0\f\0\x1\x1\x1\0\0\0\0\0\0\0\0\x1\0\0\0\x64\xff\xff\xff\xff\0\0\0\x84\0\0\0\0\0\0\0\f\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x3*\0\0\0\x1\0\0\0\0\0\0\x3\xe8\0\0\0\0\x64)
+view_details_columns_state4=@ByteArray(\0\0\0\xff\0\0\0\0\0\0\0\x1\0\0\0\x1\0\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x10\xe9\0\0\0\r\0\x1\x1\x1\0\0\0\0\0\0\0\0\x1\0\0\0\x64\xff\xff\xff\xff\0\0\0\x84\0\0\0\0\0\0\0\r\0\0\0\xb3\0\0\0\x1\0\0\0\x3\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x1\xef\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x1\xd3\0\0\0\x1\0\0\0\0\0\0\x5\a\0\0\0\x1\0\0\0\0\0\0\x4M\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x3\xe8\0\0\0\0\x64)
+EOF
+  execandlog "reset_dir "/opt/opensnitch/allow_list/vscode/domains/""
+  execandlog "reset_dir "/opt/opensnitch/allow_list/vscode/regexp/""
 cat> /opt/opensnitch/allow_list/vscode/domains/vscode.domains << 'EOF'
 # ref : [Setup Visual Studio Code's Network Connection](https://code.visualstudio.com/docs/setup/network)
 # Visual Studio Marketplace
@@ -2881,7 +2996,7 @@ configure_opensnitch
 ## configuration de VSCode
 ##------------------------------------------------------------------------------
 configure_vscode() {
-  execandlog "[ -d /home/"$local_user"/.config/Code/User/ ] || $ExeAsUser mkdir -p /home/"$local_user"/.config/Code/User/"
+  execandlog "is_dir_present_or_mkdir_as_user "/home/"$local_user"/.config/Code/User/""
   execandlog "$ExeAsUser code --force --install-extension akamud.vscode-theme-onedark"
   execandlog "$ExeAsUser code --force --install-extension redhat.vscode-yaml"
   execandlog "$ExeAsUser code --force --install-extension ms-vscode.PowerShell"
@@ -2919,7 +3034,7 @@ configure_vscode
 ## configuration de mpv
 ##------------------------------------------------------------------------------
 configure_mpv() {
-execandlog "[ -d /home/"$local_user"/.config/mpv/ ] || $ExeAsUser mkdir /home/"$local_user"/.config/mpv/" && \
+execandlog "reset_dir_as_user "/home/"$local_user"/.config/mpv/"" && \
 $ExeAsUser cat> /home/"$local_user"/.config/mpv/input.conf << 'EOF'
 # add the capacity to rotate the video when pressing r key
 r cycle_values video-rotate 90 180 270 0
@@ -2933,7 +3048,7 @@ configure_mpv
 ## configuration de typora
 ##------------------------------------------------------------------------------
 configure_typora() {
-execandlog "[ -d /home/"$local_user"/.config/Typora/ ] || $ExeAsUser mkdir /home/"$local_user"/.config/Typora/ && \
+execandlog "reset_dir_as_user "/home/"$local_user"/.config/Typora/" && \
 $ExeAsUser echo '7b22696e697469616c697a655f766572223a22302e392e3738222c226c696e655f656e64696e675f63726c66223a66616c73652c227072654c696e65627265616b4f6e4578706f7274223a747275652c2275756964223a2237346265383439362d343239372d343362382d616633632d336439343463646432376439222c227374726963745f6d6f6465223a747275652c22636f70795f6d61726b646f776e5f62795f64656661756c74223a747275652c226261636b67726f756e64436f6c6f72223a2223333633423430222c227468656d65223a226e696768742e637373222c22736964656261725f746162223a22222c2273656e645f75736167655f696e666f223a66616c73652c22656e61626c654175746f53617665223a747275652c226c617374436c6f736564426f756e6473223a7b2266756c6c73637265656e223a66616c73652c226d6178696d697a6564223a747275657d7d' > /home/"$local_user"/.config/Typora/profile.data"
 }
 # la configuration des préférences de Typora ne peut se faire que graphiquement le seul moyen de contourner ce problème est de configurer graphiquement les préférences et de récupérer le contenu du fichier /home/$local_user/.config/Typora/profile.data
@@ -2946,7 +3061,7 @@ configure_typora
 # début de réflexion pour faire des confs sur des apps qui utilise une base de donnée pour stocker la conf
 # apt-get install -y sqlite3 && sqlite3 .config/joplin-desktop/database.sqlite "select * from settings"
 configure_joplin() {
-execandlog "[ -d /home/"$local_user"/.config/Joplin/ ] || $ExeAsUser mkdir /home/"$local_user"/.config/Joplin/"
+execandlog "is_dir_present_or_mkdir_as_user "/home/"$local_user"/.config/Joplin/""
 # $ExeAsUser cat> /home/"$local_user"/.config/Joplin/Preferences << 'EOF'
 # {"spellcheck":{"dictionaries":["fr"],"dictionary":""}}
 # EOF
@@ -2957,7 +3072,7 @@ configure_joplin
 ################################################################################
 ## configuration de Handbrake
 ##------------------------------------------------------------------------------
-execandlog "[ -d /home/"$local_user"/.config/ghb/ ] || $ExeAsUser mkdir /home/"$local_user"/.config/ghb/ && \
+execandlog "reset_dir_as_user "/home/"$local_user"/.config/ghb/" && \
 [ -f /home/"$local_user"/.config/ghb/preferences.json ] && $ExeAsUser sed -E -i '/("UseM4v":) (false|true)/{s/true/false/;}' /home/"$local_user"/.config/ghb/preferences.json"
 # permet de décocher la case "Utiliser l'extension de fichier compatible iPod/iTunes (.m4v) pour MP4" (Fichier -> Préférences -> Général)
 # le fichier de conf n'existe pas tant que handbrake n'a pas été lancé
@@ -2991,10 +3106,10 @@ configure_geeqie
 ################################################################################
 
 # ajout du dossier partagé pour VirtualBox
-execandlog "[ -d /home/"$local_user"/dossier_partage_VM/ ] || $ExeAsUser mkdir /home/"$local_user"/dossier_partage_VM/"
+execandlog "is_dir_present_or_mkdir_as_user "/home/"$local_user"/dossier_partage_VM/""
 
 # ajout du dossier autostart pour les apps qui se lance au démarage
-execandlog "[ -d /home/"$local_user"/.config/autostart/ ] || $ExeAsUser mkdir /home/"$local_user"/.config/autostart/"
+execandlog "reset_dir_as_user "/home/"$local_user"/.config/autostart/""
 
 ################################################################################
 ## configuration des applis qui doivent se lancer au démarage
@@ -3046,13 +3161,15 @@ Hidden=false
 EOF
 # Il n'est pas impossible qu'il faille rajuter à la fin de la commande Exec --no-sandbox
 # Au début Jolin ne se lançait pas sans se paramètre, depuis cela à l'air d'être corrigé
+
+# on pourra surement supprimer la configuration manuel des .desktop pour joplin, signal et keepassxc en les remplaçant par des liens symboliques pointant vers les .desktop correspondant dans /usr/share/applications
 ################################################################################
 
 ################################################################################
 ## configuration de KeePassXC
 ##------------------------------------------------------------------------------
 configure_keepassxc() {
-execandlog "[ -d /home/"$local_user"/.config/keepassxc/ ] || $ExeAsUser mkdir /home/"$local_user"/.config/keepassxc/"
+execandlog "reset_dir_as_user "/home/"$local_user"/.config/keepassxc/""
 $ExeAsUser cat> /home/"$local_user"/.config/keepassxc/keepassxc.ini << 'EOF'
 [General]
 AutoReloadOnChange=true
@@ -3213,6 +3330,7 @@ EOF
 
 # Il pourrait être intéressant de rajouter un reset avant de load la nouvelle conf
 # $ExeAsUser DCONF_reset -f /
+# il faut quand même faire attention car les paramètres pour la conf des extensions Gnome s'éffectue avant la conf dconf et du coup les paramètres en question seraient reset
 
 # le fait de positionner le theme Adwaita-dark en graphique (avec gnome-tweaks) a créer les fichiers /home/"$local_user"/.config/gtk-4.0/settings.ini  et /home/"$local_user"/.config/gtk-3.0/settings.ini avec le contenu suivant
 # [Settings]
@@ -3225,7 +3343,7 @@ CustomGnomeShortcut() {
 	local command="$2"
 	local shortcut="$3"
 	local value="$($ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gsettings get org.gnome.settings-daemon.plugins.media-keys custom-keybindings)"
-	local test="$(echo "$value" | sed "s/\['//;s/', '/,/g;s/'\]//" - | tr ',' '\n' | grep -oP ".*/custom\K[0-9]*(?=/$)")"
+	local test="$(sed "s/\['//;s/', '/,/g;s/'\]//" <<< "$value" | tr ',' '\n' | grep -oP ".*/custom\K[0-9]*(?=/$)")"
 
 	if [ "$(echo "$value" | grep -o "@as")" = "@as" ]; then
 		local num=0
@@ -3278,9 +3396,9 @@ ConfigureGnomeTerminal() {
     local value="$2"
     local entries="$(
       {
-          $ExeAsUser $DCONF_read "$key" | tr -d '[]' | tr , "\n" | grep -F -v "$value"
+          $ExeAsUser $DCONF_read "$key" | tr -d '[]' | tr ',' '\n' | grep -F -v "$value"
           echo "'$value'"
-      } | head -c-1 | tr "\n" ,
+      } | head -c-1 | tr '\n' ','
     )"
 
     $ExeAsUser $DCONF_write "$key" "[$entries]"
@@ -3426,7 +3544,8 @@ EOF
 # ref : [gnome - Edit/Remove existing File Manager (right-click/context menu) actions - Ask Ubuntu](https://askubuntu.com/questions/1300049/edit-remove-existing-file-manager-right-click-context-menu-actions/1300079#1300079)
 # par exemple le paquet nautilus-wipe rajoute des entrés dans le clic droit assez dangereuses comme "Ecraser" et "Ecraser l'espace disque disponnible"
 # pour supprimer ces entrées des options de clic droit de nautilus, il faut soit désinstaller le paquet nautilus-wipe, soit supprimer le .so correspondant dans le répertoire des extensions de nautilus
-execandlog "[ -f /usr/lib/x86_64-linux-gnu/nautilus/extensions-3.0/libnautilus-wipe.so ] && mv /usr/lib/x86_64-linux-gnu/nautilus/extensions-3.0/libnautilus-wipe.so /usr/lib/x86_64-linux-gnu/nautilus/extensions-3.0/libnautilus-wipe.so.backup"
+execandlog "[ -f /usr/lib/x86_64-linux-gnu/nautilus/extensions-3.0/libnautilus-wipe.so ] && \
+mv /usr/lib/x86_64-linux-gnu/nautilus/extensions-3.0/libnautilus-wipe.so /usr/lib/x86_64-linux-gnu/nautilus/extensions-3.0/libnautilus-wipe.so.backup"
 
 # pour supprimer des options internes à nautilus, il faudrait modifier son code source et le recompiler
 # ref : [Comment supprimer Change Desktop Background du clic droit?](https://qastack.fr/ubuntu/34803/how-to-remove-change-desktop-background-from-right-click)
@@ -3661,7 +3780,7 @@ alias la='ls --color=always -A'
 alias l='ls --color=always -CF'
 alias asearch='apt-cache search'
 alias ashow='apt-cache show'
-alias h='history'
+alias h='fc -li 1'
 alias nn='nano -c'
 alias cl='clear'
 alias grep='grep --color=auto'
@@ -3683,7 +3802,6 @@ alias showshortcut='dconf dump /org/gnome/settings-daemon/plugins/media-keys/'
 alias bitcoin='curl -s "https://api.coindesk.com/v1/bpi/currentprice.json" | jq ".bpi.EUR.rate" | tr -d \"'
 alias sshuttle='sudo sshuttle'
 alias last_apt_kernel='apt-cache search --names-only "linux-(headers|image)-[[:digit:]].[[:digit:]]+.[[:digit:]]+.*[[:digit:]]-(amd64$|amd64-unsigned$)" | sort'
-HISTTIMEFORMAT="%Y/%m/%d %T   "
 is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/\$1 ;}
 
 # for Ansible vault editor
@@ -3703,7 +3821,7 @@ alias la='ls --color=always -A'
 alias l='ls --color=always -CF'
 alias asearch='apt-cache search'
 alias ashow='apt-cache show'
-alias h='history'
+alias h='fc -li 1'
 alias nn='nano -c'
 alias cl='clear'
 alias grep='grep --color=auto'
@@ -3718,7 +3836,6 @@ alias xx='shutdown now'
 alias xwx='poweroff'
 alias spyme='lnav /var/log/syslog /var/log/auth.log'
 alias free='free -ht'
-HISTTIMEFORMAT=\"%Y/%m/%d %T   \"
 EOF
 
 displayandexec "Configuration du zshrc                              " "\
@@ -3734,6 +3851,9 @@ sed -i 's/auth       sufficient   pam_shells.so/auth       required   pam_shells
 # on est obliger de changer la valeur de /etc/pam.d/chsh car sinon la commande nous demande de rentrer le mdp de l'utilisateur et donc l'execution de la commande devient intéractif.
 # ref : [command line - chsh always asking a password , and get `PAM: Authentication failure` - Ask Ubuntu](https://askubuntu.com/questions/812420/chsh-always-asking-a-password-and-get-pam-authentication-failure/812426#812426)
 # on change donc la valeur dans /etc/pam.d/chsh avant et après l'execution de la commande chsh
+
+# Pour zsh, on ne configure pas l'affichage des dates devant les commandes avec la variable HISTTIMEFORMAT mais on le fait avec l'utilisation de la commande fc -li 1
+# ref : [How to view datetime stamp for history command in Zsh shell - Unix & Linux Stack Exchange](https://unix.stackexchange.com/questions/103398/how-to-view-datetime-stamp-for-history-command-in-zsh-shell/436221#436221)
 
 if [ "$conf_perso" == 1 ]; then
   configure_bashrc_perso
@@ -3767,19 +3887,16 @@ displayandexec "Mise à jour de la base de donnée de rkhunter        " "rkhunte
 ## création d'un fichier de backup du header LUKS
 ##------------------------------------------------------------------------------
 backup_LUKS_header() {
-  luks_partition="$(lsblk --fs --list | awk '/crypto_LUKS/{print $1}')"
+  root_pv_name="$(pvdisplay --columns --options lv_name,pv_name | awk -F'/' '/root/{print $4}')"
+  root_lvm_parent_partition="$(lsblk -o PKNAME,FSTYPE,NAME --json | grep "$root_pv_name" | grep -Po '("pkname":")\K([A-Za-z0-9\-]+)(?=")')"
+  luks_partition="$(lsblk -o NAME,FSTYPE /dev/"$root_lvm_parent_partition" | awk '/crypto_LUKS/{print $1}')"
   displayandexec "Création d'un backup de l'entête LUKS               " "\
-[ -d /home/"$local_user"/.backup/ ] || $ExeAsUser mkdir --parents /home/"$local_user"/.backup/ && \
+is_dir_present_or_mkdir_as_user "/home/"$local_user"/.backup/" && \
+cryptsetup isLuks /dev/"$luks_partition" && \
 cryptsetup luksHeaderBackup /dev/"$luks_partition" --header-backup-file /home/"$local_user"/.backup/"$luks_partition"_LUKS_Header_Backup.img"
 }
 backup_LUKS_header
-# potentiellement à remplacer avec ce code :
-# for crypted_dev in $luks_partition; do
-# 	if cryptsetup isLuks /dev/"$crypted_dev"; then
-# 		cryptsetup luksHeaderBackup /dev/"$crypted_dev" --header-backup-file /home/"$local_user"/backup/"$crypted_dev"_LUKS_Header_Backup.img
-# 	fi
-# done
-# ce code permet de faire les backup de tous les devices cryptés s'il y en a plusieurs
+# on s'assure dans un premier temps de récupérer uniquement le path de la partition qui contient le lvm du système (lv root) pour être sur de ne faire que la sauvegarde du LUKS du système
 ################################################################################
 
 ################################################################################
@@ -3826,7 +3943,7 @@ cd
 ################################################################################
 ## Création d'un snapshot avec Timeshift
 ##------------------------------------------------------------------------------
-# on s'assure dans un premier temps qu'il n'y a pas déjà eu un premier snapshot d'éffectuée
+# on s'assure dans un premier temps qu'il n'y a pas déjà eu un premier snapshot d'éffectué
 displayandexec "Création d'un snapshot avec Timeshift               " "\
 umount -l /run/timeshift/backup; if timeshift --list --snapshot-device /dev/"$(lsblk -o MOUNTPOINT,KNAME --json | grep -e 'mountpoint":"/"' | grep -Po '("kname":")\K([A-Za-z0-9\-]+)(?=")')" | grep -q '^No snapshots found' 2>/dev/null; then timeshift --scripted --create --rsync --comments 'first snapshot, after postinstall script' --snapshot-device /dev/"$(lsblk -o MOUNTPOINT,KNAME --json | grep -e 'mountpoint":"/"' | grep -Po '("kname":")\K([A-Za-z0-9\-]+)(?=")')"; fi"
 # cette étape est très longue lorsqu'il faut faire un premier snapshot (car timeshift doit faire en fait un miroir du système existant)
