@@ -2999,10 +2999,12 @@ configure_vscode() {
   execandlog "is_dir_present_or_mkdir_as_user "/home/"$local_user"/.config/Code/User/""
   execandlog "$ExeAsUser code --force --install-extension akamud.vscode-theme-onedark"
   execandlog "$ExeAsUser code --force --install-extension redhat.vscode-yaml"
-  execandlog "$ExeAsUser code --force --install-extension ms-vscode.PowerShell"
   execandlog "$ExeAsUser code --force --install-extension Y-Ysss.cisco-config-highlight"
   execandlog "$ExeAsUser code --force --install-extension pustelto.bracketeer"
   execandlog "$ExeAsUser code --force --install-extension mohsen1.prettify-json"
+  execandlog "$ExeAsUser code --force --install-extension mrmlnc.vscode-apache"
+  execandlog "$ExeAsUser code --force --install-extension vscode-nginx"
+  execandlog "$ExeAsUser code --force --install-extension speedproxies.squid-syntax"
 $ExeAsUser cat> /home/"$local_user"/.config/Code/User/settings.json << 'EOF'
 {
     "workbench.colorTheme": "Atom One Dark",
@@ -3028,6 +3030,9 @@ configure_vscode
 # on utilise le --force pour pouvoir mettre à jour l'extension si elle est déjà installée (utile notamment dans le cas d'une relance du script ng_install.sh)
 
 # le répertoire /home/"$local_user"/.config/Code/ se créer uniquement après un premier lancement en graphique
+
+  # execandlog "$ExeAsUser code --force --install-extension ms-vscode.PowerShell"
+  # à vérifier si cette extension est vraiment nécessaire, à priori elle permet surtout de gérer l'execution et le debugage des scripts powershell (en gros plus utile sur un windows que sur un linux)
 ################################################################################
 
 ################################################################################

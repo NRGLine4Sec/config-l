@@ -1,4 +1,4 @@
-# le contenu du .zshrc provient de la conf de Kali
+# le contenu du .zshrc provient en grande partie de la conf du ZSHRC de Kali (https://gitlab.com/kalilinux/packages/kali-defaults/-/blob/kali/master/etc/skel/.zshrc)
 setopt autocd              # change directory just by typing its name
 #setopt correct            # auto correct mistakes
 setopt interactivecomments # allow comments in interactive mode
@@ -7,6 +7,9 @@ setopt nonomatch           # hide error message if there is no match for the pat
 setopt notify              # report the status of background jobs immediately
 setopt numericglobsort     # sort filenames numerically when it makes sense
 setopt promptsubst         # enable command substitution in prompt
+
+# Turn off all beeps (https://blog.vghaisas.com/zsh-beep-sound/)
+unsetopt BEEP
 
 WORDCHARS=${WORDCHARS//\/} # Don't consider certain characters part of the word
 
