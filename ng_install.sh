@@ -1275,7 +1275,7 @@ displayandexec "Installation de yersinia                            " "$AGI yers
 # zenmap n'est pas dispo dans debian bullseye car python2 est EOL, pour traquer l'avencement du portage du code vers python3 : https://github.com/nmap/nmap/issues/1176
 displayandexec "Installation de zip                                 " "$AGI zip"
 displayandexec "Installation de zutils                              " "$AGI zutils"
-displayandexec "Installation de zsh                                 " "$AGI zsh"
+displayandexec "Installation de zsh                                 " "$AGI zsh zsh-syntax-highlighting"
 displayandexec "Installation de zstd                                " "$AGI zstd"
 displayandexec "Installation de wireguard                           " "$AGI wireguard"
 displayandexec "Installation de whois                               " "$AGI whois"
@@ -3704,7 +3704,6 @@ alias diff='diff --unified=0 --color=auto'
 alias i='sudo ag install'
 alias ip='ip --color=auto'
 alias u='sudo ag update'
-alias up='sudo ag upgrade'
 alias upp='sudo ag update && sudo ag upgrade'
 alias uppr='sudo ag update && sudo ag dist-upgrade'
 alias xx='sudo shutdown now'
@@ -3721,6 +3720,7 @@ alias sshuttle='sudo sshuttle'
 alias last_apt_kernel='apt-cache search --names-only "linux-(headers|image)-[[:digit:]].[[:digit:]]+.[[:digit:]]+.*[[:digit:]]-(amd64$|amd64-unsigned$)" | sort'
 HISTTIMEFORMAT="%Y/%m/%d %T   "
 is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/\$1 ;}
+to_lower() { tr [:upper:] [:lower:] <<< "\$@" ;}
 
 # for Ansible vault editor
 export EDITOR=nano
@@ -3756,7 +3756,6 @@ alias diff='diff --unified=0 --color=auto'
 alias i='ag install'
 alias ip='ip --color=auto'
 alias u='ag update'
-alias up='ag upgrade'
 alias upp='ag update && ag upgrade'
 alias uppr='ag update && ag dist-upgrade'
 alias xx='shutdown now'
@@ -3764,6 +3763,8 @@ alias xwx='poweroff'
 alias spyme='lnav /var/log/syslog /var/log/auth.log'
 alias free='free -ht'
 HISTTIMEFORMAT=\"%Y/%m/%d %T   \"
+is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/\$1 ;}
+to_lower() { tr [:upper:] [:lower:] <<< "\$@" ;}
 
 # share history between terminals
 # ref : https://subbass.blogspot.com/2009/10/howto-sync-bash-history-between.html
@@ -3792,7 +3793,6 @@ alias grep='grep --color=auto'
 alias diff='diff --unified=0 --color=auto'
 alias i='sudo ag install'
 alias u='sudo ag update'
-alias up='sudo ag upgrade'
 alias upp='sudo ag update && sudo ag upgrade'
 alias uppr='sudo ag update && sudo ag dist-upgrade'
 alias xx='sudo shutdown now'
@@ -3808,6 +3808,7 @@ alias bitcoin='curl -s "https://api.coindesk.com/v1/bpi/currentprice.json" | jq 
 alias sshuttle='sudo sshuttle'
 alias last_apt_kernel='apt-cache search --names-only "linux-(headers|image)-[[:digit:]].[[:digit:]]+.[[:digit:]]+.*[[:digit:]]-(amd64$|amd64-unsigned$)" | sort'
 is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/\$1 ;}
+to_lower() { tr [:upper:] [:lower:] <<< "\$@" ;}
 
 # for Ansible vault editor
 export EDITOR=nano
@@ -3834,13 +3835,14 @@ alias diff='diff --unified=0 --color=auto'
 alias i='ag install'
 alias ip='ip --color=auto'
 alias u='ag update'
-alias up='ag upgrade'
 alias upp='ag update && ag upgrade'
 alias uppr='ag update && ag dist-upgrade'
 alias xx='shutdown now'
 alias xwx='poweroff'
 alias spyme='lnav /var/log/syslog /var/log/auth.log'
 alias free='free -ht'
+is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/\$1 ;}
+to_lower() { tr [:upper:] [:lower:] <<< "\$@" ;}
 EOF
 
 displayandexec "Configuration du zshrc                              " "\
@@ -3871,6 +3873,7 @@ fi
 ################################################################################
 
 # Commande temporaire pour éviter que des fichiers de /home/user/.config n'appartienent à root lors de l'install, sans qu'on comprenne bien pourquoi (executé par ExeAsUser)
+execandlog "find /home/"$local_user"/ -user 'root' -not -type l"
 execandlog "chown -R "$local_user":"$local_user" /home/"$local_user"/"
 # problement que la commande va rester dans le script car elle permet de corriger les appartenances des fichiers/dossiers s'il y en a besoin (par exemple, les déplacement de .zshrc et .bashrc du dossier du script)
 
@@ -3892,7 +3895,7 @@ displayandexec "Mise à jour de la base de donnée de rkhunter        " "rkhunte
 ## création d'un fichier de backup du header LUKS
 ##------------------------------------------------------------------------------
 backup_LUKS_header() {
-  root_pv_name="$(pvdisplay --columns --options lv_name,pv_name | awk -F'/' '/root/{print $4}')"
+  root_pv_name="$(pvdisplay --columns --options lv_name,pv_name | awk -F'/' '{if ($1 ~ /root/) {print $4}}')"
   root_lvm_parent_partition="$(lsblk -o PKNAME,FSTYPE,NAME --json | grep "$root_pv_name" | grep -Po '("pkname":")\K([A-Za-z0-9\-]+)(?=")')"
   luks_partition="$(lsblk -o NAME,FSTYPE /dev/"$root_lvm_parent_partition" | awk '/crypto_LUKS/{print $1}')"
   displayandexec "Création d'un backup de l'entête LUKS               " "\
