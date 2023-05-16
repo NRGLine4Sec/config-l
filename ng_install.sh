@@ -334,9 +334,7 @@ for param in "$@"; do
             show_only_error=1 ;;
         '-r'|'--reboot')
             reboot_after_install=1 ;;
-        *) && \
-            # echo 'Invalid option' ;;
-            # print_usage_guide; exit 1 ;;
+        *) echo 'Invalid option'; print_usage_guide; exit 1 ;;
     esac
 done
 
@@ -537,7 +535,7 @@ force_dns_for_install
 ##------------------------------------------------------------------------------
 check_internet_access() {
   displayandexec "Vérification de la connection internet (ICMP+DNS)   " "ping -c 1 www.google.com" && \
-  displayandexec "Vérification de la connection internet (HTTPS)      " "curl --location --fail --connect-timeout 3 --retry 0 --silent --output /dev/null --write-out %{http_code} 'https://www.google.com' | grep -q '200'"
+  displayandexec "Vérification de la connection internet (HTTPS)      " "wget --server-response --spider --quiet 'https://www.google.com' 2>&1 | grep -iq 'HTTP.*200 OK'"
   if [ $? != 0 ]; then
       echo -e "${RED}######################################################################${RESET}" | tee --append "$log_file"
       echo -e "${RED}#${RESET} Pour executer ce script, il faut disposer d'une connexion Internet ${RED}#${RESET}" | tee --append "$log_file"
@@ -546,6 +544,7 @@ check_internet_access() {
   fi
 }
 check_internet_access
+# ref : [bash - Script to get the HTTP status code of a list of urls? - Stack Overflow](https://stackoverflow.com/questions/6136022/script-to-get-the-http-status-code-of-a-list-of-urls/53358157#53358157)
 ################################################################################
 
 ################################################################################
@@ -971,7 +970,7 @@ echo ''
 
 # remise au propre de /etc/apt/sources.list
 
-make_apt_source_list_clean_bullseye() {
+make_apt_source_list_clean() {
 cat> /etc/apt/sources.list << EOF
 deb https://deb.debian.org/debian/ $debian_release main contrib non-free
 deb-src https://deb.debian.org/debian/ $debian_release main contrib non-free
@@ -979,19 +978,17 @@ deb-src https://deb.debian.org/debian/ $debian_release main contrib non-free
 deb https://security.debian.org/debian-security $debian_release-security main contrib
 deb-src https://security.debian.org/debian-security $debian_release-security main contrib
 
-# $debian_release-updates, previously known as 'volatile'
+# $debian_release-updates, to get updates before a point release is made
+# see https://www.debian.org/doc/manuals/debian-reference/ch02.en.html#_updates_and_backports
 deb https://deb.debian.org/debian/ $debian_release-updates main contrib non-free
 deb-src https://deb.debian.org/debian/ $debian_release-updates main contrib non-free
 
-#backport
+# backports
+# see https://backports.debian.org/
 deb https://deb.debian.org/debian $debian_release-backports main contrib non-free
 EOF
 }
-# ne pas mettre les variable entre double quote
-
-if [ "$bullseye" == 1 ]; then
-  make_apt_source_list_clean_bullseye
-fi
+make_apt_source_list_clean
 
 echo ''
 echo '     ################################################################'
@@ -1215,7 +1212,11 @@ displayandexec "Installation de mpv                                 " "$AGI mpv 
 # on n'install pas la dépendance youtube-dl requise par mpv car la version des dépots debian est trop ancienne
 # ref : [ubuntu - How do I get apt-get to ignore some dependencies? - Server Fault](https://serverfault.com/questions/250224/how-do-i-get-apt-get-to-ignore-some-dependencies/663803#663803)
 displayandexec "Installation de nautilus-gtkhash                    " "$AGI nautilus-gtkhash"
-displayandexec "Installation de nautilus-wipe                       " "$AGI nautilus-wipe"
+if [ "$bullseye" == 1 ]; then
+  displayandexec "Installation de nautilus-wipe                       " "$AGI nautilus-wipe"
+fi
+# nautilus-wipe a été supprimé de bookworm car Nautilus utilise GTK4 dans bookworm
+# ref : [#1017619 - nautilus-wipe: Fails to build with nautilus 43 - Debian Bug report logs](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1017619)
 displayandexec "Installation de ncdu                                " "$AGI ncdu"
 displayandexec "Installation de netdiscover                         " "$AGI netdiscover"
 displayandexec "Installation de network-manager-openvpn-gnome       " "$AGI network-manager-openvpn-gnome"
@@ -1939,8 +1940,8 @@ EOF
 # apelle à la fonction qui permet de récupérer toutes les versions des logiciels qui s'installent manuellement
 check_latest_version_manual_install_apps
 
-install_all_manual_install_apps() {
-  install_atom
+install_all_manual_install_apps_bullseye() {
+  # install_atom
   install_winscp
   install_veracrypt
   install_spotify
@@ -1974,10 +1975,14 @@ install_all_manual_install_apps() {
 
 if [ -z "$fisrt_time_script_executed" ]; then
   if [ "$bullseye" == 1 ]; then
-    install_all_manual_install_apps
+    install_all_manual_install_apps_bullseye
+  fi
+  if [ "$bookworm" == 1 ]; then
+    install_all_manual_install_apps_bullseye
   fi
 fi
 # Pour l'instant on désactive l'installation des programmes avec une installation manuelle lorsque ce n'est pas la première fois que le script s'execute
+# On utilise aussi la même version de install_all_manual_install_apps_bullseye pour bookworm pour le moment pour faire des tests, mais il faudra surement en faire un dexuième dédié avec des dépots pour les installs en APT spécifiques à bookworm
 ################################################################################
 
 ################################################################################
@@ -2228,7 +2233,7 @@ chmod +x /usr/bin/gitupdate"
 install_sysupdate() {
 
 displayandexec "Installation du script sysupdate                    " "\
-is_file_present_and_rmfile "/usr/bin/sysupdate" \
+is_file_present_and_rmfile "/usr/bin/sysupdate"; \
 cp "$script_path"/sysupdate /usr/bin/sysupdate && \
 chmod +x /usr/bin/sysupdate"
 }
@@ -3013,7 +3018,10 @@ $ExeAsUser cat> /home/"$local_user"/.config/Code/User/settings.json << 'EOF'
     "security.workspace.trust.untrustedFiles": "open",
     "files.autoSave": "afterDelay",
     "editor.wordWrap": "on",
-    "diffEditor.renderSideBySide": false
+    "diffEditor.renderSideBySide": false,
+    "git.confirmSync": false,
+    "explorer.sortOrder": "modified",
+    "workbench.startupEditor": "none"
 }
 EOF
 }
@@ -3312,7 +3320,7 @@ button-layout='appmenu:minimize,maximize,close'
 
 [gnome/shell]
 app-picker-view=uint32 1
-favorite-apps=['chromium.desktop', 'org.gnome.Terminal.desktop', 'org.gnome.Nautilus.desktop', 'signal-desktop.desktop', 'joplin.desktop', 'firefox-esr.desktop', 'firefox-esr-private.desktop', 'brave-browser.desktop', 'atom.desktop', 'org.gnome.Todo.desktop', 'veracrypt.desktop', 'spotify.desktop', 'libreoffice-writer.desktop', 'asbru-cm.desktop']
+favorite-apps=['chromium.desktop', 'org.gnome.Terminal.desktop', 'org.gnome.Nautilus.desktop', 'signal-desktop.desktop', 'joplin.desktop', 'firefox-esr.desktop', 'firefox-esr-private.desktop', 'brave-browser.desktop', 'code.desktop', 'org.gnome.Todo.desktop', 'veracrypt.desktop', 'spotify.desktop', 'libreoffice-writer.desktop', 'asbru-cm.desktop']
 had-bluetooth-devices-setup=false
 
 [gtk/settings/file-chooser]
@@ -3497,22 +3505,22 @@ ConfigureGnomeTerminal
 # bien faire attention au point virgule, présent dans "Added Associations" mais pas dans "Default Applications"
 $ExeAsUser cat> /home/"$local_user"/.config/mimeapps.list << 'EOF'
 [Added Associations]
-application/octet-stream=atom.desktop;
+application/octet-stream=code.desktop;
 application/vnd.jgraph.mxfile=drawio.desktop;
-application/x-php=atom.desktop;
+application/x-php=code.desktop;
 application/x-mswinurl=launch_url_file.desktop;
-application/x-shellscript=atom.desktop;
+application/x-shellscript=code.desktop;
 application/x-gettext-translation=org.gnome.gedit.desktop;
 application/x-raw-disk-image=gnome-disk-image-mounter.desktop;
-application/x-shellscript=atom.desktop;
+application/x-shellscript=code.desktop;
 application/x-keepass2=keepassxc.desktop;
 application/x-kdbx=keepassxc.desktop;
 text/markdown=typora.desktop;org.gnome.gedit.desktop;
 text/csv=libreoffice-calc.desktop;org.gnome.gedit.desktop;
-text/html=chromium.desktop;atom.desktop;
-text/x-patch=atom.desktop;
-text/x-diff=atom.desktop;
-text/x-python=atom.desktop;
+text/html=chromium.desktop;code.desktop;
+text/x-patch=code.desktop;
+text/x-diff=code.desktop;
+text/x-python=code.desktop;
 video/x-matroska=mpv.desktop;
 video/webm=mpv.desktop;
 video/x-flv=mpv.desktop;
@@ -3521,12 +3529,12 @@ image/webp=geeqie.desktop;
 
 [Default Applications]
 application/x-mswinurl=launch_url_file.desktop;
-application/x-shellscript=atom.desktop
+application/x-shellscript=code.desktop
 application/x-keepass2=keepassxc.desktop
 application/x-kdbx=keepassxc.desktop
 text/html=chromium.desktop
-text/plain=atom.desktop
-text/x-diff=atom.desktop
+text/plain=code.desktop
+text/x-diff=code.desktop
 text/markdown=typora.desktop
 video/mp4=mpv.desktop
 video/x-matroska=mpv.desktop
@@ -3712,7 +3720,6 @@ alias youtube-dl='youtube-dl -o "%(title)s.%(ext)s"'
 alias yt-dlp='yt-dlp -o "%(title)s.%(ext)s"'
 alias yt-dlp_best='yt-dlp -o "%(title)s.%(ext)s" -f "bestvideo+bestaudio"'
 alias spyme='sudo lnav /var/log/syslog /var/log/auth.log'
-alias sysupdate='sudo sysupdate'
 alias free='free -ht'
 alias showshortcut='dconf dump /org/gnome/settings-daemon/plugins/media-keys/'
 alias bitcoin='curl -s "https://api.coindesk.com/v1/bpi/currentprice.json" | jq ".bpi.EUR.rate" | tr -d \"'
@@ -3801,7 +3808,6 @@ alias youtube-dl='youtube-dl -o "%(title)s.%(ext)s"'
 alias yt-dlp='yt-dlp -o "%(title)s.%(ext)s"'
 alias yt-dlp_best='yt-dlp -o "%(title)s.%(ext)s" -f "bestvideo+bestaudio"'
 alias spyme='sudo lnav /var/log/syslog /var/log/auth.log'
-alias sysupdate='sudo sysupdate'
 alias free='free -ht'
 alias showshortcut='dconf dump /org/gnome/settings-daemon/plugins/media-keys/'
 alias bitcoin='curl -s "https://api.coindesk.com/v1/bpi/currentprice.json" | jq ".bpi.EUR.rate" | tr -d \"'
@@ -3896,7 +3902,7 @@ displayandexec "Mise à jour de la base de donnée de rkhunter        " "rkhunte
 ##------------------------------------------------------------------------------
 backup_LUKS_header() {
   root_pv_name="$(pvdisplay --columns --options lv_name,pv_name | awk -F'/' '{if ($1 ~ /root/) {print $4}}')"
-  root_lvm_parent_partition="$(lsblk -o PKNAME,FSTYPE,NAME --json | grep "$root_pv_name" | grep -Po '("pkname":")\K([A-Za-z0-9\-]+)(?=")')"
+  root_lvm_parent_partition="$(lsblk -o PKNAME,FSTYPE,NAME | awk '/'"$root_pv_name"'/{print $1}')"
   luks_partition="$(lsblk -o NAME,FSTYPE /dev/"$root_lvm_parent_partition" | awk '/crypto_LUKS/{print $1}')"
   displayandexec "Création d'un backup de l'entête LUKS               " "\
 is_dir_present_or_mkdir_as_user "/home/"$local_user"/.backup/" && \
@@ -3905,6 +3911,8 @@ cryptsetup luksHeaderBackup /dev/"$luks_partition" --header-backup-file /home/"$
 }
 backup_LUKS_header
 # on s'assure dans un premier temps de récupérer uniquement le path de la partition qui contient le lvm du système (lv root) pour être sur de ne faire que la sauvegarde du LUKS du système
+# On ne peut pas utiliser root_lvm_parent_partition="$(lsblk -o PKNAME,FSTYPE,NAME --json | grep "$root_pv_name" | grep -Po '("pkname":")\K([A-Za-z0-9\-]+)(?=")')"
+# car ils ont changer le format d'affichage du output json entre les versions lsblk from util-linux 2.36.1 (bullseye) et lsblk de util-linux 2.38.1 (bookworm)
 ################################################################################
 
 ################################################################################

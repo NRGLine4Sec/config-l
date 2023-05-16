@@ -365,7 +365,7 @@ UpdateDrawio() {
   rm -f "$manual_install_dir"/drawio/drawio-*.AppImage && \
   $WGET -P "$manual_install_dir"/drawio/ https://github.com/jgraph/drawio-desktop/releases/download/v"$drawio_version"/drawio-x86_64-"$drawio_version".AppImage && \
   chmod +x "$manual_install_dir"/drawio/drawio-x86_64-"$drawio_version".AppImage && \
-  sed -i "s,^Exec=.*,Exec=$manual_install_dir/drawio/drawio-x86_64-"$drawio_version".AppImage,g" /usr/share/applications/drawio.desktop
+  sed -i 's,^Exec=.*,Exec='"$manual_install_dir"'/drawio/drawio-x86_64-'"$drawio_version"'.AppImage,g' /usr/share/applications/drawio.desktop
   [ -f "$manual_install_dir"/drawio/drawlogo256.png ] || $WGET -P "$manual_install_dir"/drawio/ 'https://raw.githubusercontent.com/jgraph/drawio/master/src/main/webapp/images/drawlogo256.png'
 }
 
