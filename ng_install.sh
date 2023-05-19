@@ -1036,6 +1036,19 @@ configure_debconf
 ################################################################################
 
 ################################################################################
+## Configuration de apt
+##------------------------------------------------------------------------------
+tmp_all_package_list_before="$(dpkg --get-selections | awk '{if ($2 == "install") {print $1}}' | bash -c "grep -w$(for pkg in alpine balsa biabam bsd-mailx claws-mail dovecot-sieve enigmail exim4-base exim4-config exim4-daemon-heavy exim4-daemon-light exmh filter gnarwl gnome-gmail gnumail.app im kmail kontact maildrop mailutils mailutils-mh mew mew-beta mew-beta-bin mew-bin mutt nmh notmuch prayer procmail sendemail sensible-mda sqwebmail-de sylpheed uw-mailutils vm wl wl-beta yample; do echo -n " -e '"$pkg"'"; done)")"
+configure_apt() {
+cat>> /etc/apt/preferences << 'EOF'
+Package: exim4-base exim4-config exim4-daemon-heavy exim4-daemon-light
+Pin: release *
+Pin-Priority: -1
+EOF
+# configure_apt
+################################################################################
+
+################################################################################
 ## Update PCI ID list
 ##------------------------------------------------------------------------------
 displayandexec "Mise à jour de la liste des ID PCI                  " "update-pciids"
@@ -1200,6 +1213,7 @@ displayandexec "Installation de inkscape                            " "$AGI inks
 displayandexec "Installation de iotop                               " "$AGI iotop"
 displayandexec "Installation de ipcalc                              " "$AGI ipcalc"
 displayandexec "Installation de jq                                  " "$AGI jq"
+displayandexec "Installation de libnotify-bin                       " "$AGI libnotify-bin"
 displayandexec "Installation de linux-cpupower                      " "$AGI linux-cpupower"
 displayandexec "Installation de lnav                                " "$AGI lnav"
 displayandexec "Installation de locate                              " "$AGI locate"
@@ -1212,6 +1226,9 @@ displayandexec "Installation de mpv                                 " "$AGI mpv 
 # on n'install pas la dépendance youtube-dl requise par mpv car la version des dépots debian est trop ancienne
 # ref : [ubuntu - How do I get apt-get to ignore some dependencies? - Server Fault](https://serverfault.com/questions/250224/how-do-i-get-apt-get-to-ignore-some-dependencies/663803#663803)
 displayandexec "Installation de nautilus-gtkhash                    " "$AGI nautilus-gtkhash"
+# nautilus-gtkhash semble être enlevé de la release bookworm (en tout cas pour la RC2) toutefois il n'y a aucune infos à ce sujet dans le tracker du paquet ou dans le bugtrack
+# pour l'instant on le laisse échouer dans l'install standard car peut être que le paquet va ré-apparaitre pour la version stable quand elle sortira
+# ref : [Debian -- Package Search Results -- nautilus-gtkhash](https://packages.debian.org/search?keywords=nautilus-gtkhash)
 if [ "$bullseye" == 1 ]; then
   displayandexec "Installation de nautilus-wipe                       " "$AGI nautilus-wipe"
 fi
@@ -1398,7 +1415,7 @@ rm -rf "$tmp_dir""
 ##------------------------------------------------------------------------------
 install_spotify() {
   displayandexec "Installation de spotify                             " "\
-is_file_present_and_rmfile "/usr/share/keyrings/spotify-archive-keyring.gpg" \
+is_file_present_and_rmfile "/usr/share/keyrings/spotify-archive-keyring.gpg" && \
 $CURL 'https://download.spotify.com/debian/pubkey_7A3A762FAFD4A51F.gpg' | gpg --dearmor --output /usr/share/keyrings/spotify-archive-keyring.gpg && \
 echo 'deb [signed-by=/usr/share/keyrings/spotify-archive-keyring.gpg] http://repository.spotify.com stable non-free' > /etc/apt/sources.list.d/spotify.list && \
 $AG update && \
@@ -1412,7 +1429,7 @@ $AGI spotify-client"
 ##------------------------------------------------------------------------------
 install_apt-fast() {
   displayandexec "Installation de apt-fast                            " "\
-is_file_present_and_rmfile "/usr/share/keyrings/apt-fast-archive-keyring.gpg" \
+is_file_present_and_rmfile "/usr/share/keyrings/apt-fast-archive-keyring.gpg" && \
 $WGET --output-document - 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xA2166B8DE8BDC3367D1901C11EE2FF37CA8DA16B' | gpg --dearmor --output /usr/share/keyrings/apt-fast-archive-keyring.gpg && \
 cat> /etc/apt/sources.list.d/apt-fast.list << 'EOF'
 deb [arch=amd64 signed-by=/usr/share/keyrings/apt-fast-archive-keyring.gpg] http://ppa.launchpad.net/apt-fast/stable/ubuntu hirsute main
@@ -1473,7 +1490,7 @@ cat> /etc/apt/sources.list.d/typora.list << 'EOF'
 deb [signed-by=/usr/share/keyrings/typora-archive-keyring.gpg] https://typora.io/linux ./
 # deb-src https://typora.io/linux ./
 EOF
-is_file_present_and_rmfile "/usr/share/keyrings/typora-archive-keyring.gpg" \
+is_file_present_and_rmfile "/usr/share/keyrings/typora-archive-keyring.gpg" && \
 $WGET --output-document - 'https://typora.io/linux/public-key.asc' | gpg --dearmor --output /usr/share/keyrings/typora-archive-keyring.gpg && \
 $AG update && \
 $AGI typora"
@@ -1487,14 +1504,16 @@ install_virtualbox() {
   displayandexec "Installation des dépendances de VirtualBox          " "$AGI dkms"
   displayandexec "Installation de VirtualBox                          " "\
 echo 'deb [signed-by=/usr/share/keyrings/virtualbox-archive-keyring.gpg] https://download.virtualbox.org/virtualbox/debian bullseye contrib' > /etc/apt/sources.list.d/virtualbox.list && \
-is_file_present_and_rmfile "/usr/share/keyrings/virtualbox-archive-keyring.gpg" \
+is_file_present_and_rmfile "/usr/share/keyrings/virtualbox-archive-keyring.gpg" && \
 $WGET --output-document - 'https://www.virtualbox.org/download/oracle_vbox_2016.asc' | gpg --dearmor --output /usr/share/keyrings/virtualbox-archive-keyring.gpg && \
 $AG update && \
 $AGI virtualbox-7.0"
-virtualbox_version="$(virtualbox --help | grep -Po ' v\K[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+')"
+local tmp_dir="$(mktemp -d)"
+virtualbox_version="$(virtualbox --help 2>/dev/null | grep -Po '( v)\K[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+')"
 displayandexec "Installation de VM VirtualBox Extension Pack        " "\
 $WGET -P "$tmp_dir" https://download.virtualbox.org/virtualbox/"$virtualbox_version"/Oracle_VM_VirtualBox_Extension_Pack-"$virtualbox_version".vbox-extpack && \
-echo y | /usr/bin/VBoxManage extpack install --replace "$tmp_dir"/Oracle_VM_VirtualBox_Extension_Pack-"$virtualbox_version".vbox-extpack"
+echo y | /usr/bin/VBoxManage extpack install --replace "$tmp_dir"/Oracle_VM_VirtualBox_Extension_Pack-"$virtualbox_version".vbox-extpack; \
+rm -rf "$tmp_dir""
   # Une solution qui devrait marché mais il faut avoir le hachage de la licence pour pouvoir l'executer et on obtient le hachage qu'en lançant une première fois la commande
   # VBoxManage extpack install --replace Oracle_VM_VirtualBox_Extension_Pack-$virtualbox_version.vbox-extpack --accept-license --accept-license=56be48f923303c8cababb0bb4c478284b688ed23f16d775d729b89a2e8e5f9eb
   # https://www.virtualbox.org/ticket/16674
@@ -1555,7 +1574,7 @@ EOF
 ##------------------------------------------------------------------------------
 install_keepassxc() {
   displayandexec "Installation de KeePassXC                           " "\
-reset_dir ""$manual_install_dir"/KeePassXC/" && \
+reset_dir ""$manual_install_dir"/KeePassXC/"; \
 $WGET -P "$manual_install_dir"/KeePassXC/ https://github.com/keepassxreboot/keepassxc/releases/download/"$keepassxc_version"/KeePassXC-"$keepassxc_version"-x86_64.AppImage && \
 $WGET -P "$manual_install_dir"/KeePassXC/ 'https://keepassxc.org/images/keepassxc-logo.svg' && \
 chmod +x "$manual_install_dir"/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage"
@@ -1583,7 +1602,7 @@ cat> /etc/apt/sources.list.d/mkvtoolnix.list << 'EOF'
 deb [signed-by=/usr/share/keyrings/mkvtoolnix-archive-keyring.gpg] https://mkvtoolnix.download/debian/ bullseye main
 #deb-src https://mkvtoolnix.download/debian/ bullseye main
 EOF
-is_file_present_and_rmfile "/usr/share/keyrings/mkvtoolnix-archive-keyring.gpg" \
+is_file_present_and_rmfile "/usr/share/keyrings/mkvtoolnix-archive-keyring.gpg" && \
 $WGET --output-document - 'https://mkvtoolnix.download/gpg-pub-moritzbunkus.txt' | gpg --dearmor --output /usr/share/keyrings/mkvtoolnix-archive-keyring.gpg && \
 $AG update && \
 $AGI mkvtoolnix mkvtoolnix-gui"
@@ -1643,7 +1662,7 @@ EOF
 install_signal() {
   displayandexec "Installation de Signal                              " "\
 echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/signal-archive-keyring.gpg] https://updates.signal.org/desktop/apt xenial main' > /etc/apt/sources.list.d/signal-desktop.list && \
-is_file_present_and_rmfile "/usr/share/keyrings/signal-archive-keyring.gpg" \
+is_file_present_and_rmfile "/usr/share/keyrings/signal-archive-keyring.gpg" && \
 $CURL 'https://updates.signal.org/desktop/apt/keys.asc' | gpg --dearmor --output /usr/share/keyrings/signal-archive-keyring.gpg && \
 $AG update && \
 $AGI signal-desktop"
@@ -1673,7 +1692,7 @@ cat> /etc/apt/sources.list.d/asbru-cm.list << 'EOF'
 deb [arch=amd64 signed-by=/usr/share/keyrings/asbru-archive-keyring.gpg] https://packagecloud.io/asbru-cm/asbru-cm/debian/ bullseye main
 #deb-src https://packagecloud.io/asbru-cm/asbru-cm/debian/ bullseye main
 EOF
-is_file_present_and_rmfile "/usr/share/keyrings/asbru-archive-keyring.gpg" \
+is_file_present_and_rmfile "/usr/share/keyrings/asbru-archive-keyring.gpg" && \
 $CURL 'https://packagecloud.io/asbru-cm/asbru-cm/gpgkey' | gpg --dearmor --output /usr/share/keyrings/asbru-archive-keyring.gpg && \
 $AG update && \
 $AGI asbru-cm keepassxc-"
@@ -1706,7 +1725,7 @@ rm -rf "$tmp_dir""
 ##------------------------------------------------------------------------------
 install_youtubedl() {
   displayandexec "Installation de youtube-dl                          " "\
-is_file_present_and_rmfile "/usr/bin/youtube-dl" \
+is_file_present_and_rmfile "/usr/bin/youtube-dl" && \
 $WGET -P /usr/bin https://github.com/ytdl-org/youtube-dl/releases/download/"$youtubedl_version"/youtube-dl && \
 chmod +x /usr/bin/youtube-dl && \
 ln -s /usr/bin/python3 /usr/bin/python"
@@ -1720,7 +1739,7 @@ ln -s /usr/bin/python3 /usr/bin/python"
 ##------------------------------------------------------------------------------
 install_yt-dlp() {
   displayandexec "Installation de yt-dlp                              " "\
-is_file_present_and_rmfile "/usr/bin/yt-dlp" \
+is_file_present_and_rmfile "/usr/bin/yt-dlp" && \
 $WGET -P /usr/bin https://github.com/yt-dlp/yt-dlp/releases/download/"$ytdlp_version"/yt-dlp && \
 chmod +x /usr/bin/yt-dlp"
 }
@@ -1799,7 +1818,7 @@ install_opensnitch() {
 ##------------------------------------------------------------------------------
 install_ansible() {
   displayandexec "Installation de Ansible                             " "\
-is_file_present_and_rmfile "/usr/share/keyrings/ansible-archive-keyring.gpg" \
+is_file_present_and_rmfile "/usr/share/keyrings/ansible-archive-keyring.gpg" && \
 $WGET --output-document - 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x93C4A3FD7BB9C367' | gpg --dearmor --output /usr/share/keyrings/ansible-archive-keyring.gpg && \
 echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/ansible-archive-keyring.gpg] http://ppa.launchpad.net/ansible/ansible-5/ubuntu hirsute main' > /etc/apt/sources.list.d/ansible.list && \
 $AG update && \
@@ -1876,7 +1895,7 @@ EOF
 ##------------------------------------------------------------------------------
 install_timeshift() {
   displayandexec "Installation de timeshift                           " "\
-is_file_present_and_rmfile "/usr/share/keyrings/timeshift-archive-keyring.gpg" \
+is_file_present_and_rmfile "/usr/share/keyrings/timeshift-archive-keyring.gpg" && \
 $WGET --output-document - 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x1B32B87ABAEE357218F6B48CB5B116B72D0F61F0' | gpg --dearmor --output /usr/share/keyrings/timeshift-archive-keyring.gpg && \
 cat> /etc/apt/sources.list.d/timeshift.list << 'EOF'
 deb [arch=amd64 signed-by=/usr/share/keyrings/timeshift-archive-keyring.gpg] http://ppa.launchpad.net/teejee2008/timeshift/ubuntu hirsute main
@@ -1895,7 +1914,7 @@ $AGI timeshift"
 install_vscode() {
   displayandexec "Installation de vscode                              " "\
 echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/vscode-archive-keyring.gpg] https://packages.microsoft.com/repos/code stable main' > /etc/apt/sources.list.d/vscode.list && \
-is_file_present_and_rmfile "/usr/share/keyrings/vscode-archive-keyring.gpg" \
+is_file_present_and_rmfile "/usr/share/keyrings/vscode-archive-keyring.gpg" && \
 $CURL 'https://packages.microsoft.com/keys/microsoft.asc' | gpg --dearmor --output /usr/share/keyrings/vscode-archive-keyring.gpg && \
 $AG update && \
 $AGI code"
@@ -1907,7 +1926,7 @@ $AGI code"
 ##------------------------------------------------------------------------------
 install_brave() {
   displayandexec "Installation de brave                               " "\
-is_file_present_and_rmfile "/usr/share/keyrings/brave-archive-keyring.gpg" \
+is_file_present_and_rmfile "/usr/share/keyrings/brave-archive-keyring.gpg" && \
 $WGET --output-document - 'https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg' | gpg --dearmor --output /usr/share/keyrings/brave-archive-keyring.gpg && \
 cat> /etc/apt/sources.list.d/brave.list << 'EOF'
 deb [arch=amd64 signed-by=/usr/share/keyrings/brave-archive-keyring.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main
@@ -1936,6 +1955,28 @@ EOF
 }
 ################################################################################
 
+# Pour facilier la gestion du passage d'une version de debian à une autre
+get_available_distrib_version_repo_url() {
+repo_url='
+https://download.virtualbox.org/virtualbox/debian
+http://repository.spotify.com
+http://ppa.launchpad.net/apt-fast/stable/ubuntu
+https://mkvtoolnix.download/debian
+https://updates.signal.org/desktop/apt
+https://packagecloud.io/asbru-cm/asbru-cm/debian
+http://ppa.launchpad.net/ansible/ansible-5/ubuntu
+http://ppa.launchpad.net/teejee2008/timeshift/ubuntu
+https://packages.microsoft.com/repos/code
+https://brave-browser-apt-release.s3.brave.com
+'
+for url in $repo_url; do
+  echo "$url"
+  echo '----------------------------------------------------------------------------'
+  curl --silent --location ""$url"/dists"
+  printf '\n\n'
+done
+}
+# get_available_distrib_version_repo_url
 
 # apelle à la fonction qui permet de récupérer toutes les versions des logiciels qui s'installent manuellement
 check_latest_version_manual_install_apps
@@ -1947,7 +1988,7 @@ install_all_manual_install_apps_bullseye() {
   install_spotify
   install_apt-fast
   install_drawio
-  install_boostnote
+  # install_boostnote
   install_typora
   install_virtualbox
   install_keepassxc
@@ -2233,7 +2274,7 @@ chmod +x /usr/bin/gitupdate"
 install_sysupdate() {
 
 displayandexec "Installation du script sysupdate                    " "\
-is_file_present_and_rmfile "/usr/bin/sysupdate"; \
+is_file_present_and_rmfile "/usr/bin/sysupdate" && \
 cp "$script_path"/sysupdate /usr/bin/sysupdate && \
 chmod +x /usr/bin/sysupdate"
 }
@@ -3944,6 +3985,8 @@ ufw limit "$SSH_Port"/tcp && \
 ufw logging high && \
 ufw --force enable"
 ################################################################################
+
+tmp_all_package_list_after="$(dpkg --get-selections | awk '{if ($2 == "install") {print $1}}' | bash -c "grep -w$(for pkg in alpine balsa biabam bsd-mailx claws-mail dovecot-sieve enigmail exim4-base exim4-config exim4-daemon-heavy exim4-daemon-light exmh filter gnarwl gnome-gmail gnumail.app im kmail kontact maildrop mailutils mailutils-mh mew mew-beta mew-beta-bin mew-bin mutt nmh notmuch prayer procmail sendemail sensible-mda sqwebmail-de sylpheed uw-mailutils vm wl wl-beta yample; do echo -n " -e '"$pkg"'"; done)")"
 
 #réapplication de la cond par défaut pour la mise en veille automatique
 # $ExeAsUser $DCONF_write /org/gnome/settings-daemon/plugins/power/sleep-inactive-battery-type "'suspend'"

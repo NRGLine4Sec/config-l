@@ -308,8 +308,8 @@ UpdateJoplin() {
   rm -f "$manual_install_dir"/Joplin/Joplin-*.AppImage && \
   $WGET -P "$manual_install_dir"/Joplin/ https://github.com/laurent22/joplin/releases/download/v"$joplin_version"/Joplin-"$joplin_version".AppImage && \
   chmod +x "$manual_install_dir"/Joplin/Joplin-"$joplin_version".AppImage && \
-  sed -i "s,^Exec=.*,Exec="$manual_install_dir"/Joplin/Joplin-"$joplin_version".AppImage --no-sandbox,g" /usr/share/applications/joplin.desktop && \
-  [ -f /home/"$local_user"/.config/autostart/joplin.desktop ] && sed -i "s,^Exec=.*,Exec="$manual_install_dir"/Joplin/Joplin-"$joplin_version".AppImage --no-sandbox,g" /home/"$local_user"/.config/autostart/joplin.desktop && \
+  sed -i "s,^Exec=.*,Exec="$manual_install_dir"/Joplin/Joplin-"$joplin_version".AppImage,g" /usr/share/applications/joplin.desktop && \
+  [ -f /home/"$local_user"/.config/autostart/joplin.desktop ] && sed -i "s,^Exec=.*,Exec="$manual_install_dir"/Joplin/Joplin-"$joplin_version".AppImage,g" /home/"$local_user"/.config/autostart/joplin.desktop && \
   [ -f "$manual_install_dir"/Joplin/256x256.png ] || $WGET -P "$manual_install_dir"/Joplin/ 'https://raw.githubusercontent.com/laurent22/joplin/master/Assets/LinuxIcons/256x256.png'
 }
 
