@@ -355,6 +355,7 @@ export -f is_dir_present_or_mkdir
 
 is_dir_present_and_rmdir() {
   local dir="$1"
+  [ -d "$dir" ] || return 0
   [ -d "$dir" ] && rm -rf "$dir"
 }
 export -f is_dir_present_and_rmdir
@@ -368,6 +369,7 @@ export -f reset_dir
 
 is_file_present_and_rmfile() {
   local file="$1"
+  [ -f "$file" ] || return 0
   [ -f "$file" ] && rm -f "$file"
 }
 export -f is_file_present_and_rmfile
@@ -558,7 +560,7 @@ displayandexec "Synchronisation de l'heure et de la time zone       " "systemctl
 ## vérification que le script s'execute sur une debian
 ##------------------------------------------------------------------------------
 check_distrib_is_debian() {
-if $(uname -a | grep -i 'debian' &> /dev/null); then
+if $(grep '^NAME=' /etc/os-release | grep -i 'debian' &> /dev/null); then
   version_linux='Debian'
 else
     echo -e "${RED}######################################################################${RESET}" | tee --append "$log_file"
@@ -568,8 +570,6 @@ else
 fi
 }
 check_distrib_is_debian
-# autre version
-# grep "^NAME=" /etc/os-release | grep "debian\|Debian" &> /dev/null
 ################################################################################
 
 script_version='2.0'
@@ -857,6 +857,7 @@ export -f reset_dir_as_user
 
 is_file_present_and_rmfile_as_user() {
   local file="$1"
+  [ -f "$file" ] || return 0
   [ -f "$file" ] && $ExeAsUser rm -f "$file"
 }
 export -f is_file_present_and_rmfile_as_user
@@ -1041,11 +1042,11 @@ configure_debconf
 tmp_all_package_list_before="$(dpkg --get-selections | awk '{if ($2 == "install") {print $1}}' | bash -c "grep -w$(for pkg in alpine balsa biabam bsd-mailx claws-mail dovecot-sieve enigmail exim4-base exim4-config exim4-daemon-heavy exim4-daemon-light exmh filter gnarwl gnome-gmail gnumail.app im kmail kontact maildrop mailutils mailutils-mh mew mew-beta mew-beta-bin mew-bin mutt nmh notmuch prayer procmail sendemail sensible-mda sqwebmail-de sylpheed uw-mailutils vm wl wl-beta yample; do echo -n " -e '"$pkg"'"; done)")"
 configure_apt() {
 cat>> /etc/apt/preferences << 'EOF'
-Package: exim4-base exim4-config exim4-daemon-heavy exim4-daemon-light
+Package: exim4-base exim4-config exim4-daemon-heavy exim4-daemon-light mailutils
 Pin: release *
 Pin-Priority: -1
 EOF
-# configure_apt
+configure_apt
 ################################################################################
 
 ################################################################################
@@ -1307,7 +1308,7 @@ install_from_backports() {
 # On permet toutefois l'install de la dernière version disponnible dans backport si elle existe (vérification avec la commande apt-cache policy firejail | sed -n '/Version table:/{n;n;p;}' | grep -e '-backports')
 install_from_backports
 
-install_zfs_bullseye() {
+install_zfs() {
   if apt-cache policy zfsutils-linux zfs-dkms zfs-zed | sed -n '/Version table:/{n;n;p;}' | grep -e '-backports' &> /dev/null; then
     # il peut arriver que l'install ne fonctionne pas (notamment juste après l'install de debian) car il manque le paquet linux-headers-"$(uname -r)", il faut donc s'assurer qu'il soit présent avant l'install des paquets ZFS
     execandlog "$AGI linux-headers-"$(uname -r)""
@@ -1326,10 +1327,7 @@ install_zfs_bullseye() {
     modprobe zfs"
   fi
 }
-
-if [ "$bullseye" == 1 ]; then
-  install_zfs_bullseye
-fi
+install_zfs
 
 install_hardware_acceleration() {
   displayandexec "Installation des packages HardwareVideoAcceleration " "$AGI vainfo vdpauinfo"
@@ -1400,6 +1398,7 @@ tar xjf "$tmp_dir"/veracrypt-"$veracrypt_version"-setup.tar.bz2 --directory="$tm
 tail -n +\$(sed -n 's/.*PACKAGE_START=\([0-9]*\).*/\1/p' "$tmp_dir"/veracrypt_install_gui_x64.sh) "$tmp_dir"/veracrypt_install_gui_x64.sh > "$tmp_dir"/veracrypt_installer.tar && \
 tar -C / --no-overwrite-dir -xpzvf "$tmp_dir"/veracrypt_installer.tar
 rm -rf "$tmp_dir""
+}
 # on backslash le retour de la command sed car elle est executer dans un bash -c
 # https://stackoverflow.com/questions/1711970/i-cant-seem-to-use-the-bash-c-option-with-arguments-after-the-c-option-st
 
@@ -1407,7 +1406,6 @@ rm -rf "$tmp_dir""
 # $WGET -P "$tmp_dir" https://launchpad.net/veracrypt/trunk/"$veracrypt_version"/+download/veracrypt-"$veracrypt_version"-setup.tar.bz2 && \
 # "$(tr '[:upper:]' '[:lower:]' <<< "$veracrypt_version")" permet de corriger l'URL lorsque la version est sous la forme 1.24-Update7 car l'URL de téléchargement est comme ceci (u en lower) :
 # https://launchpad.net/veracrypt/trunk/1.24-update7/+download/veracrypt-1.24-Update7-setup.tar.bz2
-}
 ################################################################################
 
 ################################################################################
@@ -2036,7 +2034,7 @@ echo '     ################################################################'
 echo ''
 
 #Konqueror
-displayandexec "Désinstalation de Konqueror                         " "$AG remove -y Konqueror*"
+displayandexec "Désinstalation de Konqueror                         " "$AG remove -y konqueror*"
 
 #iceweasel
 displayandexec "Désinstalation de iceweasel                         " "$AG remove -y iceweasel*"
@@ -2060,8 +2058,12 @@ swell-foop \
 tali \
 aisleriot"
 
-#exim4
-displayandexec "Désinstalation de exim4                             " "$AG remove -y exim4-base exim4-config exim4-daemon-light"
+# le résultat de la commande suivante n'est pas tout à fait juste car il y a notamment des paquets qui n'ont pas le tag "suite::gnome"
+# grep-aptavail -sPackage \( --field Tag "suite::gnome" --and --field Tag "use::gameplaying" \) | grep -Po '(^Package: )\K.*' | sort -u | tr -s '\n' ' '
+# on est donc obliger d'utiliser la commande qui listes les dépendances du meta-paquet gnome-games pour obtenir la liste des paquets correspondant au jeux Gnome
+# apt-cache depends gnome-games | awk -F': ' '(NR>1){print $2}' | tr -s '\n' ' '
+# Pour lister tous les jeux dans les dépots debian
+# grep-aptavail -sPackage --field Section "game" | grep -Po '(^Package: )\K.*' | sort -u | tr -s '\n' ' '
 
 #synaptic
 displayandexec "Désinstalation de synaptic                          " "$AG remove -y synaptic"
@@ -2293,15 +2295,9 @@ cat> /usr/bin/check_backport_update << 'EOF'
 debian_release="$(lsb_release -sc)"
 list_backport="$(dpkg-query -W | awk '/~bpo/{print $1}')"
 
-sudo sed -i "s%^#deb http://deb.debian.org/debian "$debian_release"-backports%deb http://deb.debian.org/debian "$debian_release"-backports%" /etc/apt/sources.list
-sudo apt-get update > /dev/null
-
 while read package; do
   sudo apt-get upgrade -s -t "$debian_release"-backports "$package" | grep 'est déjà la version la plus récente'
 done <<< "$list_backport"
-
-sudo sed -i "s%^deb http://deb.debian.org/debian "$debian_release"-backports%#deb http://deb.debian.org/debian "$debian_release"-backports%" /etc/apt/sources.list
-sudo apt-get update > /dev/null
 
 exit 0
 EOF
@@ -2713,7 +2709,7 @@ execandlog "sed -i 's/# set bell-style none/set bell-style none/' /etc/inputrc"
 ## configuration de freshclam (clamav)
 ##------------------------------------------------------------------------------
 configure_freshclam() {
-execandlog "sed -E -i 's/^Checks [[:digit:]]+/Checks 1/' /etc/clamav/freshclam.conf"
+  execandlog "sed -E -i 's/^Checks [[:digit:]]+/Checks 1/' /etc/clamav/freshclam.conf"
 }
 configure_freshclam
 # Check for new database 1 times a day (insteed of 24)
@@ -2910,7 +2906,7 @@ $ExeAsUser apm install language-ansible && \
 $ExeAsUser apm install language-diff && \
 $ExeAsUser apm install language-yara"
 }
-configure_atom
+# configure_atom
 # Les plugins atom en commentaire sont encore en cour de validation
 # apm install autoclose-html-plus
 # apm install atom-beautify
@@ -3102,8 +3098,10 @@ configure_mpv
 ## configuration de typora
 ##------------------------------------------------------------------------------
 configure_typora() {
-execandlog "reset_dir_as_user "/home/"$local_user"/.config/Typora/" && \
-$ExeAsUser echo '7b22696e697469616c697a655f766572223a22302e392e3738222c226c696e655f656e64696e675f63726c66223a66616c73652c227072654c696e65627265616b4f6e4578706f7274223a747275652c2275756964223a2237346265383439362d343239372d343362382d616633632d336439343463646432376439222c227374726963745f6d6f6465223a747275652c22636f70795f6d61726b646f776e5f62795f64656661756c74223a747275652c226261636b67726f756e64436f6c6f72223a2223333633423430222c227468656d65223a226e696768742e637373222c22736964656261725f746162223a22222c2273656e645f75736167655f696e666f223a66616c73652c22656e61626c654175746f53617665223a747275652c226c617374436c6f736564426f756e6473223a7b2266756c6c73637265656e223a66616c73652c226d6178696d697a6564223a747275657d7d' > /home/"$local_user"/.config/Typora/profile.data"
+execandlog "reset_dir_as_user "/home/"$local_user"/.config/Typora/"" && \
+$ExeAsUser cat> /home/"$local_user"/.config/Typora/profile.data << 'EOF'
+7b22696e697469616c697a655f766572223a22302e392e3738222c226c696e655f656e64696e675f63726c66223a66616c73652c227072654c696e65627265616b4f6e4578706f7274223a747275652c2275756964223a2237346265383439362d343239372d343362382d616633632d336439343463646432376439222c227374726963745f6d6f6465223a747275652c22636f70795f6d61726b646f776e5f62795f64656661756c74223a747275652c226261636b67726f756e64436f6c6f72223a2223333633423430222c227468656d65223a226e696768742e637373222c22736964656261725f746162223a22222c2273656e645f75736167655f696e666f223a66616c73652c22656e61626c654175746f53617665223a747275652c226c617374436c6f736564426f756e6473223a7b2266756c6c73637265656e223a66616c73652c226d6178696d697a6564223a747275657d7d
+EOF
 }
 # la configuration des préférences de Typora ne peut se faire que graphiquement le seul moyen de contourner ce problème est de configurer graphiquement les préférences et de récupérer le contenu du fichier /home/$local_user/.config/Typora/profile.data
 configure_typora
@@ -3538,12 +3536,12 @@ ConfigureGnomeTerminal
 ################################################################################
 
 # Pour obtenir le lien de l'image utilisé commend fond d'écran
-# dconf read /org/gnome/shell/extensions/walkpaper/workspace-wallpapers
+# dconf read /org/gnome/desktop/background/picture-uri
 
 ################################################################################
 ## configuration des MIME types
 ##------------------------------------------------------------------------------
-# bien faire attention au point virgule, présent dans "Added Associations" mais pas dans "Default Applications"
+configure_mime_types() {
 $ExeAsUser cat> /home/"$local_user"/.config/mimeapps.list << 'EOF'
 [Added Associations]
 application/octet-stream=code.desktop;
@@ -3588,6 +3586,9 @@ x-scheme-handler/unknown=chromium.desktop
 image/webp=geeqie.desktop
 image/heif=geeqie.desktop
 EOF
+}
+configure_mime_types
+# bien faire attention au point virgule, présent dans "Added Associations" mais pas dans "Default Applications"
 ################################################################################
 
 ################################################################################
@@ -3605,27 +3606,15 @@ mv /usr/lib/x86_64-linux-gnu/nautilus/extensions-3.0/libnautilus-wipe.so /usr/li
 # ref : [Comment supprimer Change Desktop Background du clic droit?](https://qastack.fr/ubuntu/34803/how-to-remove-change-desktop-background-from-right-click)
 ################################################################################
 
-
-#[desktop/interface]
-#gtk-theme='Bubble-Dark-Blue'
-#icon-theme='Papirus'
-
 ################################################################################
 ## configuration de l'audio
 ##------------------------------------------------------------------------------
-pulse_env="PULSE_RUNTIME_PATH="/run/user/"$local_user_UID"/pulse" XDG_RUNTIME_DIR="/run/user/"$local_user_UID"/""
-displayandexec "Désactivation du microphone                         " "$ExeAsUser "$pulse_env" amixer set Capture nocap"
-displayandexec "Réglage du volume audio à 10%                       " "$ExeAsUser "$pulse_env" amixer set Master 10%"
-
-# Les deux commandes amixer ne fonctionnenet pas dans une install sur bullseye. A priori le problème serrait lié au fait qu'elles sont lancés depuis des sudo -u user.
-# Les commandes fonctionnement parfaitement si elles sont lancés depuis le user dans un terminal.
-# l'erreur peur avoir un lien avec la détection de carte audio, lorsqu'on ajoute une carte audio dummy dans la VM, on obtient une autre etteur lors de l'execution de amixer avec sudo :
-# ALSA lib simple_none.c:1544:(simple_add1) helem (MIXER,'Master Playback Switch',0,1,0) appears twice or more
-# amixer: Mixer default load error: Invalid argument
-
-# avec su ça fonctionne, mais su nous demande un mdp ce qui rend son execution interactif
-# si on effectue la commande dans un bash -c (bash -c "amixer set Master 10%"), ça fonctionne
-# par contre il ne fonctionne pas si on éffectue le bash -c dans un sudo
+configure_audio() {
+  pulse_env="PULSE_RUNTIME_PATH="/run/user/"$local_user_UID"/pulse" XDG_RUNTIME_DIR="/run/user/"$local_user_UID"/""
+  displayandexec "Désactivation du microphone                         " "$ExeAsUser "$pulse_env" amixer set Capture nocap"
+  displayandexec "Réglage du volume audio à 10%                       " "$ExeAsUser "$pulse_env" amixer set Master 10%"
+}
+configure_audio
 
 # commandes utiles pour débugger :
 # $ExeAsUser apaly -l
@@ -3653,8 +3642,6 @@ displayandexec "Réglage du volume audio à 10%                       " "$ExeAsU
 # avec sudo :
 # $ExeAsUser pulseaudio --check -v
 # I: [pulseaudio] main.c: Daemon not running
-
-# a piori il y a le même comportement concernant le résultat de cette commmande sur une buster
 
 # Si on fait
 # $ExeAsUser pulseaudio --start -D
@@ -3942,7 +3929,7 @@ displayandexec "Mise à jour de la base de donnée de rkhunter        " "rkhunte
 ## création d'un fichier de backup du header LUKS
 ##------------------------------------------------------------------------------
 backup_LUKS_header() {
-  root_pv_name="$(pvdisplay --columns --options lv_name,pv_name | awk -F'/' '{if ($1 ~ /root/) {print $4}}')"
+  root_pv_name="$(pvdisplay --columns --options lv_name,pv_name | awk -F'/' '{if ($1 ~ /^[[:blank:]]+root/) {print $4}}')"
   root_lvm_parent_partition="$(lsblk -o PKNAME,FSTYPE,NAME | awk '/'"$root_pv_name"'/{print $1}')"
   luks_partition="$(lsblk -o NAME,FSTYPE /dev/"$root_lvm_parent_partition" | awk '/crypto_LUKS/{print $1}')"
   displayandexec "Création d'un backup de l'entête LUKS               " "\
@@ -3954,6 +3941,8 @@ backup_LUKS_header
 # on s'assure dans un premier temps de récupérer uniquement le path de la partition qui contient le lvm du système (lv root) pour être sur de ne faire que la sauvegarde du LUKS du système
 # On ne peut pas utiliser root_lvm_parent_partition="$(lsblk -o PKNAME,FSTYPE,NAME --json | grep "$root_pv_name" | grep -Po '("pkname":")\K([A-Za-z0-9\-]+)(?=")')"
 # car ils ont changer le format d'affichage du output json entre les versions lsblk from util-linux 2.36.1 (bullseye) et lsblk de util-linux 2.38.1 (bookworm)
+
+# LVM_SUPPRESS_FD_WARNINGS
 ################################################################################
 
 ################################################################################
@@ -4003,8 +3992,9 @@ cd
 ## Création d'un snapshot avec Timeshift
 ##------------------------------------------------------------------------------
 # on s'assure dans un premier temps qu'il n'y a pas déjà eu un premier snapshot d'éffectué
+root_part_kname="$(lsblk -o KNAME,MOUNTPOINT | awk '{{if ($2 == "/") print $1}}')"
 displayandexec "Création d'un snapshot avec Timeshift               " "\
-umount -l /run/timeshift/backup; if timeshift --list --snapshot-device /dev/"$(lsblk -o MOUNTPOINT,KNAME --json | grep -e 'mountpoint":"/"' | grep -Po '("kname":")\K([A-Za-z0-9\-]+)(?=")')" | grep -q '^No snapshots found' 2>/dev/null; then timeshift --scripted --create --rsync --comments 'first snapshot, after postinstall script' --snapshot-device /dev/"$(lsblk -o MOUNTPOINT,KNAME --json | grep -e 'mountpoint":"/"' | grep -Po '("kname":")\K([A-Za-z0-9\-]+)(?=")')"; fi"
+umount -l /run/timeshift/backup; if timeshift --list --snapshot-device /dev/"$root_part_kname" | grep -q '^No snapshots found' 2>/dev/null; then timeshift --scripted --create --rsync --comments 'first snapshot, after postinstall script' --snapshot-device /dev/"$root_part_kname"; fi"
 # cette étape est très longue lorsqu'il faut faire un premier snapshot (car timeshift doit faire en fait un miroir du système existant)
 # sur un HDD pas très rapide, il y en a pour à peu près une heure
 execandlog "timeshift --list"
