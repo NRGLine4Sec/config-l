@@ -294,7 +294,7 @@ UpdateKeepassxc() {
   chmod +x "$manual_install_dir"/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage && \
   sed -i "s,.*Exec=.*,Exec="$manual_install_dir"/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage,g" /usr/share/applications/keepassxc.desktop && \
   [ -f /home/"$local_user"/.config/autostart/keepassxc.desktop ] && sed -i s,.*Exec=.*,Exec="$manual_install_dir"/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage,g /home/"$local_user"/.config/autostart/keepassxc.desktop && \
-  [ -f "$manual_install_dir"/KeePassXC/keepassxc-logo.svg ] || $WGET -P "$manual_install_dir"/KeePassXC/ 'https://keepassxc.org/images/keepassxc-logo.svg'
+  [ -f "$manual_install_dir"/KeePassXC/keepassxc.png ] || $WGET -P "$manual_install_dir"/KeePassXC/ 'https://raw.githubusercontent.com/keepassxreboot/keepassxc/develop/share/icons/application/256x256/apps/keepassxc.png'
   [ -f /home/"$local_user"/.config/asbru/asbru.yml ] && rm -f /home/"$local_user"/.config/asbru/asbru.nfreeze && sed -i "s,pathcli: /opt/manual_install/KeePassXC/KeePassXC-.*.AppImage,pathcli: "$manual_install_dir"/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage,g" /home/"$local_user"/.config/asbru/asbru.yml
 }
 # bon a priori la commande précendante ne fonctionne pas, elle change bien la version dans le fichier de conf de asbru, mais cette modification ne permet pas de changer réellement la conf de asbru

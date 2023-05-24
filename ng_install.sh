@@ -3,8 +3,6 @@
 ## Made by NRGLine4Sec
 ##
 
-## les règles udev sont situés dans /etc/udev/rules.d/ mais aussi dans /usr/lib/udev/rules.d/
-
 ## Pour ajouter des modules au démarrage du système, il faut les ajouter dans ce fichier /etc/initramfs-tools/modules
 ## ensuite lancer la commande suivante : update-initramfs -u
 
@@ -28,15 +26,6 @@
 ## \d+ : permet d'inttifer un patern de type digit (donc un chiffre). Le + permet d'indiquer qu'il peut y en avoir plusieurs à la suite
 
 ## Pour redémarer le daemon alsa : sudo systemctl restart alsa-state.service
-
-## pour obtenir les systèmes de fichier utilisés : mount | column -t
-
-## garder dans un coin la commande suivante : sudo cat /proc/net/nf_conntrack
-
-## les paramètres du lancement de chromium sont stocker danc ce fichier bat /etc/chromium.d/default-flags
-
-
-
 
 
 
@@ -110,55 +99,13 @@
 # https://askubuntu.com/questions/83605/how-do-i-export-customized-libreoffice-config-files
 # ----
 #
-## regarder pour voir si on configure par défaut lnav avec un retour à la ligne
-## https://lnav.readthedocs.io/en/latest/commands.html#enable-word-wrap
-## notamment voir si on l'utilise manuellement (avec un Ctrl + Maj + v :enable-word-wrap)
 #
-#
-## les applications qui se lance aux démarage se font à l'aide de fichiers créés dans .config/autostart/ avec un contenu tel que celui-ci
-# bat .config/autostart/boostnote.desktop
-# [Desktop Entry]
-# Name=Boostnote
-# Comment=lancement de Boostnote au démarage
-# Exec=boostnote
-# Type=Application
-# Terminal=false
-# Hidden=true
-#
-## Pour supprimer l'execution au démarage d'un programme, il suffit de supprimer le fichier défini dans .config/autostart/
-## Il est à noter que la version du programme peut être référencé dans le fichier, donc il faut les modifier lors d'upgrade de programme en AppImage par exemple
-
 
 ## theme gnome a regarder : Adapta-gtk-theme-colorpack (https://www.gnome-look.org/p/1190851/)
 
-## regarder pour installer solaar (pour les gestions des périphériques logytech) : https://pwr-solaar.github.io/Solaar/installation    https://github.com/pwr-Solaar/Solaar    (normalement il suffit juste de faire un pip3 install solaar) et si il ne se lance pas, utiliser la commande : python3 ./.local/lib/python3.7/site-packages/solaar/gtk.py
-# bat ~/.config/solaar/config.json
-# solaar show
-# pour voir uniquement les infos concernant la souris : solaar show mouse
-# solaar -dd show
-# cat /proc/bus/input/devices
-# xinput | grep "Logitech MX Vertical"
-# xinput list-props 11
-# xinput query-state 11
-# Do you get raw output from the input device? ("sudo cat /dev/input/event<n>"
-# use xinput list-props 11 | grep "Device Node" to get event id
-# Pour obtenir le numéro du bouton : xev | grep -A3 ButtonPress
 
-# cat> /home/$local_user/.xbindkeysrc << 'EOF'
-# # backward button => volume down
-# "xte 'key XF86AudioLowerVolume'"
-#    b:8
-#
-# # forward button => volume up
-# "xte 'key XF86AudioRaiseVolume'"
-#    b:9
-# EOF
-# apt-get install -y xbindkeys xautomation
-# xbindkeys
 
 # ref : [Configurer sa souris Logitech MX Master sous Linux (Ubuntu) – Miximum](https://www.miximum.fr/blog/configurer-sa-souris-logitech-mx-master-sous-linux-ubuntu/)
-# ref : [Linux: xbindkeys Tutorial](http://xahlee.info/linux/linux_xbindkeys_tutorial.html)
-# ref : [How to start a service automatically when Arch Linux boots? - Super User](https://superuser.com/questions/755937/how-to-start-a-service-automatically-when-arch-linux-boots)
 
 
 ## pour désinstaller le driver de realtek du dongle bluetooth
@@ -229,7 +176,6 @@
 ################################################################################
 ## ROADMAP
 ##------------------------------------------------------------------------------
-# - tester dans une VM après l'execution du script postinstall de modifier (réduire et augmenter) les partitions d'un LVM crypté pour voir comment cel se comporte
 # - tester de faire l'instllation des apps avec apt-fast à la place de apt-get et mesurer la différence de temps d'excution du script
 # - essayer de comprendre pouquoi il y a parfois un certain nombre de fichier qui devrait appartenir à l'utilisaeur et qui appartiennet pourtant à l'utilisateur root, parfois, c'est des rerpertoire entier qui appartiennent à root dans .config/
 # Peut être un problème dans l'utilisation de ExeAsUser ?, essayer de monitorer avec des tests.
@@ -576,8 +522,6 @@ script_version='2.0'
 system_version="$(cat /etc/debian_version)"
 CURL='curl --silent --location --show-error'
 # la variable $CURL ne doit pas être appelé avec des double quote
-
-# https://github.com/shiftkey/desktop/releases
 
 ################################################################################
 ## vérification que le script s'execute depuis un terminal graphique (gnome-terminal)
@@ -935,20 +879,20 @@ echo ''
 echo ''
 echo '     ================================================================'
 echo ''
-echo '                 nom du script       : DEBIAN_POSTINSTALL'
-echo '                 auteur              : NRGLine4Sec'
-echo '                 version             : '"$script_version"
-echo '                 lancement du script : sudo bash '"$script_name"
-echo '                 version du système  : '"$version_linux" "$system_version" "($debian_release)"
-echo '                 architecture CPU    : '"$computer_proc_architecture"
-echo '                 nombre de coeur CPU : '"$computer_proc_nb"
-echo '                 adresse IPv4 local  : '"$IPv4_local_address"
-echo '                 adresse IPv4 extern : '"$IPv4_external_address"
+echo '              nom du script       : DEBIAN_POSTINSTALL'
+echo '              auteur              : NRGLine4Sec'
+echo '              version             : '"$script_version"
+echo '              lancement du script : sudo bash '"$script_name"
+echo '              version du système  : '"$version_linux" "$system_version" "($debian_release)"
+echo '              architecture CPU    : '"$computer_proc_architecture"
+echo '              nombre de coeur CPU : '"$computer_proc_nb"
+echo '              adresse IPv4 local  : '"$IPv4_local_address"
+echo '              adresse IPv4 extern : '"$IPv4_external_address"
 if [ "$IPv6_local_address" ]; then
-    echo '                 adresse IPv6 local  : '"$IPv6_local_address"
+    echo '              adresse IPv6 local  : '"$IPv6_local_address"
 fi
 if [ "$IPv6_external_address" ]; then
-    echo '                 adresse IPv6 extern : '"$IPv6_external_address"
+    echo '              adresse IPv6 extern : '"$IPv6_external_address"
 fi
 echo ''
 echo '     ================================================================'
@@ -1042,10 +986,11 @@ configure_debconf
 tmp_all_package_list_before="$(dpkg --get-selections | awk '{if ($2 == "install") {print $1}}' | bash -c "grep -w$(for pkg in alpine balsa biabam bsd-mailx claws-mail dovecot-sieve enigmail exim4-base exim4-config exim4-daemon-heavy exim4-daemon-light exmh filter gnarwl gnome-gmail gnumail.app im kmail kontact maildrop mailutils mailutils-mh mew mew-beta mew-beta-bin mew-bin mutt nmh notmuch prayer procmail sendemail sensible-mda sqwebmail-de sylpheed uw-mailutils vm wl wl-beta yample; do echo -n " -e '"$pkg"'"; done)")"
 configure_apt() {
 cat>> /etc/apt/preferences << 'EOF'
-Package: exim4-base exim4-config exim4-daemon-heavy exim4-daemon-light mailutils
+Package: exim4-base exim4-config exim4-daemon-heavy exim4-daemon-light mailutils bsd-mailx
 Pin: release *
 Pin-Priority: -1
 EOF
+}
 configure_apt
 ################################################################################
 
@@ -1249,6 +1194,7 @@ displayandexec "Installation de oathtool                            " "$AGI oath
 displayandexec "Installation de openvpn                             " "$AGI openvpn"
 displayandexec "Installation de p7zip-full                          " "$AGI p7zip-full"
 displayandexec "Installation de p7zip-rar                           " "$AGI p7zip-rar"
+displayandexec "Installation de pipx                                " "$AGI pipx"
 displayandexec "Installation de pavucontrol                         " "$AGI pavucontrol"
 displayandexec "Installation de printer-driver-all                  " "$AGI printer-driver-all"
 displayandexec "Installation de python3-pip                         " "$AGI python3-pip"
@@ -1309,9 +1255,9 @@ install_from_backports() {
 install_from_backports
 
 install_zfs() {
+  # il peut arriver que l'install ne fonctionne pas (notamment juste après l'install de debian) car il manque le paquet linux-headers-"$(uname -r)", il faut donc s'assurer qu'il soit présent avant l'install des paquets ZFS
+  execandlog "$AGI linux-headers-"$(uname -r)""
   if apt-cache policy zfsutils-linux zfs-dkms zfs-zed | sed -n '/Version table:/{n;n;p;}' | grep -e '-backports' &> /dev/null; then
-    # il peut arriver que l'install ne fonctionne pas (notamment juste après l'install de debian) car il manque le paquet linux-headers-"$(uname -r)", il faut donc s'assurer qu'il soit présent avant l'install des paquets ZFS
-    execandlog "$AGI linux-headers-"$(uname -r)""
     displayandexec "Installation de ZFS                                 " "\
     echo 'zfs-dkms	zfs-dkms/stop-build-for-32bit-kernel	boolean	true' | debconf-set-selections && \
     echo 'zfs-dkms	zfs-dkms/note-incompatible-licenses	note' | debconf-set-selections && \
@@ -1325,6 +1271,33 @@ install_zfs() {
     echo 'zfs-dkms	zfs-dkms/stop-build-for-unknown-kernel	boolean	true'| debconf-set-selections && \
     $AGI zfsutils-linux zfs-dkms zfs-zed && \
     modprobe zfs"
+  fi
+  configure_SecureBoot_params() {
+  # création du script qui permet de signer les modules DKMS
+  cat> /opt/sign_dkms_kernel_module.sh << 'EOF'
+#!/bin/bash
+
+# Test que le script est lancer en root
+if [ $EUID != 0 ]; then
+    echo "Le script doit être executer en root: # sudo $0" 1>&2
+    exit 1
+fi
+
+ls -al /var/lib/dkms
+mokutil --import /var/lib/dkms/mok.pub
+mokutil --list-new
+
+reboot
+EOF
+    chmod +x /opt/sign_dkms_kernel_module.sh
+  }
+  # ref : [Debian, SecureBoot et les modules noyaux DKMS - Where is it?](https://medspx.fr/blog/Debian/secure_boot_dkms/)
+
+  # test qui vérifie l'activation du SecureBoot
+  if command -v mokutil > /dev/null; then
+      if $(mokutil --sb-state 2> /dev/null | grep 'SecureBoot enabled'); then
+          configure_SecureBoot_params
+      fi
   fi
 }
 install_zfs
@@ -1537,13 +1510,13 @@ UNAMER="$(uname -r)"
 mkdir -p /usr/share/manual_sign_kernel_module/virtualbox
 cd /usr/share/manual_sign_kernel_module/virtualbox
 openssl req -new -x509 -newkey rsa:2048 -keyout vboxdrv.priv -outform DER -out vboxdrv.der -nodes -days 36500 -subj "/CN=vboxdrv/"
-/usr/src/linux-headers-$UNAMER/scripts/sign-file sha256 ./vboxdrv.priv ./vboxdrv.der /lib/modules/$UNAMER/misc/vboxdrv.ko
+/usr/src/linux-headers-"$UNAMER"/scripts/sign-file sha256 ./vboxdrv.priv ./vboxdrv.der /lib/modules/"$UNAMER"/misc/vboxdrv.ko
 openssl req -new -x509 -newkey rsa:2048 -keyout vboxnetflt.priv -outform DER -out vboxnetflt.der -nodes -days 36500 -subj "/CN=vboxnetflt/"
-/usr/src/linux-headers-$UNAMER/scripts/sign-file sha256 ./vboxnetflt.priv ./vboxnetflt.der /lib/modules/$UNAMER/misc/vboxnetflt.ko
+/usr/src/linux-headers-"$UNAMER"/scripts/sign-file sha256 ./vboxnetflt.priv ./vboxnetflt.der /lib/modules/"$UNAMER"/misc/vboxnetflt.ko
 openssl req -new -x509 -newkey rsa:2048 -keyout vboxnetadp.priv -outform DER -out vboxnetadp.der -nodes -days 36500 -subj "/CN=vboxnetadp/"
-/usr/src/linux-headers-$UNAMER/scripts/sign-file sha256 ./vboxnetadp.priv ./vboxnetadp.der /lib/modules/$UNAMER/misc/vboxnetadp.ko
+/usr/src/linux-headers-"$UNAMER"/scripts/sign-file sha256 ./vboxnetadp.priv ./vboxnetadp.der /lib/modules/"$UNAMER"/misc/vboxnetadp.ko
 openssl req -new -x509 -newkey rsa:2048 -keyout vboxpci.priv -outform DER -out vboxpci.der -nodes -days 36500 -subj "/CN=vboxpci/"
-/usr/src/linux-headers-$UNAMER/scripts/sign-file sha256 ./vboxpci.priv ./vboxpci.der /lib/modules/$UNAMER/misc/vboxpci.ko
+/usr/src/linux-headers-"$UNAMER"/scripts/sign-file sha256 ./vboxpci.priv ./vboxpci.der /lib/modules/"$UNAMER"/misc/vboxpci.ko
 mokutil --import vboxdrv.der
 mokutil --import vboxnetflt.der
 mokutil --import vboxnetadp.der
@@ -1558,10 +1531,74 @@ EOF
 
   # test qui vérifie l'activation du SecureBoot
   if command -v mokutil > /dev/null; then
-      test_secure_boot="$(mokutil --sb-state 2> /dev/null | grep 'SecureBoot')"
-      if [ "$test_secure_boot" == 'SecureBoot enabled' ]; then
+      if $(mokutil --sb-state 2> /dev/null | grep 'SecureBoot enabled'); then
           configure_SecureBoot_params
-          # displayandexec "Install du script pour signer module (SecureBoot)   " "$AGI dkms"
+      fi
+  fi
+}
+
+install_virtualbox_bookworm() {
+  displayandexec "Installation des dépendances de VirtualBox          " "$AGI dkms"
+  displayandexec "Installation de VirtualBox                          " "\
+echo 'deb [signed-by=/usr/share/keyrings/virtualbox-archive-keyring.gpg] https://download.virtualbox.org/virtualbox/debian bookworm contrib' > /etc/apt/sources.list.d/virtualbox.list && \
+is_file_present_and_rmfile "/usr/share/keyrings/virtualbox-archive-keyring.gpg" && \
+$WGET --output-document - 'https://www.virtualbox.org/download/oracle_vbox_2016.asc' | gpg --dearmor --output /usr/share/keyrings/virtualbox-archive-keyring.gpg && \
+$AG update && \
+$AGI virtualbox-7.0"
+local tmp_dir="$(mktemp -d)"
+virtualbox_version="$(virtualbox --help 2>/dev/null | grep -Po '( v)\K[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+')"
+displayandexec "Installation de VM VirtualBox Extension Pack        " "\
+$WGET -P "$tmp_dir" https://download.virtualbox.org/virtualbox/"$virtualbox_version"/Oracle_VM_VirtualBox_Extension_Pack-"$virtualbox_version".vbox-extpack && \
+echo y | /usr/bin/VBoxManage extpack install --replace "$tmp_dir"/Oracle_VM_VirtualBox_Extension_Pack-"$virtualbox_version".vbox-extpack; \
+rm -rf "$tmp_dir""
+  # Une solution qui devrait marché mais il faut avoir le hachage de la licence pour pouvoir l'executer et on obtient le hachage qu'en lançant une première fois la commande
+  # VBoxManage extpack install --replace Oracle_VM_VirtualBox_Extension_Pack-$virtualbox_version.vbox-extpack --accept-license --accept-license=56be48f923303c8cababb0bb4c478284b688ed23f16d775d729b89a2e8e5f9eb
+  # https://www.virtualbox.org/ticket/16674
+  # Pour lister les extensions virutlabox une fois l'installation terminé : VBoxManage list extpacks
+  # Pour supprimer une ancienne version du pack d'extension :
+  # sudo VBoxManage extpack uninstall "Oracle VM VirtualBox Extension Pack" && sudo VBoxManage extpack cleanup
+
+  configure_SecureBoot_params() {
+# création du dossier qui contiendra les signatures pour le SecureBoot
+[ -d /usr/share/manual_sign_kernel_module ] && mv /usr/share/manual_sign_kernel_module /usr/share/manual_sign_kernel_module.bkp_"$now"
+mkdir /usr/share/manual_sign_kernel_module
+# création du script qui permet de signer les modules vboxdrv vboxnetflt vboxnetadp vboxpci pour VirtualBox
+cat> /opt/sign_virtualbox_kernel_module.sh << 'EOF'
+#!/bin/bash
+
+# Test que le script est lancer en root
+if [ $EUID != 0 ]; then
+    echo "Le script doit être executer en root: # sudo $0" 1>&2
+    exit 1
+fi
+
+UNAMER="$(uname -r)"
+mkdir -p /usr/share/manual_sign_kernel_module/virtualbox
+cd /usr/share/manual_sign_kernel_module/virtualbox
+openssl req -new -x509 -newkey rsa:2048 -keyout vboxdrv.priv -outform DER -out vboxdrv.der -nodes -days 36500 -subj "/CN=vboxdrv/"
+/usr/src/linux-headers-"$UNAMER"/scripts/sign-file sha256 ./vboxdrv.priv ./vboxdrv.der /lib/modules/"$UNAMER"/misc/vboxdrv.ko
+openssl req -new -x509 -newkey rsa:2048 -keyout vboxnetflt.priv -outform DER -out vboxnetflt.der -nodes -days 36500 -subj "/CN=vboxnetflt/"
+/usr/src/linux-headers-"$UNAMER"/scripts/sign-file sha256 ./vboxnetflt.priv ./vboxnetflt.der /lib/modules/"$UNAMER"/misc/vboxnetflt.ko
+openssl req -new -x509 -newkey rsa:2048 -keyout vboxnetadp.priv -outform DER -out vboxnetadp.der -nodes -days 36500 -subj "/CN=vboxnetadp/"
+/usr/src/linux-headers-"$UNAMER"/scripts/sign-file sha256 ./vboxnetadp.priv ./vboxnetadp.der /lib/modules/"$UNAMER"/misc/vboxnetadp.ko
+openssl req -new -x509 -newkey rsa:2048 -keyout vboxpci.priv -outform DER -out vboxpci.der -nodes -days 36500 -subj "/CN=vboxpci/"
+/usr/src/linux-headers-"$UNAMER"/scripts/sign-file sha256 ./vboxpci.priv ./vboxpci.der /lib/modules/"$UNAMER"/misc/vboxpci.ko
+mokutil --import vboxdrv.der
+mokutil --import vboxnetflt.der
+mokutil --import vboxnetadp.der
+mokutil --import vboxpci.der
+# normallement on peut faire le mokutil avec l'import de plusieurs fichiers en même temps, il faudra tester si c'est possible avant d'intégrer la ligne suivante dans le script
+#mokutil --import vboxdrv.der vboxnetflt.der vboxnetadp.der vboxpci.der
+reboot
+EOF
+    chmod +x /opt/sign_virtualbox_kernel_module.sh
+  }
+  # ref : [Debian, SecureBoot et les modules noyaux DKMS - Where is it?](https://medspx.fr/blog/Debian/secure_boot_dkms/)
+
+  # test qui vérifie l'activation du SecureBoot
+  if command -v mokutil > /dev/null; then
+      if $(mokutil --sb-state 2> /dev/null | grep 'SecureBoot enabled'); then
+          configure_SecureBoot_params
       fi
   fi
 }
@@ -1572,10 +1609,10 @@ EOF
 ##------------------------------------------------------------------------------
 install_keepassxc() {
   displayandexec "Installation de KeePassXC                           " "\
-reset_dir ""$manual_install_dir"/KeePassXC/"; \
+reset_dir ""$manual_install_dir"/KeePassXC/" && \
 $WGET -P "$manual_install_dir"/KeePassXC/ https://github.com/keepassxreboot/keepassxc/releases/download/"$keepassxc_version"/KeePassXC-"$keepassxc_version"-x86_64.AppImage && \
-$WGET -P "$manual_install_dir"/KeePassXC/ 'https://keepassxc.org/images/keepassxc-logo.svg' && \
-chmod +x "$manual_install_dir"/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage"
+chmod +x "$manual_install_dir"/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage" && \
+$WGET -P "$manual_install_dir"/KeePassXC/ 'https://raw.githubusercontent.com/keepassxreboot/keepassxc/develop/share/icons/application/256x256/apps/keepassxc.png'
 cat> /usr/share/applications/keepassxc.desktop << EOF
 [Desktop Entry]
 Comment=Password Manager
@@ -1583,7 +1620,7 @@ Terminal=false
 Name=KeePassXC
 Exec=$manual_install_dir/KeePassXC/KeePassXC-$keepassxc_version-x86_64.AppImage
 Type=Application
-Icon=$manual_install_dir/KeePassXC/keepassxc-logo.svg
+Icon=$manual_install_dir/KeePassXC/keepassxc.png
 Categories=Utility;Security;Qt;
 MimeType=application/x-keepass2;
 X-GNOME-Autostart-enabled=true' > /usr/share/applications/keepassxc.desktop
@@ -1599,6 +1636,18 @@ install_mkvtoolnix() {
 cat> /etc/apt/sources.list.d/mkvtoolnix.list << 'EOF'
 deb [signed-by=/usr/share/keyrings/mkvtoolnix-archive-keyring.gpg] https://mkvtoolnix.download/debian/ bullseye main
 #deb-src https://mkvtoolnix.download/debian/ bullseye main
+EOF
+is_file_present_and_rmfile "/usr/share/keyrings/mkvtoolnix-archive-keyring.gpg" && \
+$WGET --output-document - 'https://mkvtoolnix.download/gpg-pub-moritzbunkus.txt' | gpg --dearmor --output /usr/share/keyrings/mkvtoolnix-archive-keyring.gpg && \
+$AG update && \
+$AGI mkvtoolnix mkvtoolnix-gui"
+}
+
+install_mkvtoolnix_bookworm() {
+  displayandexec "Installation de MKVToolNix                          " "\
+cat> /etc/apt/sources.list.d/mkvtoolnix.list << 'EOF'
+deb [signed-by=/usr/share/keyrings/mkvtoolnix-archive-keyring.gpg] https://mkvtoolnix.download/debian/ bookworm main
+#deb-src https://mkvtoolnix.download/debian/ bookworm main
 EOF
 is_file_present_and_rmfile "/usr/share/keyrings/mkvtoolnix-archive-keyring.gpg" && \
 $WGET --output-document - 'https://mkvtoolnix.download/gpg-pub-moritzbunkus.txt' | gpg --dearmor --output /usr/share/keyrings/mkvtoolnix-archive-keyring.gpg && \
@@ -1827,6 +1876,18 @@ $ExeAsUser cat>> /home/"$local_user"/.bashrc << 'EOF'
 export EDITOR=nano
 EOF
 }
+
+install_ansible_bookworm() {
+  displayandexec "Installation de Ansible                             " "\
+$ExeAsUser pipx install ansible"
+$ExeAsUser cat>> /home/"$local_user"/.bashrc << 'EOF'
+
+# for Ansible vault editor
+export EDITOR=nano
+EOF
+}
+# on va très certainement passer à une installation de ansible via pipx
+# donc pour l'instant on le test avec l'install pour bookworm
 ################################################################################
 
 ################################################################################
@@ -2012,16 +2073,48 @@ install_all_manual_install_apps_bullseye() {
   install_ventoy
 }
 
+install_all_manual_install_apps_bookworm() {
+  # install_atom
+  install_winscp
+  install_veracrypt
+  install_spotify
+  install_apt-fast
+  install_drawio
+  # install_boostnote
+  install_typora
+  # install_virtualbox_bookworm
+  install_keepassxc
+  install_mkvtoolnix_bookworm
+  install_etcher
+  install_shotcut
+  install_signal
+  install_stacer
+  install_asbru
+  install_bat
+  install_youtubedl
+  install_yt-dlp
+  install_joplin
+  install_krita
+  install_opensnitch
+  install_ansible_bookworm
+  install_hashcat
+  install_sshuttle
+  install_geeqie
+  install_timeshift
+  install_vscode
+  install_brave
+  install_ventoy
+}
+
 if [ -z "$fisrt_time_script_executed" ]; then
   if [ "$bullseye" == 1 ]; then
     install_all_manual_install_apps_bullseye
   fi
   if [ "$bookworm" == 1 ]; then
-    install_all_manual_install_apps_bullseye
+    install_all_manual_install_apps_bookworm
   fi
 fi
 # Pour l'instant on désactive l'installation des programmes avec une installation manuelle lorsque ce n'est pas la première fois que le script s'execute
-# On utilise aussi la même version de install_all_manual_install_apps_bullseye pour bookworm pour le moment pour faire des tests, mais il faudra surement en faire un dexuième dédié avec des dépots pour les installs en APT spécifiques à bookworm
 ################################################################################
 
 ################################################################################
@@ -2681,7 +2774,7 @@ sed -E -i 's/^rotate [[:digit:]]+/rotate 8/' /etc/logrotate.conf"
 ##------------------------------------------------------------------------------
 displayandexec "Configuration de auditd                             " "\
 is_file_present_and_rmfile "/etc/audit/rules.d/audit.rules" && \
-mv "$script_path"/audit.rules /etc/audit/rules.d/audit.rules && \
+cp "$script_path"/audit.rules /etc/audit/rules.d/audit.rules && \
 augenrules --check && \
 systemctl restart auditd"
 # rules mostly based on https://github.com/Neo23x0/auditd/blob/master/audit.rules
@@ -2922,7 +3015,7 @@ $ExeAsUser apm install language-yara"
 ## configuration de bat
 ##------------------------------------------------------------------------------
 configure_bat() {
-execandlog "is_file_present_and_rmfile "/home/"$local_user"/.config/bat/config"; \
+execandlog "is_file_present_and_rmfile "/home/"$local_user"/.config/bat/config" && \
 $ExeAsUser bat --generate-config-file"
 cat>> /home/"$local_user"/.config/bat/config << 'EOF'
 
@@ -3935,7 +4028,7 @@ backup_LUKS_header() {
   displayandexec "Création d'un backup de l'entête LUKS               " "\
 is_dir_present_or_mkdir_as_user "/home/"$local_user"/.backup/" && \
 cryptsetup isLuks /dev/"$luks_partition" && \
-cryptsetup luksHeaderBackup /dev/"$luks_partition" --header-backup-file /home/"$local_user"/.backup/"$luks_partition"_LUKS_Header_Backup.img"
+cryptsetup luksHeaderBackup /dev/"$luks_partition" --header-backup-file /home/"$local_user"/.backup/"$luks_partition"_LUKS_Header_Backup-"$now".img"
 }
 backup_LUKS_header
 # on s'assure dans un premier temps de récupérer uniquement le path de la partition qui contient le lvm du système (lv root) pour être sur de ne faire que la sauvegarde du LUKS du système
@@ -3991,10 +4084,11 @@ cd
 ################################################################################
 ## Création d'un snapshot avec Timeshift
 ##------------------------------------------------------------------------------
+create_root_part_snapshot_with_timeshift() {
 # on s'assure dans un premier temps qu'il n'y a pas déjà eu un premier snapshot d'éffectué
 root_part_kname="$(lsblk -o KNAME,MOUNTPOINT | awk '{{if ($2 == "/") print $1}}')"
 displayandexec "Création d'un snapshot avec Timeshift               " "\
-umount -l /run/timeshift/backup; if timeshift --list --snapshot-device /dev/"$root_part_kname" | grep -q '^No snapshots found' 2>/dev/null; then timeshift --scripted --create --rsync --comments 'first snapshot, after postinstall script' --snapshot-device /dev/"$root_part_kname"; fi"
+umount -l /run/timeshift/backup; timeshift --scripted --create --rsync --comments 'first snapshot, after postinstall script' --snapshot-device /dev/"$root_part_kname""
 # cette étape est très longue lorsqu'il faut faire un premier snapshot (car timeshift doit faire en fait un miroir du système existant)
 # sur un HDD pas très rapide, il y en a pour à peu près une heure
 execandlog "timeshift --list"
@@ -4003,6 +4097,10 @@ execandlog "timeshift --list"
 execandlog "umount -l /run/timeshift/backup"
 # on démonte le point de montage de timeshift car il n'est plus nécessaire
 # peut être qu'à terme il serait intéressant de voir pour ajouer une partition dédié pour les backups
+}
+if [ -z "$fisrt_time_script_executed" ]; then
+  create_root_part_snapshot_with_timeshift 
+fi
 ################################################################################
 
 echo '--------------------------------------------------------------------' >> "$log_file"
@@ -4085,25 +4183,13 @@ exit 0
 # Pour la vider la corbeille utilisateur :
 # rm -Rf ~/.local/share/Trash/*
 
-# Pour la vider la corbeille administrateur :
-# rm -Rf /root/.local/share/Trash/*
 
 
 
 
 
 
-##!/bin/sh
-#
-#echo -n "Etes-vous fatigué ? "
-#read on
-#
-#case "$on" in
-#    oui | o | O | Oui | OUI ) echo "Allez faire du café !";;
-#    non | n | N | Non | NON ) echo "Programmez !";;
-#    * ) echo "Ah bon ?";;
-#esac
-#exit 0
+
 
 #if [ -x /bin/sh ] ; then
 #	echo "/bin/sh est exécutable. C'est bien."
@@ -4111,33 +4197,3 @@ exit 0
 #	echo "/bin/sh n'est pas exécutable."
 #fi
 #OU [ -x /bin/sh ] || echo "/bin/sh n'est pas exécutable."
-
-
-
-
-
-
-
-
-
-#read -p "Voulez-vous redémarer maintenant ?[O/n] " reponse
-#if [[ $reponse = "o" || $reponse = "O" || $reponse = "" ]]; then
-#    reboot
-#else
-#    exit 0
-#fi
-
-
-
-
-
-
-
-
-
-
-
-
-
-# Not an interactive shell?
-# [[ $- == *i* ]] || return 0
