@@ -362,9 +362,9 @@ cd
 ################################################################################
 ## création du dossier temporaire pour l'execution du script
 ##------------------------------------------------------------------------------
-tmp_dir='/tmp/install_tmp'
-[ -d "$tmp_dir" ] || mkdir "$tmp_dir" && \
-cd "$tmp_dir"
+# tmp_dir='/tmp/install_tmp'
+# [ -d "$tmp_dir" ] || mkdir "$tmp_dir" && \
+# cd "$tmp_dir"
 ################################################################################
 
 ################################################################################
@@ -479,7 +479,7 @@ force_dns_for_install
 ################################################################################
 
 ################################################################################
-## vérification de l'accès à Internet (test avec ICMP)
+## vérification de l'accès à Internet
 ##------------------------------------------------------------------------------
 check_internet_access() {
   displayandexec "Vérification de la connection internet (ICMP+DNS)   " "\
@@ -500,7 +500,11 @@ check_internet_access
 ################################################################################
 ## synchronisation de l'heure et de la time zone
 ##------------------------------------------------------------------------------
-displayandexec "Synchronisation de l'heure et de la time zone       " "systemctl restart systemd-timesyncd"
+sync_date_and_time() {
+  displayandexec "Synchronisation de l'heure et de la time zone       " "\
+systemctl restart systemd-timesyncd"
+}
+sync_date_and_time
 # voir comment faire lorsque la machine n'est pas à la bonne date et qu'elle a créer le fichier de log en se basant sur la date à laquelle elle était. regarder concernant le bon moment pour executer la commande car elle a besoin de displayandexec qui utilise notamment le fait qu'un fichier de log soit créé
 ################################################################################
 
@@ -551,6 +555,19 @@ if get_all_parent_PID | grep 'gnome-terminal' &> /dev/null; then
 fi
 }
 is_script_launch_with_gnome_terminal
+################################################################################
+
+################################################################################
+## vérification que le SecureBoot est activé
+##------------------------------------------------------------------------------
+check_secureboot_enabled() {
+  if $(command -v mokutil > /dev/null); then
+    if $(mokutil --sb-state 2> /dev/null | grep -q 'SecureBoot enabled'); then
+      secureboot_enable=1
+    fi
+  fi
+}
+check_secureboot_enabled
 ################################################################################
 
 ################################################################################
@@ -729,12 +746,12 @@ manual_check_latest_version() {
 local_user="$(awk -F':' '/:1000:/{print $1}' /etc/passwd)"
 # l'inconvénient des autres méthodes ci-dessous c'est que leur execution suppose qu'on se soit loggé avec le user avant de lancer le script (ce n'est pas le cas s'il est executer directement en post-install du preseed par exemple)
 # autre méthode pour obtenir le user, lorsqu'il est à l'origine de la session en cour : "$(who | awk 'FNR == 1 {print $1}')"
-# on peut potentiellemnt remplacer la valeur 1000 par le retour de la commande "$(cat /proc/self/loginuid)"
+# ou encore id -nu "$(cat /proc/self/loginuid)"
 # encore une autre méthode qui fonctionne aussi dans un sudo : who | awk -v vt=tty$(fgconsole 2>/dev/null) '$0 ~ vt {print $1}'
 
 local_user_UID="$(id -u "$local_user")"
 gnome_shell_extension_path="/home/"$local_user"/.local/share/gnome-shell/extensions"
-ExeAsUser="sudo -u "$local_user""
+export ExeAsUser="sudo -u "$local_user""
 AGI='apt-get install -y'
 AG='apt-get'
 WGET='wget -q'
@@ -850,7 +867,12 @@ $ExeAsUser $DCONF_write /org/gnome/settings-daemon/plugins/power/sleep-inactive-
 $ExeAsUser $DCONF_write /org/gnome/settings-daemon/plugins/power/sleep-inactive-ac-type "'nothing'"
 ################################################################################
 
+################################################################################
+## remise au propre du terminal
+##------------------------------------------------------------------------------
 clear
+################################################################################
+
 ################################################################################
 ## vérification de la taille du terminal (largeur)
 ##------------------------------------------------------------------------------
@@ -887,6 +909,11 @@ echo '              lancement du script : sudo bash '"$script_name"
 echo '              version du système  : '"$version_linux" "$system_version" "($debian_release)"
 echo '              architecture CPU    : '"$computer_proc_architecture"
 echo '              nombre de coeur CPU : '"$computer_proc_nb"
+if [ "$secureboot_enable" == 1 ]; then
+  echo '              SecureBoot          : Activé'
+else
+  echo '              SecureBoot          : Désactivé'
+fi
 echo '              adresse IPv4 local  : '"$IPv4_local_address"
 echo '              adresse IPv4 extern : '"$IPv4_external_address"
 if [ "$IPv6_local_address" ]; then
@@ -986,12 +1013,13 @@ configure_debconf
 tmp_all_package_list_before="$(dpkg --get-selections | awk '{if ($2 == "install") {print $1}}' | bash -c "grep -w$(for pkg in alpine balsa biabam bsd-mailx claws-mail dovecot-sieve enigmail exim4-base exim4-config exim4-daemon-heavy exim4-daemon-light exmh filter gnarwl gnome-gmail gnumail.app im kmail kontact maildrop mailutils mailutils-mh mew mew-beta mew-beta-bin mew-bin mutt nmh notmuch prayer procmail sendemail sensible-mda sqwebmail-de sylpheed uw-mailutils vm wl wl-beta yample; do echo -n " -e '"$pkg"'"; done)")"
 configure_apt() {
   cat>> /etc/apt/preferences << 'EOF'
-Package: keepassxc exim4-base exim4-config exim4-daemon-heavy exim4-daemon-light mailutils bsd-mailx
+Package: youtube-dl keepassxc exim4-base exim4-config exim4-daemon-heavy exim4-daemon-light mailutils bsd-mailx
 Pin: release *
 Pin-Priority: -1
 EOF
 }
 configure_apt
+# Cette configuration permet d'interdire l'installation de ces paquets (ligne Package:) par apt. Ca évite notamment d'avoir à gérer les problèmes de paquets qui pourraient être mis comme des dépendances d'autres paquets (comme pour youtube-dl et keepassxc) alors qu'on les install déjà d'une autre manière (par AppImage ou bien un binnaire plus récent).
 ################################################################################
 
 ################################################################################
@@ -1294,11 +1322,8 @@ EOF
   }
   # ref : [Debian, SecureBoot et les modules noyaux DKMS - Where is it?](https://medspx.fr/blog/Debian/secure_boot_dkms/)
 
-  # test qui vérifie l'activation du SecureBoot
-  if command -v mokutil > /dev/null; then
-      if $(mokutil --sb-state 2> /dev/null | grep 'SecureBoot enabled'); then
-          configure_SecureBoot_params
-      fi
+  if [ "$secureboot_enable" == 1 ]; then
+    configure_SecureBoot_params
   fi
 }
 install_zfs
@@ -1543,11 +1568,8 @@ EOF
   }
   # ref : [Debian, SecureBoot et les modules noyaux DKMS - Where is it?](https://medspx.fr/blog/Debian/secure_boot_dkms/)
 
-  # test qui vérifie l'activation du SecureBoot
-  if command -v mokutil > /dev/null; then
-      if $(mokutil --sb-state 2> /dev/null | grep 'SecureBoot enabled'); then
-          configure_SecureBoot_params
-      fi
+  if [ "$secureboot_enable" == 1 ]; then
+    configure_SecureBoot_params
   fi
 }
 
@@ -1609,11 +1631,8 @@ EOF
   }
   # ref : [Debian, SecureBoot et les modules noyaux DKMS - Where is it?](https://medspx.fr/blog/Debian/secure_boot_dkms/)
 
-  # test qui vérifie l'activation du SecureBoot
-  if command -v mokutil > /dev/null; then
-      if $(mokutil --sb-state 2> /dev/null | grep 'SecureBoot enabled'); then
-          configure_SecureBoot_params
-      fi
+  if [ "$secureboot_enable" == 1 ]; then
+    configure_SecureBoot_params
   fi
 }
 ################################################################################
@@ -2334,11 +2353,11 @@ install_GSE_screenshot_tool() {
 #system-monitor
 install_GSE_system_monitor() {
   execandlog "$AGI gnome-shell-extension-system-monitor"
-  execandlog "$ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/memory-style "'digit'""
+  execandlog "$ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/memory-style "\'digit\'""
   # on configure avec la commande ci-dessus l'affichage de la métrique de la RAM sous forme de pourcentage plustôt que de graph
   execandlog "$ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/gpu-show-menu "true""
   # on active la vue de l'utilisation du GPU dans le menu
-  execandlog "$ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/disk-usage-style "'bar'""
+  execandlog "$ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/disk-usage-style "\'bar\'""
   # on chosie l'option de l'affichage de l'utilisation des disk par des barres horizontales à la place du graph en demi cercle
 }
 
@@ -2607,8 +2626,10 @@ chmod +x /usr/bin/rktscan"
 ## install du script spyme
 ##------------------------------------------------------------------------------
 install_spyme() {
+  cat> /usr/bin/spyme << 'EOF'
+sudo lnav /var/log/syslog /var/log/auth.log
+EOF
   displayandexec "Installation du script spyme                        " "\
-echo 'sudo lnav /var/log/syslog /var/log/auth.log' > /usr/bin/spyme && \
 chmod +x /usr/bin/spyme"
 }
 ################################################################################
@@ -3114,7 +3135,7 @@ $ExeAsUser sed -i 's%<item oor:path="/org.openoffice.Office.Common/Security/Scri
 ##------------------------------------------------------------------------------
 # la configuration de nano s'effectue dans le fichier /etc/nanorc
 configure_nano() {
-  displayandexec "Configuration de nano                           " "\
+  displayandexec "Configuration de nano                               " "\
 sed -i 's/^# set linenumbers/set linenumbers/' /etc/nanorc && \
 sed -i 's/^# set softwrap/set softwrap/' /etc/nanorc"
 }
@@ -3183,7 +3204,7 @@ $ExeAsUser apm install language-yara"
 ## configuration de bat
 ##------------------------------------------------------------------------------
 configure_bat() {
-  displayandexec "Configuration de bat                            " "\
+  displayandexec "Configuration de bat                                " "\
 is_file_present_and_rmfile "/home/"$local_user"/.config/bat/config" && \
 $ExeAsUser bat --generate-config-file"
 $ExeAsUser cat>> /home/"$local_user"/.config/bat/config << 'EOF'
@@ -3201,7 +3222,7 @@ configure_bat
 ##------------------------------------------------------------------------------
 # on ajoute la possibilité d'ouvrir directement la navigateur firefox dans une fenêtre de navigation privée
 configure_firefox() {
-  displayandexec "Configuration de Firefox                        " "\
+  displayandexec "Configuration de Firefox                            " "\
 [ -f /usr/share/applications/firefox-esr-private.desktop ] || cp /usr/share/applications/firefox-esr.desktop /usr/share/applications/firefox-esr-private.desktop && \
 sed -i 's%^Exec=/usr/lib/firefox-esr/firefox-esr%& --private-window%' /usr/share/applications/firefox-esr-private.desktop && \
 sed -E -i '/(^Name=|^Name\[.*\]=)/s/Firefox .*/Firefox private/g' /usr/share/applications/firefox-esr-private.desktop && \
@@ -3347,7 +3368,7 @@ configure_vscode
 ## configuration de mpv
 ##------------------------------------------------------------------------------
 configure_mpv() {
-  displayandexec "Configuration de mpv                            " "\
+  displayandexec "Configuration de mpv                                " "\
 reset_dir_as_user "/home/"$local_user"/.config/mpv/"" && \
 $ExeAsUser cat> /home/"$local_user"/.config/mpv/input.conf << 'EOF'
 # add the capacity to rotate the video when pressing r key
@@ -3362,7 +3383,7 @@ configure_mpv
 ## configuration de typora
 ##------------------------------------------------------------------------------
 configure_typora() {
-  displayandexec "Configuration de typora                         " "\
+  displayandexec "Configuration de typora                             " "\
 reset_dir_as_user "/home/"$local_user"/.config/Typora/"" && \
 $ExeAsUser cat> /home/"$local_user"/.config/Typora/profile.data << 'EOF'
 7b22696e697469616c697a655f766572223a22302e392e3738222c226c696e655f656e64696e675f63726c66223a66616c73652c227072654c696e65627265616b4f6e4578706f7274223a747275652c2275756964223a2237346265383439362d343239372d343362382d616633632d336439343463646432376439222c227374726963745f6d6f6465223a747275652c22636f70795f6d61726b646f776e5f62795f64656661756c74223a747275652c226261636b67726f756e64436f6c6f72223a2223333633423430222c227468656d65223a226e696768742e637373222c22736964656261725f746162223a22222c2273656e645f75736167655f696e666f223a66616c73652c22656e61626c654175746f53617665223a747275652c226c617374436c6f736564426f756e6473223a7b2266756c6c73637265656e223a66616c73652c226d6178696d697a6564223a747275657d7d
@@ -3378,7 +3399,7 @@ configure_typora
 # début de réflexion pour faire des confs sur des apps qui utilise une base de donnée pour stocker la conf
 # apt-get install -y sqlite3 && sqlite3 .config/joplin-desktop/database.sqlite "select * from settings"
 configure_joplin() {
-  displayandexec "Configuration de joplin                         " "\
+  displayandexec "Configuration de joplin                             " "\
 is_dir_present_or_mkdir_as_user "/home/"$local_user"/.config/Joplin/""
 # $ExeAsUser cat> /home/"$local_user"/.config/Joplin/Preferences << 'EOF'
 # {"spellcheck":{"dictionaries":["fr"],"dictionary":""}}
@@ -3391,7 +3412,7 @@ configure_joplin
 ## configuration de Handbrake
 ##------------------------------------------------------------------------------
 configure_handbrake() {
-  displayandexec "Configuration de handbrake                      " "\
+  displayandexec "Configuration de handbrake                          " "\
 reset_dir_as_user "/home/"$local_user"/.config/ghb/" && \
 [ -f /home/"$local_user"/.config/ghb/preferences.json ] && $ExeAsUser sed -E -i '/("UseM4v":) (false|true)/{s/true/false/;}' /home/"$local_user"/.config/ghb/preferences.json"
 }
@@ -3437,17 +3458,18 @@ execandlog "reset_dir_as_user "/home/"$local_user"/.config/autostart/""
 ## configuration des applis qui doivent se lancer au démarage
 ##------------------------------------------------------------------------------
 #signal
-$ExeAsUser cat> /home/"$local_user"/.config/autostart/signal.desktop << 'EOF'
-[Desktop Entry]
-Name=Signal
-Comment=Private messaging from your desktop
-Exec="/opt/Signal/signal-desktop" %U
-Terminal=false
-Type=Application
-Icon=signal-desktop
-StartupWMClass=Signal
-Categories=Network;InstantMessaging;Chat;
-EOF
+# $ExeAsUser cat> /home/"$local_user"/.config/autostart/signal.desktop << 'EOF'
+# [Desktop Entry]
+# Name=Signal
+# Comment=Private messaging from your desktop
+# Exec="/opt/Signal/signal-desktop" %U
+# Terminal=false
+# Type=Application
+# Icon=signal-desktop
+# StartupWMClass=Signal
+# Categories=Network;InstantMessaging;Chat;
+# EOF
+ln -s /usr/share/applications/signal.desktop /home/"$local_user"/.config/autostart/signal.desktop
 
 #terminal
 $ExeAsUser cat> /home/"$local_user"/.config/autostart/terminal.desktop << 'EOF'
@@ -3461,15 +3483,17 @@ Hidden=false
 EOF
 
 #keepassxc
-$ExeAsUser cat> /home/"$local_user"/.config/autostart/keepassxc.desktop << EOF
-[Desktop Entry]
-Name=KeePassXC
-Comment=Password Manager
-Exec=$manual_install_dir/KeePassXC/KeePassXC-$keepassxc_version-x86_64.AppImage
-Type=Application
-Terminal=false
-Hidden=false
-EOF
+# $ExeAsUser cat> /home/"$local_user"/.config/autostart/keepassxc.desktop << EOF
+# [Desktop Entry]
+# Name=KeePassXC
+# Comment=Password Manager
+# Exec=$manual_install_dir/KeePassXC/KeePassXC-$keepassxc_version-x86_64.AppImage
+# Type=Application
+# Terminal=false
+# Hidden=false
+# EOF
+ln -s /usr/share/applications/keepassxc.desktop /home/"$local_user"/.config/autostart/keepassxc.desktop
+
 
 #joplin
 # $ExeAsUser cat> /home/"$local_user"/.config/autostart/joplin.desktop << EOF
@@ -3483,9 +3507,6 @@ EOF
 # EOF
 ln -s /usr/share/applications/joplin.desktop /home/"$local_user"/.config/autostart/joplin.desktop
 
-# Il n'est pas impossible qu'il faille rajuter à la fin de la commande Exec --no-sandbox
-# Au début Jolin ne se lançait pas sans se paramètre, depuis cela à l'air d'être corrigé
-
 # on pourra surement supprimer la configuration manuel des .desktop pour joplin, signal et keepassxc en les remplaçant par des liens symboliques pointant vers les .desktop correspondant dans /usr/share/applications
 ################################################################################
 
@@ -3493,7 +3514,7 @@ ln -s /usr/share/applications/joplin.desktop /home/"$local_user"/.config/autosta
 ## configuration de KeePassXC
 ##------------------------------------------------------------------------------
 configure_keepassxc() {
-  displayandexec "Configuration de KeePassXC                      " "\
+  displayandexec "Configuration de KeePassXC                          " "\
 reset_dir_as_user "/home/"$local_user"/.config/keepassxc/""
 $ExeAsUser tee /home/"$local_user"/.config/keepassxc/keepassxc.ini << 'EOF' >/dev/null
 [General]
@@ -3865,6 +3886,28 @@ EOF
 }
 configure_mime_types
 # bien faire attention au point virgule, présent dans "Added Associations" mais pas dans "Default Applications"
+
+configure_mime_types_association_drawio() {
+  execandlog "is_dir_present_or_mkdir_as_user "/home/"$local_user"/.local/share/mime/packages/"" && \
+  $ExeAsUser cat> /home/"$local_user"/.local/share/mime/packages/drawio.xml << 'EOF'
+<?xml version="1.0" encoding="utf-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+<mime-type type="application/vnd.jgraph.mxfile">
+  <glob pattern="*.drawio"/>
+    <comment>draw.io Diagram</comment>
+  <icon name="x-office-document" />
+</mime-type>
+<mime-type type="application/vnd.visio">
+  <glob pattern="*.vsdx"/>
+    <comment>VSDX Document</comment>
+  <icon name="x-office-document" />
+</mime-type>
+</mime-info>
+EOF
+  execandlog "$ExeAsUser update-mime-database /home/"$local_user"/.local/share/mime"
+}
+configure_mime_types_association_drawio
+# ref : [Give *.drawio files MIME type to make application association work](https://gist.github.com/giner/0eb272c11085036c4438413f6de0e454)
 ################################################################################
 
 ################################################################################
@@ -4205,6 +4248,7 @@ displayandexec "Mise à jour de la base de donnée de rkhunter        " "rkhunte
 ## création d'un fichier de backup du header LUKS
 ##------------------------------------------------------------------------------
 backup_LUKS_header() {
+  export LVM_SUPPRESS_FD_WARNINGS=1
   root_pv_name="$(pvdisplay --columns --options lv_name,pv_name | awk -F'/' '{if ($1 ~ /^[[:blank:]]+root/) {print $4}}')"
   root_lvm_parent_partition="$(lsblk -o PKNAME,FSTYPE,NAME | awk '/'"$root_pv_name"'/{print $1}')"
   luks_partition="$(lsblk -o NAME,FSTYPE /dev/"$root_lvm_parent_partition" | awk '/crypto_LUKS/{print $1}')"
@@ -4218,7 +4262,10 @@ backup_LUKS_header
 # On ne peut pas utiliser root_lvm_parent_partition="$(lsblk -o PKNAME,FSTYPE,NAME --json | grep "$root_pv_name" | grep -Po '("pkname":")\K([A-Za-z0-9\-]+)(?=")')"
 # car ils ont changer le format d'affichage du output json entre les versions lsblk from util-linux 2.36.1 (bullseye) et lsblk de util-linux 2.38.1 (bookworm)
 
-# LVM_SUPPRESS_FD_WARNINGS
+# on est obligé de faire export LVM_SUPPRESS_FD_WARNINGS=1 pour éviter d'avoir un message d'érreur lors de l'execution de la commande pvdisplay
+# from lvm man page :
+# On  invocation,  lvm  requires  that only the standard file descriptorsstdin, stdout and stderr are available.  If others are found, they  getclosed  and  messages  are issued warning about the leak.  This warning can  be  suppressed  by  setting  the  environment  variable   LVM_SUPPRESS_FD_WARNINGS.
+# ref : [#466138 - lvm2: File descriptor 3 left open - Debian Bug report logs](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=466138)
 ################################################################################
 
 ################################################################################
@@ -4262,9 +4309,14 @@ tmp_all_package_list_after="$(dpkg --get-selections | awk '{if ($2 == "install")
 execandlog "rm -f /etc/resolv.conf && mv /etc/resolv.conf.old /etc/resolv.conf"
 
 # suppression du dossier temporaire pour l'execution du script
-execandlog "find "$tmp_dir""
-execandlog "rm -rf "$tmp_dir""
+# execandlog "find "$tmp_dir""
+# execandlog "rm -rf "$tmp_dir""
+
+################################################################################
+## Redirection du current directory dans /home
+##------------------------------------------------------------------------------
 cd
+################################################################################
 
 ################################################################################
 ## Création d'un snapshot avec Timeshift
