@@ -3,8 +3,6 @@
 ## Made by NRGLine4Sec
 ##
 
-## Pour ajouter des modules au démarrage du système, il faut les ajouter dans ce fichier /etc/initramfs-tools/modules
-## ensuite lancer la commande suivante : update-initramfs -u
 
 ## utiliser l'option -l de grep ou bien zgrep pour n'obtenir que le chemin du fichier qui contient le patern que'on recherche
 
@@ -16,17 +14,6 @@
 
 ## Pour désactiver le bip système : xset b off
 
-## # tous les .desktop d'appli se trouvent dans /usr/share/applications/
-
-## Pour extraire une version d'un logiciel avec grep (un exemple avec keepassxc) : grep -Po '^Exec.*-\K\d+.\d+.\d+' /usr/share/applications/keepassxc.desktop
-## -P : interpréter le patern comme une regexp perl
-## -o : permet de ne matcher que la partie de la ligne
-## ^Exec.*- : uniquement les lignes qui commencent par Exec et qui contiennent dans la suite de la ligne un -
-## \K : permet de supprimer tout le patern matcher précédement du résulat
-## \d+ : permet d'inttifer un patern de type digit (donc un chiffre). Le + permet d'indiquer qu'il peut y en avoir plusieurs à la suite
-
-## Pour redémarer le daemon alsa : sudo systemctl restart alsa-state.service
-
 
 
 
@@ -35,16 +22,6 @@
 ##
 #
 ##
-## à retenir que le /g dans sed "Replaces all matches, not just the first match"
-##
-# sed -i 's/SEARCH_REGEX/REPLACEMENT/g' INPUTFILE
-# -i - By default sed writes its output to the standard output. This option tells sed to edit files in place. If an extension is supplied (ex -i.bak) a backup of the original file will be created.
-# s - The substitute command, probably the most used command in sed.
-# / / / - Delimiter character. It can be any character but usually the slash (/) character is used.
-# SEARCH_REGEX - Normal string or a regular expression to search for.
-# REPLACEMENT - The replacement string.
-# g - Global replacement flag. By default, sed reads the file line by line and changes only the first occurrence of the SEARCH_REGEX on a line. When the replacement flag is provided, all occurrences will be replaced.
-# INPUTFILE - The name of the file on which you want to run the command.
 ##
 ## regarder pour la partie auditd
 # auditctl -w /etc/ssh/sshd_config -p warx -k sshd_config
@@ -108,17 +85,6 @@
 # ref : [Configurer sa souris Logitech MX Master sous Linux (Ubuntu) – Miximum](https://www.miximum.fr/blog/configurer-sa-souris-logitech-mx-master-sous-linux-ubuntu/)
 
 
-## pour désinstaller le driver de realtek du dongle bluetooth
-# ll /lib/modules/$(uname -r)/kernel/drivers/bluetooth/ | grep "hci_uart.ko\|rtk_btusb.ko"
-# ll /lib/firmware/rtlbt/
-# udevadm info -a -p /sys/class/bluetooth/hci0
-# [Disabling the built in bluetooth and use a USB adaptor instead (on Linux) | DAVID RICHARD BELL](https://blog.evad.io/2018/01/11/disabling-the-built-in-bluetooth-and-use-a-usb-adaptor-instead-on-linux/)
-# inxi -xxx --usb | grep -A 4 "Bluetooth"
-# gnome-control-center -v bluetooth
-# sudo hciconfig hci0 up
-# [gsd-rfkill can't cope with hotplugged rfkill devices (#52) · Issues · GNOME / gnome-settings-daemon · GitLab](https://gitlab.gnome.org/GNOME/gnome-settings-daemon/-/issues/52)
-
-
 ## copier leur système d'affiche pour l'usage : [Remove Elasticsearch indices that older than a given date.](https://gist.github.com/yumminhuang/ec03bcacbbc6434412b82ca0c34e7a18)
 
 ## a regarder pour installer setools-gui
@@ -133,16 +99,6 @@
 ## regarder nsntrace (apt-get install -y nsntrace)
 ## sudo nsntrace -d enp -o result.pcap -u $USER signal-desktop
 
-# pour avoir des infos lspci via udevadm
-# while read item; do echo -e "${item} valeur=$(strings $item 2> /dev/null)"; udevadm info -q all -p "$item" 2> /dev/null ; done  < <(find /sys/devices -regex "/sys/devices/.*01:00\.0\/.*")
-# où par exemple lspci -s 01:00.0   (...)
-# lspci -nn | awk 'BEGIN {FPAT="[[:xdigit:]]{4}"}; {print "Contrôleur Type",$1,":",$0}'
-
-#  vérifier aussi le paramètre msi de la carte mère
-# for item in /sys/module/*/parameters/**; do if [ -f "$item" ]; then echo -e "$(cut -f4 -d"/" <<<"$item") $(basename $item)=$(cat $item 2> /dev/null)"; fi;  done | egrep -i 'pcie|aspm|msi|aer|8723be'
-
-
-# sudo lspci -nnkv | grep -iB13 pcieport
 
 
 
@@ -357,14 +313,6 @@ script_path="$(dirname $(readlink -f "${BASH_SOURCE[0]}"))"
 ## redirection du current directory dans le HOME directory
 ##------------------------------------------------------------------------------
 cd
-################################################################################
-
-################################################################################
-## création du dossier temporaire pour l'execution du script
-##------------------------------------------------------------------------------
-# tmp_dir='/tmp/install_tmp'
-# [ -d "$tmp_dir" ] || mkdir "$tmp_dir" && \
-# cd "$tmp_dir"
 ################################################################################
 
 ################################################################################
@@ -2252,7 +2200,7 @@ install_GSE_screenshot_tool() {
   local tmp_dir="$(mktemp -d)"
   local GnomeShellExtensionUUID='gnome-shell-screenshot@ttll.de' && \
   local GnomeShellExtensionVersion='56' && \
-  execandlog "[ -d "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" ] || mkdir -p "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
+  execandlog "reset_dir_as_user "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
   $WGET -P "$tmp_dir" "https://extensions.gnome.org/extension-data/gnome-shell-screenshotttll.de.v"$GnomeShellExtensionVersion".shell-extension.zip" && \
   unzip -q "$tmp_dir"/gnome-shell-screenshotttll.de.v"$GnomeShellExtensionVersion".shell-extension.zip -d "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
   chown -R "$local_user":"$local_user" "$gnome_shell_extension_path"; \
@@ -2264,11 +2212,11 @@ install_GSE_screenshot_tool() {
 #system-monitor
 install_GSE_system_monitor() {
   execandlog "$AGI gnome-shell-extension-system-monitor"
-  execandlog "$ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/memory-style "'digit'""
+  execandlog "$ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/memory-style \"\'digit\'\""
   # on configure avec la commande ci-dessus l'affichage de la métrique de la RAM sous forme de pourcentage plustôt que de graph
-  execandlog "$ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/gpu-show-menu "true""
+  execandlog "$ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/gpu-show-menu \"true\""
   # on active la vue de l'utilisation du GPU dans le menu
-  execandlog "$ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/disk-usage-style "'bar'""
+  execandlog "$ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/disk-usage-style \"\'bar\'\""
   # on chosie l'option de l'affichage de l'utilisation des disk par des barres horizontales à la place du graph en demi cercle
 }
 
@@ -2277,7 +2225,7 @@ install_GSE_sound_output_device_chooser() {
   local tmp_dir="$(mktemp -d)"
   local GnomeShellExtensionUUID='sound-output-device-chooser@kgshank.net' && \
   local GnomeShellExtensionVersion='40' && \
-  execandlog "[ -d "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" ] || mkdir -p "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
+  execandlog "reset_dir_as_user "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
   $WGET -P "$tmp_dir" "https://extensions.gnome.org/extension-data/sound-output-device-chooserkgshank.net.v"$GnomeShellExtensionVersion".shell-extension.zip" && \
   unzip -q "$tmp_dir"/sound-output-device-chooserkgshank.net.v"$GnomeShellExtensionVersion".shell-extension.zip -d "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
   chown -R "$local_user":"$local_user" "$gnome_shell_extension_path"; \
@@ -2341,7 +2289,7 @@ install_GSE_screenshot_tool() {
   local tmp_dir="$(mktemp -d)"
   local GnomeShellExtensionUUID='gnome-shell-screenshot@ttll.de' && \
   local GnomeShellExtensionVersion='70' && \
-  execandlog "[ -d "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" ] || mkdir -p "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
+  execandlog "reset_dir_as_user "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
   $WGET -P "$tmp_dir" "https://extensions.gnome.org/extension-data/gnome-shell-screenshotttll.de.v"$GnomeShellExtensionVersion".shell-extension.zip" && \
   unzip -q "$tmp_dir"/gnome-shell-screenshotttll.de.v"$GnomeShellExtensionVersion".shell-extension.zip -d "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
   chown -R "$local_user":"$local_user" "$gnome_shell_extension_path"; \
@@ -2353,11 +2301,11 @@ install_GSE_screenshot_tool() {
 #system-monitor
 install_GSE_system_monitor() {
   execandlog "$AGI gnome-shell-extension-system-monitor"
-  execandlog "$ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/memory-style "\'digit\'""
+  execandlog "$ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/memory-style \"\'digit\'\""
   # on configure avec la commande ci-dessus l'affichage de la métrique de la RAM sous forme de pourcentage plustôt que de graph
-  execandlog "$ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/gpu-show-menu "true""
+  execandlog "$ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/gpu-show-menu \"true\""
   # on active la vue de l'utilisation du GPU dans le menu
-  execandlog "$ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/disk-usage-style "\'bar\'""
+  execandlog "$ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/disk-usage-style \"\'bar\'\""
   # on chosie l'option de l'affichage de l'utilisation des disk par des barres horizontales à la place du graph en demi cercle
 }
 
@@ -2366,7 +2314,7 @@ install_GSE_sound_output_device_chooser() {
   local tmp_dir="$(mktemp -d)"
   local GnomeShellExtensionUUID='sound-output-device-chooser@kgshank.net' && \
   local GnomeShellExtensionVersion='43' && \
-  execandlog "[ -d "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" ] || mkdir -p "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
+  execandlog "reset_dir_as_user "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
   $WGET -P "$tmp_dir" "https://extensions.gnome.org/extension-data/sound-output-device-chooserkgshank.net.v"$GnomeShellExtensionVersion".shell-extension.zip" && \
   unzip -q "$tmp_dir"/sound-output-device-chooserkgshank.net.v"$GnomeShellExtensionVersion".shell-extension.zip -d "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
   chown -R "$local_user":"$local_user" "$gnome_shell_extension_path"
@@ -2416,7 +2364,9 @@ fi
 install_GSE_screenshot_tool
 install_GSE_system_monitor
 install_GSE_sound_output_device_chooser
-check_for_enable_GSE
+if [ "$bookworm" != 1 ]; then
+  check_for_enable_GSE
+fi
 
 displayandexec "Installation des Gnome Shell Extension              " "\
 stat "$gnome_shell_extension_path"/gnome-shell-screenshot@ttll.de/metadata.json && \
@@ -2913,9 +2863,9 @@ configure_sshfs
 ################################################################################
 ## configuration du logrotate pour le auth.log
 ##------------------------------------------------------------------------------
-# cette conf permet de garder 12 mois de log de auth.log. Cela permet donc de garder pendant un an toutes les commandes utilisées (par root ou à travers sudo) ainsi que toutes les connexions d'utilisateur
-execandlog "sed -i '\/var\/log\/auth\.log/d' /etc/logrotate.d/rsyslog"
-echo '
+configure_logrotate_auth_log() {
+  execandlog "sed -i '\/var\/log\/auth\.log/d' /etc/logrotate.d/rsyslog"
+  cat>> /etc/logrotate.d/rsyslog << 'EOF'
 /var/log/auth.log
 {
   monthly
@@ -2928,7 +2878,11 @@ echo '
 	postrotate
 		/usr/lib/rsyslog/rsyslog-rotate
 	endscript
-}' >> /etc/logrotate.d/rsyslog
+}
+EOF
+}
+configure_logrotate_auth_log
+# cette conf permet de garder 12 mois de log de auth.log. Cela permet donc de garder pendant un an toutes les commandes utilisées (par root ou à travers sudo) ainsi que toutes les connexions d'utilisateur
 ################################################################################
 
 ################################################################################
@@ -3207,7 +3161,7 @@ configure_bat() {
   displayandexec "Configuration de bat                                " "\
 is_file_present_and_rmfile "/home/"$local_user"/.config/bat/config" && \
 $ExeAsUser bat --generate-config-file"
-$ExeAsUser cat>> /home/"$local_user"/.config/bat/config << 'EOF'
+  $ExeAsUser cat>> /home/"$local_user"/.config/bat/config << 'EOF'
 
 --paging=never
 --style=header-filename
@@ -3371,12 +3325,17 @@ configure_mpv() {
   displayandexec "Configuration de mpv                                " "\
 reset_dir_as_user "/home/"$local_user"/.config/mpv/"" && \
 $ExeAsUser cat> /home/"$local_user"/.config/mpv/input.conf << 'EOF'
-# add the capacity to rotate the video when pressing r key
+# Add the capacity to rotate the video when pressing r key
 r cycle_values video-rotate 90 180 270 0
+
+# Enable hardware decoding if available
+hwdec=auto
 EOF
 }
 configure_mpv
 # ref : [command line - Rotate video by a keyboard shortcut in mpv - Ask Ubuntu](https://askubuntu.com/questions/1212733/rotate-video-by-a-keyboard-shortcut-in-mpv/1345092#1345092)
+# [Configuration file for `mpv`](https://gist.github.com/doole/af4613629d223eb0e416)
+# [mpv.io](https://mpv.io/manual/stable/#options-hwdec)
 ################################################################################
 
 ################################################################################
@@ -3469,7 +3428,7 @@ execandlog "reset_dir_as_user "/home/"$local_user"/.config/autostart/""
 # StartupWMClass=Signal
 # Categories=Network;InstantMessaging;Chat;
 # EOF
-ln -s /usr/share/applications/signal.desktop /home/"$local_user"/.config/autostart/signal.desktop
+ln -s /usr/share/applications/signal-desktop.desktop /home/"$local_user"/.config/autostart/signal-desktop.desktop
 
 #terminal
 $ExeAsUser cat> /home/"$local_user"/.config/autostart/terminal.desktop << 'EOF'
@@ -4039,9 +3998,8 @@ fi
 ################################################################################
 ## configuration du bashrc et du zshrc
 ##------------------------------------------------------------------------------
-
 # alias for the user
-execandlog "rm -f /home/"$local_user"/.bashrc && \
+execandlog "is_file_present_and_rmfile "/home/"$local_user"/.bashrc" && \
 cp "$script_path"/.bashrc /home/"$local_user"/.bashrc"
 $ExeAsUser cat>> /home/"$local_user"/.bashrc << EOF
 
@@ -4092,7 +4050,7 @@ HISTSIZE=2000
 EOF
 
 # alias for root
-execandlog "rm -f /root/.bashrc && \
+execandlog "is_file_present_and_rmfile "/root/.bashrc" && \
 cp "$script_path"/.bashrc /root/.bashrc"
 cat>> /root/.bashrc << EOF
 
@@ -4130,7 +4088,7 @@ HISTSIZE=2000
 EOF
 displayandexec "Configuration du bashrc                             " "stat /root/.bashrc && stat /home/"$local_user"/.bashrc"
 
-execandlog "rm -f /home/"$local_user"/.zshrc && \
+execandlog "is_file_present_and_rmfile "/home/"$local_user"/.zshrc" && \
 cp "$script_path"/.zshrc /home/"$local_user"/.zshrc"
 $ExeAsUser cat>> /home/"$local_user"/.zshrc << EOF
 
@@ -4170,7 +4128,7 @@ export EDITOR=nano
 export PATH="\$PATH:/home/$local_user/.local/bin"
 EOF
 
-execandlog "rm -f /root/.zshrc && \
+execandlog "is_file_present_and_rmfile "/root/.zshrc" && \
 cp "$script_path"/.zshrc /root/.zshrc"
 cat>> /root/.zshrc << EOF
 
@@ -4233,7 +4191,11 @@ execandlog "chown -R "$local_user":"$local_user" /home/"$local_user"/"
 ################################################################################
 ## Mise à jour de la base de donnée de rkhunter
 ##------------------------------------------------------------------------------
-displayandexec "Mise à jour de la base de donnée de rkhunter        " "rkhunter --versioncheck ; rkhunter --update ; rkhunter --propupd"
+update_rkhunter() {
+  displayandexec "Mise à jour de la base de donnée de rkhunter        " "\
+rkhunter --versioncheck ; rkhunter --update ; rkhunter --propupd"
+}
+update_rkhunter
 ################################################################################
 
 ################################################################################
@@ -4273,7 +4235,7 @@ backup_LUKS_header
 ##------------------------------------------------------------------------------
 disable_bluetooth() {
   displayandexec "Désactivation du bluetooth                          " "\
-$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gdbus call --session --dest org.gnome.SettingsDaemon.Rfkill --object-path /org/gnome/SettingsDaemon/Rfkill --method org.freedesktop.DBus.Properties.Set "org.gnome.SettingsDaemon.Rfkill" "BluetoothAirplaneMode" "<true>" > /dev/null"
+$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gdbus call --session --dest org.gnome.SettingsDaemon.Rfkill --object-path /org/gnome/SettingsDaemon/Rfkill --method org.freedesktop.DBus.Properties.Set "org.gnome.SettingsDaemon.Rfkill" "BluetoothAirplaneMode" "\<true\>" > /dev/null"
 }
 disable_bluetooth
 ################################################################################
@@ -4283,7 +4245,10 @@ disable_bluetooth
 ##------------------------------------------------------------------------------
 # systemctl stop knockd
 # systemctl stop fail2ban
-displayandexec "Redémarage du service SSH                           " "systemctl restart ssh"
+restart_ssh() {
+  displayandexec "Redémarage du service SSH                           " "systemctl restart ssh"
+}
+restart_ssh
 ################################################################################
 
 ################################################################################
@@ -4307,10 +4272,6 @@ tmp_all_package_list_after="$(dpkg --get-selections | awk '{if ($2 == "install")
 
 # remise au propre du fichier de configuration DNS
 execandlog "rm -f /etc/resolv.conf && mv /etc/resolv.conf.old /etc/resolv.conf"
-
-# suppression du dossier temporaire pour l'execution du script
-# execandlog "find "$tmp_dir""
-# execandlog "rm -rf "$tmp_dir""
 
 ################################################################################
 ## Redirection du current directory dans /home
@@ -4387,51 +4348,3 @@ fi
 ################################################################################
 
 exit 0
-
-
-# Si la distrib a besoin de rebooter, alors reboot automatique
-# [ -f /var/run/reboot-required ] && reboot -f
-
-
-
-
-
-
-# a garder dans un coin, très intéressant !
-# https://stackoverflow.com/questions/696839/how-do-i-write-a-bash-script-to-restart-a-process-if-it-dies
-
-
-
-
-
-
-
-
-#problème de paquet avec dpkg, essayer les différents truc de ce lien, ça fonctionne
-#https://forum.ubuntu-fr.org/viewtopic.php?id=632091
-
-
-
-
-
-
-
-
-#commandes pour vider la corbeille
-# Pour la vider la corbeille utilisateur :
-# rm -Rf ~/.local/share/Trash/*
-
-
-
-
-
-
-
-
-
-#if [ -x /bin/sh ] ; then
-#	echo "/bin/sh est exécutable. C'est bien."
-#else
-#	echo "/bin/sh n'est pas exécutable."
-#fi
-#OU [ -x /bin/sh ] || echo "/bin/sh n'est pas exécutable."
