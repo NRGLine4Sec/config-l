@@ -129,6 +129,8 @@
 
 
 
+# lien à regarder lorsqu'il y a une nouvelle release de debian et qu'on veut préparer le script : [Chapter 5. Issues to be aware of for debian testing](https://www.debian.org/releases/testing/amd64/release-notes/ch-information.en.html)
+
 ################################################################################
 ## ROADMAP
 ##------------------------------------------------------------------------------
@@ -911,18 +913,70 @@ EOF
 }
 make_apt_source_list_clean
 
+################################################################################
+## Configuration de apt
+##------------------------------------------------------------------------------
+tmp_all_package_list_before="$(dpkg --get-selections | awk '{if ($2 == "install") {print $1}}' | bash -c "grep -w$(for pkg in alpine balsa biabam bsd-mailx claws-mail dovecot-sieve enigmail exim4-base exim4-config exim4-daemon-heavy exim4-daemon-light exmh filter gnarwl gnome-gmail gnumail.app im kmail kontact maildrop mailutils mailutils-mh mew mew-beta mew-beta-bin mew-bin mutt nmh notmuch prayer procmail sendemail sensible-mda sqwebmail-de sylpheed uw-mailutils vm wl wl-beta yample; do echo -n " -e '"$pkg"'"; done)")"
+configure_apt() {
+  cat> /etc/apt/preferences.d/my_apt_preference << 'EOF'
+# blacklist some unwanted MTA
+Package: exim4-base exim4-config exim4-daemon-heavy exim4-daemon-light mailutils bsd-mailx
+Pin: release *
+Pin-Priority: -1
+
+# blacklist some unwanted java based packages
+Package: icedtea-netx libreoffice-java-common
+Pin: release *
+Pin-Priority: -1
+
+# blacklist some packages to prevent conflict
+Package: youtube-dl keepassxc
+Pin: release *
+Pin-Priority: -1
+
+# blacklist gnome-initial-setup
+Package: gnome-initial-setup
+Pin: release *
+Pin-Priority: -1
+EOF
+}
+configure_apt
+# Cette configuration permet d'interdire l'installation de ces paquets (ligne Package:) par apt. Ca évite notamment d'avoir à gérer les problèmes de paquets qui pourraient être mis comme des dépendances d'autres paquets (comme pour youtube-dl et keepassxc) alors qu'on les install déjà d'une autre manière (par AppImage ou bien un binnaire plus récent).
+# on évite qu'il y ait trop d'élements contenant des potentiels execution java en blacklistant notamment le paquet libreoffice-java-common et icedtea-netx qui peuvent poser des problèmes de sécurité
+################################################################################
+
+################################################################################
+## Supression de gnome-initial-setup
+##------------------------------------------------------------------------------
+remove_gnome_initial_setup() {
+  displayandexec "Supression de gnome-initial-setup                   " "\
+pkill -KILL -f '/usr/libexec/gnome-initial-setup'; \
+$AG remove -y gnome-initial-setup"
+# $AG purge -y gnome-initial-setup"
+}
+remove_gnome_initial_setup
+################################################################################
+
 echo ''
 echo '     ################################################################'
 echo '     #                      MISE A JOUR DU SYSTEM                   #'
 echo '     ################################################################'
 echo ''
 
-displayandexec "Mise à jour des certificats racine                  " "update-ca-certificates"
+displayandexec "Mise à jour des certificats racine                  " "\
+update-ca-certificates"
 
 # make debian non-interactive
 export DEBIAN_FRONTEND=noninteractive DEBCONF_ADMIN_EMAIL="" UCF_FORCE_CONFFNEW=1 UCF_FORCE_CONFFMISS=1
 
-displayandexec "Mise à jour du system                               " "$AG update && $AG -o DPkg::Options::=--force-confnew -o DPkg::Options::=--force-confmiss upgrade -y"
+displayandexec "Mise à jour du system                               " "\
+$AG update && $AG -o DPkg::Options::=--force-confnew -o DPkg::Options::=--force-confmiss upgrade -y"
+if [ $? != 0 ]; then
+  displayandexec "Mise à jour du system                               " "\
+unset UCF_FORCE_CONFFNEW && \
+unset UCF_FORCE_CONFFMISS && \
+$AG update && $AG -o DPkg::Options::=--force-confnew -o DPkg::Options::=--force-confmiss upgrade -y"
+fi
 ################################################################################
 
 ################################################################################
@@ -953,21 +1007,6 @@ configure_debconf
 # Solution : installer les paquets manuellement avec les bonnes config. Ensuite installer debconf-utils et faire
 # debconf-get-selections | grep nom_du_paquet
 # récupérer les infos obtenus et les injecter dans debconf-set-selections comme suit echo 'INFO' | debconf-set-selections
-################################################################################
-
-################################################################################
-## Configuration de apt
-##------------------------------------------------------------------------------
-tmp_all_package_list_before="$(dpkg --get-selections | awk '{if ($2 == "install") {print $1}}' | bash -c "grep -w$(for pkg in alpine balsa biabam bsd-mailx claws-mail dovecot-sieve enigmail exim4-base exim4-config exim4-daemon-heavy exim4-daemon-light exmh filter gnarwl gnome-gmail gnumail.app im kmail kontact maildrop mailutils mailutils-mh mew mew-beta mew-beta-bin mew-bin mutt nmh notmuch prayer procmail sendemail sensible-mda sqwebmail-de sylpheed uw-mailutils vm wl wl-beta yample; do echo -n " -e '"$pkg"'"; done)")"
-configure_apt() {
-  cat>> /etc/apt/preferences << 'EOF'
-Package: youtube-dl keepassxc exim4-base exim4-config exim4-daemon-heavy exim4-daemon-light mailutils bsd-mailx
-Pin: release *
-Pin-Priority: -1
-EOF
-}
-configure_apt
-# Cette configuration permet d'interdire l'installation de ces paquets (ligne Package:) par apt. Ca évite notamment d'avoir à gérer les problèmes de paquets qui pourraient être mis comme des dépendances d'autres paquets (comme pour youtube-dl et keepassxc) alors qu'on les install déjà d'une autre manière (par AppImage ou bien un binnaire plus récent).
 ################################################################################
 
 ################################################################################
@@ -1864,7 +1903,7 @@ EOF
 
 install_ansible_bookworm() {
   displayandexec "Installation de Ansible                             " "\
-$ExeAsUser pipx install ansible"
+$ExeAsUser pipx install --include-deps ansible"
 $ExeAsUser cat>> /home/"$local_user"/.bashrc << 'EOF'
 
 # for Ansible vault editor
@@ -1873,6 +1912,7 @@ EOF
 }
 # on va très certainement passer à une installation de ansible via pipx
 # donc pour l'instant on le test avec l'install pour bookworm
+# ref : [pipx install ansible - No binaries associated with this package. · Issue #20 · pypa/pipx](https://github.com/pypa/pipx/issues/20#issuecomment-1346446624)
 ################################################################################
 
 ################################################################################
@@ -2577,7 +2617,7 @@ chmod +x /usr/bin/rktscan"
 ##------------------------------------------------------------------------------
 install_spyme() {
   cat> /usr/bin/spyme << 'EOF'
-sudo lnav /var/log/syslog /var/log/auth.log
+sudo bash -c "journalctl --all --follow --lines=10000 _TRANSPORT=syslog + _TRANSPORT=kernel + _TRANSPORT=journal + _TRANSPORT=stdout | lnav"
 EOF
   displayandexec "Installation du script spyme                        " "\
 chmod +x /usr/bin/spyme"
@@ -3041,7 +3081,27 @@ create_template_for_new_file() {
 # ref : https://ask.libreoffice.org/en/question/153444/how-to-create-empty-libreoffice-file-in-a-current-directory-on-the-command-line/
 # Pour voir tous les formats supportés par unoconv : unoconv --show
 }
-create_template_for_new_file
+# create_template_for_new_file
+if [ "$bullseye" == 1 ]; then
+  create_template_for_new_file
+fi
+
+create_template_for_new_file_new() {
+  [ -d /home/"$local_user"/Modèles ] && template_dir="/home/"$local_user"/Modèles"
+  [ -d /home/"$local_user"/Templates ] && template_dir="/home/"$local_user"/Templates"
+  $ExeAsUser touch ""$template_dir"/Fichier Texte.txt" && \
+  $ExeAsUser touch ""$template_dir"/Document ODT.txt" && \
+  $ExeAsUser libreoffice --headless --convert-to odt ""$template_dir"/Document ODT.txt" --outdir "$template_dir" && \
+  rm -f ""$template_dir"/Document ODT.txt" && \
+  $ExeAsUser touch ""$template_dir"/Document ODS.txt" && \
+  $ExeAsUser libreoffice --calc --headless --convert-to ods ""$template_dir"/Document ODS.txt" --outdir "$template_dir" && \
+  rm -f ""$template_dir"/Document ODS.txt"
+# ref : https://ask.libreoffice.org/en/question/153444/how-to-create-empty-libreoffice-file-in-a-current-directory-on-the-command-line/
+# Pour voir tous les formats supportés par unoconv : unoconv --show
+}
+if [ "$bookworm" == 1 ]; then
+  create_template_for_new_file_new
+fi
 # cette fonction permet d'obtenir dans le clique droit de nautilus l'accès à "Nouveau Document -> Ficher Texte"
 ################################################################################
 
@@ -3480,12 +3540,13 @@ $ExeAsUser tee /home/"$local_user"/.config/keepassxc/keepassxc.ini << 'EOF' >/de
 AutoReloadOnChange=true
 AutoSaveAfterEveryChange=true
 AutoSaveOnExit=true
-ConfigVersion=1
+ConfigVersion=2
 UpdateCheckMessageShown=true
 OpenPreviousDatabasesOnStartup=true
 RememberLastDatabases=true
 RememberLastKeyFiles=true
 SingleInstance=true
+UpdateCheckMessageShown=true
 
 [Browser]
 AllowExpiredCredentials=false
@@ -3514,7 +3575,7 @@ ShowNotification=true
 [GUI]
 AdvancedSettings=true
 ApplicationTheme=dark
-CheckForUpdates=true
+CheckForUpdates=false
 CheckForUpdatesIncludeBetas=false
 HidePasswords=true
 HidePreviewPanel=false
@@ -3526,10 +3587,7 @@ MinimizeOnStartup=false
 MinimizeToTray=false
 MonospaceNotes=false
 MovableToolbar=false
-PreviewSplitterState=@Invalid()
-SearchViewState=@ByteArray()
 ShowTrayIcon=false
-SplitterState=@Invalid()
 ToolButtonStyle=0
 TrayIconAppearance=monochrome-light
 
@@ -4238,6 +4296,15 @@ disable_bluetooth() {
 $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gdbus call --session --dest org.gnome.SettingsDaemon.Rfkill --object-path /org/gnome/SettingsDaemon/Rfkill --method org.freedesktop.DBus.Properties.Set "org.gnome.SettingsDaemon.Rfkill" "BluetoothAirplaneMode" "\<true\>" > /dev/null"
 }
 disable_bluetooth
+################################################################################
+
+################################################################################
+## Mise à jour de la base de donnée des fichiers
+##------------------------------------------------------------------------------
+update_file_name_db() {
+  displayandexec "Mise à jour de la base de donnée des fichiers       " "updatedb"
+}
+update_file_name_db
 ################################################################################
 
 ################################################################################
