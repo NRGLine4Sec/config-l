@@ -930,7 +930,7 @@ Pin: release *
 Pin-Priority: -1
 
 # blacklist some packages to prevent conflict
-Package: youtube-dl keepassxc
+Package: yt-dlp youtube-dl keepassxc python3-opensnitch-ui opensnitch ansible ansible-core
 Pin: release *
 Pin-Priority: -1
 
@@ -950,11 +950,13 @@ configure_apt
 ##------------------------------------------------------------------------------
 remove_gnome_initial_setup() {
   displayandexec "Supression de gnome-initial-setup                   " "\
-pkill -KILL -f '/usr/libexec/gnome-initial-setup'; \
+pkill --echo --full --exact -KILL '^/usr/libexec/gnome-initial-setup'; \
 $AG remove -y gnome-initial-setup"
 # $AG purge -y gnome-initial-setup"
 }
 remove_gnome_initial_setup
+# [linux - Prevent process from killing itself using pkill - Stack Overflow](https://stackoverflow.com/questions/15740481/prevent-process-from-killing-itself-using-pkill/15740573#15740573)
+# Peut être que ce serait mieux de remplacer par pgrep avec une redirection dans kill comme décrit ici : [bash - pkill doesn't kill process - Stack Overflow](https://stackoverflow.com/questions/69560652/pkill-doesnt-kill-process/69562802#69562802)
 ################################################################################
 
 echo ''
@@ -2252,11 +2254,11 @@ install_GSE_screenshot_tool() {
 #system-monitor
 install_GSE_system_monitor() {
   execandlog "$AGI gnome-shell-extension-system-monitor"
-  execandlog "$ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/memory-style \"\'digit\'\""
+  execandlog "$ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/memory-style \"'\''digit'\''\""
   # on configure avec la commande ci-dessus l'affichage de la métrique de la RAM sous forme de pourcentage plustôt que de graph
   execandlog "$ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/gpu-show-menu \"true\""
   # on active la vue de l'utilisation du GPU dans le menu
-  execandlog "$ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/disk-usage-style \"\'bar\'\""
+  execandlog "$ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/disk-usage-style \"\\'bar\\'\""
   # on chosie l'option de l'affichage de l'utilisation des disk par des barres horizontales à la place du graph en demi cercle
 }
 
@@ -2341,11 +2343,11 @@ install_GSE_screenshot_tool() {
 #system-monitor
 install_GSE_system_monitor() {
   execandlog "$AGI gnome-shell-extension-system-monitor"
-  execandlog "$ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/memory-style \"\'digit\'\""
+  execandlog "$ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/memory-style \"'\''digit'\''\""
   # on configure avec la commande ci-dessus l'affichage de la métrique de la RAM sous forme de pourcentage plustôt que de graph
   execandlog "$ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/gpu-show-menu \"true\""
   # on active la vue de l'utilisation du GPU dans le menu
-  execandlog "$ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/disk-usage-style \"\'bar\'\""
+  execandlog "$ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/disk-usage-style \"\\'bar\\'\""
   # on chosie l'option de l'affichage de l'utilisation des disk par des barres horizontales à la place du graph en demi cercle
 }
 
@@ -2921,7 +2923,9 @@ configure_logrotate_auth_log() {
 }
 EOF
 }
-configure_logrotate_auth_log
+if [ "$bullseye" == 1 ]; then
+  configure_logrotate_auth_log
+fi
 # cette conf permet de garder 12 mois de log de auth.log. Cela permet donc de garder pendant un an toutes les commandes utilisées (par root ou à travers sudo) ainsi que toutes les connexions d'utilisateur
 ################################################################################
 
@@ -3091,17 +3095,21 @@ create_template_for_new_file_new() {
   [ -d /home/"$local_user"/Templates ] && template_dir="/home/"$local_user"/Templates"
   $ExeAsUser touch ""$template_dir"/Fichier Texte.txt" && \
   $ExeAsUser touch ""$template_dir"/Document ODT.txt" && \
-  $ExeAsUser libreoffice --headless --convert-to odt ""$template_dir"/Document ODT.txt" --outdir "$template_dir" && \
+  $ExeAsUser libreoffice --nologo --nofirststartwizard --invisible --norestore --headless --convert-to odt ""$template_dir"/Document ODT.txt" --outdir "$template_dir" && \
   rm -f ""$template_dir"/Document ODT.txt" && \
   $ExeAsUser touch ""$template_dir"/Document ODS.txt" && \
-  $ExeAsUser libreoffice --calc --headless --convert-to ods ""$template_dir"/Document ODS.txt" --outdir "$template_dir" && \
+  $ExeAsUser libreoffice --calc --nologo --nofirststartwizard --invisible --norestore --headless --convert-to ods ""$template_dir"/Document ODS.txt" --outdir "$template_dir" && \
   rm -f ""$template_dir"/Document ODS.txt"
 # ref : https://ask.libreoffice.org/en/question/153444/how-to-create-empty-libreoffice-file-in-a-current-directory-on-the-command-line/
 # Pour voir tous les formats supportés par unoconv : unoconv --show
 }
+execandlog "find /home/"$local_user"/ -user 'root' -not -type l"
 if [ "$bookworm" == 1 ]; then
   create_template_for_new_file_new
+  execandlog "chown -R "$local_user":"$local_user" /home/"$local_user"/"
+  create_template_for_new_file_new
 fi
+
 # cette fonction permet d'obtenir dans le clique droit de nautilus l'accès à "Nouveau Document -> Ficher Texte"
 ################################################################################
 
@@ -3387,7 +3395,8 @@ reset_dir_as_user "/home/"$local_user"/.config/mpv/"" && \
 $ExeAsUser cat> /home/"$local_user"/.config/mpv/input.conf << 'EOF'
 # Add the capacity to rotate the video when pressing r key
 r cycle_values video-rotate 90 180 270 0
-
+EOF
+$ExeAsUser cat> /home/"$local_user"/.config/mpv/mpv.conf << 'EOF'
 # Enable hardware decoding if available
 hwdec=auto
 EOF
@@ -3433,7 +3442,7 @@ configure_joplin
 configure_handbrake() {
   displayandexec "Configuration de handbrake                          " "\
 reset_dir_as_user "/home/"$local_user"/.config/ghb/" && \
-[ -f /home/"$local_user"/.config/ghb/preferences.json ] && $ExeAsUser sed -E -i '/("UseM4v":) (false|true)/{s/true/false/;}' /home/"$local_user"/.config/ghb/preferences.json"
+{ [ -f /home/"$local_user"/.config/ghb/preferences.json ] && $ExeAsUser sed -E -i '/("UseM4v":) (false|true)/{s/true/false/;}' /home/"$local_user"/.config/ghb/preferences.json; } || return 0"
 }
 configure_handbrake
 # permet de décocher la case "Utiliser l'extension de fichier compatible iPod/iTunes (.m4v) pour MP4" (Fichier -> Préférences -> Général)
@@ -4293,7 +4302,7 @@ backup_LUKS_header
 ##------------------------------------------------------------------------------
 disable_bluetooth() {
   displayandexec "Désactivation du bluetooth                          " "\
-$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gdbus call --session --dest org.gnome.SettingsDaemon.Rfkill --object-path /org/gnome/SettingsDaemon/Rfkill --method org.freedesktop.DBus.Properties.Set "org.gnome.SettingsDaemon.Rfkill" "BluetoothAirplaneMode" "\<true\>" > /dev/null"
+$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gdbus call --session --dest org.gnome.SettingsDaemon.Rfkill --object-path /org/gnome/SettingsDaemon/Rfkill --method org.freedesktop.DBus.Properties.Set "org.gnome.SettingsDaemon.Rfkill" "BluetoothAirplaneMode" \"\<true\>\" > /dev/null"
 }
 disable_bluetooth
 ################################################################################
