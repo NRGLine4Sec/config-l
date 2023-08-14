@@ -1146,6 +1146,7 @@ displayandexec "Installation de debconf-utils                       " "$AGI debc
 displayandexec "Installation de dmidecode                           " "$AGI dmidecode"
 displayandexec "Installation de dmitry                              " "$AGI dmitry"
 displayandexec "Installation de dos2unix                            " "$AGI dos2unix"
+displayandexec "Installation de elfutils                            " "$AGI elfutils"
 displayandexec "Installation de ethtool                             " "$AGI ethtool"
 displayandexec "Installation de ettercap-graphical                  " "$AGI ettercap-graphical"
 displayandexec "Installation de evince                              " "$AGI evince"
@@ -1193,6 +1194,8 @@ displayandexec "Installation de nautilus-gtkhash                    " "$AGI naut
 # nautilus-gtkhash semble être enlevé de la release bookworm (en tout cas pour la RC2) toutefois il n'y a aucune infos à ce sujet dans le tracker du paquet ou dans le bugtrack
 # pour l'instant on le laisse échouer dans l'install standard car peut être que le paquet va ré-apparaitre pour la version stable quand elle sortira
 # ref : [Debian -- Package Search Results -- nautilus-gtkhash](https://packages.debian.org/search?keywords=nautilus-gtkhash)
+# [Draft: Upgrade to Debian 12 (Bookworm) (!1119) · Merge requests · tails / tails · GitLab](https://gitlab.tails.boum.org/tails/tails/-/merge_requests/1119/diffs?commit_id=8d6c7499b0199f31d92566eb868d5b3fa44d2404)
+# [#1016988 - transition: nautilus 43 - Debian Bug report logs](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1016988)
 if [ "$bullseye" == 1 ]; then
   displayandexec "Installation de nautilus-wipe                       " "$AGI nautilus-wipe"
 fi
@@ -1776,7 +1779,7 @@ $AGI asbru-cm keepassxc-"
 # deb [arch=amd64 signed-by=/usr/share/keyrings/asbru-archive-keyring.gpg] https://dl.cloudsmith.io/public/asbru-cm/release/deb/debian bullseye main
 #deb-src https://dl.cloudsmith.io/public/asbru-cm/release/deb/debian bullseye main
 
-# Pour voir la liste des version de debian disponibles dans les dépots de Cloudsmith : [Cloudsmith - Repositories - asbru-cm (asbru-cm) - release (release) - Packages](https://cloudsmith.io/~asbru-cm/repos/release/packages/?q=distribution%3Adebian)
+# Pour voir la liste des version de debian disponibles dans les dépots de Cloudsmith : [Cloudsmith - Repositories - asbru-cm (asbru-cm) - release (release) - Packages](https://cloudsmith.io/~asbru-cm/repos/release/packages/?q=distribution%3Adebian&sort=-date)
 ################################################################################
 
 ################################################################################
@@ -2062,20 +2065,21 @@ rm -rf "$tmp_dir""
 get_available_distrib_version_repo_url() {
 repo_url='
 https://download.virtualbox.org/virtualbox/debian
-http://repository.spotify.com
 http://ppa.launchpad.net/apt-fast/stable/ubuntu
 https://mkvtoolnix.download/debian
 https://updates.signal.org/desktop/apt
 https://packagecloud.io/asbru-cm/asbru-cm/debian
 http://ppa.launchpad.net/ansible/ansible-5/ubuntu
 http://ppa.launchpad.net/teejee2008/timeshift/ubuntu
-https://packages.microsoft.com/repos/code
 https://brave-browser-apt-release.s3.brave.com
 '
+# https://packages.microsoft.com/repos/code
+# http://repository.spotify.com
+
 for url in $repo_url; do
   echo "$url"
   echo '----------------------------------------------------------------------------'
-  curl --silent --location ""$url"/dists"
+  curl --silent --location --header 'user-agent: Debian APT-HTTP/1.3 (2.2.4)' ""$url"/dists"
   printf '\n\n'
 done
 }
