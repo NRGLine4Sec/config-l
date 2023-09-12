@@ -114,6 +114,10 @@
 -a always,exit -F arch=b64 -S mount -S umount2 -F auid!=-1 -k mount
 -a always,exit -F arch=b32 -S mount -S umount -S umount2 -F auid!=-1 -k mount
 
+### NFS mount
+-a always,exit -F path=/sbin/mount.nfs -F perm=x -F auid>=500 -F auid!=4294967295 -k T1078_Valid_Accounts
+-a always,exit -F path=/usr/sbin/mount.nfs -F perm=x -F auid>=500 -F auid!=4294967295 -k T1078_Valid_Accounts
+
 ## Change swap (only attributable)
 -a always,exit -F arch=b64 -S swapon -S swapoff -F auid!=-1 -k swap
 -a always,exit -F arch=b32 -S swapon -S swapoff -F auid!=-1 -k swap
@@ -245,6 +249,10 @@
 
 ## SELinux events that modify the system's Mandatory Access Controls (MAC)
 -w /etc/selinux/ -p wa -k mac_policy
+### setfiles
+### https://www.stigviewer.com/stig/red_hat_enterprise_linux_8/2021-12-03/finding/V-230430
+-a always,exit -F path=/usr/bin/setfiles -F perm=x -F auid>=500 -F auid!=4294967295 -k mac_policy
+-a always,exit -F path=/usr/sbin/setfiles -F perm=x -F auid>=500 -F auid!=4294967295 -k mac_policy
 
 ## Critical elements access failures
 -a always,exit -F arch=b64 -S open -F dir=/etc -F success=0 -k unauthedfileaccess
@@ -310,6 +318,8 @@
 -w /bin/uname -p x -k recon
 -w /etc/issue -p r -k recon
 -w /etc/hostname -p r -k recon
+-w /usr/bin/hostnamectl -p x -k recon
+-w /usr/bin/loginctl -p x -k recon
 
 ## Suspicious activity
 -w /usr/bin/wget -p x -k susp_activity
@@ -335,6 +345,7 @@
 -w /usr/bin/xfreerdp -p x -k T1219_Remote_Access_Tools
 -w /usr/local/bin/xfreerdp -p x -k T1219_Remote_Access_Tools
 -w /usr/bin/nmap -p x -k susp_activity
+-w /usr/bin/systemd-detect-virt -p x -k susp_activity
 
 ## Added to catch netcat on Debian based distribution
 -w /bin/nc.openbsd -p x -k susp_activity
@@ -355,6 +366,8 @@
 ## dbus-send invocation
 ### may indicate privilege escalation CVE-2021-3560
 -w /usr/bin/dbus-send -p x -k dbus_send
+-w /usr/bin/gdbus -p x -k gdubs_call
+-w /usr/bin/busctl -p x -k busctl_call
 
 ## pkexec invocation
 ### may indicate privilege escalation CVE-2021-4034
@@ -369,20 +382,40 @@
 #-w /bin/ksh -p x -k susp_shell
 #-w /bin/fish -p x -k susp_shell
 #-w /bin/tcsh -p x -k susp_shell
-#-w /bin/tclsh -p x -k susp_shell
 #-w /bin/zsh -p x -k susp_shell
 #-w /bin/xonsh -p x -k susp_shell
 #-w /usr/local/bin/xonsh -p x -k susp_shell
 #-w /bin/open -p x -k susp_shell
 #-w /bin/sh -p x -k susp_shell
 #-w /bin/rbash -p x -k susp_shell
-#-w /bin/tmux -p x -k susp_shell
-#-w /usr/local/bin/tmux -p x -k susp_shell
 #-w /bin/clush -p x -k susp_shell
 #-w /usr/local/bin/clush -p x -k susp_shell
 #-w /etc/clustershell/clush.conf -p x -k susp_shell
 #-w /bin/xxh -p x -k susp_shell
 #-w /usr/local/bin/xxh -p x -k susp_shell
+
+### https://gtfobins.github.io/gtfobins/tclsh/
+-w /bin/tclsh -p x -k susp_shell
+
+### https://gtfobins.github.io/gtfobins/tmux/
+-w /bin/tmux -p x -k susp_shell
+-w /usr/local/bin/tmux -p x -k susp_shell
+
+### https://gtfobins.github.io/gtfobins/posh/
+-w /bin/posh -p x -k susp_shell
+-w /usr/bin/posh -p x -k susp_shell
+
+### https://gtfobins.github.io/gtfobins/ginsh/
+-w /bin/ginsh -p x -k susp_shell
+-w /usr/bin/ginsh -p x -k susp_shell
+
+### https://gtfobins.github.io/gtfobins/wish/
+-w /bin/wish -p x -k susp_shell
+-w /usr/bin/wish -p x -k susp_shell
+
+### https://gtfobins.github.io/gtfobins/yash/
+-w /bin/yash -p x -k susp_shell
+-w /usr/bin/yash -p x -k susp_shell
 
 ## Shell/profile configurations
 -w /etc/profile.d/ -p wa -k shell_profiles
@@ -525,8 +558,8 @@
 ## Remove them if they cause to much volume in your environment
 
 ## Root command executions
--a always,exit -F arch=b64 -F euid=0 -F auid>=1000 -F auid!=4294967295 -S execve -k rootcmd
--a always,exit -F arch=b32 -F euid=0 -F auid>=1000 -F auid!=4294967295 -S execve -k rootcmd
+-a always,exit -F arch=b64 -F euid=0 -F auid>=1000 -F auid!=-1 -S execve -k rootcmd
+-a always,exit -F arch=b32 -F euid=0 -F auid>=1000 -F auid!=-1 -S execve -k rootcmd
 
 ## File Deletion Events by User
 # -a always,exit -F arch=b32 -S rmdir -S unlink -S unlinkat -S rename -S renameat -F auid>=1000 -F auid!=-1 -k file_delete_by_user
