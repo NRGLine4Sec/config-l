@@ -621,11 +621,11 @@ check_latest_version_manual_install_apps() {
   fi
   # check version : https://winscp.net/eng/downloads.php
 
-  geeqie_version="$($CURL 'https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/AppImage/appimages.txt' | head -n1 | grep -Po '(?<=Geeqie-v)([[:digit:]]\.[[:digit:]]+\+[[:digit:]]+|[[:digit:]]\.[[:digit:]]+\.[[:digit:]]+\+[[:digit:]]+)(?=\-x86_64.AppImage)')"
+  geeqie_version="$($CURL 'https://api.github.com/repos/BestImageViewer/geeqie/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
   if [ $? != 0 ] || [ -z "$geeqie_version" ]; then
-    geeqie_version='2.0+20230103'
+    geeqie_version='2.1'
   fi
-  # check version : https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/AppImage/appimages.txt
+  # check version : https://github.com/BestImageViewer/geeqie/releases
 
   ytdlp_version="$($CURL 'https://api.github.com/repos/yt-dlp/yt-dlp/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
   if [ $? != 0 ] || [ -z "$ytdlp_version" ]; then
@@ -683,7 +683,7 @@ manual_check_latest_version() {
   echo 'hashcat : '"$hashcat_version"
   winscp_version="$($CURL 'https://winscp.net/eng/downloads.php' | grep -Po '(?<=WinSCP-)([[:digit:]]+\.+[[:digit:]]+\.[[:digit:]]+)(?=-Portable.zip")')"
   echo 'WinSCP : '"$winscp_version"
-  geeqie_version="$($CURL 'https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/AppImage/appimages.txt' | head -n1 | grep -Po '(?<=Geeqie-v)([[:digit:]]\.[[:digit:]]+\+[[:digit:]]+|[[:digit:]]\.[[:digit:]]+\.[[:digit:]]+\+[[:digit:]]+)(?=\-x86_64.AppImage)')"
+  geeqie_version="$($CURL 'https://api.github.com/repos/BestImageViewer/geeqie/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
   echo 'Geeqie : '"$geeqie_version"
   ytdlp_version="$($CURL 'https://api.github.com/repos/yt-dlp/yt-dlp/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
   echo 'yt-dlp : '"$ytdlp_version"
@@ -1955,11 +1955,10 @@ pipx install sshuttle"
 ## instalation de Geeqie
 ##------------------------------------------------------------------------------
 install_geeqie() {
-  geeqie_download_link="$($CURL 'https://www.geeqie.org/AppImage/index.html' | grep -i 'appimage' | grep -Po 'href=\K[^"]*')"
   displayandexec "Installation de Geeqie                              " "\
 reset_dir ""$manual_install_dir"/Geeqie/" && \
-$WGET -P "$manual_install_dir"/Geeqie/ "$geeqie_download_link"Geeqie-v"$geeqie_version"-x86_64.AppImage && \
-$WGET -P "$manual_install_dir"/Geeqie/ 'https://github.com/geeqie/geeqie.github.io/raw/master/geeqie.svg' && \
+$WGET -P "$manual_install_dir"/Geeqie/ https://github.com/BestImageViewer/geeqie/releases/download/v"$geeqie_version"/Geeqie-v"$geeqie_version"-x86_64.AppImage && \
+$WGET -P "$manual_install_dir"/Geeqie/ 'https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/geeqie.svg' && \
 chmod +x "$manual_install_dir"/Geeqie/Geeqie-v"$geeqie_version"-x86_64.AppImage"
   cat> /usr/share/applications/geeqie.desktop << EOF
 [Desktop Entry]
@@ -4085,6 +4084,7 @@ alias nn='nano -c'
 alias cl='clear'
 alias grep='grep --color=auto'
 alias diff='diff --unified=0 --color=auto'
+alias diff_side_by_side='/usr/bin/diff --color=auto --side-by-side --width=\$COLUMNS'
 alias i='sudo ag install'
 alias ip='ip --color=auto'
 alias u='sudo ag update'
@@ -4136,6 +4136,7 @@ alias nn='nano -c'
 alias cl='clear'
 alias grep='grep --color=auto'
 alias diff='diff --unified=0 --color=auto'
+alias diff_side_by_side='/usr/bin/diff --color=auto --side-by-side --width=\$COLUMNS'
 alias i='ag install'
 alias ip='ip --color=auto'
 alias u='ag update'
@@ -4174,6 +4175,7 @@ alias nn='nano -c'
 alias cl='clear'
 alias grep='grep --color=auto'
 alias diff='diff --unified=0 --color=auto'
+alias diff_side_by_side='/usr/bin/diff --color=auto --side-by-side --width=\$COLUMNS'
 alias i='sudo ag install'
 alias u='sudo ag update'
 alias upp='sudo ag update && sudo ag upgrade'
@@ -4214,6 +4216,7 @@ alias nn='nano -c'
 alias cl='clear'
 alias grep='grep --color=auto'
 alias diff='diff --unified=0 --color=auto'
+alias diff_side_by_side='/usr/bin/diff --color=auto --side-by-side --width=\$COLUMNS'
 alias i='ag install'
 alias ip='ip --color=auto'
 alias u='ag update'
