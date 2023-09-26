@@ -1184,15 +1184,17 @@ displayandexec "Installation de lnav                                " "$AGI lnav
 displayandexec "Installation de locate                              " "$AGI locate"
 displayandexec "Installation de lshw                                " "$AGI lshw"
 displayandexec "Installation de lynx                                " "$AGI lynx"
+displayandexec "Installation de lz4                                 " "$AGI lz4"
 displayandexec "Installation de macchanger                          " "$AGI macchanger"
 displayandexec "Installation de make                                " "$AGI make"
 displayandexec "Installation de mediainfo-gui                       " "$AGI mediainfo mediainfo-gui"
 displayandexec "Installation de mpv                                 " "$AGI mpv youtube-dl-"
 # on n'install pas la dépendance youtube-dl requise par mpv car la version des dépots debian est trop ancienne
 # ref : [ubuntu - How do I get apt-get to ignore some dependencies? - Server Fault](https://serverfault.com/questions/250224/how-do-i-get-apt-get-to-ignore-some-dependencies/663803#663803)
-displayandexec "Installation de nautilus-gtkhash                    " "$AGI nautilus-gtkhash"
-# nautilus-gtkhash semble être enlevé de la release bookworm (en tout cas pour la RC2) toutefois il n'y a aucune infos à ce sujet dans le tracker du paquet ou dans le bugtrack
-# pour l'instant on le laisse échouer dans l'install standard car peut être que le paquet va ré-apparaitre pour la version stable quand elle sortira
+if [ "$bullseye" == 1 ]; then
+  displayandexec "Installation de nautilus-gtkhash                    " "$AGI nautilus-gtkhash"
+fi
+# nautilus-gtkhash a été enlevé de la release bookworm bien qu'il n'y a aucune infos à ce sujet dans le tracker du paquet ou dans le bugtrack
 # ref : [Debian -- Package Search Results -- nautilus-gtkhash](https://packages.debian.org/search?keywords=nautilus-gtkhash)
 # [Draft: Upgrade to Debian 12 (Bookworm) (!1119) · Merge requests · tails / tails · GitLab](https://gitlab.tails.boum.org/tails/tails/-/merge_requests/1119/diffs?commit_id=8d6c7499b0199f31d92566eb868d5b3fa44d2404)
 # [#1016988 - transition: nautilus 43 - Debian Bug report logs](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1016988)
@@ -1908,7 +1910,9 @@ EOF
 
 install_ansible_bookworm() {
   displayandexec "Installation de Ansible                             " "\
-$ExeAsUser pipx install --include-deps ansible"
+$ExeAsUser pipx install --include-deps ansible && \
+$ExeAsUser pipx inject ansible proxmoxer && \
+$ExeAsUser pipx inject ansible pykeepass"
 $ExeAsUser cat>> /home/"$local_user"/.bashrc << 'EOF'
 
 # for Ansible vault editor
@@ -2865,6 +2869,11 @@ echo ''
 ################################################################################
 ## configuration de SSH
 ##------------------------------------------------------------------------------
+# si jamais le port SSH n'est pas défini préalablement, on en choisit un au hasard dans le range 4096-65000
+if [ -z "$SSH_Port" ]; then
+  SSH_Port="$(shuf -i 4096-65000 -n 1)"
+fi
+
 # on change le port par défaut
 configure_ssh() {
   displayandexec "Configuration de ssh                                " "\
