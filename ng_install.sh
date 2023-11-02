@@ -920,7 +920,7 @@ tmp_all_package_list_before="$(dpkg --get-selections | awk '{if ($2 == "install"
 configure_apt() {
   cat> /etc/apt/preferences.d/my_apt_preference << 'EOF'
 # blacklist some unwanted MTA
-Package: exim4-base exim4-config exim4-daemon-heavy exim4-daemon-light mailutils bsd-mailx
+Package: exim4-base exim4-config exim4-daemon-heavy exim4-daemon-light mailutils bsd-mailx ssmtp
 Pin: release *
 Pin-Priority: -1
 
@@ -1912,6 +1912,7 @@ install_ansible_bookworm() {
   displayandexec "Installation de Ansible                             " "\
 $ExeAsUser pipx install --include-deps ansible && \
 $ExeAsUser pipx inject ansible proxmoxer && \
+$ExeAsUser pipx inject --include-deps --include-apps ansible requests && \
 $ExeAsUser pipx inject ansible pykeepass"
 $ExeAsUser cat>> /home/"$local_user"/.bashrc << 'EOF'
 
