@@ -31,8 +31,6 @@
 ##
 ## Regarder de près cet outil la : https://github.com/gustavo-iniguez-goya/arpsentinel-applet
 ##
-## Regarder pour voir si on intègre cet extension : https://extensions.gnome.org/extension/687/birthdays_notify/
-##
 ## Regarder pour voir si on install gnome-boxes
 ##
 ##
@@ -1148,7 +1146,7 @@ displayandexec "Installation de dmitry                              " "$AGI dmit
 displayandexec "Installation de dos2unix                            " "$AGI dos2unix"
 displayandexec "Installation de elfutils                            " "$AGI elfutils"
 displayandexec "Installation de ethtool                             " "$AGI ethtool"
-displayandexec "Installation de ettercap-graphical                  " "$AGI ettercap-graphical"
+displayandexec "Installation de ettercap-graphical                  " "$AGI ettercap-graphical" # à vérifier, mais peut-être que ce paquet pourra être supprimer
 displayandexec "Installation de evince                              " "$AGI evince"
 displayandexec "Installation de exiv2                               " "$AGI exiv2"
 displayandexec "Installation de ffmpeg                              " "$AGI ffmpeg"
@@ -1180,6 +1178,7 @@ displayandexec "Installation de ipcalc                              " "$AGI ipca
 displayandexec "Installation de jq                                  " "$AGI jq"
 displayandexec "Installation de libnotify-bin                       " "$AGI libnotify-bin"
 displayandexec "Installation de linux-cpupower                      " "$AGI linux-cpupower"
+displayandexec "Installation de linux-perf                          " "$AGI linux-perf"
 displayandexec "Installation de lnav                                " "$AGI lnav"
 displayandexec "Installation de locate                              " "$AGI locate"
 displayandexec "Installation de lshw                                " "$AGI lshw"
@@ -3295,6 +3294,7 @@ default_popup_position=0
 default_target=0
 default_timeout=15
 disable_popups=false
+hide_systray_warning=true
 theme=dark_teal.xml
 
 [notifications]
@@ -3302,28 +3302,35 @@ enabled=true
 type=0
 
 [promptDialog]
-geometry=@ByteArray(\x1\xd9\xd0\xcb\0\x3\0\0\0\0\x5x\0\0\x1V\0\0\a\x7f\0\0\x2\xd1\0\0\x5x\0\0\x1{\0\0\a\x7f\0\0\x2\xd1\0\0\0(\0\0\0\0\x16\x80\0\0\x5x\0\0\x1{\0\0\a\x7f\0\0\x2\xd1)
+geometry=@ByteArray(\x1\xd9\xd0\xcb\0\x3\0\0\0\0\r\xf2\0\0\x2O\0\0\xf\xf9\0\0\x3\xca\0\0\r\xf2\0\0\x2t\0\0\xf\xf9\0\0\x3\xca\0\0\0\0\0\0\0\0\xf\0\0\0\r\xf2\0\0\x2t\0\0\xf\xf9\0\0\x3\xca)
 
 [statsDialog]
-firewall_columns_state=@ByteArray(\0\0\0\xff\0\0\0\0\0\0\0\x1\0\0\0\x1\0\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\v\x3\0\0\0\0\x2\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\x64\0\0\a\x12\0\0\0\v\0\x1\x1\x1\0\0\0\0\0\0\0\0\0\0\0\0\x64\xff\xff\xff\xff\0\0\0\x84\0\0\0\0\0\0\0\v\0\0\0\0\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x1\xa4\0\0\0\x1\0\0\0\0\0\0\x1\x38\0\0\0\x1\0\0\0\0\0\0\x1\xde\0\0\0\x1\0\0\0\0\0\0\x3\xe8\0\0\0\0\x64)
-general_columns_state=@ByteArray(\0\0\0\xff\0\0\0\0\0\0\0\x1\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\b\x82\0\0\0\x2\0\0\0\x1\0\0\0\x64\0\0\0\a\0\0\0\x64\0\0\b\x11\0\0\0\b\0\x1\x1\x1\0\0\0\0\0\0\0\0\0\0\0\0\x64\xff\xff\xff\xff\0\0\0\x84\0\0\0\0\0\0\0\b\0\0\0\xca\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x2\xb1\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x2\x65\0\0\0\x1\0\0\0\0\0\0\x1i\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\x1\0\0\0\0\0\0\x3\xe8\0\0\0\x1i)
+firewall_columns_state=@ByteArray(\0\0\0\xff\0\0\0\0\0\0\0\x1\0\0\0\x1\0\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\f\x3\0\0\0\0\x2\0\0\0\x1\0\0\0\x64\0\0\0\0\0\0\0\x64\0\0\av\0\0\0\f\0\x1\x1\x1\0\0\0\0\0\0\0\0\0\0\0\0\x64\xff\xff\xff\xff\0\0\0\x84\0\0\0\0\0\0\0\f\0\0\0\0\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\
+0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x1\xa4\0\0\0\x1\0\0\0\0\0\0\x1\x38\0\0\0\x1\0\0\0\0\0\0\x1\xde\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x3\xe8\0\0\0\0\x64)
+general_columns_state=@ByteArray(\0\0\0\xff\0\0\0\0\0\0\0\x1\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\b\x82\0\0\0\x2\0\0\0\a\0\0\0\x64\0\0\0\x1\0\0\0\x64\0\0\b\x11\0\0\0\b\0\x1\x1\x1\0\0\0\0\0\0\0\0\0\0\0\0\x64\xff\xff\xff\xff\0\0\0\x84\0\0\0\0\0\0\0\b\0\0\0\xca\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x2\xb1\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x2\x65\0\0\0\x1\0\0\0\0\0\0\x1i\0\
+0\0\x1\0\0\0\0\0\0\0\0\0\0\0\x1\0\0\0\0\0\0\x3\xe8\0\0\0\x1i)
 general_filter_text=
 general_limit_results=4
-geometry=@ByteArray(\x1\xd9\xd0\xcb\0\x3\0\0\0\0\a\x80\0\0\0\x1b\0\0\xe\xff\0\0\x4\x37\0\0\x1\x13\0\0\x2\t\0\0\x6\xe3\0\0\x4w\0\0\0\0\x2\0\0\0\a\x80\0\0\a\x80\0\0\0@\0\0\xe\xff\0\0\x4\x37)
+geometry=@ByteArray(\x1\xd9\xd0\xcb\0\x3\0\0\0\0\0\0\0\0\0\0\0\0\a\x7f\0\0\x4\x37\0\0\x16\xb4\0\0\x1\x66\0\0\x1dh\0\0\x4j\0\0\0\x3\x2\0\0\0\a\x80\0\0\0\0\0\0\0%\0\0\a\x7f\0\0\x4\x37)
 last_tab=0
-nodes_columns_state=@ByteArray(\0\0\0\xff\0\0\0\0\0\0\0\x1\0\0\0\x1\0\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\as\0\0\0\n\0\x1\x1\x1\0\0\0\0\0\0\0\0\x1\0\0\0\x64\xff\xff\xff\xff\0\0\0\x84\0\0\0\0\0\0\0\n\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0}\0\0\0\x1\0\0\0\x3\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x3\xd6\0\0\0\x1\0\0\0\0\0\0\x3\xe8\0\0\0\0\x64)
-rules_columns_state=@ByteArray(\0\0\0\xff\0\0\0\0\0\0\0\x1\0\0\0\x1\0\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\a\x13\0\0\0\a\0\x1\x1\x1\0\0\0\0\0\0\0\0\0\0\0\0\x64\xff\xff\xff\xff\0\0\0\x84\0\0\0\0\0\0\0\a\0\0\0\xa4\0\0\0\x1\0\0\0\0\0\0\0\xc5\0\0\0\x1\0\0\0\0\0\0\x3%\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x1Y\0\0\0\x1\0\0\0\0\0\0\x3\xe8\0\0\0\x1Y)
+nodes_columns_state=@ByteArray(\0\0\0\xff\0\0\0\0\0\0\0\x1\0\0\0\x1\0\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\av\0\0\0\n\0\x1\x1\x1\0\0\0\0\0\0\0\0\x1\0\0\0\x64\xff\xff\xff\xff\0\0\0\x84\0\0\0\0\0\0\0\n\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x88\0\0\0\x1\0\0\0\x3\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\
+0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x3\xce\0\0\0\x1\0\0\0\0\0\0\x3\xe8\0\0\0\0\x64)
+rules_columns_state=@ByteArray(\0\0\0\xff\0\0\0\0\0\0\0\x1\0\0\0\x1\0\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\aw\0\0\0\b\0\x1\x1\x1\0\0\0\0\0\0\0\0\0\0\0\0\x64\xff\xff\xff\xff\0\0\0\x84\0\0\0\0\0\0\0\b\0\0\0\xa4\0\0\0\x1\0\0\0\0\0\0\0\xc5\0\0\0\x1\0\0\0\0\0\0\x3%\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x1Y\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x3
+\xe8\0\0\0\x1Y)
 rules_splitter_pos=@ByteArray(\0\0\0\xff\0\0\0\x1\0\0\0\x2\0\0\0\0\0\0\aR\x1\xff\xff\xff\xff\x1\0\0\0\x1\0)
 rules_tree_0_expanded=false
 rules_tree_1_expanded=false
 show_columns=0, 2, 3, 4, 5, 6
-view_columns_state2=@ByteArray(\0\0\0\xff\0\0\0\0\0\0\0\x1\0\0\0\x1\0\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\a\x13\0\0\0\a\0\x1\x1\x1\0\0\0\0\0\0\0\0\0\0\0\0\x64\xff\xff\xff\xff\0\0\0\x84\0\0\0\0\0\0\0\a\0\0\0\xa4\0\0\0\x1\0\0\0\0\0\0\0\xc5\0\0\0\x1\0\0\0\0\0\0\x3%\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x1Y\0\0\0\x1\0\0\0\0\0\0\x3\xe8\0\0\0\x1Y)
+view_columns_state2=@ByteArray(\0\0\0\xff\0\0\0\0\0\0\0\x1\0\0\0\x1\0\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\xe\x93\0\0\0\a\0\x1\x1\x1\0\0\0\0\0\0\0\0\0\0\0\0\x64\xff\xff\xff\xff\0\0\0\x84\0\0\0\0\0\0\0\a\0\0\0\xa4\0\0\0\x1\0\0\0\0\0\0\0\xc5\0\0\0\x1\0\0\0\0\0\0\x3%\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\b\xd9\0\0\0\x1\0\0\0\0\0\0\x3\xe8\0\0\0\x1Y)
 view_columns_state3=@ByteArray(\0\0\0\xff\0\0\0\0\0\0\0\x1\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\a!\0\0\0\x2\0\x1\x1\x1\0\0\0\0\0\0\0\0\x1\0\0\0\x64\xff\xff\xff\xff\0\0\0\x84\0\0\0\0\0\0\0\x2\0\0\0\xc0\0\0\0\x1\0\0\0\x3\0\0\x6\x61\0\0\0\x1\0\0\0\0\0\0\x3\xe8\0\0\0\0\x64)
-view_columns_state4=@ByteArray(\0\0\0\xff\0\0\0\0\0\0\0\x1\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\a1\0\0\0\x2\0\x1\x1\x1\0\0\0\0\0\0\0\0\x1\0\0\0\x64\xff\xff\xff\xff\0\0\0\x84\0\0\0\0\0\0\0\x2\0\0\x2%\0\0\0\x1\0\0\0\x3\0\0\x5\f\0\0\0\x1\0\0\0\0\0\0\x3\xe8\0\0\0\0\x64)
+view_columns_state4=@ByteArray(\0\0\0\xff\0\0\0\0\0\0\0\x1\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\xe\xb1\0\0\0\x2\0\x1\x1\x1\0\0\0\0\0\0\0\0\x1\0\0\0\x64\xff\xff\xff\xff\0\0\0\x84\0\0\0\0\0\0\0\x2\0\0\x1Y\0\0\0\x1\0\0\0\x3\0\0\rX\0\0\0\x1\0\0\0\0\0\0\x3\xe8\0\0\0\0\x64)
 view_details_columns_state0=@ByteArray(\0\0\0\xff\0\0\0\0\0\0\0\x1\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\xc8\0\0\0\x2\0\x1\x1\x1\0\0\0\0\0\0\0\0\x1\0\0\0\x64\xff\xff\xff\xff\0\0\0\x84\0\0\0\0\0\0\0\x2\0\0\0\x64\0\0\0\x1\0\0\0\x3\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x3\xe8\0\0\0\0\x64)
-view_details_columns_state2=@ByteArray(\0\0\0\xff\0\0\0\0\0\0\0\x1\0\0\0\x1\0\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x10\x30\0\0\0\n\0\x1\x1\x1\0\0\0\0\0\0\0\0\0\0\0\0\x64\xff\xff\xff\xff\0\0\0\x84\0\0\0\0\0\0\0\n\0\0\0\xa4\0\0\0\x1\0\0\0\0\0\0\0\xc5\0\0\0\x1\0\0\0\0\0\0\x3%\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x1Y\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\bU\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x3\xe8\0\0\0\x1Q)
-view_details_columns_state3=@ByteArray(\0\0\0\xff\0\0\0\0\0\0\0\x1\0\0\0\x1\xff\xff\xff\xff\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\av\0\0\0\f\0\x1\x1\x1\0\0\0\0\0\0\0\0\x1\0\0\0\x64\xff\xff\xff\xff\0\0\0\x84\0\0\0\0\0\0\0\f\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x3*\0\0\0\x1\0\0\0\0\0\0\x3\xe8\0\0\0\0\x64)
-view_details_columns_state4=@ByteArray(\0\0\0\xff\0\0\0\0\0\0\0\x1\0\0\0\x1\0\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x10\xe9\0\0\0\r\0\x1\x1\x1\0\0\0\0\0\0\0\0\x1\0\0\0\x64\xff\xff\xff\xff\0\0\0\x84\0\0\0\0\0\0\0\r\0\0\0\xb3\0\0\0\x1\0\0\0\x3\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x1\xef\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x1\xd3\0\0\0\x1\0\0\0\0\0\0\x5\a\0\0\0\x1\0\0\0\0\0\0\x4M\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x3\xe8\0\0\0\0\x64)
+view_details_columns_state2=@ByteArray(\0\0\0\xff\0\0\0\0\0\0\0\x1\0\0\0\x1\0\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x10\xfd\0\0\0\n\0\x1\x1\x1\0\0\0\0\0\0\0\0\0\0\0\0\x64\xff\xff\xff\xff\0\0\0\x84\0\0\0\0\0\0\0\n\0\0\0\xa4\0\0\0\x1\0\0\0\0\0\0\0\xc5\0\0\0\x1\0\0\0\0\0\0\x3%\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x1Y\0\0\0\x1\0\0\0\0\0\0\x1\x31\0\0\0\x1\
+0\0\0\0\0\0\bU\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x3\xe8\0\0\0\x1Q)
+view_details_columns_state3=@ByteArray(\0\0\0\xff\0\0\0\0\0\0\0\x1\0\0\0\x1\xff\xff\xff\xff\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\av\0\0\0\f\0\x1\x1\x1\0\0\0\0\0\0\0\0\x1\0\0\0\x64\xff\xff\xff\xff\0\0\0\x84\0\0\0\0\0\0\0\f\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0
+\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x3*\0\0\0\x1\0\0\0\0\0\0\x3\xe8\0\0\0\0\x64)
+view_details_columns_state4=@ByteArray(\0\0\0\xff\0\0\0\0\0\0\0\x1\0\0\0\x1\0\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x12\xd2\0\0\0\r\0\x1\x1\x1\0\0\0\0\0\0\0\0\x1\0\0\0\x64\xff\xff\xff\xff\0\0\0\x84\0\0\0\0\0\0\0\r\0\0\0\xb3\0\0\0\x1\0\0\0\x3\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0|\0\0\0\x1\0\0\0\0\0\0\x1\xef\0\0\0\
+x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x1\xd3\0\0\0\x1\0\0\0\0\0\0\x6\xd8\0\0\0\x1\0\0\0\0\0\0\x4M\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x3\xe8\0\0\0\0\x64)
 EOF
   execandlog "reset_dir "/opt/opensnitch/allow_list/vscode/domains/""
   execandlog "reset_dir "/opt/opensnitch/allow_list/vscode/regexp/""
@@ -3366,6 +3373,7 @@ configure_vscode() {
   execandlog "$ExeAsUser code --force --install-extension mrmlnc.vscode-apache"
   execandlog "$ExeAsUser code --force --install-extension vscode-nginx"
   execandlog "$ExeAsUser code --force --install-extension speedproxies.squid-syntax"
+  execandlog "$ExeAsUser code --force --install-extension wholroyd.jinja"
   $ExeAsUser tee /home/"$local_user"/.config/Code/User/settings.json << 'EOF' >/dev/null
 {
     "workbench.colorTheme": "Atom One Dark",
@@ -3377,7 +3385,9 @@ configure_vscode() {
     "diffEditor.renderSideBySide": false,
     "git.confirmSync": false,
     "explorer.sortOrder": "modified",
-    "workbench.startupEditor": "none"
+    "workbench.startupEditor": "none",
+    "diffEditor.diffAlgorithm": "advanced",
+    "extensions.ignoreRecommendations": true
 }
 EOF
 }
