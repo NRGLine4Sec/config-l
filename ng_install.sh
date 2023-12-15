@@ -1206,16 +1206,18 @@ displayandexec "Installation de ncdu                                " "$AGI ncdu
 displayandexec "Installation de netdiscover                         " "$AGI netdiscover"
 displayandexec "Installation de network-manager-openvpn-gnome       " "$AGI network-manager-openvpn-gnome"
 displayandexec "Installation de network-manager-vpnc-gnome          " "$AGI network-manager-vpnc-gnome"
-displayandexec "Installation de nextcloud-desktop                   " "$AGI nextcloud-desktop"
+# displayandexec "Installation de nextcloud-desktop                   " "$AGI nextcloud-desktop"
 displayandexec "Installation de ngrep                               " "$AGI ngrep"
 displayandexec "Installation de nikto                               " "$AGI nikto"
 displayandexec "Installation de nnn                                 " "$AGI nnn"
 displayandexec "Installation de nmap                                " "$AGI nmap"
 displayandexec "Installation de nvme-cli                            " "$AGI nvme-cli"
 displayandexec "Installation de oathtool                            " "$AGI oathtool"
+displayandexec "Installation de ocrfeeder                           " "$AGI ocrfeeder"
 displayandexec "Installation de openvpn                             " "$AGI openvpn"
 displayandexec "Installation de p7zip-full                          " "$AGI p7zip-full"
 displayandexec "Installation de p7zip-rar                           " "$AGI p7zip-rar"
+displayandexec "Installation de pdfgrep                             " "$AGI pdfgrep"
 displayandexec "Installation de pipx                                " "$AGI pipx"
 displayandexec "Installation de pavucontrol                         " "$AGI pavucontrol"
 displayandexec "Installation de printer-driver-all                  " "$AGI printer-driver-all"
@@ -1228,6 +1230,7 @@ displayandexec "Installation de rsync                               " "$AGI rsyn
 displayandexec "Installation de sdparm                              " "$AGI sdparm"
 displayandexec "Installation de secure-delete                       " "$AGI secure-delete"
 displayandexec "Installation de shotwell                            " "$AGI shotwell"
+displayandexec "Installation de smem                                " "$AGI smem"
 displayandexec "Installation de sqlitebrowser                       " "$AGI sqlitebrowser"
 displayandexec "Installation de screen                              " "$AGI screen"
 displayandexec "Installation de ssh                                 " "$AGI ssh"
@@ -1238,6 +1241,7 @@ displayandexec "Installation de sudo                                " "$AGI sudo
 displayandexec "Installation de sysstat                             " "$AGI sysstat"
 displayandexec "Installation de tcpdump                             " "$AGI tcpdump"
 displayandexec "Installation de telnet                              " "$AGI telnet"
+displayandexec "Installation de tesseract-ocr                       " "$AGI tesseract-ocr tesseract-ocr-fra"
 displayandexec "Installation de testdisk                            " "$AGI testdisk"
 displayandexec "Installation de testssl.sh                          " "$AGI testssl.sh"
 displayandexec "Installation de tree                                " "$AGI tree"
@@ -1250,7 +1254,7 @@ displayandexec "Installation de vlc                                 " "$AGI vlc"
 displayandexec "Installation de vpnc                                " "$AGI vpnc"
 displayandexec "Installation de wget                                " "$AGI wget"
 displayandexec "Installation de wine                                " "$AGI wine"
-displayandexec "Installation de wine32                              " "dpkg --add-architecture i386 && $AG update ; $AGI wine32"
+# displayandexec "Installation de wine32                              " "dpkg --add-architecture i386 && $AG update ; $AGI wine32"
 displayandexec "Installation de wipe                                " "$AGI wipe"
 displayandexec "Installation de wireshark                           " "$AGI wireshark"
 displayandexec "Installation de xclip                               " "$AGI xclip"
@@ -2093,7 +2097,7 @@ check_latest_version_manual_install_apps
 
 install_all_manual_install_apps_bullseye() {
   # install_atom
-  install_winscp
+  # install_winscp
   install_veracrypt
   install_spotify
   install_apt-fast
@@ -2126,7 +2130,7 @@ install_all_manual_install_apps_bullseye() {
 
 install_all_manual_install_apps_bookworm() {
   # install_atom
-  install_winscp
+  # install_winscp
   install_veracrypt
   install_spotify
   install_apt-fast_bookworm
@@ -3572,13 +3576,14 @@ $ExeAsUser tee /home/"$local_user"/.config/keepassxc/keepassxc.ini << 'EOF' >/de
 AutoReloadOnChange=true
 AutoSaveAfterEveryChange=true
 AutoSaveOnExit=true
+BackupBeforeSave=true
 ConfigVersion=2
-UpdateCheckMessageShown=true
 OpenPreviousDatabasesOnStartup=true
 RememberLastDatabases=true
 RememberLastKeyFiles=true
 SingleInstance=true
 UpdateCheckMessageShown=true
+UseAtomicSaves=false
 
 [Browser]
 AllowExpiredCredentials=false
