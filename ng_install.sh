@@ -739,6 +739,8 @@ DCONF_load="DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus"
 DCONF_reset="DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" dconf reset"
 # les variables DCONF_* ne doivent pas être appelés entre parenthèses
 
+my_bin_path='/usr/local/bin'
+
 # on active le mode case insensitive de bash
 shopt -s nocasematch
 if [[ "$debian_release" =~ bullseye ]]; then
@@ -949,7 +951,7 @@ configure_apt
 remove_gnome_initial_setup() {
   displayandexec "Supression de gnome-initial-setup                   " "\
 pkill --echo --full --exact -KILL '^/usr/libexec/gnome-initial-setup'; \
-$AG remove -y gnome-initial-setup"
+$AG purge -y gnome-initial-setup"
 # $AG purge -y gnome-initial-setup"
 }
 remove_gnome_initial_setup
@@ -1373,8 +1375,8 @@ install_winscp() {
 reset_dir ""$manual_install_dir"/winscp/" && \
 $WGET -P "$tmp_dir" https://winscp.net/download/WinSCP-"$winscp_version"-Portable.zip && \
 unzip "$tmp_dir"/WinSCP-"$winscp_version"-Portable.zip -d "$manual_install_dir"/winscp/ && \
-echo "wine "$manual_install_dir"/winscp/WinSCP.exe" > /usr/bin/winscp && \
-chmod +x /usr/bin/winscp; \
+echo "wine "$manual_install_dir"/winscp/WinSCP.exe" > "$my_bin_path"/winscp && \
+chmod +x "$my_bin_path"/winscp; \
 rm -rf "$tmp_dir""
 }
 # il semblerait que WinSCP a besoin spécifiquement de wine32 et ne fonctionne pas avec wine64
@@ -1804,9 +1806,9 @@ rm -rf "$tmp_dir""
 ##------------------------------------------------------------------------------
 install_youtubedl() {
   displayandexec "Installation de youtube-dl                          " "\
-is_file_present_and_rmfile "/usr/bin/youtube-dl" && \
-$WGET -P /usr/bin https://github.com/ytdl-org/youtube-dl/releases/download/"$youtubedl_version"/youtube-dl && \
-chmod +x /usr/bin/youtube-dl && \
+is_file_present_and_rmfile ""$my_bin_path"/youtube-dl" && \
+$WGET -P "$my_bin_path" https://github.com/ytdl-org/youtube-dl/releases/download/"$youtubedl_version"/youtube-dl && \
+chmod +x "$my_bin_path"/youtube-dl && \
 ln -s /usr/bin/python3 /usr/bin/python"
 }
 # le lien symbolique de python3 vers python est nécessaire car youtube-dl utilise "#!/usr/bin/env python"
@@ -1818,9 +1820,9 @@ ln -s /usr/bin/python3 /usr/bin/python"
 ##------------------------------------------------------------------------------
 install_yt-dlp() {
   displayandexec "Installation de yt-dlp                              " "\
-is_file_present_and_rmfile "/usr/bin/yt-dlp" && \
-$WGET -P /usr/bin https://github.com/yt-dlp/yt-dlp/releases/download/"$ytdlp_version"/yt-dlp && \
-chmod +x /usr/bin/yt-dlp"
+is_file_present_and_rmfile ""$my_bin_path"/yt-dlp" && \
+$WGET -P "$my_bin_path" https://github.com/yt-dlp/yt-dlp/releases/download/"$ytdlp_version"/yt-dlp && \
+chmod +x "$my_bin_path"/yt-dlp"
 }
 ################################################################################
 
@@ -1938,7 +1940,7 @@ $WGET -P "$tmp_dir" https://github.com/hashcat/hashcat/releases/download/v"$hash
 reset_dir ""$manual_install_dir"/hashcat/" && \
 7z x "$tmp_dir"/hashcat-"$hashcat_version".7z -o"$manual_install_dir"/hashcat && \
 chown -R "$local_user":"$local_user" "$manual_install_dir"/hashcat && \
-ln -s "$manual_install_dir"/hashcat/hashcat-"$hashcat_version"/hashcat.bin /usr/bin/hashcat; \
+ln -s "$manual_install_dir"/hashcat/hashcat-"$hashcat_version"/hashcat.bin "$my_bin_path"/hashcat; \
 rm -rf "$tmp_dir""
 # hashcat a besoin d'être capable d'écrire dans son répertoire, il faut donc soit associer le répertoire à l'utilisateur soit le lancer en sudo
 }
@@ -2055,7 +2057,7 @@ $AGI brave-browser"
 ##------------------------------------------------------------------------------
 install_ventoy() {
   local tmp_dir="$(mktemp -d)"
-  cat> /usr/bin/ventoy << EOF
+  cat> "$my_bin_path"/ventoy << EOF
 #!/bin/bash
 sudo $manual_install_dir/ventoy/ventoy-$ventoy_version/VentoyGUI.x86_64
 EOF
@@ -2063,7 +2065,7 @@ EOF
 $WGET -P "$tmp_dir" https://github.com/ventoy/Ventoy/releases/download/v"$ventoy_version"/ventoy-"$ventoy_version"-linux.tar.gz && \
 reset_dir ""$manual_install_dir"/ventoy/" && \
 tar --directory "$manual_install_dir"/ventoy -xzf "$tmp_dir"/ventoy-"$ventoy_version"-linux.tar.gz && \
-chmod +x /usr/bin/ventoy; \
+chmod +x "$my_bin_path"/ventoy; \
 rm -rf "$tmp_dir""
 }
 ################################################################################
@@ -2491,7 +2493,7 @@ echo ''
 ## install du script gitupdate
 ##------------------------------------------------------------------------------
 install_gitupdate() {
-  cat> /usr/bin/gitupdate << 'EOF'
+  cat> "$my_bin_path"/gitupdate << 'EOF'
 #!/bin/bash
 
 # store the current dir
@@ -2512,7 +2514,7 @@ done
 exit 0
 EOF
   displayandexec "Installation du script gitupdate                    " "\
-chmod +x /usr/bin/gitupdate"
+chmod +x "$my_bin_path"/gitupdate"
 }
 # probablement améliorer le script gitupdate avec une condition if quand la branche principal n'est pas origin master
 ################################################################################
@@ -2522,9 +2524,9 @@ chmod +x /usr/bin/gitupdate"
 ##------------------------------------------------------------------------------
 install_sysupdate() {
   displayandexec "Installation du script sysupdate                    " "\
-is_file_present_and_rmfile "/usr/bin/sysupdate" && \
-cp "$script_path"/sysupdate /usr/bin/sysupdate && \
-chmod +x /usr/bin/sysupdate"
+is_file_present_and_rmfile ""$my_bin_path"/sysupdate" && \
+cp "$script_path"/sysupdate "$my_bin_path"/sysupdate && \
+chmod +x "$my_bin_path"/sysupdate"
 }
 ################################################################################
 
@@ -2535,7 +2537,7 @@ install_check_backport_update() {
   # porbablement qu'il vaudrait lister les paquets qui peuvent être mis à jours avec sudo apt-get update && sudo apt list --upgradable
   # certainement avec quelque chose comme : awk '/~bpo/ && /.bpo/ {print $0}' <(sudo apt list --upgradable 2> /dev/null)
   # c'est beaucoup plus rapide
-  cat> /usr/bin/check_backport_update << 'EOF'
+  cat> "$my_bin_path"/check_backport_update << 'EOF'
 #!/bin/bash
 
 debian_release="$(lsb_release -sc)"
@@ -2548,7 +2550,7 @@ done <<< "$list_backport"
 exit 0
 EOF
   displayandexec "Installation du script check_backport_update        " "\
-chmod +x /usr/bin/check_backport_update"
+chmod +x "$my_bin_path"/check_backport_update"
 }
 ################################################################################
 
@@ -2556,7 +2558,7 @@ chmod +x /usr/bin/check_backport_update"
 ## install du script wsudo
 ##------------------------------------------------------------------------------
 install_wsudo() {
-  cat> /usr/bin/wsudo << 'EOF'
+  cat> "$my_bin_path"/wsudo << 'EOF'
 #!/bin/bash
 
 #small script to enable root access to x-windows system
@@ -2568,7 +2570,7 @@ xhost -SI:localuser:root
 xhost
 EOF
   displayandexec "Installation du script wsudo                        " "\
-chmod +x /usr/bin/wsudo"
+chmod +x "$my_bin_path"/wsudo"
 }
 ################################################################################
 
@@ -2576,18 +2578,18 @@ chmod +x /usr/bin/wsudo"
 ## install du script launch_url_file
 ##------------------------------------------------------------------------------
 install_launch_url_file() {
-  cat> /usr/bin/launch_url_file << 'EOF'
+  cat> "$my_bin_path"/launch_url_file << 'EOF'
 chromium "$(tail -n 1 "$@" | cut -c 5-)"
 EOF
   displayandexec "Installation du script launch_url_file              " "\
-chmod +x /usr/bin/launch_url_file"
+chmod +x "$my_bin_path"/launch_url_file"
   cat> /usr/share/applications/launch_url_file.desktop << 'EOF'
 [Desktop Entry]
 Type=Application
 Name=launch_url_file
 Comment=script de lancement des fichiers URL depuis nautilus
 Icon=chromium
-Exec=/usr/bin/launch_url_file
+Exec=$my_bin_path/launch_url_file
 Categories=FileTools;
 EOF
 }
@@ -2598,11 +2600,11 @@ EOF
 ## install du script scanmyhome
 ##------------------------------------------------------------------------------
 install_scanmyhome() {
-  cat> /usr/bin/scanmyhome << 'EOF'
+  cat> "$my_bin_path"/scanmyhome << 'EOF'
 clamscan --recursive --infected /home/
 EOF
   displayandexec "Installation du script scanmyhome                   " "\
-chmod +x /usr/bin/scanmyhome"
+chmod +x "$my_bin_path"/scanmyhome"
 }
 ################################################################################
 
@@ -2610,7 +2612,7 @@ chmod +x /usr/bin/scanmyhome"
 ## install du script rktscan
 ##------------------------------------------------------------------------------
 install_rktscan() {
-  cat> /usr/bin/rktscan << 'EOF'
+  cat> "$my_bin_path"/rktscan << 'EOF'
 #!/bin/bash
 
 echo "scan de rootkit avec rkhunter"
@@ -2621,7 +2623,7 @@ sudo chkrootkit -q
 echo "--------------------------------------------------------------------------------"
 EOF
   displayandexec "Installation du script rktscan                      " "\
-chmod +x /usr/bin/rktscan"
+chmod +x "$my_bin_path"/rktscan"
 }
 ################################################################################
 
@@ -2629,11 +2631,11 @@ chmod +x /usr/bin/rktscan"
 ## install du script spyme
 ##------------------------------------------------------------------------------
 install_spyme() {
-  cat> /usr/bin/spyme << 'EOF'
+  cat> "$my_bin_path"/spyme << 'EOF'
 sudo bash -c "journalctl --all --follow --lines=10000 _TRANSPORT=syslog + _TRANSPORT=kernel + _TRANSPORT=journal + _TRANSPORT=stdout | lnav"
 EOF
   displayandexec "Installation du script spyme                        " "\
-chmod +x /usr/bin/spyme"
+chmod +x "$my_bin_path"/spyme"
 }
 ################################################################################
 
@@ -2641,7 +2643,7 @@ chmod +x /usr/bin/spyme"
 ## install du script check_domain_creation_date
 ##------------------------------------------------------------------------------
 install_check_domain_creation_date() {
-  cat> /usr/bin/check_domain_creation_date << 'EOF'
+  cat> "$my_bin_path"/check_domain_creation_date << 'EOF'
 #!/bin/bash
 
 check_if_domain_exist() {
@@ -2679,7 +2681,7 @@ fi
 exit $?
 EOF
   displayandexec "Installation du script check_domain_creation_date   " "\
-chmod +x /usr/bin/check_domain_creation_date"
+chmod +x "$my_bin_path"/check_domain_creation_date"
 }
 ################################################################################
 
@@ -2687,7 +2689,7 @@ chmod +x /usr/bin/check_domain_creation_date"
 ## install du script appairmebt
 ##------------------------------------------------------------------------------
 install_appairmebt() {
-  cat> /usr/bin/appairmebt << 'EOF'
+  cat> "$my_bin_path"/appairmebt << 'EOF'
 #!/bin/bash
 
 gdbus call --session --dest org.gnome.SettingsDaemon.Rfkill --object-path /org/gnome/SettingsDaemon/Rfkill --method org.freedesktop.DBus.Properties.Set "org.gnome.SettingsDaemon.Rfkill" "BluetoothAirplaneMode" "<false>" > /dev/null
@@ -2697,7 +2699,7 @@ bluetoothctl trust BB:BB:BB:BB:BB:BB > /dev/null
 bluetoothctl connect BB:BB:BB:BB:BB:BB > /dev/null
 EOF
   displayandexec "Installation du script appairmebt                   " "\
-chmod +x /usr/bin/appairmebt"
+chmod +x "$my_bin_path"/appairmebt"
 }
 # script permettant de démarrer le bluetooth et d’appairer automatiquement avec le périphérique qu'on souhaite
 #
@@ -2761,13 +2763,13 @@ chmod +x /usr/bin/appairmebt"
 ## install du script desactivebt
 ##------------------------------------------------------------------------------
 install_desactivebt() {
-  cat> /usr/bin/desactivebt << 'EOF'
+  cat> "$my_bin_path"/desactivebt << 'EOF'
 #!/bin/bash
 
 gdbus call --session --dest org.gnome.SettingsDaemon.Rfkill --object-path /org/gnome/SettingsDaemon/Rfkill --method org.freedesktop.DBus.Properties.Set "org.gnome.SettingsDaemon.Rfkill" "BluetoothAirplaneMode" "<true>" > /dev/null
 EOF
   displayandexec "Installation du script desactivebt                  " "\
-chmod +x /usr/bin/desactivebt"
+chmod +x "$my_bin_path"/desactivebt"
 }
 ################################################################################
 
@@ -2775,14 +2777,14 @@ chmod +x /usr/bin/desactivebt"
 ## install du script play_pause_chromium
 ##------------------------------------------------------------------------------
 install_play_pause_chromium() {
-  cat> /usr/bin/play_pause_chromium << 'EOF'
+  cat> "$my_bin_path"/play_pause_chromium << 'EOF'
 #!/bin/bash
 
 dbus_dest_org="$(dbus-send --session --dest=org.freedesktop.DBus --type=method_call --print-reply /org/freedesktop/DBus org.freedesktop.DBus.ListNames | awk '/org.mpris.MediaPlayer2.chromium/{gsub(/\"/,"");print $2}')" && \
 dbus-send --print-reply --dest="$dbus_dest_org" /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player.PlayPause > /dev/null
 EOF
   displayandexec "Installation du script play_pause_chromium          " "\
-chmod +x /usr/bin/play_pause_chromium"
+chmod +x "$my_bin_path"/play_pause_chromium"
 }
 ################################################################################
 
@@ -2790,7 +2792,7 @@ chmod +x /usr/bin/play_pause_chromium"
 ## install du script decomp
 ##------------------------------------------------------------------------------
 install_decomp() {
-  cat> /usr/bin/decomp << 'EOF'
+  cat> "$my_bin_path"/decomp << 'EOF'
 #!/bin/bash
 
 if [ -f $1 ]; then
@@ -2814,7 +2816,7 @@ else
 fi
 EOF
   displayandexec "Installation du script decomp                       " "\
-chmod +x /usr/bin/decomp"
+chmod +x "$my_bin_path"/decomp"
 }
 ################################################################################
 
@@ -2822,7 +2824,7 @@ chmod +x /usr/bin/decomp"
 ## install du script waitforssh
 ##------------------------------------------------------------------------------
 install_waitforssh() {
-  cat> /usr/bin/waitforssh << 'EOF'
+  cat> "$my_bin_path"/waitforssh << 'EOF'
 #!/bin/bash
 
 ssh_target="$1"
@@ -2833,7 +2835,7 @@ until ssh -o ConnectTimeout=2 -p "$ssh_port" "$ssh_target" 2>/dev/null; do
 done
 EOF
   displayandexec "Installation du script waitforssh                   " "\
-chmod +x /usr/bin/waitforssh"
+chmod +x "$my_bin_path"/waitforssh"
 }
 ################################################################################
 
@@ -3008,6 +3010,24 @@ configure_freshclam
 # Check for new database 1 times a day (insteed of 24)
 # les logs de freshclam sont dans /var/log/clamav/freshclam.log
 # c'est le service clamav-freshclam qui fait tourner freshclam
+
+# La config de freshclam pourrait aussi être gérée depuis la bdd de debconf car le script de postinstall de freshclam s'appuis sur cette bdd pour retrouver les valeurs s'il elles sont présentent pour mettre en place la configuration.
+# Pour faire la même chose que mon sed dans le fichier de conf, il faudrait faire avant d'installer freshclam :
+# echo 'clamav-freshclam	clamav-freshclam/update_interval	string	1' | debconf-set-selections
+
+# ref : [File: clamav-freshclam.postinst.in | Debian Sources](https://sources.debian.org/src/clamav/1.0.3%2Bdfsg-1~deb12u1/debian/clamav-freshclam.postinst.in/) :
+# ```bash
+#   if [ "$runas" = "ifup.d" ] || [ "$runas" = "daemon" ] || [ "$runas" = "cron" ]; then
+#     db_get clamav-freshclam/update_interval || true
+#     if [ "$RET" != "" ]; then
+#       if [ "$runas" != "cron" ]; then
+#         checks="$RET"
+# . . .
+#   if [ "$runas" != "cron" ] || [ "$runas" != "manual" ]; then
+#     if [ -n "$checks" ] && [ "$checks" != "true" ]; then
+#       echo "# Check for new database $checks times a day" >> $DEBCONFFILE
+#       echo "Checks $checks" >> $DEBCONFFILE
+# ```
 ################################################################################
 
 ################################################################################
@@ -3770,8 +3790,8 @@ CustomGnomeShortcut() {
 
 CustomGnomeShortcut "Ouvrir le terminal" "gnome-terminal" "<Super>r"
 CustomGnomeShortcut "Ouvrir l explorateur de fichier" "nautilus -w /home/$local_user/" "<Super>e"
-CustomGnomeShortcut "Appairer automatiquement avec le peripherique bluetooth" "/usr/bin/appairmebt" "<Super><Alt>b"
-CustomGnomeShortcut "désactiver le bluetooth" "/usr/bin/desactivebt" "<Primary><Alt>b"
+CustomGnomeShortcut "Appairer automatiquement avec le peripherique bluetooth" ""$my_bin_path"/appairmebt" "<Super><Alt>b"
+CustomGnomeShortcut "désactiver le bluetooth" ""$my_bin_path"/desactivebt" "<Primary><Alt>b"
 
 # $1       name of the shortcut
 # $2       command to execute
@@ -3913,8 +3933,9 @@ text/x-diff=code.desktop;
 text/x-python=code.desktop;
 video/x-matroska=mpv.desktop;
 video/webm=mpv.desktop;
-video/x-flv=mpv.desktop;
+video/x-flv=mpv.desktop;org.gnome.Totem.desktop;vlc.desktop;
 video/mp4=mpv.desktop;org.gnome.Totem.desktop;vlc.desktop;
+video/quicktime=mpv.desktop;
 image/webp=geeqie.desktop;
 
 [Default Applications]
@@ -3930,6 +3951,7 @@ video/mp4=mpv.desktop
 video/x-matroska=mpv.desktop
 video/webm=mpv.desktop
 video/x-flv=mpv.desktop
+video/quicktime=mpv.desktop
 x-scheme-handler/http=chromium.desktop
 x-scheme-handler/https=chromium.desktop
 x-scheme-handler/about=chromium.desktop
@@ -3972,8 +3994,10 @@ configure_mime_types_association_drawio
 # ref : [gnome - Edit/Remove existing File Manager (right-click/context menu) actions - Ask Ubuntu](https://askubuntu.com/questions/1300049/edit-remove-existing-file-manager-right-click-context-menu-actions/1300079#1300079)
 # par exemple le paquet nautilus-wipe rajoute des entrés dans le clic droit assez dangereuses comme "Ecraser" et "Ecraser l'espace disque disponnible"
 # pour supprimer ces entrées des options de clic droit de nautilus, il faut soit désinstaller le paquet nautilus-wipe, soit supprimer le .so correspondant dans le répertoire des extensions de nautilus
-execandlog "[ -f /usr/lib/x86_64-linux-gnu/nautilus/extensions-3.0/libnautilus-wipe.so ] && \
+if [ "$bullseye" == 1 ]; then
+  execandlog "[ -f /usr/lib/x86_64-linux-gnu/nautilus/extensions-3.0/libnautilus-wipe.so ] && \
 mv /usr/lib/x86_64-linux-gnu/nautilus/extensions-3.0/libnautilus-wipe.so /usr/lib/x86_64-linux-gnu/nautilus/extensions-3.0/libnautilus-wipe.so.backup"
+fi
 
 # pour supprimer des options internes à nautilus, il faudrait modifier son code source et le recompiler
 # ref : [Comment supprimer Change Desktop Background du clic droit?](https://qastack.fr/ubuntu/34803/how-to-remove-change-desktop-background-from-right-click)
@@ -4123,8 +4147,10 @@ alias yt-dlp_best='yt-dlp -o "%(title)s.%(ext)s" -f "bestvideo+bestaudio"'
 alias spyme='sudo lnav /var/log/syslog /var/log/auth.log'
 alias free='free -ht'
 alias showshortcut='dconf dump /org/gnome/settings-daemon/plugins/media-keys/'
+alias update_my_sysupdate_script='sudo bash -c '\''rm -f $my_bin_path/sysupdate && wget -q -P $my_bin_path "https://raw.githubusercontent.com/NRGLine4Sec/config-l/main/sysupdate" && chmod +x $my_bin_path/sysupdate'\'''
 alias bitcoin='curl -s "https://api.coindesk.com/v1/bpi/currentprice.json" | jq ".bpi.EUR.rate" | tr -d \"'
-alias sshuttle='sudo sshuttle'
+alias sshuttle='sudo /root/.local/bin/sshuttle'
+alias my_ext_ip="curl --silent --location 'https://ipinfo.io/ip'"
 alias last_apt_kernel='apt-cache search --names-only "linux-(headers|image)-[[:digit:]].[[:digit:]]+.[[:digit:]]+.*[[:digit:]]-(amd64$|amd64-unsigned$)" | sort'
 HISTTIMEFORMAT="%Y/%m/%d %T   "
 is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/\$1 ;}
@@ -4212,9 +4238,11 @@ alias yt-dlp='yt-dlp -o "%(title)s.%(ext)s"'
 alias yt-dlp_best='yt-dlp -o "%(title)s.%(ext)s" -f "bestvideo+bestaudio"'
 alias spyme='sudo lnav /var/log/syslog /var/log/auth.log'
 alias free='free -ht'
+alias update_my_sysupdate_script='sudo bash -c '\''rm -f $my_bin_path/sysupdate && wget -q -P $my_bin_path "https://raw.githubusercontent.com/NRGLine4Sec/config-l/main/sysupdate" && chmod +x $my_bin_path/sysupdate'\'''
 alias showshortcut='dconf dump /org/gnome/settings-daemon/plugins/media-keys/'
 alias bitcoin='curl -s "https://api.coindesk.com/v1/bpi/currentprice.json" | jq ".bpi.EUR.rate" | tr -d \"'
-alias sshuttle='sudo sshuttle'
+alias sshuttle='sudo /root/.local/bin/sshuttle'
+alias my_ext_ip="curl --silent --location 'https://ipinfo.io/ip'"
 alias last_apt_kernel='apt-cache search --names-only "linux-(headers|image)-[[:digit:]].[[:digit:]]+.[[:digit:]]+.*[[:digit:]]-(amd64$|amd64-unsigned$)" | sort'
 is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/\$1 ;}
 to_lower() { tr [:upper:] [:lower:] <<< "\$@" ;}
@@ -4301,7 +4329,7 @@ update_rkhunter
 ## Execution d'un scan pour détecter la présence de rootkits
 ##------------------------------------------------------------------------------
 # execution de rktscan
-# displayandexec "Execution de rktscan                                " "/usr/bin/rktscan"
+# displayandexec "Execution de rktscan                                " ""$my_bin_path"/rktscan"
 # on désactive le scan des rootkits lors de l'execution du script car il met énormément de temps à se terminer
 ################################################################################
 
@@ -4390,7 +4418,7 @@ cd
 ################################################################################
 ## Création d'un snapshot avec Timeshift
 ##------------------------------------------------------------------------------
-create_root_part_snapshot_with_timeshift() {
+create_root_part_snapshot_with_timeshift_rsync() {
   root_part_kname="$(lsblk -o KNAME,MOUNTPOINT | awk '{{if ($2 == "/") print $1}}')"
   displayandexec "Création d'un snapshot avec Timeshift               " "\
 umount -l /run/timeshift/backup; \
@@ -4404,8 +4432,32 @@ timeshift --scripted --create --rsync --comments 'first snapshot, after postinst
   # on démonte le point de montage de timeshift car il n'est plus nécessaire
   # peut être qu'à terme il serait intéressant de voir pour ajouer une partition dédié pour les backups
 }
+create_root_part_snapshot_with_timeshift_btrfs() {
+  root_part_kname="$(lsblk -o KNAME,MOUNTPOINT | awk '{{if ($2 == "/") print $1}}')"
+  displayandexec "Création d'un snapshot avec Timeshift               " "\
+umount -l /run/timeshift/backup; \
+timeshift --scripted --create --btrfs --comments 'first snapshot, after postinstall script' --snapshot-device /dev/"$root_part_kname""
+  # cette étape est très longue lorsqu'il faut faire un premier snapshot (car timeshift doit faire en fait un miroir du système existant)
+  # sur un HDD pas très rapide, il y en a pour à peu près une heure
+  execandlog "timeshift --list"
+  # On fait le timeshift --list qu'on redirige dans le fichier de log juste pour avoir les infos de la création du snapshot.
+  # Après l'execution du script ng_install et du snapshot avec timeshift, il y a environ 26 Go d'utilisé sur / pour un système basé sur bullseye
+  execandlog "umount -l /run/timeshift/backup"
+  # on démonte le point de montage de timeshift car il n'est plus nécessaire
+  # peut être qu'à terme il serait intéressant de voir pour ajouer une partition dédié pour les backups
+}
+
+check_if_root_part_is_btrfs() {
+  if $(findmnt / --raw --noheadings --output=FSTYPE | grep -q 'btrfs' &> /dev/null); then
+    create_root_part_snapshot_with_timeshift_btrfs
+  else
+    create_root_part_snapshot_with_timeshift_rsync
+  fi
+}
+check_if_root_part_is_btrfs
+
 if [ -z "$fisrt_time_script_executed" ]; then
-  create_root_part_snapshot_with_timeshift 
+  check_if_root_part_is_btrfs 
 fi
 # on éffectue uniquement un snapshot de la partition root qu'à la première excution du script (c'est à dire, juste après une install au propre du script suite à l'installation de la debian)
 ################################################################################
