@@ -1231,6 +1231,7 @@ displayandexec "Installation de rkhunter                            " "$AGI rkhu
 displayandexec "Installation de rsync                               " "$AGI rsync"
 displayandexec "Installation de sdparm                              " "$AGI sdparm"
 displayandexec "Installation de secure-delete                       " "$AGI secure-delete"
+displayandexec "Installation de sg3-utils                           " "$AGI sg3-utils"
 displayandexec "Installation de shotwell                            " "$AGI shotwell"
 displayandexec "Installation de smem                                " "$AGI smem"
 displayandexec "Installation de sqlitebrowser                       " "$AGI sqlitebrowser"
@@ -1263,7 +1264,8 @@ displayandexec "Installation de xclip                               " "$AGI xcli
 displayandexec "Installation de xfsprogs                            " "$AGI xfsprogs" # nécessaire pour manipuler des filesystems XFS
 displayandexec "Installation de xinput                              " "$AGI xinput"
 displayandexec "Installation de xorriso                             " "$AGI xorriso"
-displayandexec "Installation de yersinia                            " "$AGI yersinia"
+displayandexec "Installation de xz-utils                            " "$AGI xz-utils"
+displayandexec "Installation de yersinia                            " "$AGI yersinia" # à réflechir si c'est encore utile
 # displayandexec "Installation de zenmap                              " "$AGI zenmap"
 # zenmap n'est pas dispo dans debian bullseye car python2 est EOL, pour traquer l'avencement du portage du code vers python3 : https://github.com/nmap/nmap/issues/1176
 displayandexec "Installation de zip                                 " "$AGI zip"
@@ -2806,6 +2808,7 @@ if [ -f $1 ]; then
     *.tar)       tar xf $1 ;;
     *.tbz2)      tar xjf $1 ;;
     *.tgz)       tar xzf $1 ;;
+    *.xz)        xz --decompress $1 ;;
     *.zip)       unzip $1 ;;
     *.Z)         uncompress $1 ;;
     *.7z)        7z x $1 ;;
@@ -4144,6 +4147,7 @@ alias xwx='sudo poweroff'
 alias youtube-dl='youtube-dl -o "%(title)s.%(ext)s"'
 alias yt-dlp='yt-dlp -o "%(title)s.%(ext)s"'
 alias yt-dlp_best='yt-dlp -o "%(title)s.%(ext)s" -f "bestvideo+bestaudio"'
+alias yt-dlp_1080p='yt-dlp -o "%(title)s.%(ext)s" -f '\''bestvideo[height<=1080]+bestaudio'\'''
 alias spyme='sudo lnav /var/log/syslog /var/log/auth.log'
 alias free='free -ht'
 alias showshortcut='dconf dump /org/gnome/settings-daemon/plugins/media-keys/'
@@ -4236,6 +4240,7 @@ alias xwx='sudo poweroff'
 alias youtube-dl='youtube-dl -o "%(title)s.%(ext)s"'
 alias yt-dlp='yt-dlp -o "%(title)s.%(ext)s"'
 alias yt-dlp_best='yt-dlp -o "%(title)s.%(ext)s" -f "bestvideo+bestaudio"'
+alias yt-dlp_1080p='yt-dlp -o "%(title)s.%(ext)s" -f '\''bestvideo[height<=1080]+bestaudio'\'''
 alias spyme='sudo lnav /var/log/syslog /var/log/auth.log'
 alias free='free -ht'
 alias update_my_sysupdate_script='sudo bash -c '\''rm -f $my_bin_path/sysupdate && wget -q -P $my_bin_path "https://raw.githubusercontent.com/NRGLine4Sec/config-l/main/sysupdate" && chmod +x $my_bin_path/sysupdate'\'''
