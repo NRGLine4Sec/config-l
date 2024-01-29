@@ -1192,6 +1192,7 @@ displayandexec "Installation de mediainfo-gui                       " "$AGI medi
 displayandexec "Installation de mpv                                 " "$AGI mpv youtube-dl-"
 # on n'install pas la dépendance youtube-dl requise par mpv car la version des dépots debian est trop ancienne
 # ref : [ubuntu - How do I get apt-get to ignore some dependencies? - Server Fault](https://serverfault.com/questions/250224/how-do-i-get-apt-get-to-ignore-some-dependencies/663803#663803)
+displayandexec "Installation de msitools                              " "$AGI msitools" # à noter qu'on peut aussi utiliser "7z x" pour extraire le contenu de fichier .msi mais msiextract a l'avantage de garder la structure des répertoires ainsi que les noms et majuscules des fichiers à l'intérieur
 if [ "$bullseye" == 1 ]; then
   displayandexec "Installation de nautilus-gtkhash                    " "$AGI nautilus-gtkhash"
 fi
@@ -1223,6 +1224,7 @@ displayandexec "Installation de pdfgrep                             " "$AGI pdfg
 displayandexec "Installation de pipx                                " "$AGI pipx"
 displayandexec "Installation de pavucontrol                         " "$AGI pavucontrol"
 displayandexec "Installation de printer-driver-all                  " "$AGI printer-driver-all"
+displayandexec "Installation de pv                                  " "$AGI pv"
 displayandexec "Installation de python3-pip                         " "$AGI python3-pip"
 displayandexec "Installation de python3-scapy                       " "$AGI python3-scapy"
 displayandexec "Installation de rclone                              " "$AGI rclone"
@@ -1964,6 +1966,15 @@ pipx install sshuttle"
 ################################################################################
 
 ################################################################################
+## instalation de weasyprint
+##------------------------------------------------------------------------------
+install_weasyprint() {
+  displayandexec "Installation de weasyprint                          " "\
+$ExeAsUser pipx install weasyprint"
+}
+################################################################################
+
+################################################################################
 ## instalation de Geeqie
 ##------------------------------------------------------------------------------
 install_geeqie() {
@@ -2125,6 +2136,7 @@ install_all_manual_install_apps_bullseye() {
   install_ansible
   install_hashcat
   install_sshuttle
+  install_weasyprint
   install_geeqie
   install_timeshift
   install_vscode
@@ -2158,6 +2170,7 @@ install_all_manual_install_apps_bookworm() {
   install_ansible_bookworm
   install_hashcat
   install_sshuttle_bookworm
+  install_weasyprint
   install_geeqie
   install_timeshift_bookworm
   install_vscode
@@ -2812,6 +2825,7 @@ if [ -f $1 ]; then
     *.zip)       unzip $1 ;;
     *.Z)         uncompress $1 ;;
     *.7z)        7z x $1 ;;
+    *.msi)       msiextract $1 ;;
     *)           echo "'$1' can not be extracted by decomp()" ;;
   esac
 else
