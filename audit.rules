@@ -369,6 +369,18 @@
 -w /usr/bin/gdbus -p x -k gdubs_call
 -w /usr/bin/busctl -p x -k busctl_call
 
+### dbus
+-a always,exit -F path=/lib64/dbus-1/dbus-daemon-launch-helper -F perm=x -F auid>=500 -F auid!=4294967295 -k T1078_Valid_Accounts
+-a always,exit -F path=/usr/lib64/dbus-1/dbus-daemon-launch-helper -F perm=x -F auid>=500 -F auid!=4294967295 -k T1078_Valid_Accounts
+
+## setfiles
+-a always,exit -F path=/usr/bin/setfiles -F perm=x -F auid>=500 -F auid!=4294967295 -k -F T1078_Valid_Accounts
+-a always,exit -F path=/usr/sbin/setfiles -F perm=x -F auid>=500 -F auid!=4294967295 -k -F T1078_Valid_Accounts
+
+## vte-2.91
+-a always,exit -F path=/lib64/vte-2.91/gnome-pty-helper -F perm=x -F auid>=500 -F auid!=4294967295 -k T1078_Valid_Accounts
+-a always,exit -F path=/usr/lib64/vte-2.91/gnome-pty-helper -F perm=x -F auid>=500 -F auid!=4294967295 -k T1078_Valid_Accounts
+
 ## pkexec invocation
 ### may indicate privilege escalation CVE-2021-4034
 -w /usr/bin/pkexec -p x -k pkexec
@@ -464,7 +476,9 @@
 -w /usr/bin/dpkg -p x -k software_mgmt
 -w /usr/bin/apt -p x -k software_mgmt
 -w /usr/bin/apt-add-repository -p x -k software_mgmt
+-w /usr/bin/apt-config -p x -k software_mgmt
 -w /usr/bin/apt-get -p x -k software_mgmt
+-w /usr/bin/apt-key -p x -k software_mgmt
 -w /usr/bin/aptitude -p x -k software_mgmt
 -w /usr/bin/wajig -p x -k software_mgmt
 -w /usr/bin/snap -p x -k software_mgmt
@@ -476,6 +490,11 @@
 -w /usr/local/bin/pip3 -p x -k T1072_third_party_software
 -w /usr/bin/pipx -p x -k T1072_third_party_software
 -w /usr/local/bin/pipx -p x -k T1072_third_party_software
+
+-w /usr/bin/python -p x -k third_party_software_mgmt
+-w /usr/bin/python2 -p x -k third_party_software_mgmt
+-w /usr/bin/python2.7 -p x -k third_party_software_mgmt
+-w /usr/bin/python3 -p x -k third_party_software_mgmt
 
 # LuaRocks (Lua installs)
 -w /usr/bin/luarocks -p x -k T1072_third_party_software

@@ -4169,10 +4169,12 @@ alias update_my_sysupdate_script='sudo bash -c '\''rm -f $my_bin_path/sysupdate 
 alias bitcoin='curl -s "https://api.coindesk.com/v1/bpi/currentprice.json" | jq ".bpi.EUR.rate" | tr -d \"'
 alias sshuttle='sudo /root/.local/bin/sshuttle'
 alias my_ext_ip="curl --silent --location 'https://ipinfo.io/ip'"
-alias last_apt_kernel='apt-cache search --names-only "linux-(headers|image)-[[:digit:]].[[:digit:]]+.[[:digit:]]+.*[[:digit:]]-(amd64$|amd64-unsigned$)" | sort'
+alias last_apt_kernel='apt-cache search --names-only "linux-(headers|image)-[[:digit:]]\.[[:digit:]]+\.[[:digit:]]+.*[[:digit:]]-(amd64$|amd64-unsigned$)" | sort'
 HISTTIMEFORMAT="%Y/%m/%d %T   "
 is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/\$1 ;}
 to_lower() { tr [:upper:] [:lower:] <<< "\$@" ;}
+mpv_youtube() { mpv <(/usr/bin/yt-dlp -o - "\$1") }
+mpv_audio_youtube() { mpv --no-video <(/usr/bin/yt-dlp -o - "\$1") }
 
 # for Ansible vault editor
 export EDITOR=nano
@@ -4262,9 +4264,11 @@ alias showshortcut='dconf dump /org/gnome/settings-daemon/plugins/media-keys/'
 alias bitcoin='curl -s "https://api.coindesk.com/v1/bpi/currentprice.json" | jq ".bpi.EUR.rate" | tr -d \"'
 alias sshuttle='sudo /root/.local/bin/sshuttle'
 alias my_ext_ip="curl --silent --location 'https://ipinfo.io/ip'"
-alias last_apt_kernel='apt-cache search --names-only "linux-(headers|image)-[[:digit:]].[[:digit:]]+.[[:digit:]]+.*[[:digit:]]-(amd64$|amd64-unsigned$)" | sort'
+alias last_apt_kernel='apt-cache search --names-only "linux-(headers|image)-[[:digit:]]\.[[:digit:]]+\.[[:digit:]]+.*[[:digit:]]-(amd64$|amd64-unsigned$)" | sort'
 is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/\$1 ;}
 to_lower() { tr [:upper:] [:lower:] <<< "\$@" ;}
+mpv_youtube() { mpv <(/usr/bin/yt-dlp -o - "\$1") }
+mpv_audio_youtube() { mpv --no-video <(/usr/bin/yt-dlp -o - "\$1") }
 
 # for Ansible vault editor
 export EDITOR=nano
