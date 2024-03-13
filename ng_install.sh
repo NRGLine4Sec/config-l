@@ -1270,6 +1270,7 @@ displayandexec "Installation de xz-utils                            " "$AGI xz-u
 displayandexec "Installation de yersinia                            " "$AGI yersinia" # à réflechir si c'est encore utile
 # displayandexec "Installation de zenmap                              " "$AGI zenmap"
 # zenmap n'est pas dispo dans debian bullseye car python2 est EOL, pour traquer l'avencement du portage du code vers python3 : https://github.com/nmap/nmap/issues/1176
+displayandexec "Installation de zbar-tools                          " "$AGI zbar-tools" # utile pour lire les QRcode en CLI
 displayandexec "Installation de zip                                 " "$AGI zip"
 displayandexec "Installation de zutils                              " "$AGI zutils"
 displayandexec "Installation de zsh                                 " "$AGI zsh zsh-syntax-highlighting"
@@ -3459,6 +3460,11 @@ reset_dir_as_user "/home/"$local_user"/.config/mpv/"" && \
 $ExeAsUser cat> /home/"$local_user"/.config/mpv/input.conf << 'EOF'
 # Add the capacity to rotate the video when pressing r key
 r cycle_values video-rotate 90 180 270 0
+
+# Add zoom control with Alt+= and Alt+-
+# ref : [Add new default keys to pan, zoom and rotate · Issue #5458 · mpv-player/mpv · GitHub](https://github.com/mpv-player/mpv/issues/5458)
+Alt+- add video-zoom -0.25
+Alt+= add video-zoom 0.25
 EOF
 $ExeAsUser cat> /home/"$local_user"/.config/mpv/mpv.conf << 'EOF'
 # Enable hardware decoding if available
