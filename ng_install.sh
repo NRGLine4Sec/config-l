@@ -895,20 +895,20 @@ echo ''
 
 make_apt_source_list_clean() {
   cat> /etc/apt/sources.list << EOF
-deb https://deb.debian.org/debian/ $debian_release main contrib non-free
-deb-src https://deb.debian.org/debian/ $debian_release main contrib non-free
+deb https://deb.debian.org/debian/ $debian_release main contrib non-free non-free-firmware
+deb-src https://deb.debian.org/debian/ $debian_release main contrib non-free non-free-firmware
 
-deb https://security.debian.org/debian-security $debian_release-security main contrib
-deb-src https://security.debian.org/debian-security $debian_release-security main contrib
+deb https://security.debian.org/debian-security $debian_release-security main contrib non-free-firmware
+deb-src https://security.debian.org/debian-security $debian_release-security main contrib non-free-firmware
 
 # $debian_release-updates, to get updates before a point release is made
 # see https://www.debian.org/doc/manuals/debian-reference/ch02.en.html#_updates_and_backports
-deb https://deb.debian.org/debian/ $debian_release-updates main contrib non-free
-deb-src https://deb.debian.org/debian/ $debian_release-updates main contrib non-free
+deb https://deb.debian.org/debian/ $debian_release-updates main contrib non-free non-free-firmware
+deb-src https://deb.debian.org/debian/ $debian_release-updates main contrib non-free non-free-firmware
 
 # backports
 # see https://backports.debian.org/
-deb https://deb.debian.org/debian $debian_release-backports main contrib non-free
+deb https://deb.debian.org/debian $debian_release-backports main contrib non-free non-free-firmware
 EOF
 }
 make_apt_source_list_clean
@@ -1235,6 +1235,7 @@ displayandexec "Installation de sdparm                              " "$AGI sdpa
 displayandexec "Installation de secure-delete                       " "$AGI secure-delete"
 displayandexec "Installation de sg3-utils                           " "$AGI sg3-utils"
 displayandexec "Installation de shotwell                            " "$AGI shotwell"
+displayandexec "Installation de snmp                                " "$AGI snmp"
 displayandexec "Installation de smem                                " "$AGI smem"
 displayandexec "Installation de sqlitebrowser                       " "$AGI sqlitebrowser"
 displayandexec "Installation de screen                              " "$AGI screen"
@@ -1266,6 +1267,7 @@ displayandexec "Installation de xclip                               " "$AGI xcli
 displayandexec "Installation de xfsprogs                            " "$AGI xfsprogs" # nécessaire pour manipuler des filesystems XFS
 displayandexec "Installation de xinput                              " "$AGI xinput"
 displayandexec "Installation de xorriso                             " "$AGI xorriso"
+displayandexec "Installation de xournalpp                           " "$AGI xournalpp"
 displayandexec "Installation de xz-utils                            " "$AGI xz-utils"
 displayandexec "Installation de yersinia                            " "$AGI yersinia" # à réflechir si c'est encore utile
 # displayandexec "Installation de zenmap                              " "$AGI zenmap"
@@ -3463,8 +3465,8 @@ r cycle_values video-rotate 90 180 270 0
 
 # Add zoom control with Alt+= and Alt+-
 # ref : [Add new default keys to pan, zoom and rotate · Issue #5458 · mpv-player/mpv · GitHub](https://github.com/mpv-player/mpv/issues/5458)
-Alt+- add video-zoom -0.25
-Alt+= add video-zoom 0.25
+Alt+- add video-zoom -0.10
+Alt+= add video-zoom 0.10
 EOF
 $ExeAsUser cat> /home/"$local_user"/.config/mpv/mpv.conf << 'EOF'
 # Enable hardware decoding if available
@@ -4181,6 +4183,7 @@ is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/\$1 ;}
 to_lower() { tr [:upper:] [:lower:] <<< "\$@" ;}
 mpv_youtube() { mpv <(/usr/bin/yt-dlp -o - "\$1") }
 mpv_audio_youtube() { mpv --no-video <(/usr/bin/yt-dlp -o - "\$1") }
+youtube_description() { yt-dlp --playlist-items 0 --print description "\$1" }
 
 # for Ansible vault editor
 export EDITOR=nano
@@ -4275,6 +4278,7 @@ is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/\$1 ;}
 to_lower() { tr [:upper:] [:lower:] <<< "\$@" ;}
 mpv_youtube() { mpv <(/usr/bin/yt-dlp -o - "\$1") }
 mpv_audio_youtube() { mpv --no-video <(/usr/bin/yt-dlp -o - "\$1") }
+youtube_description() { yt-dlp --playlist-items 0 --print description "\$1" }
 
 # for Ansible vault editor
 export EDITOR=nano
