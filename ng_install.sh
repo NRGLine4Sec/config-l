@@ -23,10 +23,6 @@
 #
 ##
 ##
-## regarder pour la partie auditd
-# auditctl -w /etc/ssh/sshd_config -p warx -k sshd_config
-# https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html-single/security_hardening/index#understanding-audit-log-files_auditing-the-system
-##
 ## On peut aussi utiliser "if !" pour indiquer la négation de la condition d'un if par exempe if ! wget www.google.Fr; then echo "pas d'accès à Internet";fi
 ##
 ## Regarder de près cet outil la : https://github.com/gustavo-iniguez-goya/arpsentinel-applet
@@ -75,9 +71,6 @@
 # ----
 #
 #
-
-## theme gnome a regarder : Adapta-gtk-theme-colorpack (https://www.gnome-look.org/p/1190851/)
-
 
 
 # ref : [Configurer sa souris Logitech MX Master sous Linux (Ubuntu) – Miximum](https://www.miximum.fr/blog/configurer-sa-souris-logitech-mx-master-sous-linux-ubuntu/)
@@ -154,18 +147,24 @@
 ################################################################################
 ## Log de debug (on redirige set -x dans /tmp/ng_install_set-x_logfile)
 ##------------------------------------------------------------------------------
-exec 19>/tmp/ng_install_set-x_logfile
-BASH_XTRACEFD='19'
-set -x
+redirect_and_enable_bash_debug_log() {
+  exec 19>/tmp/ng_install_set-x_logfile
+  BASH_XTRACEFD='19'
+  set -x
+}
+redirect_and_enable_bash_debug_log
 ################################################################################
 
 ################################################################################
 ## Test que le script est executé en tant que root
 ##------------------------------------------------------------------------------
-if [ $EUID != 0 ]; then
-  echo "Le script doit être executer en tant que root: # sudo $0" 1>&2
-  exit 1
-fi
+check_script_run_with_privileges() {
+  if [ $EUID != 0 ]; then
+    echo "Le script doit être executer en tant que root: # sudo $0" 1>&2
+    exit 1
+  fi
+}
+check_script_run_with_privileges
 ################################################################################
 
 ################################################################################
@@ -279,19 +278,23 @@ export -f is_file_present_and_rmfile
 ################################################################################
 ## création des fichiers de log
 ##------------------------------------------------------------------------------
-now="$(date +"%d-%m-%Y")"
-log_dir=""$log_dir_path"/"$now""
-is_dir_present_or_mkdir "$log_dir"
-log_file=""$log_dir"/log_script_install-"$now".log"
-touch "$log_file"
-stdout_file=""$log_dir"/stdout_on_script_execution-"$now".log"
-touch "$stdout_file"
+create_log_files() {
+  now="$(date +"%d-%m-%Y")"
+  log_dir=""$log_dir_path"/"$now""
+  is_dir_present_or_mkdir "$log_dir"
+  log_file=""$log_dir"/log_script_install-"$now".log"
+  touch "$log_file"
+  stdout_file=""$log_dir"/stdout_on_script_execution-"$now".log"
+  touch "$stdout_file"
+  cat> "$log_file" << 'EOF'
+####################################################################
+#                          Debut du script                         #
+####################################################################
 
-echo '####################################################################' > "$log_file"
-echo '#                          Debut du script                         #' >> "$log_file"
-echo '####################################################################' >> "$log_file"
-echo '' >> "$log_file"
-echo '--------------------------------------------------------------------' >> "$log_file"
+--------------------------------------------------------------------
+EOF
+}
+create_log_files
 ################################################################################
 
 ################################################################################
@@ -431,9 +434,9 @@ force_dns_for_install
 ##------------------------------------------------------------------------------
 check_internet_access() {
   displayandexec "Vérification de la connection internet (ICMP+DNS)   " "\
-ping -c 1 www.google.com" && \
+  ping -c 1 www.google.com" && \
   displayandexec "Vérification de la connection internet (HTTPS)      " "\
-wget --server-response --spider --quiet 'https://www.google.com' 2>&1 | grep -iq 'HTTP.*200 OK'"
+  wget --server-response --spider --quiet 'https://www.google.com' 2>&1 | grep -iq 'HTTP.*200 OK'"
   if [ $? != 0 ]; then
     echo -e "${RED}######################################################################${RESET}" | tee --append "$log_file"
     echo -e "${RED}#${RESET} Pour executer ce script, il faut disposer d'une connexion Internet ${RED}#${RESET}" | tee --append "$log_file"
@@ -450,7 +453,7 @@ check_internet_access
 ##------------------------------------------------------------------------------
 sync_date_and_time() {
   displayandexec "Synchronisation de l'heure et de la time zone       " "\
-systemctl restart systemd-timesyncd"
+  systemctl restart systemd-timesyncd"
 }
 sync_date_and_time
 # voir comment faire lorsque la machine n'est pas à la bonne date et qu'elle a créer le fichier de log en se basant sur la date à laquelle elle était. regarder concernant le bon moment pour executer la commande car elle a besoin de displayandexec qui utilise notamment le fait qu'un fichier de log soit créé
@@ -946,13 +949,26 @@ configure_apt
 ################################################################################
 
 ################################################################################
+## force kill and disable debian unattended-upgrades
+##------------------------------------------------------------------------------
+force_kill_and_disable_debian_unattended_upgrades() {
+  displayandexec "Désactivation permanente de unattended-upgrades     " "\
+  systemctl stop unattended-upgrades.service; \
+  pkill --signal SIGKILL unattended-upgrades; \
+  systemctl mask --now unattended-upgrades.service"
+}
+force_kill_and_disable_debian_unattended_upgrades
+# https://wiki.debian.org/UnattendedUpgrades
+# https://askubuntu.com/questions/1186492/terminate-unattended-upgrades-or-whatever-is-using-apt-in-ubuntu-18-04-or-later
+################################################################################
+
+################################################################################
 ## Supression de gnome-initial-setup
 ##------------------------------------------------------------------------------
 remove_gnome_initial_setup() {
   displayandexec "Supression de gnome-initial-setup                   " "\
-pkill --echo --full --exact -KILL '^/usr/libexec/gnome-initial-setup'; \
-$AG purge -y gnome-initial-setup"
-# $AG purge -y gnome-initial-setup"
+  pkill --echo --full --exact -KILL '^/usr/libexec/gnome-initial-setup'; \
+  $AG purge -y gnome-initial-setup"
 }
 remove_gnome_initial_setup
 # [linux - Prevent process from killing itself using pkill - Stack Overflow](https://stackoverflow.com/questions/15740481/prevent-process-from-killing-itself-using-pkill/15740573#15740573)
@@ -975,9 +991,9 @@ displayandexec "Mise à jour du system                               " "\
 $AG update && $AG -o DPkg::Options::=--force-confnew -o DPkg::Options::=--force-confmiss upgrade -y"
 if [ $? != 0 ]; then
   displayandexec "Mise à jour du system                               " "\
-unset UCF_FORCE_CONFFNEW && \
-unset UCF_FORCE_CONFFMISS && \
-$AG update && $AG -o DPkg::Options::=--force-confnew -o DPkg::Options::=--force-confmiss upgrade -y"
+  unset UCF_FORCE_CONFFNEW && \
+  unset UCF_FORCE_CONFFMISS && \
+  $AG update && $AG -o DPkg::Options::=--force-confnew -o DPkg::Options::=--force-confmiss upgrade -y"
 fi
 ################################################################################
 
@@ -1080,7 +1096,7 @@ fi
 if awk '{print $2}' /proc/bus/pci/devices | grep '^1002' &> /dev/null; then
   for amd_device in $(grep -Po '^[[:xdigit:]]{4}[[:blank:]]+1002\K[[:xdigit:]]{4}' /proc/bus/pci/devices); do
     # on s'assure que le device AMD est bien une carte graphique
-    if grep "[[:blank:]]"$amd_device"[[:blank:]]" /usr/share/misc/pci.ids | grep -i 'Radeon' &> /dev/null; then
+    if grep "[[:blank:]]"$amd_device"[[:blank:]]" /usr/share/misc/pci.ids | grep -iw 'Radeon' &> /dev/null; then
       displayandexec "Installation de firmware-amd-graphics               " "$AGI firmware-amd-graphics"
       displayandexec "Installation de xserver-xorg-video-amdgpu           " "$AGI xserver-xorg-video-amdgpu"
       displayandexec "Installation de radeontop                           " "$AGI radeontop"
@@ -1094,7 +1110,7 @@ fi
 if awk '{print $2}' /proc/bus/pci/devices | grep '^8086' &> /dev/null; then
   for intel_device in $(grep -Po '^[[:xdigit:]]{4}[[:blank:]]+8086\K[[:xdigit:]]{4}' /proc/bus/pci/devices); do
     # on s'assure que le device Intel est bien une carte graphique
-    if grep "[[:blank:]]"$intel_device"[[:blank:]]" /usr/share/misc/pci.ids | grep -i 'Graphics' &> /dev/null; then
+    if grep "[[:blank:]]"$intel_device"[[:blank:]]" /usr/share/misc/pci.ids | grep -iw 'Graphics' &> /dev/null; then
       displayandexec "Installation de intel-gpu-tools                     " "$AGI intel-gpu-tools"
     fi
   done
@@ -1106,7 +1122,7 @@ fi
 if awk '{print $2}' /proc/bus/pci/devices | grep '^10ec' &> /dev/null; then
   for realtek_device in $(grep -Po '^[[:xdigit:]]{4}[[:blank:]]+10ec\K[[:xdigit:]]{4}' /proc/bus/pci/devices); do
     # on s'assure que le device Realtek est bien une carte Ethernet
-    if grep "[[:blank:]]"$realtek_device"[[:blank:]]" /usr/share/misc/pci.ids | grep -i 'Ethernet' &> /dev/null; then
+    if grep "[[:blank:]]"$realtek_device"[[:blank:]]" /usr/share/misc/pci.ids | grep -iw 'Ethernet' &> /dev/null; then
       displayandexec "Installation de firmware-realtek                    " "$AGI firmware-realtek"
     fi
   done
@@ -1192,7 +1208,7 @@ displayandexec "Installation de mediainfo-gui                       " "$AGI medi
 displayandexec "Installation de mpv                                 " "$AGI mpv youtube-dl-"
 # on n'install pas la dépendance youtube-dl requise par mpv car la version des dépots debian est trop ancienne
 # ref : [ubuntu - How do I get apt-get to ignore some dependencies? - Server Fault](https://serverfault.com/questions/250224/how-do-i-get-apt-get-to-ignore-some-dependencies/663803#663803)
-displayandexec "Installation de msitools                              " "$AGI msitools" # à noter qu'on peut aussi utiliser "7z x" pour extraire le contenu de fichier .msi mais msiextract a l'avantage de garder la structure des répertoires ainsi que les noms et majuscules des fichiers à l'intérieur
+displayandexec "Installation de msitools                            " "$AGI msitools" # à noter qu'on peut aussi utiliser "7z x" pour extraire le contenu de fichier .msi mais msiextract a l'avantage de garder la structure des répertoires ainsi que les noms et majuscules des fichiers à l'intérieur
 if [ "$bullseye" == 1 ]; then
   displayandexec "Installation de nautilus-gtkhash                    " "$AGI nautilus-gtkhash"
 fi
@@ -1308,14 +1324,14 @@ install_zfs() {
     modprobe zfs"
   fi
   configure_SecureBoot_params() {
-  # création du script qui permet de signer les modules DKMS
-  cat> /opt/sign_dkms_kernel_module.sh << 'EOF'
+    # création du script qui permet de signer les modules DKMS
+    cat> /opt/sign_dkms_kernel_module.sh << 'EOF'
 #!/bin/bash
 
 # Test que le script est lancer en root
 if [ $EUID != 0 ]; then
-    echo "Le script doit être executer en root: # sudo $0" 1>&2
-    exit 1
+  echo "Le script doit être executer en root: # sudo $0" 1>&2
+  exit 1
 fi
 
 ls -al /var/lib/dkms
@@ -1397,12 +1413,12 @@ rm -rf "$tmp_dir""
 install_veracrypt() {
   local tmp_dir="$(mktemp -d)"
   displayandexec "Installation de veracrypt                           " "\
-$WGET -P "$tmp_dir" https://launchpad.net/veracrypt/trunk/"$(tr '[:upper:]' '[:lower:]' <<< "$veracrypt_version")"/+download/veracrypt-"$veracrypt_version"-setup.tar.bz2 && \
-tar xjf "$tmp_dir"/veracrypt-"$veracrypt_version"-setup.tar.bz2 --directory="$tmp_dir" && \
-"$tmp_dir"/veracrypt-"$veracrypt_version"-setup-gui-x64 --nox11 --noexec --target "$tmp_dir" && \
-tail -n +\$(sed -n 's/.*PACKAGE_START=\([0-9]*\).*/\1/p' "$tmp_dir"/veracrypt_install_gui_x64.sh) "$tmp_dir"/veracrypt_install_gui_x64.sh > "$tmp_dir"/veracrypt_installer.tar && \
-tar -C / --no-overwrite-dir -xpzvf "$tmp_dir"/veracrypt_installer.tar; \
-rm -rf "$tmp_dir""
+  $WGET -P "$tmp_dir" https://launchpad.net/veracrypt/trunk/"$(tr '[:upper:]' '[:lower:]' <<< "$veracrypt_version")"/+download/veracrypt-"$veracrypt_version"-setup.tar.bz2 && \
+  tar xjf "$tmp_dir"/veracrypt-"$veracrypt_version"-setup.tar.bz2 --directory="$tmp_dir" && \
+  "$tmp_dir"/veracrypt-"$veracrypt_version"-setup-gui-x64 --nox11 --noexec --target "$tmp_dir" && \
+  tail -n +\$(sed -n 's/.*PACKAGE_START=\([0-9]*\).*/\1/p' "$tmp_dir"/veracrypt_install_gui_x64.sh) "$tmp_dir"/veracrypt_install_gui_x64.sh > "$tmp_dir"/veracrypt_installer.tar && \
+  tar -C / --no-overwrite-dir -xpzvf "$tmp_dir"/veracrypt_installer.tar; \
+  rm -rf "$tmp_dir""
 }
 # on backslash le retour de la command sed car elle est executer dans un bash -c
 # https://stackoverflow.com/questions/1711970/i-cant-seem-to-use-the-bash-c-option-with-arguments-after-the-c-option-st
@@ -1421,10 +1437,11 @@ install_spotify() {
 deb [signed-by=/usr/share/keyrings/spotify-archive-keyring.gpg] http://repository.spotify.com stable non-free
 EOF
   displayandexec "Installation de spotify                             " "\
-is_file_present_and_rmfile "/usr/share/keyrings/spotify-archive-keyring.gpg" && \
-$CURL 'https://download.spotify.com/debian/pubkey_7A3A762FAFD4A51F.gpg' | gpg --dearmor --output /usr/share/keyrings/spotify-archive-keyring.gpg && \
-$AG update && \
-$AGI spotify-client"
+  is_file_present_and_rmfile "/usr/share/keyrings/spotify-archive-keyring.gpg" && \
+  spotify_repo_gpg_pubkey="$($CURL 'https://www.spotify.com/download/linux/' | tr -s '<' '\n' | grep -Po '(/pubkey_)\K[[:xdigit:]]+(?=.gpg)+')" && \
+  $CURL 'https://download.spotify.com/debian/pubkey_'"$spotify_repo_gpg_pubkey"'.gpg' | gpg --dearmor --output /usr/share/keyrings/spotify-archive-keyring.gpg && \
+  $AG update && \
+  $AGI spotify-client"
 }
 # pour obtenir la clé publique lorsqu'elle expire : https://www.spotify.com/fr/download/linux/
 ################################################################################
@@ -1438,10 +1455,10 @@ deb [arch=amd64 signed-by=/usr/share/keyrings/apt-fast-archive-keyring.gpg] http
 #deb-src http://ppa.launchpad.net/apt-fast/stable/ubuntu hirsute main
 EOF
   displayandexec "Installation de apt-fast                            " "\
-is_file_present_and_rmfile "/usr/share/keyrings/apt-fast-archive-keyring.gpg" && \
-$WGET --output-document - 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xA2166B8DE8BDC3367D1901C11EE2FF37CA8DA16B' | gpg --dearmor --output /usr/share/keyrings/apt-fast-archive-keyring.gpg && \
-$AG update && \
-$AGI apt-fast"
+  is_file_present_and_rmfile "/usr/share/keyrings/apt-fast-archive-keyring.gpg" && \
+  $WGET --output-document - 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xA2166B8DE8BDC3367D1901C11EE2FF37CA8DA16B' | gpg --dearmor --output /usr/share/keyrings/apt-fast-archive-keyring.gpg && \
+  $AG update && \
+  $AGI apt-fast"
 }
 install_apt-fast_bookworm() {
   cat> /etc/apt/sources.list.d/apt-fast.list << 'EOF'
@@ -1449,10 +1466,10 @@ deb [arch=amd64 signed-by=/usr/share/keyrings/apt-fast-archive-keyring.gpg] http
 #deb-src http://ppa.launchpad.net/apt-fast/stable/ubuntu kinetic main
 EOF
   displayandexec "Installation de apt-fast                            " "\
-is_file_present_and_rmfile "/usr/share/keyrings/apt-fast-archive-keyring.gpg" && \
-$WGET --output-document - 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xA2166B8DE8BDC3367D1901C11EE2FF37CA8DA16B' | gpg --dearmor --output /usr/share/keyrings/apt-fast-archive-keyring.gpg && \
-$AG update && \
-$AGI apt-fast"
+  is_file_present_and_rmfile "/usr/share/keyrings/apt-fast-archive-keyring.gpg" && \
+  $WGET --output-document - 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xA2166B8DE8BDC3367D1901C11EE2FF37CA8DA16B' | gpg --dearmor --output /usr/share/keyrings/apt-fast-archive-keyring.gpg && \
+  $AG update && \
+  $AGI apt-fast"
 }
 # Pour récupérer la clé PGP
 # il faut récupérer la clé avec l'URL qui a une forme suivante :
@@ -1465,10 +1482,10 @@ $AGI apt-fast"
 ##------------------------------------------------------------------------------
 install_drawio() {
   displayandexec "Installation de drawio                              " "\
-reset_dir ""$manual_install_dir"/drawio/" && \
-$WGET -P "$manual_install_dir"/drawio/ https://github.com/jgraph/drawio-desktop/releases/download/v"$drawio_version"/drawio-x86_64-"$drawio_version".AppImage && \
-chmod +x "$manual_install_dir"/drawio/drawio-x86_64-"$drawio_version".AppImage && \
-$WGET -P "$manual_install_dir"/drawio/ 'https://raw.githubusercontent.com/jgraph/drawio/master/src/main/webapp/images/drawlogo256.png'"
+  reset_dir ""$manual_install_dir"/drawio/" && \
+  $WGET -P "$manual_install_dir"/drawio/ https://github.com/jgraph/drawio-desktop/releases/download/v"$drawio_version"/drawio-x86_64-"$drawio_version".AppImage && \
+  chmod +x "$manual_install_dir"/drawio/drawio-x86_64-"$drawio_version".AppImage && \
+  $WGET -P "$manual_install_dir"/drawio/ 'https://raw.githubusercontent.com/jgraph/drawio/master/src/main/webapp/images/drawlogo256.png'"
   cat> /usr/share/applications/drawio.desktop << EOF
 [Desktop Entry]
 Name=draw.io
@@ -1506,10 +1523,10 @@ deb [signed-by=/usr/share/keyrings/typora-archive-keyring.gpg] https://typora.io
 # deb-src https://typora.io/linux ./
 EOF
   displayandexec "Installation de Typora                              " "\
-is_file_present_and_rmfile "/usr/share/keyrings/typora-archive-keyring.gpg" && \
-$WGET --output-document - 'https://typora.io/linux/public-key.asc' | gpg --dearmor --output /usr/share/keyrings/typora-archive-keyring.gpg && \
-$AG update && \
-$AGI typora"
+  is_file_present_and_rmfile "/usr/share/keyrings/typora-archive-keyring.gpg" && \
+  $WGET --output-document - 'https://typora.io/linux/public-key.asc' | gpg --dearmor --output /usr/share/keyrings/typora-archive-keyring.gpg && \
+  $AG update && \
+  $AGI typora"
 }
 ################################################################################
 
@@ -1519,17 +1536,17 @@ $AGI typora"
 install_virtualbox() {
   displayandexec "Installation des dépendances de VirtualBox          " "$AGI dkms"
   displayandexec "Installation de VirtualBox                          " "\
-echo 'deb [signed-by=/usr/share/keyrings/virtualbox-archive-keyring.gpg] https://download.virtualbox.org/virtualbox/debian bullseye contrib' > /etc/apt/sources.list.d/virtualbox.list && \
-is_file_present_and_rmfile "/usr/share/keyrings/virtualbox-archive-keyring.gpg" && \
-$WGET --output-document - 'https://www.virtualbox.org/download/oracle_vbox_2016.asc' | gpg --dearmor --output /usr/share/keyrings/virtualbox-archive-keyring.gpg && \
-$AG update && \
-$AGI virtualbox-7.0"
-local tmp_dir="$(mktemp -d)"
-virtualbox_version="$(virtualbox --help 2>/dev/null | grep -Po '( v)\K[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+')"
+  echo 'deb [signed-by=/usr/share/keyrings/virtualbox-archive-keyring.gpg] https://download.virtualbox.org/virtualbox/debian bullseye contrib' > /etc/apt/sources.list.d/virtualbox.list && \
+  is_file_present_and_rmfile "/usr/share/keyrings/virtualbox-archive-keyring.gpg" && \
+  $WGET --output-document - 'https://www.virtualbox.org/download/oracle_vbox_2016.asc' | gpg --dearmor --output /usr/share/keyrings/virtualbox-archive-keyring.gpg && \
+  $AG update && \
+  $AGI virtualbox-7.0"
+  local tmp_dir="$(mktemp -d)"
+  virtualbox_version="$(virtualbox --help 2>/dev/null | grep -Po '( v)\K[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+')"
   displayandexec "Installation de VM VirtualBox Extension Pack        " "\
-$WGET -P "$tmp_dir" https://download.virtualbox.org/virtualbox/"$virtualbox_version"/Oracle_VM_VirtualBox_Extension_Pack-"$virtualbox_version".vbox-extpack && \
-echo y | /usr/bin/VBoxManage extpack install --replace "$tmp_dir"/Oracle_VM_VirtualBox_Extension_Pack-"$virtualbox_version".vbox-extpack; \
-rm -rf "$tmp_dir""
+  $WGET -P "$tmp_dir" https://download.virtualbox.org/virtualbox/"$virtualbox_version"/Oracle_VM_VirtualBox_Extension_Pack-"$virtualbox_version".vbox-extpack && \
+  echo y | /usr/bin/VBoxManage extpack install --replace "$tmp_dir"/Oracle_VM_VirtualBox_Extension_Pack-"$virtualbox_version".vbox-extpack; \
+  rm -rf "$tmp_dir""
   # Une solution qui devrait marché mais il faut avoir le hachage de la licence pour pouvoir l'executer et on obtient le hachage qu'en lançant une première fois la commande
   # VBoxManage extpack install --replace Oracle_VM_VirtualBox_Extension_Pack-$virtualbox_version.vbox-extpack --accept-license --accept-license=56be48f923303c8cababb0bb4c478284b688ed23f16d775d729b89a2e8e5f9eb
   # https://www.virtualbox.org/ticket/16674
@@ -1538,11 +1555,11 @@ rm -rf "$tmp_dir""
   # sudo VBoxManage extpack uninstall "Oracle VM VirtualBox Extension Pack" && sudo VBoxManage extpack cleanup
 
   configure_SecureBoot_params() {
-# création du dossier qui contiendra les signatures pour le SecureBoot
-[ -d /usr/share/manual_sign_kernel_module ] && mv /usr/share/manual_sign_kernel_module /usr/share/manual_sign_kernel_module.bkp_"$now"
-mkdir /usr/share/manual_sign_kernel_module
-# création du script qui permet de signer les modules vboxdrv vboxnetflt vboxnetadp vboxpci pour VirtualBox
-cat> /opt/sign_virtualbox_kernel_module.sh << 'EOF'
+    # création du dossier qui contiendra les signatures pour le SecureBoot
+    [ -d /usr/share/manual_sign_kernel_module ] && mv /usr/share/manual_sign_kernel_module /usr/share/manual_sign_kernel_module.bkp_"$now"
+    mkdir /usr/share/manual_sign_kernel_module
+    # création du script qui permet de signer les modules vboxdrv vboxnetflt vboxnetadp vboxpci pour VirtualBox
+    cat> /opt/sign_virtualbox_kernel_module.sh << 'EOF'
 #!/bin/bash
 
 # Test que le script est lancer en root
@@ -1582,17 +1599,17 @@ EOF
 install_virtualbox_bookworm() {
   displayandexec "Installation des dépendances de VirtualBox          " "$AGI dkms"
   displayandexec "Installation de VirtualBox                          " "\
-echo 'deb [signed-by=/usr/share/keyrings/virtualbox-archive-keyring.gpg] https://download.virtualbox.org/virtualbox/debian bookworm contrib' > /etc/apt/sources.list.d/virtualbox.list && \
-is_file_present_and_rmfile "/usr/share/keyrings/virtualbox-archive-keyring.gpg" && \
-$WGET --output-document - 'https://www.virtualbox.org/download/oracle_vbox_2016.asc' | gpg --dearmor --output /usr/share/keyrings/virtualbox-archive-keyring.gpg && \
-$AG update && \
-$AGI virtualbox-7.0"
-local tmp_dir="$(mktemp -d)"
-virtualbox_version="$(virtualbox --help 2>/dev/null | grep -Po '( v)\K[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+')"
+  echo 'deb [signed-by=/usr/share/keyrings/virtualbox-archive-keyring.gpg] https://download.virtualbox.org/virtualbox/debian bookworm contrib' > /etc/apt/sources.list.d/virtualbox.list && \
+  is_file_present_and_rmfile "/usr/share/keyrings/virtualbox-archive-keyring.gpg" && \
+  $WGET --output-document - 'https://www.virtualbox.org/download/oracle_vbox_2016.asc' | gpg --dearmor --output /usr/share/keyrings/virtualbox-archive-keyring.gpg && \
+  $AG update && \
+  $AGI virtualbox-7.0"
+  local tmp_dir="$(mktemp -d)"
+  virtualbox_version="$(virtualbox --help 2>/dev/null | grep -Po '( v)\K[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+')"
   displayandexec "Installation de VM VirtualBox Extension Pack        " "\
-$WGET -P "$tmp_dir" https://download.virtualbox.org/virtualbox/"$virtualbox_version"/Oracle_VM_VirtualBox_Extension_Pack-"$virtualbox_version".vbox-extpack && \
-echo y | /usr/bin/VBoxManage extpack install --replace "$tmp_dir"/Oracle_VM_VirtualBox_Extension_Pack-"$virtualbox_version".vbox-extpack; \
-rm -rf "$tmp_dir""
+  $WGET -P "$tmp_dir" https://download.virtualbox.org/virtualbox/"$virtualbox_version"/Oracle_VM_VirtualBox_Extension_Pack-"$virtualbox_version".vbox-extpack && \
+  echo y | /usr/bin/VBoxManage extpack install --replace "$tmp_dir"/Oracle_VM_VirtualBox_Extension_Pack-"$virtualbox_version".vbox-extpack; \
+  rm -rf "$tmp_dir""
   # Une solution qui devrait marché mais il faut avoir le hachage de la licence pour pouvoir l'executer et on obtient le hachage qu'en lançant une première fois la commande
   # VBoxManage extpack install --replace Oracle_VM_VirtualBox_Extension_Pack-$virtualbox_version.vbox-extpack --accept-license --accept-license=56be48f923303c8cababb0bb4c478284b688ed23f16d775d729b89a2e8e5f9eb
   # https://www.virtualbox.org/ticket/16674
@@ -1601,11 +1618,11 @@ rm -rf "$tmp_dir""
   # sudo VBoxManage extpack uninstall "Oracle VM VirtualBox Extension Pack" && sudo VBoxManage extpack cleanup
 
   configure_SecureBoot_params() {
-# création du dossier qui contiendra les signatures pour le SecureBoot
-[ -d /usr/share/manual_sign_kernel_module ] && mv /usr/share/manual_sign_kernel_module /usr/share/manual_sign_kernel_module.bkp_"$now"
-mkdir /usr/share/manual_sign_kernel_module
-# création du script qui permet de signer les modules vboxdrv vboxnetflt vboxnetadp vboxpci pour VirtualBox
-cat> /opt/sign_virtualbox_kernel_module.sh << 'EOF'
+  # création du dossier qui contiendra les signatures pour le SecureBoot
+  [ -d /usr/share/manual_sign_kernel_module ] && mv /usr/share/manual_sign_kernel_module /usr/share/manual_sign_kernel_module.bkp_"$now"
+  mkdir /usr/share/manual_sign_kernel_module
+  # création du script qui permet de signer les modules vboxdrv vboxnetflt vboxnetadp vboxpci pour VirtualBox
+  cat> /opt/sign_virtualbox_kernel_module.sh << 'EOF'
 #!/bin/bash
 
 # Test que le script est lancer en root
@@ -1676,10 +1693,10 @@ deb [signed-by=/usr/share/keyrings/mkvtoolnix-archive-keyring.gpg] https://mkvto
 #deb-src https://mkvtoolnix.download/debian/ bullseye main
 EOF
   displayandexec "Installation de MKVToolNix                          " "\
-is_file_present_and_rmfile "/usr/share/keyrings/mkvtoolnix-archive-keyring.gpg" && \
-$WGET --output-document - 'https://mkvtoolnix.download/gpg-pub-moritzbunkus.txt' | gpg --dearmor --output /usr/share/keyrings/mkvtoolnix-archive-keyring.gpg && \
-$AG update && \
-$AGI mkvtoolnix mkvtoolnix-gui"
+  is_file_present_and_rmfile "/usr/share/keyrings/mkvtoolnix-archive-keyring.gpg" && \
+  $WGET --output-document - 'https://mkvtoolnix.download/gpg-pub-moritzbunkus.txt' | gpg --dearmor --output /usr/share/keyrings/mkvtoolnix-archive-keyring.gpg && \
+  $AG update && \
+  $AGI mkvtoolnix mkvtoolnix-gui"
 }
 
 install_mkvtoolnix_bookworm() {
@@ -1688,10 +1705,10 @@ deb [signed-by=/usr/share/keyrings/mkvtoolnix-archive-keyring.gpg] https://mkvto
 #deb-src https://mkvtoolnix.download/debian/ bookworm main
 EOF
   displayandexec "Installation de MKVToolNix                          " "\
-is_file_present_and_rmfile "/usr/share/keyrings/mkvtoolnix-archive-keyring.gpg" && \
-$WGET --output-document - 'https://mkvtoolnix.download/gpg-pub-moritzbunkus.txt' | gpg --dearmor --output /usr/share/keyrings/mkvtoolnix-archive-keyring.gpg && \
-$AG update && \
-$AGI mkvtoolnix mkvtoolnix-gui"
+  is_file_present_and_rmfile "/usr/share/keyrings/mkvtoolnix-archive-keyring.gpg" && \
+  $WGET --output-document - 'https://mkvtoolnix.download/gpg-pub-moritzbunkus.txt' | gpg --dearmor --output /usr/share/keyrings/mkvtoolnix-archive-keyring.gpg && \
+  $AG update && \
+  $AGI mkvtoolnix mkvtoolnix-gui"
 }
 ################################################################################
 
@@ -1700,10 +1717,10 @@ $AGI mkvtoolnix mkvtoolnix-gui"
 ##------------------------------------------------------------------------------
 install_etcher() {
   displayandexec "Installation de Etcher                              " "\
-reset_dir ""$manual_install_dir"/balenaEtcher/" && \
-$WGET -P "$manual_install_dir"/balenaEtcher/ https://github.com/balena-io/etcher/releases/download/v"$etcher_version"/balenaEtcher-"$etcher_version"-x64.AppImage && \
-chmod +x "$manual_install_dir"/balenaEtcher/balenaEtcher-"$etcher_version"-x64.AppImage && \
-$WGET -P "$manual_install_dir"/balenaEtcher/ 'https://github.com/balena-io/etcher/raw/master/assets/icon.png'"
+  reset_dir ""$manual_install_dir"/balenaEtcher/" && \
+  $WGET -P "$manual_install_dir"/balenaEtcher/ https://github.com/balena-io/etcher/releases/download/v"$etcher_version"/balenaEtcher-"$etcher_version"-x64.AppImage && \
+  chmod +x "$manual_install_dir"/balenaEtcher/balenaEtcher-"$etcher_version"-x64.AppImage && \
+  $WGET -P "$manual_install_dir"/balenaEtcher/ 'https://github.com/balena-io/etcher/raw/master/assets/icon.png'"
   cat> /usr/share/applications/balena-etcher-electron.desktop << EOF
 [Desktop Entry]
 Name=balenaEtcher
@@ -1724,10 +1741,10 @@ EOF
 ##------------------------------------------------------------------------------
 install_shotcut() {
   displayandexec "Installation de Shotcut                             " "\
-reset_dir ""$manual_install_dir"/shotcut/" && \
-$WGET -P "$manual_install_dir"/shotcut/ https://github.com/mltframework/shotcut/releases/download/v"$shotcut_version"/"$shotcut_appimage" && \
-chmod +x "$manual_install_dir"/shotcut/"$shotcut_appimage" && \
-$WGET -P "$manual_install_dir"/shotcut/ 'https://github.com/mltframework/shotcut/raw/master/icons/shotcut-logo-64.png'"
+  reset_dir ""$manual_install_dir"/shotcut/" && \
+  $WGET -P "$manual_install_dir"/shotcut/ https://github.com/mltframework/shotcut/releases/download/v"$shotcut_version"/"$shotcut_appimage" && \
+  chmod +x "$manual_install_dir"/shotcut/"$shotcut_appimage" && \
+  $WGET -P "$manual_install_dir"/shotcut/ 'https://github.com/mltframework/shotcut/raw/master/icons/shotcut-logo-64.png'"
   cat> /usr/share/applications/shotcut.desktop << EOF
 [Desktop Entry]
 Name=shotcut
@@ -1750,10 +1767,10 @@ install_signal() {
 deb [arch=amd64 signed-by=/usr/share/keyrings/signal-archive-keyring.gpg] https://updates.signal.org/desktop/apt xenial main
 EOF
   displayandexec "Installation de Signal                              " "\
-is_file_present_and_rmfile "/usr/share/keyrings/signal-archive-keyring.gpg" && \
-$CURL 'https://updates.signal.org/desktop/apt/keys.asc' | gpg --dearmor --output /usr/share/keyrings/signal-archive-keyring.gpg && \
-$AG update && \
-$AGI signal-desktop"
+  is_file_present_and_rmfile "/usr/share/keyrings/signal-archive-keyring.gpg" && \
+  $CURL 'https://updates.signal.org/desktop/apt/keys.asc' | gpg --dearmor --output /usr/share/keyrings/signal-archive-keyring.gpg && \
+  $AG update && \
+  $AGI signal-desktop"
 }
 # https://signal.org/download/linux/
 ################################################################################
@@ -1764,9 +1781,9 @@ $AGI signal-desktop"
 install_stacer() {
   local tmp_dir="$(mktemp -d)"
   displayandexec "Installation de Stacer                              " "\
-$WGET -P "$tmp_dir" https://github.com/oguzhaninan/Stacer/releases/download/v"$stacer_version"/stacer_"$stacer_version"_amd64.deb && \
-dpkg -i "$tmp_dir"/stacer_"$stacer_version"_amd64.deb; \
-rm -rf "$tmp_dir""
+  $WGET -P "$tmp_dir" https://github.com/oguzhaninan/Stacer/releases/download/v"$stacer_version"/stacer_"$stacer_version"_amd64.deb && \
+  dpkg -i "$tmp_dir"/stacer_"$stacer_version"_amd64.deb; \
+  rm -rf "$tmp_dir""
 }
 ################################################################################
 
@@ -1780,10 +1797,10 @@ deb [arch=amd64 signed-by=/usr/share/keyrings/asbru-archive-keyring.gpg] https:/
 EOF
   displayandexec "Installation des dépendances de Asbru               " "$AGI perl libvte-2.91-0 libcairo-perl libglib-perl libpango-perl libsocket6-perl libexpect-perl libnet-proxy-perl libyaml-perl libcrypt-cbc-perl libcrypt-blowfish-perl libgtk3-perl libnet-arp-perl libossp-uuid-perl openssh-client telnet ftp libcrypt-rijndael-perl libxml-parser-perl libcanberra-gtk-module dbus-x11 libx11-guitest-perl libgtk3-simplelist-perl gir1.2-wnck-3.0 gir1.2-vte-2.91"
   displayandexec "Installation de Asbru                               " "\
-is_file_present_and_rmfile "/usr/share/keyrings/asbru-archive-keyring.gpg" && \
-$CURL 'https://packagecloud.io/asbru-cm/asbru-cm/gpgkey' | gpg --dearmor --output /usr/share/keyrings/asbru-archive-keyring.gpg && \
-$AG update && \
-$AGI asbru-cm keepassxc-"
+  is_file_present_and_rmfile "/usr/share/keyrings/asbru-archive-keyring.gpg" && \
+  $CURL 'https://packagecloud.io/asbru-cm/asbru-cm/gpgkey' | gpg --dearmor --output /usr/share/keyrings/asbru-archive-keyring.gpg && \
+  $AG update && \
+  $AGI asbru-cm keepassxc-"
 }
 
 # On rajoute keepassxc- dans la commande d'install du paquet pour pas que asbru install keepassxc en tant que dépendance (même si il n'est seulement que dans les recommmends (apt-cache show asbru-cm | grep keepassxc))
@@ -1802,9 +1819,9 @@ $AGI asbru-cm keepassxc-"
 install_bat() {
   local tmp_dir="$(mktemp -d)"
   displayandexec "Installation de Bat                                 " "\
-$WGET -P "$tmp_dir" https://github.com/sharkdp/bat/releases/download/v"$bat_version"/bat_"$bat_version"_amd64.deb && \
-dpkg -i "$tmp_dir"/bat_"$bat_version"_amd64.deb; \
-rm -rf "$tmp_dir""
+  $WGET -P "$tmp_dir" https://github.com/sharkdp/bat/releases/download/v"$bat_version"/bat_"$bat_version"_amd64.deb && \
+  dpkg -i "$tmp_dir"/bat_"$bat_version"_amd64.deb; \
+  rm -rf "$tmp_dir""
 }
 ################################################################################
 
@@ -1813,10 +1830,10 @@ rm -rf "$tmp_dir""
 ##------------------------------------------------------------------------------
 install_youtubedl() {
   displayandexec "Installation de youtube-dl                          " "\
-is_file_present_and_rmfile ""$my_bin_path"/youtube-dl" && \
-$WGET -P "$my_bin_path" https://github.com/ytdl-org/youtube-dl/releases/download/"$youtubedl_version"/youtube-dl && \
-chmod +x "$my_bin_path"/youtube-dl && \
-ln -s /usr/bin/python3 /usr/bin/python"
+  is_file_present_and_rmfile ""$my_bin_path"/youtube-dl" && \
+  $WGET -P "$my_bin_path" https://github.com/ytdl-org/youtube-dl/releases/download/"$youtubedl_version"/youtube-dl && \
+  chmod +x "$my_bin_path"/youtube-dl && \
+  ln -s /usr/bin/python3 /usr/bin/python"
 }
 # le lien symbolique de python3 vers python est nécessaire car youtube-dl utilise "#!/usr/bin/env python"
 # Une autre solution pourrait être de modifier le fichier /usr/bin/youtube-dl pour utiliser python3 directement avec un sed par exemple
@@ -1827,9 +1844,9 @@ ln -s /usr/bin/python3 /usr/bin/python"
 ##------------------------------------------------------------------------------
 install_yt-dlp() {
   displayandexec "Installation de yt-dlp                              " "\
-is_file_present_and_rmfile ""$my_bin_path"/yt-dlp" && \
-$WGET -P "$my_bin_path" https://github.com/yt-dlp/yt-dlp/releases/download/"$ytdlp_version"/yt-dlp && \
-chmod +x "$my_bin_path"/yt-dlp"
+  is_file_present_and_rmfile ""$my_bin_path"/yt-dlp" && \
+  $WGET -P "$my_bin_path" https://github.com/yt-dlp/yt-dlp/releases/download/"$ytdlp_version"/yt-dlp && \
+  chmod +x "$my_bin_path"/yt-dlp"
 }
 ################################################################################
 
@@ -1838,10 +1855,10 @@ chmod +x "$my_bin_path"/yt-dlp"
 ##------------------------------------------------------------------------------
 install_joplin() {
   displayandexec "Installation de joplin                              " "\
-reset_dir ""$manual_install_dir"/Joplin/" && \
-$WGET -P "$manual_install_dir"/Joplin/ https://github.com/laurent22/joplin/releases/download/v"$joplin_version"/Joplin-"$joplin_version".AppImage && \
-chmod +x "$manual_install_dir"/Joplin/Joplin-"$joplin_version".AppImage && \
-$WGET -P "$manual_install_dir"/Joplin/ 'https://raw.githubusercontent.com/laurent22/joplin/master/Assets/LinuxIcons/256x256.png'"
+  reset_dir ""$manual_install_dir"/Joplin/" && \
+  $WGET -P "$manual_install_dir"/Joplin/ https://github.com/laurent22/joplin/releases/download/v"$joplin_version"/Joplin-"$joplin_version".AppImage && \
+  chmod +x "$manual_install_dir"/Joplin/Joplin-"$joplin_version".AppImage && \
+  $WGET -P "$manual_install_dir"/Joplin/ 'https://raw.githubusercontent.com/laurent22/joplin/master/Assets/LinuxIcons/256x256.png'"
   cat> /usr/share/applications/joplin.desktop << EOF
 [Desktop Entry]
 Comment=Markdown Editor
@@ -1859,10 +1876,10 @@ EOF
 ##------------------------------------------------------------------------------
 install_krita() {
   displayandexec "Installation de Krita                               " "\
-reset_dir ""$manual_install_dir"/Krita/" && \
-$WGET -P "$manual_install_dir"/Krita/ https://download.kde.org/stable/krita/"$krita_version"/krita-"$krita_version"-x86_64.appimage && \
-chmod +x "$manual_install_dir"/Krita/krita-"$krita_version"-x86_64.appimage && \
-$WGET -P "$manual_install_dir"/Krita/ 'https://invent.kde.org/graphics/krita/-/raw/master/pics/krita.png'"
+  reset_dir ""$manual_install_dir"/Krita/" && \
+  $WGET -P "$manual_install_dir"/Krita/ https://download.kde.org/stable/krita/"$krita_version"/krita-"$krita_version"-x86_64.appimage && \
+  chmod +x "$manual_install_dir"/Krita/krita-"$krita_version"-x86_64.appimage && \
+  $WGET -P "$manual_install_dir"/Krita/ 'https://invent.kde.org/graphics/krita/-/raw/master/pics/krita.png'"
   cat> /usr/share/applications/krita.desktop << EOF
 [Desktop Entry]
 Name=Krita
@@ -1909,11 +1926,11 @@ install_ansible() {
 deb [arch=amd64 signed-by=/usr/share/keyrings/ansible-archive-keyring.gpg] http://ppa.launchpad.net/ansible/ansible-5/ubuntu hirsute main
 EOF
   displayandexec "Installation de Ansible                             " "\
-is_file_present_and_rmfile "/usr/share/keyrings/ansible-archive-keyring.gpg" && \
-$WGET --output-document - 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x93C4A3FD7BB9C367' | gpg --dearmor --output /usr/share/keyrings/ansible-archive-keyring.gpg && \
-$AG update && \
-$AGI ansible"
-$ExeAsUser cat>> /home/"$local_user"/.bashrc << 'EOF'
+  is_file_present_and_rmfile "/usr/share/keyrings/ansible-archive-keyring.gpg" && \
+  $WGET --output-document - 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x93C4A3FD7BB9C367' | gpg --dearmor --output /usr/share/keyrings/ansible-archive-keyring.gpg && \
+  $AG update && \
+  $AGI ansible"
+  $ExeAsUser cat>> /home/"$local_user"/.bashrc << 'EOF'
 
 # for Ansible vault editor
 export EDITOR=nano
@@ -1922,18 +1939,16 @@ EOF
 
 install_ansible_bookworm() {
   displayandexec "Installation de Ansible                             " "\
-$ExeAsUser pipx install --include-deps ansible && \
-$ExeAsUser pipx inject ansible proxmoxer && \
-$ExeAsUser pipx inject --include-deps --include-apps ansible requests && \
-$ExeAsUser pipx inject ansible pykeepass"
-$ExeAsUser cat>> /home/"$local_user"/.bashrc << 'EOF'
+  $ExeAsUser pipx install --include-deps ansible && \
+  $ExeAsUser pipx inject ansible proxmoxer && \
+  $ExeAsUser pipx inject --include-deps --include-apps ansible requests && \
+  $ExeAsUser pipx inject ansible pykeepass"
+  $ExeAsUser cat>> /home/"$local_user"/.bashrc << 'EOF'
 
 # for Ansible vault editor
 export EDITOR=nano
 EOF
 }
-# on va très certainement passer à une installation de ansible via pipx
-# donc pour l'instant on le test avec l'install pour bookworm
 # ref : [pipx install ansible - No binaries associated with this package. · Issue #20 · pypa/pipx](https://github.com/pypa/pipx/issues/20#issuecomment-1346446624)
 ################################################################################
 
@@ -1943,12 +1958,12 @@ EOF
 install_hashcat() {
   local tmp_dir="$(mktemp -d)"
   displayandexec "Installation de Hashcat                             " "\
-$WGET -P "$tmp_dir" https://github.com/hashcat/hashcat/releases/download/v"$hashcat_version"/hashcat-"$hashcat_version".7z && \
-reset_dir ""$manual_install_dir"/hashcat/" && \
-7z x "$tmp_dir"/hashcat-"$hashcat_version".7z -o"$manual_install_dir"/hashcat && \
-chown -R "$local_user":"$local_user" "$manual_install_dir"/hashcat && \
-ln -s "$manual_install_dir"/hashcat/hashcat-"$hashcat_version"/hashcat.bin "$my_bin_path"/hashcat; \
-rm -rf "$tmp_dir""
+  $WGET -P "$tmp_dir" https://github.com/hashcat/hashcat/releases/download/v"$hashcat_version"/hashcat-"$hashcat_version".7z && \
+  reset_dir ""$manual_install_dir"/hashcat/" && \
+  7z x "$tmp_dir"/hashcat-"$hashcat_version".7z -o"$manual_install_dir"/hashcat && \
+  chown -R "$local_user":"$local_user" "$manual_install_dir"/hashcat && \
+  ln -s "$manual_install_dir"/hashcat/hashcat-"$hashcat_version"/hashcat.bin "$my_bin_path"/hashcat; \
+  rm -rf "$tmp_dir""
 # hashcat a besoin d'être capable d'écrire dans son répertoire, il faut donc soit associer le répertoire à l'utilisateur soit le lancer en sudo
 }
 ################################################################################
@@ -1958,11 +1973,11 @@ rm -rf "$tmp_dir""
 ##------------------------------------------------------------------------------
 install_sshuttle() {
   displayandexec "Installation de sshuttle                            " "\
-pip3 install sshuttle"
+  pip3 install sshuttle"
 }
 install_sshuttle_bookworm() {
   displayandexec "Installation de sshuttle                            " "\
-pipx install sshuttle"
+  pipx install sshuttle"
 }
 # ref : [sshuttle · PyPI](https://pypi.org/project/sshuttle/)
 # on l'install pour l'utilisateur root car sshuttle sera executer en sudo
@@ -1973,7 +1988,7 @@ pipx install sshuttle"
 ##------------------------------------------------------------------------------
 install_weasyprint() {
   displayandexec "Installation de weasyprint                          " "\
-$ExeAsUser pipx install weasyprint"
+  $ExeAsUser pipx install weasyprint"
 }
 ################################################################################
 
@@ -1982,10 +1997,11 @@ $ExeAsUser pipx install weasyprint"
 ##------------------------------------------------------------------------------
 install_geeqie() {
   displayandexec "Installation de Geeqie                              " "\
-reset_dir ""$manual_install_dir"/Geeqie/" && \
-$WGET -P "$manual_install_dir"/Geeqie/ https://github.com/BestImageViewer/geeqie/releases/download/v"$geeqie_version"/Geeqie-v"$geeqie_version"-x86_64.AppImage && \
-$WGET -P "$manual_install_dir"/Geeqie/ 'https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/geeqie.svg' && \
-chmod +x "$manual_install_dir"/Geeqie/Geeqie-v"$geeqie_version"-x86_64.AppImage"
+  reset_dir ""$manual_install_dir"/Geeqie/" && \
+  $WGET -P "$manual_install_dir"/Geeqie/ https://github.com/BestImageViewer/geeqie/releases/download/continuous/Geeqie-latest-x86_64.AppImage
+ && \
+  $WGET -P "$manual_install_dir"/Geeqie/ 'https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/geeqie.svg' && \
+  chmod +x "$manual_install_dir"/Geeqie/Geeqie-latest-x86_64.AppImage"
   cat> /usr/share/applications/geeqie.desktop << EOF
 [Desktop Entry]
 Name=Geeqie
@@ -1993,7 +2009,7 @@ GenericName=Image Viewer
 GenericName[fr]=Visualisateur d'images
 Comment=View and manage images
 Comment[fr]=Voir et gérer des images
-Exec=$manual_install_dir/Geeqie/Geeqie-v$geeqie_version-x86_64.AppImage
+Exec=$manual_install_dir/Geeqie/Geeqie-latest-x86_64.AppImage
 Icon=$manual_install_dir/Geeqie/geeqie.svg
 Type=Application
 Terminal=false
@@ -2006,6 +2022,14 @@ MimeType=application/x-navi-animation;image/bmp;image/x-bmp;image/x-MS-bmp;image
 EOF
 }
 # le contenu du .desktop est basé sur celui-ci : https://github.com/geeqie/geeqie.github.io/blob/master/geeqie.desktop
+
+# à noter que maintenant les AppImages sont générées automatiquement par la CI/CD Github dans "Continuous build" : [Release Continuous build · BestImageViewer/geeqie](https://github.com/BestImageViewer/geeqie/releases/tag/continuous)
+# à priori, il ne semble plus exister de AppImage pour une version spécifiquement, mais uniquement des AppImages créées automatiquement suite à un merge request du code source : [Where can I download a Geeqie Appimage 2.4 for Xubuntu · Issue #1404 · BestImageViewer/geeqie](https://github.com/BestImageViewer/geeqie/issues/1404#issuecomment-2183912638)
+# le code à utiliser si jamais ils décident de revenir à une AppImage par release :
+# $WGET -P "$manual_install_dir"/Geeqie/ https://github.com/BestImageViewer/geeqie/releases/download/v"$geeqie_version"/Geeqie-v"$geeqie_version"-x86_64.AppImage && \
+# chmod +x "$manual_install_dir"/Geeqie/Geeqie-v"$geeqie_version"-x86_64.AppImage"
+
+# Exec=$manual_install_dir/Geeqie/Geeqie-v$geeqie_version-x86_64.AppImage
 ################################################################################
 
 ################################################################################
@@ -2017,10 +2041,10 @@ deb [arch=amd64 signed-by=/usr/share/keyrings/timeshift-archive-keyring.gpg] htt
 #deb-src http://ppa.launchpad.net/teejee2008/timeshift/ubuntu hirsute main
 EOF
   displayandexec "Installation de timeshift                           " "\
-is_file_present_and_rmfile "/usr/share/keyrings/timeshift-archive-keyring.gpg" && \
-$WGET --output-document - 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x1B32B87ABAEE357218F6B48CB5B116B72D0F61F0' | gpg --dearmor --output /usr/share/keyrings/timeshift-archive-keyring.gpg && \
-$AG update && \
-$AGI timeshift"
+  is_file_present_and_rmfile "/usr/share/keyrings/timeshift-archive-keyring.gpg" && \
+  $WGET --output-document - 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x1B32B87ABAEE357218F6B48CB5B116B72D0F61F0' | gpg --dearmor --output /usr/share/keyrings/timeshift-archive-keyring.gpg && \
+  $AG update && \
+  $AGI timeshift"
 }
 install_timeshift_bookworm() {
   cat> /etc/apt/sources.list.d/timeshift.list << 'EOF'
@@ -2028,10 +2052,10 @@ deb [arch=amd64 signed-by=/usr/share/keyrings/timeshift-archive-keyring.gpg] htt
 #deb-src http://ppa.launchpad.net/teejee2008/timeshift/ubuntu kinetic main
 EOF
   displayandexec "Installation de timeshift                           " "\
-is_file_present_and_rmfile "/usr/share/keyrings/timeshift-archive-keyring.gpg" && \
-$WGET --output-document - 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x1B32B87ABAEE357218F6B48CB5B116B72D0F61F0' | gpg --dearmor --output /usr/share/keyrings/timeshift-archive-keyring.gpg && \
-$AG update && \
-$AGI timeshift"
+  is_file_present_and_rmfile "/usr/share/keyrings/timeshift-archive-keyring.gpg" && \
+  $WGET --output-document - 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x1B32B87ABAEE357218F6B48CB5B116B72D0F61F0' | gpg --dearmor --output /usr/share/keyrings/timeshift-archive-keyring.gpg && \
+  $AG update && \
+  $AGI timeshift"
 }
 # to get the GPG Key version : https://keyserver.ubuntu.com/pks/lookup?fingerprint=on&op=index&search=0x1B32B87ABAEE357218F6B48CB5B116B72D0F61F0
 # https://launchpad.net/~teejee2008/+archive/ubuntu/timeshift
@@ -2045,10 +2069,10 @@ install_vscode() {
 deb [arch=amd64 signed-by=/usr/share/keyrings/vscode-archive-keyring.gpg] https://packages.microsoft.com/repos/code stable main
 EOF
   displayandexec "Installation de vscode                              " "\
-is_file_present_and_rmfile "/usr/share/keyrings/vscode-archive-keyring.gpg" && \
-$CURL 'https://packages.microsoft.com/keys/microsoft.asc' | gpg --dearmor --output /usr/share/keyrings/vscode-archive-keyring.gpg && \
-$AG update && \
-$AGI code"
+  is_file_present_and_rmfile "/usr/share/keyrings/vscode-archive-keyring.gpg" && \
+  $CURL 'https://packages.microsoft.com/keys/microsoft.asc' | gpg --dearmor --output /usr/share/keyrings/vscode-archive-keyring.gpg && \
+  $AG update && \
+  $AGI code"
 }
 ################################################################################
 
@@ -2060,10 +2084,10 @@ install_brave() {
 deb [arch=amd64 signed-by=/usr/share/keyrings/brave-archive-keyring.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main
 EOF
   displayandexec "Installation de brave                               " "\
-is_file_present_and_rmfile "/usr/share/keyrings/brave-archive-keyring.gpg" && \
-$WGET --output-document - 'https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg' | gpg --dearmor --output /usr/share/keyrings/brave-archive-keyring.gpg && \
-$AG update && \
-$AGI brave-browser"
+  is_file_present_and_rmfile "/usr/share/keyrings/brave-archive-keyring.gpg" && \
+  $WGET --output-document - 'https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg' | gpg --dearmor --output /usr/share/keyrings/brave-archive-keyring.gpg && \
+  $AG update && \
+  $AGI brave-browser"
 }
 # La conf de Brave est dans /home/$USER/.config/BraveSoftware/Brave-Browser/Default
 ################################################################################
@@ -2078,11 +2102,11 @@ install_ventoy() {
 sudo $manual_install_dir/ventoy/ventoy-$ventoy_version/VentoyGUI.x86_64
 EOF
   displayandexec "Installation de ventoy                              " "\
-$WGET -P "$tmp_dir" https://github.com/ventoy/Ventoy/releases/download/v"$ventoy_version"/ventoy-"$ventoy_version"-linux.tar.gz && \
-reset_dir ""$manual_install_dir"/ventoy/" && \
-tar --directory "$manual_install_dir"/ventoy -xzf "$tmp_dir"/ventoy-"$ventoy_version"-linux.tar.gz && \
-chmod +x "$my_bin_path"/ventoy; \
-rm -rf "$tmp_dir""
+  $WGET -P "$tmp_dir" https://github.com/ventoy/Ventoy/releases/download/v"$ventoy_version"/ventoy-"$ventoy_version"-linux.tar.gz && \
+  reset_dir ""$manual_install_dir"/ventoy/" && \
+  tar --directory "$manual_install_dir"/ventoy -xzf "$tmp_dir"/ventoy-"$ventoy_version"-linux.tar.gz && \
+  chmod +x "$my_bin_path"/ventoy; \
+  rm -rf "$tmp_dir""
 }
 ################################################################################
 
@@ -2131,7 +2155,7 @@ install_all_manual_install_apps_bullseye() {
   install_stacer
   install_asbru
   install_bat
-  install_youtubedl
+  # install_youtubedl
   install_yt-dlp
   install_joplin
   install_krita
@@ -2156,7 +2180,7 @@ install_all_manual_install_apps_bookworm() {
   install_drawio
   # install_boostnote
   install_typora
-  # install_virtualbox_bookworm
+  install_virtualbox_bookworm
   install_keepassxc
   install_mkvtoolnix_bookworm
   install_etcher
@@ -2165,7 +2189,7 @@ install_all_manual_install_apps_bookworm() {
   install_stacer
   install_asbru
   install_bat
-  install_youtubedl
+  # install_youtubedl
   install_yt-dlp
   install_joplin
   install_krita
@@ -2268,57 +2292,60 @@ displayandexec "Désinstalation de Gnome Parental Control            " "$AG remo
 # should restart gdm with Alt+F2+r
 
 install_GSE_bullseye() {
-#Screenshot Tool
-install_GSE_screenshot_tool() {
-  local tmp_dir="$(mktemp -d)"
-  local GnomeShellExtensionUUID='gnome-shell-screenshot@ttll.de' && \
-  local GnomeShellExtensionVersion='56' && \
-  execandlog "reset_dir_as_user "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
-  $WGET -P "$tmp_dir" "https://extensions.gnome.org/extension-data/gnome-shell-screenshotttll.de.v"$GnomeShellExtensionVersion".shell-extension.zip" && \
-  unzip -q "$tmp_dir"/gnome-shell-screenshotttll.de.v"$GnomeShellExtensionVersion".shell-extension.zip -d "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
-  chown -R "$local_user":"$local_user" "$gnome_shell_extension_path"; \
-  rm -rf "$tmp_dir""
-}
-# to check the latest version : https://extensions.gnome.org/extension/1112/screenshot-tool/
-# https://github.com/OttoAllmendinger/gnome-shell-screenshot/
+  #Screenshot Tool
+  install_GSE_screenshot_tool() {
+    local tmp_dir="$(mktemp -d)"
+    local GnomeShellExtensionUUID='gnome-shell-screenshot@ttll.de' && \
+    local GnomeShellExtensionVersion='56' && \
+    execandlog "reset_dir_as_user "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
+    $WGET -P "$tmp_dir" "https://extensions.gnome.org/extension-data/gnome-shell-screenshotttll.de.v"$GnomeShellExtensionVersion".shell-extension.zip" && \
+    unzip -q "$tmp_dir"/gnome-shell-screenshotttll.de.v"$GnomeShellExtensionVersion".shell-extension.zip -d "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
+    chown -R "$local_user":"$local_user" "$gnome_shell_extension_path"; \
+    rm -rf "$tmp_dir""
+  }
+  # to check the latest version : https://extensions.gnome.org/extension/1112/screenshot-tool/
+  # https://github.com/OttoAllmendinger/gnome-shell-screenshot/
 
-#system-monitor
-install_GSE_system_monitor() {
-  execandlog "$AGI gnome-shell-extension-system-monitor"
-  execandlog "$ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/memory-style \"'\''digit'\''\""
-  # on configure avec la commande ci-dessus l'affichage de la métrique de la RAM sous forme de pourcentage plustôt que de graph
-  execandlog "$ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/gpu-show-menu \"true\""
-  # on active la vue de l'utilisation du GPU dans le menu
-  execandlog "$ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/disk-usage-style \"\\'bar\\'\""
-  # on chosie l'option de l'affichage de l'utilisation des disk par des barres horizontales à la place du graph en demi cercle
-}
+  #system-monitor
+  install_GSE_system_monitor() {
+    execandlog "$AGI gnome-shell-extension-system-monitor"
+    hte_dconf_system_monitor_memory_style="'digit'"
+    execandlog "$ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/memory-style "$hte_dconf_system_monitor_memory_style""
+    # on configure avec la commande ci-dessus l'affichage de la métrique de la RAM sous forme de pourcentage plustôt que de graph
+    hte_dconf_system_monitor_gpu_show_menu='"true"'
+    execandlog "$ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/gpu-show-menu "$hte_dconf_system_monitor_gpu_show_menu""
+    # on active la vue de l'utilisation du GPU dans le menu
+    hte_dconf_system_monitor_disk_usage_style="'bar'"
+    execandlog "$ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/disk-usage-style "$hte_dconf_system_monitor_disk_usage_style""
+    # on chosie l'option de l'affichage de l'utilisation des disk par des barres horizontales à la place du graph en demi cercle
+  }
 
-#Sound Input & Output Device Chooser
-install_GSE_sound_output_device_chooser() {
-  local tmp_dir="$(mktemp -d)"
-  local GnomeShellExtensionUUID='sound-output-device-chooser@kgshank.net' && \
-  local GnomeShellExtensionVersion='40' && \
-  execandlog "reset_dir_as_user "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
-  $WGET -P "$tmp_dir" "https://extensions.gnome.org/extension-data/sound-output-device-chooserkgshank.net.v"$GnomeShellExtensionVersion".shell-extension.zip" && \
-  unzip -q "$tmp_dir"/sound-output-device-chooserkgshank.net.v"$GnomeShellExtensionVersion".shell-extension.zip -d "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
-  chown -R "$local_user":"$local_user" "$gnome_shell_extension_path"; \
-  rm -rf "$tmp_dir""
-}
-# to check the latest version : https://extensions.gnome.org/extension/906/sound-output-device-chooser/
-# https://github.com/kgshank/gse-sound-output-device-chooser
+  #Sound Input & Output Device Chooser
+  install_GSE_sound_output_device_chooser() {
+    local tmp_dir="$(mktemp -d)"
+    local GnomeShellExtensionUUID='sound-output-device-chooser@kgshank.net' && \
+    local GnomeShellExtensionVersion='40' && \
+    execandlog "reset_dir_as_user "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
+    $WGET -P "$tmp_dir" "https://extensions.gnome.org/extension-data/sound-output-device-chooserkgshank.net.v"$GnomeShellExtensionVersion".shell-extension.zip" && \
+    unzip -q "$tmp_dir"/sound-output-device-chooserkgshank.net.v"$GnomeShellExtensionVersion".shell-extension.zip -d "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
+    chown -R "$local_user":"$local_user" "$gnome_shell_extension_path"; \
+    rm -rf "$tmp_dir""
+  }
+  # to check the latest version : https://extensions.gnome.org/extension/906/sound-output-device-chooser/
+  # https://github.com/kgshank/gse-sound-output-device-chooser
 
-enable_GSE() {
-  $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")' &> /dev/null && \
-  $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'gnome-shell-screenshot@ttll.de'
-  $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'system-monitor@paradoxxx.zero.gmail.com'
-  $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'sound-output-device-chooser@kgshank.net'
-}
+  enable_GSE() {
+    $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")' &> /dev/null && \
+    $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'gnome-shell-screenshot@ttll.de'
+    $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'system-monitor@paradoxxx.zero.gmail.com'
+    $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'sound-output-device-chooser@kgshank.net'
+  }
 
-check_for_enable_GSE() {
-if [ -z "$script_is_launch_with_gnome_terminal" ]; then
- 	enable_GSE
-else
-  cat> /tmp/reload_GnomeShell.sh << 'EOF'
+  check_for_enable_GSE() {
+  if [ -z "$script_is_launch_with_gnome_terminal" ]; then
+    enable_GSE
+  else
+    cat> /tmp/reload_GnomeShell.sh << 'EOF'
 #!/bin/bash
 
 local_user="$(awk -F':' '/:1000:/{print $1}' /etc/passwd)"
@@ -2327,9 +2354,9 @@ ExeAsUser="sudo -u "$local_user""
 
 $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")' &> /dev/null
 EOF
-  chmod +x /tmp/reload_GnomeShell.sh && \
-  chown "$local_user":"$local_user" /tmp/reload_GnomeShell.sh
-  cat> /tmp/enable_GSE.sh << 'EOF'
+    chmod +x /tmp/reload_GnomeShell.sh && \
+    chown "$local_user":"$local_user" /tmp/reload_GnomeShell.sh
+    cat> /tmp/enable_GSE.sh << 'EOF'
 #!/bin/bash
 
 local_user="$(awk -F':' '/:1000:/{print $1}' /etc/passwd)"
@@ -2340,74 +2367,77 @@ $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" 
 $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'system-monitor@paradoxxx.zero.gmail.com'
 $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'sound-output-device-chooser@kgshank.net'
 EOF
-  chmod +x /tmp/enable_GSE.sh && \
-  chown "$local_user":"$local_user" /tmp/enable_GSE.sh
-fi
-}
+    chmod +x /tmp/enable_GSE.sh && \
+    chown "$local_user":"$local_user" /tmp/enable_GSE.sh
+  fi
+  }
 
-install_GSE_screenshot_tool
-install_GSE_system_monitor
-install_GSE_sound_output_device_chooser
-check_for_enable_GSE
+  install_GSE_screenshot_tool
+  install_GSE_system_monitor
+  install_GSE_sound_output_device_chooser
+  check_for_enable_GSE
 
-displayandexec "Installation des Gnome Shell Extension              " "\
-stat "$gnome_shell_extension_path"/gnome-shell-screenshot@ttll.de/metadata.json && \
-stat "$gnome_shell_extension_path"/sound-output-device-chooser@kgshank.net/metadata.json && \
-stat /usr/share/gnome-shell/extensions/system-monitor@paradoxxx.zero.gmail.com/metadata.json"
+  displayandexec "Installation des Gnome Shell Extension              " "\
+  stat "$gnome_shell_extension_path"/gnome-shell-screenshot@ttll.de/metadata.json && \
+  stat "$gnome_shell_extension_path"/sound-output-device-chooser@kgshank.net/metadata.json && \
+  stat /usr/share/gnome-shell/extensions/system-monitor@paradoxxx.zero.gmail.com/metadata.json"
 }
 
 install_GSE_bookworm() {
-#Screenshot Tool
-install_GSE_screenshot_tool() {
-  local tmp_dir="$(mktemp -d)"
-  local GnomeShellExtensionUUID='gnome-shell-screenshot@ttll.de' && \
-  local GnomeShellExtensionVersion='70' && \
-  execandlog "reset_dir_as_user "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
-  $WGET -P "$tmp_dir" "https://extensions.gnome.org/extension-data/gnome-shell-screenshotttll.de.v"$GnomeShellExtensionVersion".shell-extension.zip" && \
-  unzip -q "$tmp_dir"/gnome-shell-screenshotttll.de.v"$GnomeShellExtensionVersion".shell-extension.zip -d "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
-  chown -R "$local_user":"$local_user" "$gnome_shell_extension_path"; \
-  rm -rf "$tmp_dir""
-}
-# to check the latest version : https://extensions.gnome.org/extension/1112/screenshot-tool/
-# https://github.com/OttoAllmendinger/gnome-shell-screenshot/
+  #Screenshot Tool
+  install_GSE_screenshot_tool() {
+    local tmp_dir="$(mktemp -d)"
+    local GnomeShellExtensionUUID='gnome-shell-screenshot@ttll.de' && \
+    local GnomeShellExtensionVersion='70' && \
+    execandlog "reset_dir_as_user "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
+    $WGET -P "$tmp_dir" "https://extensions.gnome.org/extension-data/gnome-shell-screenshotttll.de.v"$GnomeShellExtensionVersion".shell-extension.zip" && \
+    unzip -q "$tmp_dir"/gnome-shell-screenshotttll.de.v"$GnomeShellExtensionVersion".shell-extension.zip -d "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
+    chown -R "$local_user":"$local_user" "$gnome_shell_extension_path"; \
+    rm -rf "$tmp_dir""
+  }
+  # to check the latest version : https://extensions.gnome.org/extension/1112/screenshot-tool/
+  # https://github.com/OttoAllmendinger/gnome-shell-screenshot/
 
-#system-monitor
-install_GSE_system_monitor() {
-  execandlog "$AGI gnome-shell-extension-system-monitor"
-  execandlog "$ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/memory-style \"'\''digit'\''\""
-  # on configure avec la commande ci-dessus l'affichage de la métrique de la RAM sous forme de pourcentage plustôt que de graph
-  execandlog "$ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/gpu-show-menu \"true\""
-  # on active la vue de l'utilisation du GPU dans le menu
-  execandlog "$ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/disk-usage-style \"\\'bar\\'\""
-  # on chosie l'option de l'affichage de l'utilisation des disk par des barres horizontales à la place du graph en demi cercle
-}
+  #system-monitor
+  install_GSE_system_monitor() {
+    execandlog "$AGI gnome-shell-extension-system-monitor"
+    hte_dconf_system_monitor_memory_style="'digit'"
+    execandlog "$ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/memory-style "$hte_dconf_system_monitor_memory_style""
+    # on configure avec la commande ci-dessus l'affichage de la métrique de la RAM sous forme de pourcentage plustôt que de graph
+    hte_dconf_system_monitor_gpu_show_menu='"true"'
+    execandlog "$ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/gpu-show-menu "$hte_dconf_system_monitor_gpu_show_menu""
+    # on active la vue de l'utilisation du GPU dans le menu
+    hte_dconf_system_monitor_disk_usage_style="'bar'"
+    execandlog "$ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/disk-usage-style "$hte_dconf_system_monitor_disk_usage_style""
+    # on chosie l'option de l'affichage de l'utilisation des disk par des barres horizontales à la place du graph en demi cercle
+  }
 
-#Sound Input & Output Device Chooser
-install_GSE_sound_output_device_chooser() {
-  local tmp_dir="$(mktemp -d)"
-  local GnomeShellExtensionUUID='sound-output-device-chooser@kgshank.net' && \
-  local GnomeShellExtensionVersion='43' && \
-  execandlog "reset_dir_as_user "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
-  $WGET -P "$tmp_dir" "https://extensions.gnome.org/extension-data/sound-output-device-chooserkgshank.net.v"$GnomeShellExtensionVersion".shell-extension.zip" && \
-  unzip -q "$tmp_dir"/sound-output-device-chooserkgshank.net.v"$GnomeShellExtensionVersion".shell-extension.zip -d "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
-  chown -R "$local_user":"$local_user" "$gnome_shell_extension_path"
-  rm -rf "$tmp_dir""
-}
-# to check the latest version : https://extensions.gnome.org/extension/906/sound-output-device-chooser/
-# https://github.com/kgshank/gse-sound-output-device-chooser
+  #Sound Input & Output Device Chooser
+  install_GSE_sound_output_device_chooser() {
+    local tmp_dir="$(mktemp -d)"
+    local GnomeShellExtensionUUID='sound-output-device-chooser@kgshank.net' && \
+    local GnomeShellExtensionVersion='43' && \
+    execandlog "reset_dir_as_user "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
+    $WGET -P "$tmp_dir" "https://extensions.gnome.org/extension-data/sound-output-device-chooserkgshank.net.v"$GnomeShellExtensionVersion".shell-extension.zip" && \
+    unzip -q "$tmp_dir"/sound-output-device-chooserkgshank.net.v"$GnomeShellExtensionVersion".shell-extension.zip -d "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
+    chown -R "$local_user":"$local_user" "$gnome_shell_extension_path"
+    rm -rf "$tmp_dir""
+  }
+  # to check the latest version : https://extensions.gnome.org/extension/906/sound-output-device-chooser/
+  # https://github.com/kgshank/gse-sound-output-device-chooser
 
-enable_GSE() {
-  $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")' &> /dev/null && \
-  $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'gnome-shell-screenshot@ttll.de'
-  $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'system-monitor@paradoxxx.zero.gmail.com'
-  $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'sound-output-device-chooser@kgshank.net'
-}
+  enable_GSE() {
+    $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")' &> /dev/null && \
+    $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'gnome-shell-screenshot@ttll.de'
+    $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'system-monitor@paradoxxx.zero.gmail.com'
+    $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'sound-output-device-chooser@kgshank.net'
+  }
 
-check_for_enable_GSE() {
-if [ -z "$script_is_launch_with_gnome_terminal" ]; then
- 	enable_GSE
-else
-  cat> /tmp/reload_GnomeShell.sh << 'EOF'
+  check_for_enable_GSE() {
+  if [ -z "$script_is_launch_with_gnome_terminal" ]; then
+    enable_GSE
+  else
+    cat> /tmp/reload_GnomeShell.sh << 'EOF'
 #!/bin/bash
 
 local_user="$(awk -F':' '/:1000:/{print $1}' /etc/passwd)"
@@ -2416,9 +2446,9 @@ ExeAsUser="sudo -u "$local_user""
 
 $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")' &> /dev/null
 EOF
-  chmod +x /tmp/reload_GnomeShell.sh && \
-  chown "$local_user":"$local_user" /tmp/reload_GnomeShell.sh
-  cat> /tmp/enable_GSE.sh << 'EOF'
+    chmod +x /tmp/reload_GnomeShell.sh && \
+    chown "$local_user":"$local_user" /tmp/reload_GnomeShell.sh
+    cat> /tmp/enable_GSE.sh << 'EOF'
 #!/bin/bash
 
 local_user="$(awk -F':' '/:1000:/{print $1}' /etc/passwd)"
@@ -2429,22 +2459,22 @@ $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" 
 $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'system-monitor@paradoxxx.zero.gmail.com'
 $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'sound-output-device-chooser@kgshank.net'
 EOF
-  chmod +x /tmp/enable_GSE.sh && \
-  chown "$local_user":"$local_user" /tmp/enable_GSE.sh
-fi
-}
+    chmod +x /tmp/enable_GSE.sh && \
+    chown "$local_user":"$local_user" /tmp/enable_GSE.sh
+  fi
+  }
 
-install_GSE_screenshot_tool
-install_GSE_system_monitor
-install_GSE_sound_output_device_chooser
-if [ "$bookworm" != 1 ]; then
-  check_for_enable_GSE
-fi
+  install_GSE_screenshot_tool
+  install_GSE_system_monitor
+  install_GSE_sound_output_device_chooser
+  if [ "$bookworm" != 1 ]; then
+    check_for_enable_GSE
+  fi
 
-displayandexec "Installation des Gnome Shell Extension              " "\
-stat "$gnome_shell_extension_path"/gnome-shell-screenshot@ttll.de/metadata.json && \
-stat "$gnome_shell_extension_path"/sound-output-device-chooser@kgshank.net/metadata.json && \
-stat /usr/share/gnome-shell/extensions/system-monitor@paradoxxx.zero.gmail.com/metadata.json"
+  displayandexec "Installation des Gnome Shell Extension              " "\
+  stat "$gnome_shell_extension_path"/gnome-shell-screenshot@ttll.de/metadata.json && \
+  stat "$gnome_shell_extension_path"/sound-output-device-chooser@kgshank.net/metadata.json && \
+  stat /usr/share/gnome-shell/extensions/system-monitor@paradoxxx.zero.gmail.com/metadata.json"
 }
 # il est nécessaire de recharger Gnome Shell avant de pouvoit faire un gnome-extensions enable
 # la commande suivante permet de recharger Gnome Shell :
@@ -2532,7 +2562,7 @@ done
 exit 0
 EOF
   displayandexec "Installation du script gitupdate                    " "\
-chmod +x "$my_bin_path"/gitupdate"
+  chmod +x "$my_bin_path"/gitupdate"
 }
 # probablement améliorer le script gitupdate avec une condition if quand la branche principal n'est pas origin master
 ################################################################################
@@ -2542,9 +2572,9 @@ chmod +x "$my_bin_path"/gitupdate"
 ##------------------------------------------------------------------------------
 install_sysupdate() {
   displayandexec "Installation du script sysupdate                    " "\
-is_file_present_and_rmfile ""$my_bin_path"/sysupdate" && \
-cp "$script_path"/sysupdate "$my_bin_path"/sysupdate && \
-chmod +x "$my_bin_path"/sysupdate"
+  is_file_present_and_rmfile ""$my_bin_path"/sysupdate" && \
+  cp "$script_path"/sysupdate "$my_bin_path"/sysupdate && \
+  chmod +x "$my_bin_path"/sysupdate"
 }
 ################################################################################
 
@@ -2568,7 +2598,7 @@ done <<< "$list_backport"
 exit 0
 EOF
   displayandexec "Installation du script check_backport_update        " "\
-chmod +x "$my_bin_path"/check_backport_update"
+  chmod +x "$my_bin_path"/check_backport_update"
 }
 ################################################################################
 
@@ -2588,7 +2618,7 @@ xhost -SI:localuser:root
 xhost
 EOF
   displayandexec "Installation du script wsudo                        " "\
-chmod +x "$my_bin_path"/wsudo"
+  chmod +x "$my_bin_path"/wsudo"
 }
 ################################################################################
 
@@ -2600,7 +2630,7 @@ install_launch_url_file() {
 chromium "$(tail -n 1 "$@" | cut -c 5-)"
 EOF
   displayandexec "Installation du script launch_url_file              " "\
-chmod +x "$my_bin_path"/launch_url_file"
+  chmod +x "$my_bin_path"/launch_url_file"
   cat> /usr/share/applications/launch_url_file.desktop << 'EOF'
 [Desktop Entry]
 Type=Application
@@ -2622,7 +2652,7 @@ install_scanmyhome() {
 clamscan --recursive --infected /home/
 EOF
   displayandexec "Installation du script scanmyhome                   " "\
-chmod +x "$my_bin_path"/scanmyhome"
+  chmod +x "$my_bin_path"/scanmyhome"
 }
 ################################################################################
 
@@ -2641,7 +2671,7 @@ sudo chkrootkit -q
 echo "--------------------------------------------------------------------------------"
 EOF
   displayandexec "Installation du script rktscan                      " "\
-chmod +x "$my_bin_path"/rktscan"
+  chmod +x "$my_bin_path"/rktscan"
 }
 ################################################################################
 
@@ -2653,7 +2683,7 @@ install_spyme() {
 sudo bash -c "journalctl --all --follow --lines=10000 _TRANSPORT=syslog + _TRANSPORT=kernel + _TRANSPORT=journal + _TRANSPORT=stdout | lnav"
 EOF
   displayandexec "Installation du script spyme                        " "\
-chmod +x "$my_bin_path"/spyme"
+  chmod +x "$my_bin_path"/spyme"
 }
 ################################################################################
 
@@ -2699,7 +2729,7 @@ fi
 exit $?
 EOF
   displayandexec "Installation du script check_domain_creation_date   " "\
-chmod +x "$my_bin_path"/check_domain_creation_date"
+  chmod +x "$my_bin_path"/check_domain_creation_date"
 }
 ################################################################################
 
@@ -2717,7 +2747,7 @@ bluetoothctl trust BB:BB:BB:BB:BB:BB > /dev/null
 bluetoothctl connect BB:BB:BB:BB:BB:BB > /dev/null
 EOF
   displayandexec "Installation du script appairmebt                   " "\
-chmod +x "$my_bin_path"/appairmebt"
+  chmod +x "$my_bin_path"/appairmebt"
 }
 # script permettant de démarrer le bluetooth et d’appairer automatiquement avec le périphérique qu'on souhaite
 #
@@ -2787,7 +2817,7 @@ install_desactivebt() {
 gdbus call --session --dest org.gnome.SettingsDaemon.Rfkill --object-path /org/gnome/SettingsDaemon/Rfkill --method org.freedesktop.DBus.Properties.Set "org.gnome.SettingsDaemon.Rfkill" "BluetoothAirplaneMode" "<true>" > /dev/null
 EOF
   displayandexec "Installation du script desactivebt                  " "\
-chmod +x "$my_bin_path"/desactivebt"
+  chmod +x "$my_bin_path"/desactivebt"
 }
 ################################################################################
 
@@ -2802,7 +2832,7 @@ dbus_dest_org="$(dbus-send --session --dest=org.freedesktop.DBus --type=method_c
 dbus-send --print-reply --dest="$dbus_dest_org" /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player.PlayPause > /dev/null
 EOF
   displayandexec "Installation du script play_pause_chromium          " "\
-chmod +x "$my_bin_path"/play_pause_chromium"
+  chmod +x "$my_bin_path"/play_pause_chromium"
 }
 ################################################################################
 
@@ -2836,7 +2866,7 @@ else
 fi
 EOF
   displayandexec "Installation du script decomp                       " "\
-chmod +x "$my_bin_path"/decomp"
+  chmod +x "$my_bin_path"/decomp"
 }
 ################################################################################
 
@@ -2855,7 +2885,7 @@ until ssh -o ConnectTimeout=2 -p "$ssh_port" "$ssh_target" 2>/dev/null; do
 done
 EOF
   displayandexec "Installation du script waitforssh                   " "\
-chmod +x "$my_bin_path"/waitforssh"
+  chmod +x "$my_bin_path"/waitforssh"
 }
 ################################################################################
 
@@ -2903,8 +2933,8 @@ fi
 # on change le port par défaut
 configure_ssh() {
   displayandexec "Configuration de ssh                                " "\
-sed -i -E 's/^(#)?Port [[:digit:]]+/Port '"$SSH_Port"'/' /etc/ssh/sshd_config && \
-sed -i -E 's/^(#)?PermitRootLogin (yes|no|without-password|prohibit-password)/PermitRootLogin no/' /etc/ssh/sshd_config"
+  sed -i -E 's/^(#)?Port [[:digit:]]+/Port '"$SSH_Port"'/' /etc/ssh/sshd_config && \
+  sed -i -E 's/^(#)?PermitRootLogin (yes|no|without-password|prohibit-password)/PermitRootLogin no/' /etc/ssh/sshd_config"
   cat>> /etc/ssh/sshd_config << EOF
 
 # "Disables all forwarding features, including X11, ssh-agent(1), TCP and StreamLocal. This option overrides all other forwarding-related options and may simplify restricted configurations."
@@ -2935,7 +2965,7 @@ configure_ssh
 # on le créer dans /home/"$local_user"/.mnt/sshfs/ car cela permet de lire et écrire sans élévation de privilège lors de l'execution de la session SSHFS
 configure_sshfs() {
   displayandexec "Configuration de sshfs                              " "\
-is_dir_present_or_mkdir_as_user "/home/"$local_user"/.mnt/sshfs/""
+  is_dir_present_or_mkdir_as_user "/home/"$local_user"/.mnt/sshfs/""
 }
 configure_sshfs
 ################################################################################
@@ -2974,8 +3004,8 @@ fi
 # par défaut elle est à 4 (debian bullseye)
 configure_logrotate() {
   displayandexec "Configuration de logrotate                          " "\
-sed -E -i 's/^# keep [[:digit:]]+ weeks worth of backlogs/# keep 8 weeks worth of backlogs/' /etc/logrotate.conf && \
-sed -E -i 's/^rotate [[:digit:]]+/rotate 8/' /etc/logrotate.conf"
+  sed -E -i 's/^# keep [[:digit:]]+ weeks worth of backlogs/# keep 8 weeks worth of backlogs/' /etc/logrotate.conf && \
+  sed -E -i 's/^rotate [[:digit:]]+/rotate 8/' /etc/logrotate.conf"
 }
 configure_logrotate
 ################################################################################
@@ -2985,10 +3015,10 @@ configure_logrotate
 ##------------------------------------------------------------------------------
 configure_auditd_rules() {
   displayandexec "Configuration des règles auditd                     " "\
-is_file_present_and_rmfile "/etc/audit/rules.d/audit.rules" && \
-cp "$script_path"/audit.rules /etc/audit/rules.d/audit.rules && \
-augenrules --check && \
-systemctl restart auditd"
+  is_file_present_and_rmfile "/etc/audit/rules.d/audit.rules" && \
+  cp "$script_path"/audit.rules /etc/audit/rules.d/audit.rules && \
+  augenrules --check && \
+  systemctl restart auditd"
 }
 configure_auditd_rules
 # rules mostly based on https://github.com/Neo23x0/auditd/blob/master/audit.rules
@@ -3000,10 +3030,10 @@ configure_auditd_rules
 ##------------------------------------------------------------------------------
 configure_auditd() {
   displayandexec "Configuration de auditd                             " "\
-sed -E -i 's/^space_left = [[:digit:]]+/space_left = 20%/' /etc/audit/auditd.conf && \
-sed -E -i 's/^max_log_file = [[:digit:]]+/max_log_file = 10/' /etc/audit/auditd.conf && \
-sed -E -i 's/^num_logs = [[:digit:]]+/num_logs = 50/' /etc/audit/auditd.conf && \
-systemctl restart auditd"
+  sed -E -i 's/^space_left = [[:digit:]]+/space_left = 20%/' /etc/audit/auditd.conf && \
+  sed -E -i 's/^max_log_file = [[:digit:]]+/max_log_file = 10/' /etc/audit/auditd.conf && \
+  sed -E -i 's/^num_logs = [[:digit:]]+/num_logs = 50/' /etc/audit/auditd.conf && \
+  systemctl restart auditd"
 }
 configure_auditd
 # ref : [7.3. Configuring the audit Service Red Hat Enterprise Linux 7 | Red Hat Customer Portal](https://access.redhat.com/documentation/fr-fr/red_hat_enterprise_linux/7/html/security_guide/sec-configuring_the_audit_service#:~:text=from%20being%20overwritten.-,space_left,-Specifies%20the%20amount)
@@ -3024,7 +3054,7 @@ configure_etc_inputrc
 ##------------------------------------------------------------------------------
 configure_freshclam() {
   displayandexec "Configuration de freshclam                          " "\
-sed -E -i 's/^Checks [[:digit:]]+/Checks 1/' /etc/clamav/freshclam.conf"
+  sed -E -i 's/^Checks [[:digit:]]+/Checks 1/' /etc/clamav/freshclam.conf"
 }
 configure_freshclam
 # Check for new database 1 times a day (insteed of 24)
@@ -3098,7 +3128,7 @@ configure_stacer
 ##------------------------------------------------------------------------------
 configure_etcher() {
   displayandexec "Configuration de etcher                             " "\
-reset_dir_as_user "/home/"$local_user"/.config/balena-etcher-electron/""
+  reset_dir_as_user "/home/"$local_user"/.config/balena-etcher-electron/""
 $ExeAsUser cat> /home/"$local_user"/.config/balena-etcher-electron/config.json << 'EOF'
 {
   "errorReporting": false,
@@ -3118,9 +3148,9 @@ configure_etcher
 # suite aux infos de ce site : https://forum.cabane-libre.org/topic/239/invalid-web_cmd-configuration-option-relative-pathname-bin-false
 configure_rkhunter() {
   displayandexec "Configuration de rkhunter                           " "\
-sed -i 's/UPDATE_MIRRORS=0/UPDATE_MIRRORS=1/' /etc/rkhunter.conf && \
-sed -i 's/MIRRORS_MODE=1/MIRRORS_MODE=0/' /etc/rkhunter.conf && \
-sed -i 's%WEB_CMD=\"/bin/false\"%WEB_CMD=""%' /etc/rkhunter.conf"
+  sed -i 's/UPDATE_MIRRORS=0/UPDATE_MIRRORS=1/' /etc/rkhunter.conf && \
+  sed -i 's/MIRRORS_MODE=1/MIRRORS_MODE=0/' /etc/rkhunter.conf && \
+  sed -i 's%WEB_CMD=\"/bin/false\"%WEB_CMD=""%' /etc/rkhunter.conf"
 }
 configure_rkhunter
 ################################################################################
@@ -3172,40 +3202,42 @@ fi
 ################################################################################
 ## configuration de Libreoffice
 ##------------------------------------------------------------------------------
-# conf de Libreoffice
-execandlog "sed -i --follow-symlinks '/^export LC_ALL/a export GTK_THEME=Adwaita' /usr/bin/libreoffice"
+configure_libreoffice() {
+  # conf de Libreoffice
+  execandlog "sed -i --follow-symlinks '/^export LC_ALL/a export GTK_THEME=Adwaita' /usr/bin/libreoffice"
+  #if you want to use this in a .desktop file, you have to prepend 'env' for setting the env variable. I.e. copy the libreoffice-*.desktop files from /usr/share/applications to ~.local/share/applications, then open them in a text editor and change the line saying 'Exec' so it looks like this:
+  # Exec=env GTK_THEME=Adwaita:light libreoffice --writer
 
-#if you want to use this in a .desktop file, you have to prepend 'env' for setting the env variable. I.e. copy the libreoffice-*.desktop files from /usr/share/applications to ~.local/share/applications, then open them in a text editor and change the line saying 'Exec' so it looks like this:
-# Exec=env GTK_THEME=Adwaita:light libreoffice --writer
+  # disable java settings in LibreOffice
+  # $ExeAsUser sed -i 's%<enabled xsi:nil="false">true</enabled>%<enabled xsi:nil="false">false</enabled>%g' /home/"$local_user"/.config/libreoffice/4/user/config/javasettings_Linux_X86_64.xml
+  # il faut potentiellement le mettre comme ça :
+  [ -f /home/"$local_user"/.config/libreoffice/4/user/config/javasettings_Linux_X86_64.xml ] && \
+  $ExeAsUser sed -i 's%<enabled xsi:nil=".*>$%<enabled xsi:nil="false">false</enabled>%g' /home/"$local_user"/.config/libreoffice/4/user/config/javasettings_Linux_X86_64.xml
 
-# disable java settings in LibreOffice
-# $ExeAsUser sed -i 's%<enabled xsi:nil="false">true</enabled>%<enabled xsi:nil="false">false</enabled>%g' /home/"$local_user"/.config/libreoffice/4/user/config/javasettings_Linux_X86_64.xml
-# il faut potentiellement le mettre comme ça :
-[ -f /home/"$local_user"/.config/libreoffice/4/user/config/javasettings_Linux_X86_64.xml ] && \
-$ExeAsUser sed -i 's%<enabled xsi:nil=".*>$%<enabled xsi:nil="false">false</enabled>%g' /home/"$local_user"/.config/libreoffice/4/user/config/javasettings_Linux_X86_64.xml
+  # ref : https://ask.libreoffice.org/en/question/167622/how-to-disable-java-in-configuration-files/
+  # Pour aider à chercher les fichiers concernés par la modification de la configuration
+  # find /home/$USER/.config/libreoffice/ -type f -mmin -5 -exec grep -l "java" {} \; && find /usr/lib/libreoffice/share/ -type f -mmin -5 -exec grep -l "java" {} \;
+  # find /usr/lib/libreoffice/share/ -type f -mmin -5 -exec grep -i -l "autosave" {} \; && find /home/$USER/.config/libreoffice/ -type f -mmin -5 -exec grep -i -l "autosave" {} \;
+  # find /usr/lib/libreoffice/share/ -type f -mmin -5 && find /home/$USER/.config/libreoffice/ -type f -mmin -5
 
-# ref : https://ask.libreoffice.org/en/question/167622/how-to-disable-java-in-configuration-files/
-# Pour aider à chercher les fichiers concernés par la modification de la configuration
-# find /home/$USER/.config/libreoffice/ -type f -mmin -5 -exec grep -l "java" {} \; && find /usr/lib/libreoffice/share/ -type f -mmin -5 -exec grep -l "java" {} \;
-# find /usr/lib/libreoffice/share/ -type f -mmin -5 -exec grep -i -l "autosave" {} \; && find /home/$USER/.config/libreoffice/ -type f -mmin -5 -exec grep -i -l "autosave" {} \;
-# find /usr/lib/libreoffice/share/ -type f -mmin -5 && find /home/$USER/.config/libreoffice/ -type f -mmin -5
+  # Disable startup logo
+  execandlog "sed -i 's/^Logo=1/Logo=0/' /etc/libreoffice/sofficerc"
+  # ref : https://wiki.archlinux.org/title/LibreOffice#Disable_startup_logo
 
-# Disable startup logo
-execandlog "sed -i 's/^Logo=1/Logo=0/' /etc/libreoffice/sofficerc"
-# ref : https://wiki.archlinux.org/title/LibreOffice#Disable_startup_logo
+  # cette configuration n'existe pas dans le fichier après une install, il faut donc trouver le moyen de l'ajouter en insérant la ligne
+  # Pour changer la valeur du niveau de sécurité des macros de Elevé à Très Elevé
+  [ -f /home/"$local_user"/.config/libreoffice/4/user/registrymodifications.xcu ] && \
+  $ExeAsUser sed -i 's%<item oor:path="/org.openoffice.Office.Common/Security/Scripting"><prop oor:name="MacroSecurityLevel" oor:op="fuse"><value>2</value></prop></item>%<item oor:path="/org.openoffice.Office.Common/Security/Scripting"><prop oor:name="MacroSecurityLevel" oor:op="fuse"><value>3</value></prop></item>%g' /home/"$local_user"/.config/libreoffice/4/user/registrymodifications.xcu
+  # rajouter || créer le contenu du fichier avec un cat EOF
 
-# cette configuration n'existe pas dans le fichier après une install, il faut donc trouver le moyen de l'ajouter en insérant la ligne
-# Pour changer la valeur du niveau de sécurité des macros de Elevé à Très Elevé
-[ -f /home/"$local_user"/.config/libreoffice/4/user/registrymodifications.xcu ] && \
-$ExeAsUser sed -i 's%<item oor:path="/org.openoffice.Office.Common/Security/Scripting"><prop oor:name="MacroSecurityLevel" oor:op="fuse"><value>2</value></prop></item>%<item oor:path="/org.openoffice.Office.Common/Security/Scripting"><prop oor:name="MacroSecurityLevel" oor:op="fuse"><value>3</value></prop></item>%g' /home/"$local_user"/.config/libreoffice/4/user/registrymodifications.xcu
-# rajouter || créer le contenu du fichier avec un cat EOF
+  # Pour faire en sorte que l'autosave se fasse toute les 1 minute (à la place des 10 minutes par défaut)
+  # grep -n -i autosave.*TimeIntervall /home/"$local_user"/.config/libreoffice/4/user/registrymodifications.xcu
+  # il faudra changer la value de 10 à 1
 
-# Pour faire en sorte que l'autosave se fasse toute les 1 minute (à la place des 10 minutes par défaut)
-# grep -n -i autosave.*TimeIntervall /home/"$local_user"/.config/libreoffice/4/user/registrymodifications.xcu
-# il faudra changer la value de 10 à 1
-
-# Pour insérer la ligne lorsque le fichier existe :
-# sed -i '\%</oor:items>%i <item oor:path="/org.openoffice.Office.Common/Security/Scripting"><prop oor:name="MacroSecurityLevel" oor:op="fuse"><value>3</value></prop></item>' /home/"$local_user"/.config/libreoffice/4/user/registrymodifications.xcu
+  # Pour insérer la ligne lorsque le fichier existe :
+  # sed -i '\%</oor:items>%i <item oor:path="/org.openoffice.Office.Common/Security/Scripting"><prop oor:name="MacroSecurityLevel" oor:op="fuse"><value>3</value></prop></item>' /home/"$local_user"/.config/libreoffice/4/user/registrymodifications.xcu
+}
+configure_libreoffice
 ################################################################################
 
 ################################################################################
@@ -3214,8 +3246,8 @@ $ExeAsUser sed -i 's%<item oor:path="/org.openoffice.Office.Common/Security/Scri
 # la configuration de nano s'effectue dans le fichier /etc/nanorc
 configure_nano() {
   displayandexec "Configuration de nano                               " "\
-sed -i 's/^# set linenumbers/set linenumbers/' /etc/nanorc && \
-sed -i 's/^# set softwrap/set softwrap/' /etc/nanorc"
+  sed -i 's/^# set linenumbers/set linenumbers/' /etc/nanorc && \
+  sed -i 's/^# set softwrap/set softwrap/' /etc/nanorc"
 }
 configure_nano
 ################################################################################
@@ -3244,8 +3276,8 @@ configure_apt-fast
 ## configuration de atom
 ##------------------------------------------------------------------------------
 configure_atom() {
-execandlog "reset_dir_as_user "/home/"$local_user"/.atom/""
-$ExeAsUser cat> /home/"$local_user"/.atom/config.cson << 'EOF'
+  execandlog "reset_dir_as_user "/home/"$local_user"/.atom/""
+  $ExeAsUser cat> /home/"$local_user"/.atom/config.cson << 'EOF'
 "*":
   autosave:
     enabled: true
@@ -3256,15 +3288,15 @@ $ExeAsUser cat> /home/"$local_user"/.atom/config.cson << 'EOF'
   welcome:
     showOnStartup: false
 EOF
-displayandexec "Installation des plugins pour Atom                  " "\
-$ExeAsUser apm install language-cisco && \
-$ExeAsUser apm install language-powershell && \
-$ExeAsUser apm install script && \
-$ExeAsUser apm install vertical-tabs && \
-$ExeAsUser apm install tab-title && \
-$ExeAsUser apm install language-ansible && \
-$ExeAsUser apm install language-diff && \
-$ExeAsUser apm install language-yara"
+  displayandexec "Installation des plugins pour Atom                  " "\
+  $ExeAsUser apm install language-cisco && \
+  $ExeAsUser apm install language-powershell && \
+  $ExeAsUser apm install script && \
+  $ExeAsUser apm install vertical-tabs && \
+  $ExeAsUser apm install tab-title && \
+  $ExeAsUser apm install language-ansible && \
+  $ExeAsUser apm install language-diff && \
+  $ExeAsUser apm install language-yara"
 }
 # configure_atom
 # Les plugins atom en commentaire sont encore en cour de validation
@@ -3283,8 +3315,8 @@ $ExeAsUser apm install language-yara"
 ##------------------------------------------------------------------------------
 configure_bat() {
   displayandexec "Configuration de bat                                " "\
-is_file_present_and_rmfile "/home/"$local_user"/.config/bat/config" && \
-$ExeAsUser bat --generate-config-file"
+  is_file_present_and_rmfile "/home/"$local_user"/.config/bat/config" && \
+  $ExeAsUser bat --generate-config-file"
   $ExeAsUser cat>> /home/"$local_user"/.config/bat/config << 'EOF'
 
 --paging=never
@@ -3301,10 +3333,10 @@ configure_bat
 # on ajoute la possibilité d'ouvrir directement la navigateur firefox dans une fenêtre de navigation privée
 configure_firefox() {
   displayandexec "Configuration de Firefox                            " "\
-[ -f /usr/share/applications/firefox-esr-private.desktop ] || cp /usr/share/applications/firefox-esr.desktop /usr/share/applications/firefox-esr-private.desktop && \
-sed -i 's%^Exec=/usr/lib/firefox-esr/firefox-esr%& --private-window%' /usr/share/applications/firefox-esr-private.desktop && \
-sed -E -i '/(^Name=|^Name\[.*\]=)/s/Firefox .*/Firefox private/g' /usr/share/applications/firefox-esr-private.desktop && \
-sed -E -i '/(^X-GNOME-FullName=|^X-GNOME-FullName\[.*\]=)/s/Firefox ESR/Firefox private/g' /usr/share/applications/firefox-esr-private.desktop"
+  [ -f /usr/share/applications/firefox-esr-private.desktop ] || cp /usr/share/applications/firefox-esr.desktop /usr/share/applications/firefox-esr-private.desktop && \
+  sed -i 's%^Exec=/usr/lib/firefox-esr/firefox-esr%& --private-window%' /usr/share/applications/firefox-esr-private.desktop && \
+  sed -E -i '/(^Name=|^Name\[.*\]=)/s/Firefox .*/Firefox private/g' /usr/share/applications/firefox-esr-private.desktop && \
+  sed -E -i '/(^X-GNOME-FullName=|^X-GNOME-FullName\[.*\]=)/s/Firefox ESR/Firefox private/g' /usr/share/applications/firefox-esr-private.desktop"
 }
 configure_firefox
 ################################################################################
@@ -3418,6 +3450,9 @@ configure_vscode() {
   execandlog "$ExeAsUser code --force --install-extension vscode-nginx"
   execandlog "$ExeAsUser code --force --install-extension speedproxies.squid-syntax"
   execandlog "$ExeAsUser code --force --install-extension wholroyd.jinja"
+  execandlog "$ExeAsUser code --force --install-extension marduc812.nmap-peek"
+  execandlog "$ExeAsUser code --force --install-extension william-voyek.vscode-nginx"
+  execandlog "$ExeAsUser code --force --install-extension yzhang.markdown-all-in-one"
   $ExeAsUser tee /home/"$local_user"/.config/Code/User/settings.json << 'EOF' >/dev/null
 {
     "workbench.colorTheme": "Atom One Dark",
@@ -3438,7 +3473,6 @@ EOF
 configure_vscode
 # Pour installer des extensions en ligne de commande : [Managing Extensions in Visual Studio Code](https://code.visualstudio.com/docs/editor/extension-marketplace#_command-line-extension-management)
 # code --install-extension <extension-id>
-# code --install-extension marduc812.nmap-peek
 # code --install-extension redhat.ansible
 # code --install-extension donjayamanne.githistory
 # [Nmap Peek - Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=marduc812.nmap-peek)
@@ -3458,8 +3492,8 @@ configure_vscode
 ##------------------------------------------------------------------------------
 configure_mpv() {
   displayandexec "Configuration de mpv                                " "\
-reset_dir_as_user "/home/"$local_user"/.config/mpv/"" && \
-$ExeAsUser cat> /home/"$local_user"/.config/mpv/input.conf << 'EOF'
+  reset_dir_as_user "/home/"$local_user"/.config/mpv/"" && \
+  $ExeAsUser cat> /home/"$local_user"/.config/mpv/input.conf << 'EOF'
 # Add the capacity to rotate the video when pressing r key
 r cycle_values video-rotate 90 180 270 0
 
@@ -3468,7 +3502,7 @@ r cycle_values video-rotate 90 180 270 0
 Alt+- add video-zoom -0.10
 Alt+= add video-zoom 0.10
 EOF
-$ExeAsUser cat> /home/"$local_user"/.config/mpv/mpv.conf << 'EOF'
+  $ExeAsUser cat> /home/"$local_user"/.config/mpv/mpv.conf << 'EOF'
 # Enable hardware decoding if available
 hwdec=auto
 EOF
@@ -3484,7 +3518,7 @@ configure_mpv
 ##------------------------------------------------------------------------------
 configure_typora() {
   displayandexec "Configuration de typora                             " "\
-reset_dir_as_user "/home/"$local_user"/.config/Typora/"" && \
+  reset_dir_as_user "/home/"$local_user"/.config/Typora/"" && \
 $ExeAsUser cat> /home/"$local_user"/.config/Typora/profile.data << 'EOF'
 7b22696e697469616c697a655f766572223a22302e392e3738222c226c696e655f656e64696e675f63726c66223a66616c73652c227072654c696e65627265616b4f6e4578706f7274223a747275652c2275756964223a2237346265383439362d343239372d343362382d616633632d336439343463646432376439222c227374726963745f6d6f6465223a747275652c22636f70795f6d61726b646f776e5f62795f64656661756c74223a747275652c226261636b67726f756e64436f6c6f72223a2223333633423430222c227468656d65223a226e696768742e637373222c22736964656261725f746162223a22222c2273656e645f75736167655f696e666f223a66616c73652c22656e61626c654175746f53617665223a747275652c226c617374436c6f736564426f756e6473223a7b2266756c6c73637265656e223a66616c73652c226d6178696d697a6564223a747275657d7d
 EOF
@@ -3500,7 +3534,7 @@ configure_typora
 # apt-get install -y sqlite3 && sqlite3 .config/joplin-desktop/database.sqlite "select * from settings"
 configure_joplin() {
   displayandexec "Configuration de joplin                             " "\
-is_dir_present_or_mkdir_as_user "/home/"$local_user"/.config/Joplin/""
+  is_dir_present_or_mkdir_as_user "/home/"$local_user"/.config/Joplin/""
 # $ExeAsUser cat> /home/"$local_user"/.config/Joplin/Preferences << 'EOF'
 # {"spellcheck":{"dictionaries":["fr"],"dictionary":""}}
 # EOF
@@ -3513,8 +3547,8 @@ configure_joplin
 ##------------------------------------------------------------------------------
 configure_handbrake() {
   displayandexec "Configuration de handbrake                          " "\
-reset_dir_as_user "/home/"$local_user"/.config/ghb/" && \
-{ [ -f /home/"$local_user"/.config/ghb/preferences.json ] && $ExeAsUser sed -E -i '/("UseM4v":) (false|true)/{s/true/false/;}' /home/"$local_user"/.config/ghb/preferences.json; } || return 0"
+  reset_dir_as_user "/home/"$local_user"/.config/ghb/" && \
+  { [ -f /home/"$local_user"/.config/ghb/preferences.json ] && $ExeAsUser sed -E -i '/("UseM4v":) (false|true)/{s/true/false/;}' /home/"$local_user"/.config/ghb/preferences.json; } || true"
 }
 configure_handbrake
 # permet de décocher la case "Utiliser l'extension de fichier compatible iPod/iTunes (.m4v) pour MP4" (Fichier -> Préférences -> Général)
@@ -3529,21 +3563,21 @@ configure_handbrake
 # On est obliger de créer le fichier de conf (/home/"$local_user"/.config/geeqie/geeqierc.xml) en lancant geeqie graphiquement et ensuite en allant dans Edit -> Preference -> cliquer sur OK
 # Il semblerait que le fichier de conf se créer aussi lorsqu'on lance Geeqie et qu'on le quitte proprement (en appuyant sur la croix en haut de la fenêtre)
 configure_geeqie() {
-if [ -f /home/"$local_user"/.config/geeqie/geeqierc.xml ]; then
-  $ExeAsUser sed -i -E 's/image.alpha_color_1 = "#[[:digit:]]+"/image.alpha_color_1 = "#FFFFFFFFFFFF"/' /home/"$local_user"/.config/geeqie/geeqierc.xml
-  $ExeAsUser sed -i -E 's/image.alpha_color_2 = "#[[:digit:]]+"/image.alpha_color_2 = "#FFFFFFFFFFFF"/' /home/"$local_user"/.config/geeqie/geeqierc.xml
+  if [ -f /home/"$local_user"/.config/geeqie/geeqierc.xml ]; then
+    $ExeAsUser sed -i -E 's/image.alpha_color_1 = "#[[:digit:]]+"/image.alpha_color_1 = "#FFFFFFFFFFFF"/' /home/"$local_user"/.config/geeqie/geeqierc.xml
+    $ExeAsUser sed -i -E 's/image.alpha_color_2 = "#[[:digit:]]+"/image.alpha_color_2 = "#FFFFFFFFFFFF"/' /home/"$local_user"/.config/geeqie/geeqierc.xml
 
-# on désactive la capacité de geekie d'ouvrir des .pdf
-  $ExeAsUser sed -i -E 's%<file_type key = "pdf" enabled = "true" extensions = ".pdf" description = "Portable Document Format" file_class = "6" writable = "false" allow_sidecar = "false" />%<file_type key = "pdf" enabled = "false" extensions = ".pdf" description = "Portable Document Format" file_class = "6" writable = "false" allow_sidecar = "false" />%' /home/"$local_user"/.config/geeqie/geeqierc.xml
+  # on désactive la capacité de geekie d'ouvrir des .pdf
+    $ExeAsUser sed -i -E 's%<file_type key = "pdf" enabled = "true" extensions = ".pdf" description = "Portable Document Format" file_class = "6" writable = "false" allow_sidecar = "false" />%<file_type key = "pdf" enabled = "false" extensions = ".pdf" description = "Portable Document Format" file_class = "6" writable = "false" allow_sidecar = "false" />%' /home/"$local_user"/.config/geeqie/geeqierc.xml
 
-# on désactive la capacité de geekie d'ouvrir des fichiers compréssés
-  $ExeAsUser sed -i -E 's%<file_type key = "zip" enabled = "true" extensions = ".zip;.rar;.tar;.tar.gz;.tar.bz2;.tar.xz;.tgz;.tbz;.txz;.cbr;.cbz;.gz;.bz2;.xz;.lzh;.lza;.7z" description = "Archive files" file_class = "7" writable = "false" allow_sidecar = "false" />%<file_type key = "zip" enabled = "false" extensions = ".zip;.rar;.tar;.tar.gz;.tar.bz2;.tar.xz;.tgz;.tbz;.txz;.cbr;.cbz;.gz;.bz2;.xz;.lzh;.lza;.7z" description = "Archive files" file_class = "7" writable = "false" allow_sidecar = "false" />%' /home/"$local_user"/.config/geeqie/geeqierc.xml
-# Pour voir les différents formats supportés par Geeqie : sed -n '/<filter>/,/<\/filter>/p' ~/.config/geeqie/geeqierc.xml
+  # on désactive la capacité de geekie d'ouvrir des fichiers compréssés
+    $ExeAsUser sed -i -E 's%<file_type key = "zip" enabled = "true" extensions = ".zip;.rar;.tar;.tar.gz;.tar.bz2;.tar.xz;.tgz;.tbz;.txz;.cbr;.cbz;.gz;.bz2;.xz;.lzh;.lza;.7z" description = "Archive files" file_class = "7" writable = "false" allow_sidecar = "false" />%<file_type key = "zip" enabled = "false" extensions = ".zip;.rar;.tar;.tar.gz;.tar.bz2;.tar.xz;.tgz;.tbz;.txz;.cbr;.cbz;.gz;.bz2;.xz;.lzh;.lza;.7z" description = "Archive files" file_class = "7" writable = "false" allow_sidecar = "false" />%' /home/"$local_user"/.config/geeqie/geeqierc.xml
+  # Pour voir les différents formats supportés par Geeqie : sed -n '/<filter>/,/<\/filter>/p' ~/.config/geeqie/geeqierc.xml
 
-  $ExeAsUser sed -i 's/image.zoom_to_fit_allow_expand = "false"/image.zoom_to_fit_allow_expand = "true"/' /home/"$local_user"/.config/geeqie/geeqierc.xml
+    $ExeAsUser sed -i 's/image.zoom_to_fit_allow_expand = "false"/image.zoom_to_fit_allow_expand = "true"/' /home/"$local_user"/.config/geeqie/geeqierc.xml
 
-  $ExeAsUser sed -i 's/image.zoom_quality = "[[:digit:]]+"/image.zoom_quality = "3"/' /home/"$local_user"/.config/geeqie/geeqierc.xml
-fi
+    $ExeAsUser sed -i 's/image.zoom_quality = "[[:digit:]]+"/image.zoom_quality = "3"/' /home/"$local_user"/.config/geeqie/geeqierc.xml
+  fi
 }
 configure_geeqie
 ################################################################################
@@ -3615,7 +3649,7 @@ ln -s /usr/share/applications/joplin.desktop /home/"$local_user"/.config/autosta
 ##------------------------------------------------------------------------------
 configure_keepassxc() {
   displayandexec "Configuration de KeePassXC                          " "\
-reset_dir_as_user "/home/"$local_user"/.config/keepassxc/""
+  reset_dir_as_user "/home/"$local_user"/.config/keepassxc/""
 $ExeAsUser tee /home/"$local_user"/.config/keepassxc/keepassxc.ini << 'EOF' >/dev/null
 [General]
 AutoReloadOnChange=true
@@ -3691,10 +3725,10 @@ configure_keepassxc
 ## configuration de audacity
 ##------------------------------------------------------------------------------
 configure_audacity() {
-if [ -f /home/"$local_user"/.audacity-data/audacity.cfg ]; then
-  sed -i '/^Enabled=1/a [GUI]' /home/"$local_user"/.audacity-data/audacity.cfg && \
-  sed -i '/^[GUI]/a ShowSplashScreen=0' /home/"$local_user"/.audacity-data/audacity.cfg
-fi
+  if [ -f /home/"$local_user"/.audacity-data/audacity.cfg ]; then
+    sed -i '/^Enabled=1/a [GUI]' /home/"$local_user"/.audacity-data/audacity.cfg && \
+    sed -i '/^[GUI]/a ShowSplashScreen=0' /home/"$local_user"/.audacity-data/audacity.cfg
+  fi
 }
 configure_audacity
 # on est obligé de lancer audacity pour que le repertoire /home/$local_user/.audacity-data/ soit créé ainsi que les fichiers qu'il contient
@@ -4021,7 +4055,7 @@ configure_mime_types_association_drawio
 # pour supprimer ces entrées des options de clic droit de nautilus, il faut soit désinstaller le paquet nautilus-wipe, soit supprimer le .so correspondant dans le répertoire des extensions de nautilus
 if [ "$bullseye" == 1 ]; then
   execandlog "[ -f /usr/lib/x86_64-linux-gnu/nautilus/extensions-3.0/libnautilus-wipe.so ] && \
-mv /usr/lib/x86_64-linux-gnu/nautilus/extensions-3.0/libnautilus-wipe.so /usr/lib/x86_64-linux-gnu/nautilus/extensions-3.0/libnautilus-wipe.so.backup"
+  mv /usr/lib/x86_64-linux-gnu/nautilus/extensions-3.0/libnautilus-wipe.so /usr/lib/x86_64-linux-gnu/nautilus/extensions-3.0/libnautilus-wipe.so.backup"
 fi
 
 # pour supprimer des options internes à nautilus, il faudrait modifier son code source et le recompiler
@@ -4170,6 +4204,7 @@ alias youtube-dl='youtube-dl -o "%(title)s.%(ext)s"'
 alias yt-dlp='yt-dlp -o "%(title)s.%(ext)s"'
 alias yt-dlp_best='yt-dlp -o "%(title)s.%(ext)s" -f "bestvideo+bestaudio"'
 alias yt-dlp_1080p='yt-dlp -o "%(title)s.%(ext)s" -f '\''bestvideo[height<=1080]+bestaudio'\'''
+alias yt-dlp_1440p='yt-dlp -o "%(title)s.%(ext)s" -f '\''bestvideo[height<=1440]+bestaudio'\'''
 alias spyme='sudo lnav /var/log/syslog /var/log/auth.log'
 alias free='free -ht'
 alias showshortcut='dconf dump /org/gnome/settings-daemon/plugins/media-keys/'
@@ -4266,6 +4301,7 @@ alias youtube-dl='youtube-dl -o "%(title)s.%(ext)s"'
 alias yt-dlp='yt-dlp -o "%(title)s.%(ext)s"'
 alias yt-dlp_best='yt-dlp -o "%(title)s.%(ext)s" -f "bestvideo+bestaudio"'
 alias yt-dlp_1080p='yt-dlp -o "%(title)s.%(ext)s" -f '\''bestvideo[height<=1080]+bestaudio'\'''
+alias yt-dlp_1440p='yt-dlp -o "%(title)s.%(ext)s" -f '\''bestvideo[height<=1440]+bestaudio'\'''
 alias spyme='sudo lnav /var/log/syslog /var/log/auth.log'
 alias free='free -ht'
 alias update_my_sysupdate_script='sudo bash -c '\''rm -f $my_bin_path/sysupdate && wget -q -P $my_bin_path "https://raw.githubusercontent.com/NRGLine4Sec/config-l/main/sysupdate" && chmod +x $my_bin_path/sysupdate'\'''
@@ -4353,7 +4389,9 @@ execandlog "chown -R "$local_user":"$local_user" /home/"$local_user"/"
 ##------------------------------------------------------------------------------
 update_rkhunter() {
   displayandexec "Mise à jour de la base de donnée de rkhunter        " "\
-rkhunter --versioncheck ; rkhunter --update ; rkhunter --propupd"
+  rkhunter --versioncheck ;\
+  rkhunter --update ;\
+  rkhunter --propupd"
 }
 update_rkhunter
 ################################################################################
@@ -4375,9 +4413,9 @@ backup_LUKS_header() {
   root_lvm_parent_partition="$(lsblk -o PKNAME,FSTYPE,NAME | awk '/'"$root_pv_name"'/{print $1}')"
   luks_partition="$(lsblk -o NAME,FSTYPE /dev/"$root_lvm_parent_partition" | awk '/crypto_LUKS/{print $1}')"
   displayandexec "Création d'un backup de l'entête LUKS               " "\
-is_dir_present_or_mkdir_as_user "/home/"$local_user"/.backup/" && \
-cryptsetup isLuks /dev/"$luks_partition" && \
-cryptsetup luksHeaderBackup /dev/"$luks_partition" --header-backup-file /home/"$local_user"/.backup/"$luks_partition"_LUKS_Header_Backup-"$now".img"
+  is_dir_present_or_mkdir_as_user "/home/"$local_user"/.backup/" && \
+  cryptsetup isLuks /dev/"$luks_partition" && \
+  cryptsetup luksHeaderBackup /dev/"$luks_partition" --header-backup-file /home/"$local_user"/.backup/"$luks_partition"_LUKS_Header_Backup-"$now".img"
 }
 backup_LUKS_header
 # on s'assure dans un premier temps de récupérer uniquement le path de la partition qui contient le lvm du système (lv root) pour être sur de ne faire que la sauvegarde du LUKS du système
@@ -4394,8 +4432,9 @@ backup_LUKS_header
 ## désactivation du bluetooth
 ##------------------------------------------------------------------------------
 disable_bluetooth() {
+  hte_gdbus_call_disable_bluetooth="'<true>'"
   displayandexec "Désactivation du bluetooth                          " "\
-$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gdbus call --session --dest org.gnome.SettingsDaemon.Rfkill --object-path /org/gnome/SettingsDaemon/Rfkill --method org.freedesktop.DBus.Properties.Set "org.gnome.SettingsDaemon.Rfkill" "BluetoothAirplaneMode" \"\<true\>\" > /dev/null"
+  $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gdbus call --session --dest org.gnome.SettingsDaemon.Rfkill --object-path /org/gnome/SettingsDaemon/Rfkill --method org.freedesktop.DBus.Properties.Set "org.gnome.SettingsDaemon.Rfkill" "BluetoothAirplaneMode" "$hte_gdbus_call_disable_bluetooth" > /dev/null"
 }
 disable_bluetooth
 ################################################################################
@@ -4421,16 +4460,29 @@ restart_ssh
 ################################################################################
 
 ################################################################################
+## désactivation des services par défaut qui ne nous sont pas nécessaires
+##------------------------------------------------------------------------------
+disable_unneeded_services() {
+  execandlog "systemctl status postfix-mta-sts-resolver.service"
+  displayandexec "Désactivation des services non nécessaires          " "\
+  systemctl mask --now postfix-mta-sts-resolver.service"
+  # plus d'infos concernant le rôle du paquet postfix-mta-sts-resolver : [Setup MTA-STS and TLSRPT – Jean's Blog](https://blog.jeanbruenn.info/2021/07/31/howto-setup-mta-sts-and-tlsrpt/)
+}
+disable_unneeded_services
+################################################################################
+
+
+################################################################################
 ## configuration des règles de firewall
 ##------------------------------------------------------------------------------
 displayandexec "Configuration du firewall                           " "\
-ufw --force reset && \
-ufw default deny incoming && \
-ufw default allow outgoing && \
-ufw allow "$SSH_Port"/tcp && \
-ufw limit "$SSH_Port"/tcp && \
-ufw logging high && \
-ufw --force enable"
+  ufw --force reset && \
+  ufw default deny incoming && \
+  ufw default allow outgoing && \
+  ufw allow "$SSH_Port"/tcp && \
+  ufw limit "$SSH_Port"/tcp && \
+  ufw logging high && \
+  ufw --force enable"
 ################################################################################
 
 tmp_all_package_list_after="$(dpkg --get-selections | awk '{if ($2 == "install") {print $1}}' | bash -c "grep -w$(for pkg in alpine balsa biabam bsd-mailx claws-mail dovecot-sieve enigmail exim4-base exim4-config exim4-daemon-heavy exim4-daemon-light exmh filter gnarwl gnome-gmail gnumail.app im kmail kontact maildrop mailutils mailutils-mh mew mew-beta mew-beta-bin mew-bin mutt nmh notmuch prayer procmail sendemail sensible-mda sqwebmail-de sylpheed uw-mailutils vm wl wl-beta yample; do echo -n " -e '"$pkg"'"; done)")"
@@ -4452,36 +4504,20 @@ cd
 ## Création d'un snapshot avec Timeshift
 ##------------------------------------------------------------------------------
 create_root_part_snapshot_with_timeshift_rsync() {
-  root_part_kname="$(lsblk -o KNAME,MOUNTPOINT | awk '{{if ($2 == "/") print $1}}')"
   displayandexec "Création d'un snapshot avec Timeshift               " "\
-umount -l /run/timeshift/backup; \
-timeshift --scripted --create --rsync --comments 'first snapshot, after postinstall script' --snapshot-device /dev/"$root_part_kname""
+  umount -l /run/timeshift/backup; \
+  timeshift --scripted --create --rsync --comments 'first snapshot, after postinstall script' --snapshot-device /dev/"$root_part_kname""
   # cette étape est très longue lorsqu'il faut faire un premier snapshot (car timeshift doit faire en fait un miroir du système existant)
   # sur un HDD pas très rapide, il y en a pour à peu près une heure
-  execandlog "timeshift --list"
-  # On fait le timeshift --list qu'on redirige dans le fichier de log juste pour avoir les infos de la création du snapshot.
-  # Après l'execution du script ng_install et du snapshot avec timeshift, il y a environ 26 Go d'utilisé sur / pour un système basé sur bullseye
-  execandlog "umount -l /run/timeshift/backup"
-  # on démonte le point de montage de timeshift car il n'est plus nécessaire
-  # peut être qu'à terme il serait intéressant de voir pour ajouer une partition dédié pour les backups
 }
 create_root_part_snapshot_with_timeshift_btrfs() {
-  root_part_kname="$(lsblk -o KNAME,MOUNTPOINT | awk '{{if ($2 == "/") print $1}}')"
   displayandexec "Création d'un snapshot avec Timeshift               " "\
-umount -l /run/timeshift/backup; \
-timeshift --scripted --create --btrfs --comments 'first snapshot, after postinstall script' --snapshot-device /dev/"$root_part_kname""
-  # cette étape est très longue lorsqu'il faut faire un premier snapshot (car timeshift doit faire en fait un miroir du système existant)
-  # sur un HDD pas très rapide, il y en a pour à peu près une heure
-  execandlog "timeshift --list"
-  # On fait le timeshift --list qu'on redirige dans le fichier de log juste pour avoir les infos de la création du snapshot.
-  # Après l'execution du script ng_install et du snapshot avec timeshift, il y a environ 26 Go d'utilisé sur / pour un système basé sur bullseye
-  execandlog "umount -l /run/timeshift/backup"
-  # on démonte le point de montage de timeshift car il n'est plus nécessaire
-  # peut être qu'à terme il serait intéressant de voir pour ajouer une partition dédié pour les backups
+  umount -l /run/timeshift/backup; \
+  timeshift --scripted --create --btrfs --comments 'first snapshot, after postinstall script' --snapshot-device /dev/"$root_part_kname""
 }
 
 check_if_root_part_is_btrfs() {
-  if $(findmnt / --raw --noheadings --output=FSTYPE | grep -q 'btrfs' &> /dev/null); then
+  if $(findmnt / --raw --noheadings --output=FSTYPE | grep -qw 'btrfs' &> /dev/null); then
     create_root_part_snapshot_with_timeshift_btrfs
   else
     create_root_part_snapshot_with_timeshift_rsync
@@ -4490,16 +4526,28 @@ check_if_root_part_is_btrfs() {
 check_if_root_part_is_btrfs
 
 if [ -z "$fisrt_time_script_executed" ]; then
+  root_part_kname="$(lsblk -o KNAME,MOUNTPOINT | awk '{{if ($2 == "/") print $1}}')"
   check_if_root_part_is_btrfs 
+  execandlog "timeshift --list"
+  # On fait le timeshift --list qu'on redirige dans le fichier de log juste pour avoir les infos de la création du snapshot.
+  # Après l'execution du script ng_install et du snapshot avec timeshift, il y a environ 26 Go d'utilisé sur / pour un système basé sur bullseye
+  execandlog "umount -l /run/timeshift/backup"
+  # on démonte le point de montage de timeshift car il n'est plus nécessaire
+  # peut être qu'à terme il serait intéressant de voir pour ajouer une partition dédié pour les backups
 fi
 # on éffectue uniquement un snapshot de la partition root qu'à la première excution du script (c'est à dire, juste après une install au propre du script suite à l'installation de la debian)
 ################################################################################
 
-echo '--------------------------------------------------------------------' >> "$log_file"
-echo '' >> "$log_file"
-echo '####################################################################' >> "$log_file"
-echo '#                           Fin du script                          #' >> "$log_file"
-echo '####################################################################' >> "$log_file"
+print_end_of_script_in_log_file() {
+  cat>> "$log_file" << 'EOF'
+--------------------------------------------------------------------
+
+####################################################################
+#                           Fin du script                          #
+####################################################################
+EOF
+}
+print_end_of_script_in_log_file
 
 echo ''
 echo '     ################################################################'
