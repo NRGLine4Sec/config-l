@@ -711,6 +711,9 @@ computer_proc_architecture="$(uname -r | grep -Po '(.*-)\K.*')"
 
 network_int_name="$(ip route list default | awk 'NR==1,/^default/{print $5}')"
 # on remplace l'ancienne commande par celle qui prend le retour de ip route car celle ci permet d'éviter les cas ou il y a plusieurs interfaces qui commencent par en et de prendre en priorité celle qui est utilisé pour se connecter à la default gateway, en admettant donc que ce sois l'interface principale. Cela permet aussi de récupérer le nom de l'interface lorsque c'est une interface wifi
+# à noter que "NR==1" dans la commande awk signifie qu'on ne choisie de ne prendre que la première ligne retournée par la commande ip
+# peut être que ça peut être intéressant de rajouter un fallback : ip route get connected 1.1.1.1 | awk 'NR==1,/ dev /{print $5}'
+
 # ancienne commande qui faisait le travail : $(ip addr | grep 'UP' | cut -d " " -f 2 | cut -d ":" -f 1 | grep 'en')
 # peut potentillement se faire aussi avec ip addr | awk -F':' '/UP/ && / en/ {sub(/[[:blank:]]/,""); print $2}'
 # une autre commande qui permet de se passer de la commande ip en utilisant uniquement les infos lspci et depuis /sys (ne fonctionne qu'avec une interface Ethernet connecté en PCI)
@@ -959,7 +962,51 @@ force_kill_and_disable_debian_unattended_upgrades() {
 }
 force_kill_and_disable_debian_unattended_upgrades
 # https://wiki.debian.org/UnattendedUpgrades
+# https://debian-handbook.info/browse/fr-FR/stable/sect.regular-upgrades.html
 # https://askubuntu.com/questions/1186492/terminate-unattended-upgrades-or-whatever-is-using-apt-in-ubuntu-18-04-or-later
+# https://salsa.debian.org/installer-team/pkgsel/-/commit/2b9b594855a409fa6d03f259ccca4b1a1bd4727b
+# https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=977158
+
+# [it isn't ideal that we have two parallel mechanisms trying to upgrade packages, but this is the price we pay for Debian being a loosely-coupled system where GNOME is not the only supported desktop environment.)](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=977158#30)
+# [gnome-software](https://debian-handbook.info/browse/fr-FR/stable/sect.regular-upgrades.html)
+# peut être lié à ce paquer : gnome-package-updater
+# [Design/OS/SoftwareUpdates - GNOME Wiki!](https://wiki.gnome.org/Design/OS/SoftwareUpdates)
+
+# à noter qu'aver une install disposant du bureau Gnome, on a bien le service unattended-upgrades.service d'activé, mais par contre la conf dans debconf est "unattended-upgrades	unattended-upgrades/enable_auto_updates	boolean	false"
+# c'est exactement la même conf que lorsque la valeure de pkgsel/update-policy est positionnée à "none" lors de l'install de Debian, ref : https://salsa.debian.org/installer-team/pkgsel/-/blob/master/pre-pkgsel.d/20update-policy?ref_type=heads#L29
+
+# regarder également :
+# gnome-software[4128]: enabled plugins: desktop-categories, fwupd, os-release, packagekit, packagekit-local, packagekit-offline, packagekit-proxy, packagekit-refine-repos, packagekit-refresh, packagekit-upgrade, packagekit-url-to-app, appstream, desktop-menu-path, hardcoded-blocklist, hardcoded-popular, modalias, odrs, packagekit-refine, rewrite-resource, packagekit-history, provenance, systemd-updates, generic-updates, provenance-license, icons, key-colors, key-colors-metadata
+
+# apt rdepends --installed unattended-upgrades
+# unattended-upgrades
+# Reverse Depends:
+#   Recommends: python3-software-properties
+
+# apt rdepends --installed python3-software-properties
+# python3-software-properties
+# Reverse Depends:
+#   Breaks: software-properties-common (<< 0.85)
+#   Depends: software-properties-gtk (= 0.96.20.2-2.1)
+#   Replaces: software-properties-common (<< 0.85)
+#   Depends: software-properties-common (= 0.96.20.2-2.1)
+
+# apt rdepends --installed software-properties-gtk
+# software-properties-gtk
+# Reverse Depends:
+#   Depends: gnome-software
+
+# apt-cache show python3-software-properties | grep 'Depends:\|Recommends:'
+# Depends: iso-codes, lsb-release, python3, python3-apt (>= 0.8.8.2), python3-pycurl, python3:any
+# Recommends: unattended-upgrades
+
+# [Stop recommending unattended-upgrades (Closes: #447701) (c949db84) · Commits · PackageKit and AppStream / software-properties · GitLab](https://salsa.debian.org/pkgutopia-team/software-properties/-/commit/c949db84a3ff8057452f6167fcfc81d8b16be175)
+# [#447701 - python-software-properties: dependency on unattended-upgrades has undesirable effects - Debian Bug report logs](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=447701)
+# [Only show Updates tab if unattended-upgrades is installed (Closes: #703217) (4d05a516) · Commits · PackageKit and AppStream / software-properties · GitLab](https://salsa.debian.org/pkgutopia-team/software-properties/-/commit/4d05a5163313a062a0d3f5dd850c7f72e1b79bc5)
+# [fix error in auto-upgrade settings when (a54e178c) · Commits · PackageKit and AppStream / software-properties · GitLab](https://salsa.debian.org/pkgutopia-team/software-properties/-/commit/a54e178c5581876055ed4ba10b00390b23d981a1)
+# [[ Dustin Kirkland ] (bb29a9a5) · Commits · PackageKit and AppStream / software-properties · GitLab](https://salsa.debian.org/pkgutopia-team/software-properties/-/commit/bb29a9a5c500ea4a1cf37b7e4dde2bccb72b7c03)
+# "python3-software-properties Recommends unattended-upgrades, which means it gets pulled in automatically on a default desktop install."
+# ref : https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=447701#80
 ################################################################################
 
 ################################################################################
@@ -3179,19 +3226,20 @@ fi
 create_template_for_new_file_new() {
   [ -d /home/"$local_user"/Modèles ] && template_dir="/home/"$local_user"/Modèles"
   [ -d /home/"$local_user"/Templates ] && template_dir="/home/"$local_user"/Templates"
+  displayandexec "Configuration des templates libreoffice             " "\
   $ExeAsUser touch ""$template_dir"/Fichier Texte.txt" && \
   $ExeAsUser touch ""$template_dir"/Document ODT.txt" && \
   $ExeAsUser libreoffice --nologo --nofirststartwizard --invisible --norestore --headless --convert-to odt ""$template_dir"/Document ODT.txt" --outdir "$template_dir" && \
   rm -f ""$template_dir"/Document ODT.txt" && \
   $ExeAsUser touch ""$template_dir"/Document ODS.txt" && \
   $ExeAsUser libreoffice --calc --nologo --nofirststartwizard --invisible --norestore --headless --convert-to ods ""$template_dir"/Document ODS.txt" --outdir "$template_dir" && \
-  rm -f ""$template_dir"/Document ODS.txt"
+  rm -f ""$template_dir"/Document ODS.txt""
 # ref : https://ask.libreoffice.org/en/question/153444/how-to-create-empty-libreoffice-file-in-a-current-directory-on-the-command-line/
 # Pour voir tous les formats supportés par unoconv : unoconv --show
 }
-execandlog "find /home/"$local_user"/ -user 'root' -not -type l"
 if [ "$bookworm" == 1 ]; then
   create_template_for_new_file_new
+  execandlog "find /home/"$local_user"/ -user 'root' -not -type l"
   execandlog "chown -R "$local_user":"$local_user" /home/"$local_user"/"
   create_template_for_new_file_new
 fi
