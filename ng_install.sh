@@ -3514,7 +3514,8 @@ configure_vscode() {
     "explorer.sortOrder": "modified",
     "workbench.startupEditor": "none",
     "diffEditor.diffAlgorithm": "advanced",
-    "extensions.ignoreRecommendations": true
+    "extensions.ignoreRecommendations": true,
+    "update.showReleaseNotes": false
 }
 EOF
 }
