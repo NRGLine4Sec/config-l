@@ -37,7 +37,7 @@
 ##
 ## Pour faire l'install du scriptt avec apt-fast à place de apt-get
 ## On vérifie que aria1 est installé, si il ne l'ait pas, on l'install
-# if ! dpkg-query --show aria2 > /dev/null 2>&1; then
+# if ! dpkg-query --show aria2 >/dev/null 2>&1; then
 #     apt-get update
 #     apt-get install -y aria2
 #   fi
@@ -171,8 +171,8 @@ check_script_run_with_privileges
 ## Initialisation de la variable qui permet le calcul du temps d'execution du script
 ##------------------------------------------------------------------------------
 #juste pour vérifier que la fonction de calcul du temps d'execution fonctionne correctement, essayer ensuite de trouver une meilleur solution et de supprimer cette ligne
-timedatectl set-timezone Europe/Paris > /dev/null
-systemctl restart systemd-timesyncd > /dev/null
+timedatectl set-timezone Europe/Paris >/dev/null
+systemctl restart systemd-timesyncd >/dev/null
 # utilisé à des fin de stats pour l'éxecution du script
 start_time="$(date +%s)"
 # pose problème lorsque la date et l'heure ne sont pas à jour (ce qui arrive souvent lors de reprise de snapshot)
@@ -248,6 +248,18 @@ RED='\e[0;31m'
 RESET='\e[0m'
 NOIR='\e[0;30m'
 
+is_dir_present() {
+  local dir="$1"
+  [ -d "$dir" ]
+}
+export -f is_dir_present
+
+is_file_present() {
+  local file="$1"
+  [ -f "$file" ]
+}
+export -f is_file_present
+
 is_dir_present_or_mkdir() {
   local dir="$1"
   [ -d "$dir" ] || mkdir -p "$dir"
@@ -256,7 +268,7 @@ export -f is_dir_present_or_mkdir
 
 is_dir_present_and_rmdir() {
   local dir="$1"
-  [ -d "$dir" ] || return 0
+  [ -d "$dir" ] || true
   [ -d "$dir" ] && rm -rf "$dir"
 }
 export -f is_dir_present_and_rmdir
@@ -270,7 +282,7 @@ export -f reset_dir
 
 is_file_present_and_rmfile() {
   local file="$1"
-  [ -f "$file" ] || return 0
+  [ -f "$file" ] || true
   [ -f "$file" ] && rm -f "$file"
 }
 export -f is_file_present_and_rmfile
@@ -463,7 +475,7 @@ sync_date_and_time
 ## vérification que le script s'execute sur une debian
 ##------------------------------------------------------------------------------
 check_distrib_is_debian() {
-  if $(grep '^NAME=' /etc/os-release | grep -i 'debian' &> /dev/null); then
+  if $(grep '^NAME=' /etc/os-release | grep -i 'debian' &>/dev/null); then
     version_linux='Debian'
   else
     echo -e "${RED}######################################################################${RESET}" | tee --append "$log_file"
@@ -490,7 +502,7 @@ CURL='curl --silent --location --show-error'
 # on check si les processus parents qui ont lancés le bash qui executera les commandes a été lancé à partir d'un processus parent qui correspond à "gnome-terminal"
 # ref de la méthode : [macos - How to identify the terminal from a script? - Super User](https://superuser.com/questions/683962/how-to-identify-the-terminal-from-a-script/683973#683973)
 
-# peut aussi se faire à l'aide de pstree avec cette commande : if ! $(pstree -sg $$ | grep 'gnome-terminal' &> /dev/null); then
+# peut aussi se faire à l'aide de pstree avec cette commande : if ! $(pstree -sg $$ | grep 'gnome-terminal' &>/dev/null); then
 # ref : [How to get parent PID of a given process in GNU/Linux from command line? - Super User](https://superuser.com/questions/150117/how-to-get-parent-pid-of-a-given-process-in-gnu-linux-from-command-line/1043124#1043124)
 is_script_launch_with_gnome_terminal() {
   get_all_parent_PID() {
@@ -501,7 +513,7 @@ is_script_launch_with_gnome_terminal() {
         [[ $pid -gt 1 ]] && get_all_parent_PID $ppid
       )
   }
-if get_all_parent_PID | grep 'gnome-terminal' &> /dev/null; then
+if get_all_parent_PID | grep 'gnome-terminal' &>/dev/null; then
   script_is_launch_with_gnome_terminal='1'
 fi
 }
@@ -512,8 +524,8 @@ is_script_launch_with_gnome_terminal
 ## vérification que le SecureBoot est activé
 ##------------------------------------------------------------------------------
 check_secureboot_enabled() {
-  if $(command -v mokutil > /dev/null); then
-    if $(mokutil --sb-state 2> /dev/null | grep -q 'SecureBoot enabled'); then
+  if $(command -v mokutil >/dev/null); then
+    if $(mokutil --sb-state 2>/dev/null | grep -q 'SecureBoot enabled'); then
       secureboot_enable=1
     fi
   fi
@@ -528,13 +540,13 @@ check_latest_version_manual_install_apps() {
   veracrypt_version="$($CURL 'https://www.veracrypt.fr/en/Downloads.html' | grep 'tar.bz2' | grep -v '.sig\|x86\|Source\|freebsd' | grep -Po '(?<=veracrypt-)([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+-[[:alnum:]]+|[[:digit:]]+\.[[:digit:]]+-[[:alnum:]]+|[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+|[[:digit:]]+\.[[:digit:]]+)(?=-setup)')"
   # permet de récupérer la version lorsque la release est du type 'veracrypt-1.24-Update3-setup.tar.bz2' ainsi que 'veracrypt-1.24.3-Update3-setup.tar.bz2' ou 'veracrypt-1.24-setup.tar.bz2' ou 'veracrypt-1.24.4-setup.tar.bz2'
   if [ $? != 0 ] || [ -z "$veracrypt_version" ]; then
-      veracrypt_version='1.25.9'
+      veracrypt_version='1.26.7'
   fi
   # check version : https://www.veracrypt.fr/en/Downloads.html
 
   drawio_version="$($CURL 'https://api.github.com/repos/jgraph/drawio-desktop/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
   if [ $? != 0 ] || [ -z "$drawio_version" ]; then
-    drawio_version='21.1.2'
+    drawio_version='24.7.5'
   fi
   # check version : https://github.com/jgraph/drawio-desktop/releases
 
@@ -552,11 +564,11 @@ check_latest_version_manual_install_apps() {
 
   shotcut_version="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
   if [ $? != 0 ] || [ -z "$shotcut_version" ]; then
-    shotcut_version='22.12.21'
+    shotcut_version='24.06.26'
   fi
   shotcut_appimage="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"name": "\K.*?(?=")' | grep 'AppImage')"
   if [ $? != 0 ] || [ -z "$shotcut_appimage" ]; then
-    shotcut_appimage='shotcut-linux-x86_64-221221.AppImage'
+    shotcut_appimage='shotcut-linux-x86_64-240626.AppImage'
   fi
   # check version : https://github.com/mltframework/shotcut/releases/
 
@@ -568,13 +580,13 @@ check_latest_version_manual_install_apps() {
 
   keepassxc_version="$($CURL 'https://api.github.com/repos/keepassxreboot/keepassxc/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
   if [ $? != 0 ] || [ -z "$keepassxc_version" ]; then
-    keepassxc_version='2.7.4'
+    keepassxc_version='2.7.9'
   fi
   # check version : https://github.com/keepassxreboot/keepassxc/releases/
 
   bat_version="$($CURL 'https://api.github.com/repos/sharkdp/bat/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
   if [ $? != 0 ] || [ -z "$bat_version" ]; then
-    bat_version='0.23.0'
+    bat_version='0.24.0'
   fi
   # check version : https://github.com/sharkdp/bat/releases/
 
@@ -586,7 +598,7 @@ check_latest_version_manual_install_apps() {
 
   joplin_version="$($CURL 'https://api.github.com/repos/laurent22/joplin/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
   if [ $? != 0 ] || [ -z "$joplin_version" ]; then
-    joplin_version='2.9.17'
+    joplin_version='3.0.14'
   fi
   # check version : https://github.com/laurent22/joplin/releases/
 
@@ -598,7 +610,7 @@ check_latest_version_manual_install_apps() {
 
   opensnitch_stable_version="$($CURL 'https://api.github.com/repos/evilsocket/opensnitch/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
   if [ $? != 0 ] || [ -z "$opensnitch_stable_version" ]; then
-    opensnitch_stable_version='1.5.2'
+    opensnitch_stable_version='1.6.6'
   fi
   # check version : https://github.com/evilsocket/opensnitch/releases/
 
@@ -624,19 +636,19 @@ check_latest_version_manual_install_apps() {
 
   geeqie_version="$($CURL 'https://api.github.com/repos/BestImageViewer/geeqie/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
   if [ $? != 0 ] || [ -z "$geeqie_version" ]; then
-    geeqie_version='2.1'
+    geeqie_version='2.4'
   fi
   # check version : https://github.com/BestImageViewer/geeqie/releases
 
   ytdlp_version="$($CURL 'https://api.github.com/repos/yt-dlp/yt-dlp/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
   if [ $? != 0 ] || [ -z "$ytdlp_version" ]; then
-    ytdlp_version='2023.03.04'
+    ytdlp_version='2024.07.25'
   fi
   # check version : https://github.com/yt-dlp/yt-dlp/releases/
 
   ventoy_version="$($CURL 'https://api.github.com/repos/ventoy/Ventoy/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
   if [ $? != 0 ] || [ -z "$ventoy_version" ]; then
-    ventoy_version='1.0.91'
+    ventoy_version='1.0.99'
   fi
   # check version : https://github.com/ventoy/Ventoy/releases
 }
@@ -703,7 +715,7 @@ local_user="$(awk -F':' '/:1000:/{print $1}' /etc/passwd)"
 local_user_UID="$(id -u "$local_user")"
 gnome_shell_extension_path="/home/"$local_user"/.local/share/gnome-shell/extensions"
 export ExeAsUser="sudo -u "$local_user""
-AGI='apt-get install -y'
+AGI='apt-get -o DPkg::Options::=--force-confnew -o DPkg::Options::=--force-confmiss install -y'
 AG='apt-get'
 WGET='wget -q'
 computer_proc_architecture="$(uname -r | grep -Po '(.*-)\K.*')"
@@ -719,20 +731,20 @@ network_int_name="$(ip route list default | awk 'NR==1,/^default/{print $5}')"
 # une autre commande qui permet de se passer de la commande ip en utilisant uniquement les infos lspci et depuis /sys (ne fonctionne qu'avec une interface Ethernet connecté en PCI)
 # pci=`lspci  | awk '/Ethernet/{print $1}'`; find /sys/class/net ! -type d | xargs --max-args=1 realpath | awk -v pciid=$pci -F\/ '{if($0 ~ pciid){print $NF}}'
 
-IPv4_local_address="$(ip -o -4 addr list "$network_int_name" | awk '{print $4}' | cut -d/ -f1)"
-IPv4_external_address="$(curl --silent --location 'https://ipinfo.io/ip' 2>/dev/null)"
-if [ -z "$IPv4_external_address" ]; then
-  IPv4_external_address="$($WGET --output-document - 'https://ifconfig.me')"
+ipv4_local_address="$(ip -o -4 addr list "$network_int_name" | awk '{print $4}' | cut -d/ -f1)"
+ipv4_external_address="$(curl --silent --location 'https://ipinfo.io/ip' 2>/dev/null)"
+if [ -z "$ipv4_external_address" ]; then
+  ipv4_external_address="$($WGET --output-document - 'https://ifconfig.me')"
 fi
-IPv6_local_address="$(ip -o -6 addr list "$network_int_name" | awk '/fe80/{print $4}' | cut -d/ -f1)"
-IPv6_external_address="$(ip -o -6 addr list "$network_int_name" | grep -v 'noprefixroute' | awk '{print $4}' | cut -d/ -f1)"
-computer_RAM="$(awk '/^MemTotal:/{printf("%.0f", $2/1024/1024+1);}' /proc/meminfo)"
+ipv6_local_address="$(ip -o -6 addr list "$network_int_name" | awk '/fe80/{print $4}' | cut -d/ -f1)"
+ipv6_external_address="$(ip -o -6 addr list "$network_int_name" | grep -v 'noprefixroute' | awk '{print $4}' | cut -d/ -f1)"
+computer_ram="$(awk '/^MemTotal:/{printf("%.0f", $2/1024/1024+1);}' /proc/meminfo)"
 # grep "MemTotal" /proc/meminfo | awk '{print $2}' | sed -r 's/.{3}$//'
 # potentiellement à remplacer avec free -g | awk '/^Mem:/{print $2}'
 
 computer_proc_nb="$(grep -c '^processor' /proc/cpuinfo)"
 computer_proc_model_name="$(grep -Po -m 1 '(^model name\s*: )\K.*' /proc/cpuinfo)"
-computer_proc_vendor_ID="$(grep -Po -m 1 '(^vendor_id\s*: )\K.*' /proc/cpuinfo)"
+computer_proc_vendor_id="$(grep -Po -m 1 '(^vendor_id\s*: )\K.*' /proc/cpuinfo)"
 debian_release="$(lsb_release -sc)"
 if [ -z "$debian_release" ]; then
   debian_release="$(awk -F'=' '/^VERSION_CODENAME=/{print $2}' /etc/os-release)"
@@ -792,7 +804,7 @@ exec_graphic_app_with_user_privileges() {
   sudo -u "$local_user" timeout 10 "$1"
 }
 # cette commande permet de lancer audacity depuis l'utilisateur root :
-# DISPLAY=:0 setsid sudo -u "$local_user" DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" audacity &> /dev/null
+# DISPLAY=:0 setsid sudo -u "$local_user" DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" audacity &>/dev/null
 # quit_graceffuly_graphic_apps_from_dbus () {
 #   graphic_application="$1"
 # DISPLAY=:0 sudo -u "$local_user" DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" sh -s << EOF
@@ -805,7 +817,7 @@ exec_graphic_app_with_user_privileges() {
 #   global.get_window_actors()
 #     .map(w=>w.meta_window)
 #     .find(mw=>mw.get_title().includes('$graphic_application'));
-#     mw.kill(0)" > /dev/null
+#     mw.kill(0)" >/dev/null
 # EOF
 # }
 # quit_graceffuly_graphic_apps_from_dbus "Audacity"
@@ -870,13 +882,13 @@ if [ "$secureboot_enable" == 1 ]; then
 else
   echo '              SecureBoot          : Désactivé'
 fi
-echo '              adresse IPv4 local  : '"$IPv4_local_address"
-echo '              adresse IPv4 extern : '"$IPv4_external_address"
-if [ "$IPv6_local_address" ]; then
-  echo '              adresse IPv6 local  : '"$IPv6_local_address"
+echo '              adresse IPv4 local  : '"$ipv4_local_address"
+echo '              adresse IPv4 extern : '"$ipv4_external_address"
+if [ "$ipv6_local_address" ]; then
+  echo '              adresse IPv6 local  : '"$ipv6_local_address"
 fi
-if [ "$IPv6_external_address" ]; then
-  echo '              adresse IPv6 extern : '"$IPv6_external_address"
+if [ "$ipv6_external_address" ]; then
+  echo '              adresse IPv6 extern : '"$ipv6_external_address"
 fi
 echo ''
 echo '     ================================================================'
@@ -926,7 +938,7 @@ tmp_all_package_list_before="$(dpkg --get-selections | awk '{if ($2 == "install"
 configure_apt() {
   cat> /etc/apt/preferences.d/my_apt_preference << 'EOF'
 # blacklist some unwanted MTA
-Package: exim4-base exim4-config exim4-daemon-heavy exim4-daemon-light mailutils bsd-mailx ssmtp
+Package: exim4-base exim4-config exim4-daemon-heavy exim4-daemon-light mailutils bsd-mailx ssmtp sendemail-base sendemail-bin sendemail-cf
 Pin: release *
 Pin-Priority: -1
 
@@ -1028,20 +1040,33 @@ echo '     #                      MISE A JOUR DU SYSTEM                   #'
 echo '     ################################################################'
 echo ''
 
-displayandexec "Mise à jour des certificats racine                  " "\
-update-ca-certificates"
+update_ca_certificates() {
+  displayandexec "Mise à jour des certificats racine                  " "\
+  update-ca-certificates --verbose"
+}
+update_ca_certificates
 
 # make debian non-interactive
 export DEBIAN_FRONTEND=noninteractive DEBCONF_ADMIN_EMAIL="" UCF_FORCE_CONFFNEW=1 UCF_FORCE_CONFFMISS=1
 
-displayandexec "Mise à jour du system                               " "\
-$AG update && $AG -o DPkg::Options::=--force-confnew -o DPkg::Options::=--force-confmiss upgrade -y"
-if [ $? != 0 ]; then
+upgrade_system_apt() {
   displayandexec "Mise à jour du system                               " "\
-  unset UCF_FORCE_CONFFNEW && \
-  unset UCF_FORCE_CONFFMISS && \
-  $AG update && $AG -o DPkg::Options::=--force-confnew -o DPkg::Options::=--force-confmiss upgrade -y"
-fi
+  $AG update && \
+  $AG -o DPkg::Options::=--force-confnew -o DPkg::Options::=--force-confmiss upgrade -y"
+  if [ $? != 0 ]; then
+    displayandexec "Mise à jour du system                               " "\
+    unset UCF_FORCE_CONFFNEW && \
+    unset UCF_FORCE_CONFFMISS && \
+    $AG update && \
+    $AG -o DPkg::Options::=--force-confnew -o DPkg::Options::=--force-confmiss upgrade -y"
+  fi
+}
+upgrade_system_apt
+
+# on est parfois obliger de unset "UCF_FORCE_CONFFNEW" et "UCF_FORCE_CONFFMISS" à cause de ce cas :
+# [#1002038 - noninteractive upgrade with UCF_FORCE_CONFFNEW=1 fail with ucf conflict - Debian Bug report logs](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1002038)
+# [Bug#1024247: grub-efi-amd64: conf_force_conffnew=YES in /etc/ucf.conf breaks grub-efi-amd64.postinst](https://groups.google.com/g/linux.debian.bugs.dist/c/dSp-TmnykLE)
+# [testboot/ucf at master · fliphess/testboot · GitHub](https://github.com/fliphess/testboot/blob/master/chroot/usr/bin/ucf#L488)
 ################################################################################
 
 ################################################################################
@@ -1077,16 +1102,12 @@ configure_debconf
 ################################################################################
 ## Update PCI ID list
 ##------------------------------------------------------------------------------
-displayandexec "Mise à jour de la liste des ID PCI                  " "update-pciids"
+update_pciids() {
+  displayandexec "Mise à jour de la liste des ID PCI                  " "update-pciids"
+}
+update_pciids
 # This utility requires curl, wget or lynx to be installed.
 # le binnaire est situé ici : /usr/sbin/update-pciids
-################################################################################
-
-################################################################################
-## Update udev Hardware Database
-##------------------------------------------------------------------------------
-displayandexec "Mise à jour de udev Hardware Databse                " "systemd-hwdb update"
-# [hwdb(7) — udev — Debian testing — Debian Manpages](https://manpages.debian.org/testing/udev/hwdb.7.en.html)
 ################################################################################
 
 ################################################################################
@@ -1100,10 +1121,10 @@ echo ''
 
 # si besoin de iwlwifi
 # awk '{print $2}' /proc/bus/pci/devices | grep '^8086'
-if awk '{print $2}' /proc/bus/pci/devices | grep '^8086' &> /dev/null; then
+if awk '{print $2}' /proc/bus/pci/devices | grep '^8086' &>/dev/null; then
   for intel_device in $(grep -Po '^[[:xdigit:]]{4}[[:blank:]]+8086\K[[:xdigit:]]{4}' /proc/bus/pci/devices); do
     # on s'assure que le device intel est bien une carte wifi
-    if grep "[[:blank:]]"$intel_device"[[:blank:]]" /usr/share/misc/pci.ids | grep -i -e 'wireless' -e 'Wi-Fi' -e 'WiFi' &> /dev/null; then
+    if grep "[[:blank:]]"$intel_device"[[:blank:]]" /usr/share/misc/pci.ids | grep -i -e 'wireless' -e 'Wi-Fi' -e 'WiFi' &>/dev/null; then
       displayandexec "Installation de firmware-iwlwifi                    " "$AGI firmware-iwlwifi"
     fi
   done
@@ -1114,7 +1135,7 @@ fi
 # lspci -nn | grep -i 'network' | grep -i 'intel'
 # Pour récupérer l'id qui permet de déterminer quelle est la carte wifi utilisé : cat /proc/bus/pci/devices | column --table | grep -Po "^[[:xdigit:]]{4}[[:blank:]]+8086\K[[:xdigit:]]{4}"
 
-# if grep '0x8086' /sys/devices/pci0000:00/*/*/ieee80211/phy0/device/vendor &> /dev/null; then
+# if grep '0x8086' /sys/devices/pci0000:00/*/*/ieee80211/phy0/device/vendor &>/dev/null; then
 # 	displayandexec "Installation de firmware-iwlwifi                    " "$AGI firmware-iwlwifi"
 # fi
 # La commande précédente ne fonctionne pas car à priori il faut que iwlwifi soit déjà installé pour qu'on puiss avoir une entrée dans sysfs qui positionne le bus PCI de la carte wifi avec un sous répetoire
@@ -1132,7 +1153,7 @@ fi
 # script intéressant pour ce type d'élément : [Gujin: gujin.sh | Fossies](https://fossies.org/linux/gujin/gujin.sh)
 
 # ancienne commande utilisée (avec lspci) :
-# lspci -nn | grep 'Network' | grep 'Intel' &> /dev/null
+# lspci -nn | grep 'Network' | grep 'Intel' &>/dev/null
 # if [ $? == 0 ]; then
 #    displayandexec "Installation de firmware-iwlwifi                    " "$AGI firmware-iwlwifi"
 # fi
@@ -1140,10 +1161,10 @@ fi
 # si CPU/GPU is AMD
 # awk '!/^[[:blank:]]/ && /^1002/' /usr/share/misc/pci.ids
 # l'ID 1002 correspond à Advanced Micro Devices, Inc. [AMD/ATI]
-if awk '{print $2}' /proc/bus/pci/devices | grep '^1002' &> /dev/null; then
+if awk '{print $2}' /proc/bus/pci/devices | grep '^1002' &>/dev/null; then
   for amd_device in $(grep -Po '^[[:xdigit:]]{4}[[:blank:]]+1002\K[[:xdigit:]]{4}' /proc/bus/pci/devices); do
     # on s'assure que le device AMD est bien une carte graphique
-    if grep "[[:blank:]]"$amd_device"[[:blank:]]" /usr/share/misc/pci.ids | grep -iw 'Radeon' &> /dev/null; then
+    if grep "[[:blank:]]"$amd_device"[[:blank:]]" /usr/share/misc/pci.ids | grep -iw 'Radeon' &>/dev/null; then
       displayandexec "Installation de firmware-amd-graphics               " "$AGI firmware-amd-graphics"
       displayandexec "Installation de xserver-xorg-video-amdgpu           " "$AGI xserver-xorg-video-amdgpu"
       displayandexec "Installation de radeontop                           " "$AGI radeontop"
@@ -1154,10 +1175,10 @@ fi
 # si CPU/GPU is Intel
 # awk '!/^[[:blank:]]/ && /^8086/' /usr/share/misc/pci.ids
 # l'ID 8086 correspond à Intel Corporation
-if awk '{print $2}' /proc/bus/pci/devices | grep '^8086' &> /dev/null; then
+if awk '{print $2}' /proc/bus/pci/devices | grep '^8086' &>/dev/null; then
   for intel_device in $(grep -Po '^[[:xdigit:]]{4}[[:blank:]]+8086\K[[:xdigit:]]{4}' /proc/bus/pci/devices); do
     # on s'assure que le device Intel est bien une carte graphique
-    if grep "[[:blank:]]"$intel_device"[[:blank:]]" /usr/share/misc/pci.ids | grep -iw 'Graphics' &> /dev/null; then
+    if grep "[[:blank:]]"$intel_device"[[:blank:]]" /usr/share/misc/pci.ids | grep -iw 'Graphics' &>/dev/null; then
       displayandexec "Installation de intel-gpu-tools                     " "$AGI intel-gpu-tools"
     fi
   done
@@ -1166,10 +1187,10 @@ fi
 # si carte Ethernet Realtek
 # awk '!/^[[:blank:]]/ && /^10ec/' /usr/share/misc/pci.ids
 # l'ID 10ec correspond à Realtek Semiconductor Co., Ltd.
-if awk '{print $2}' /proc/bus/pci/devices | grep '^10ec' &> /dev/null; then
+if awk '{print $2}' /proc/bus/pci/devices | grep '^10ec' &>/dev/null; then
   for realtek_device in $(grep -Po '^[[:xdigit:]]{4}[[:blank:]]+10ec\K[[:xdigit:]]{4}' /proc/bus/pci/devices); do
     # on s'assure que le device Realtek est bien une carte Ethernet
-    if grep "[[:blank:]]"$realtek_device"[[:blank:]]" /usr/share/misc/pci.ids | grep -iw 'Ethernet' &> /dev/null; then
+    if grep "[[:blank:]]"$realtek_device"[[:blank:]]" /usr/share/misc/pci.ids | grep -iw 'Ethernet' &>/dev/null; then
       displayandexec "Installation de firmware-realtek                    " "$AGI firmware-realtek"
     fi
   done
@@ -1177,185 +1198,204 @@ fi
 
 # on active le mode case insensitive de bash
 shopt -s nocasematch
-if [[ "$computer_proc_vendor_ID" =~ amd ]]; then
+if [[ "$computer_proc_vendor_id" =~ amd ]]; then
   displayandexec "Installation de amd64-microcode                     " "$AGI amd64-microcode"
 fi
-if [[ "$computer_proc_vendor_ID" =~ intel ]]; then
+if [[ "$computer_proc_vendor_id" =~ intel ]]; then
   displayandexec "Installation de intel-microcode                     " "$AGI intel-microcode"
 fi
 # on déscactive le mode case insensitive de bash
 shopt -u nocasematch
 
-displayandexec "Installation de ascii                               " "$AGI ascii"
-displayandexec "Installation de aria2                               " "$AGI aria2"
-displayandexec "Installation de arping                              " "$AGI arping"
-displayandexec "Installation de auditd                              " "$AGI auditd"
-displayandexec "Installation de audacity                            " "$AGI audacity"
-displayandexec "Installation de apparmor-profiles                   " "$AGI apparmor-profiles"
-displayandexec "Installation de apparmor-profiles-extra             " "$AGI apparmor-profiles-extra"
-displayandexec "Installation de bind9-dnsutils                      " "$AGI bind9-dnsutils"
-displayandexec "Installation de binwalk                             " "$AGI binwalk"
-displayandexec "Installation de bpftool                             " "$AGI bpftool"
-displayandexec "Installation de bwm-ng                              " "$AGI bwm-ng"
-displayandexec "Installation de cadaver                             " "$AGI cadaver"
-displayandexec "Installation de calibre                             " "$AGI calibre"
-displayandexec "Installation de chkrootkit                          " "$AGI chkrootkit"
-displayandexec "Installation de chromium                            " "$AGI chromium-l10n"
-displayandexec "Installation de clamav                              " "$AGI clamav clamtk clamtk-gnome libclamunrar"
-displayandexec "Installation de colordiff                           " "$AGI colordiff"
-displayandexec "Installation de cups                                " "$AGI cups"
-displayandexec "Installation de curl                                " "$AGI curl"
-displayandexec "Installation de debconf-utils                       " "$AGI debconf-utils"
-displayandexec "Installation de dmidecode                           " "$AGI dmidecode"
-displayandexec "Installation de dmitry                              " "$AGI dmitry"
-displayandexec "Installation de dos2unix                            " "$AGI dos2unix"
-displayandexec "Installation de elfutils                            " "$AGI elfutils"
-displayandexec "Installation de ethtool                             " "$AGI ethtool"
-displayandexec "Installation de ettercap-graphical                  " "$AGI ettercap-graphical" # à vérifier, mais peut-être que ce paquet pourra être supprimer
-displayandexec "Installation de evince                              " "$AGI evince"
-displayandexec "Installation de exiv2                               " "$AGI exiv2"
-displayandexec "Installation de ffmpeg                              " "$AGI ffmpeg"
-displayandexec "Installation de filezilla                           " "$AGI filezilla"
-displayandexec "Installation de firefox-esr-l10n-fr                 " "$AGI firefox-esr-l10n-fr"
-displayandexec "Installation de firejail                            " "$AGI firejail firejail-profiles"
-displayandexec "Installation de flameshot                           " "$AGI flameshot"
-displayandexec "Installation de freerdp2-wayland                    " "$AGI freerdp2-wayland"
-displayandexec "Installation de gcc                                 " "$AGI gcc"
-displayandexec "Installation de genisoimage                         " "$AGI genisoimage" # needed to get isoinfo binnary
-displayandexec "Installation de gimp                                " "$AGI gimp"
-displayandexec "Installation de git                                 " "$AGI git"
-displayandexec "Installation de gitk                                " "$AGI gitk"
-displayandexec "Installation de gparted                             " "$AGI gparted"
-displayandexec "Installation de gsmartcontrol                       " "$AGI gsmartcontrol"
-displayandexec "Installation de handbrake                           " "$AGI handbrake"
-displayandexec "Installation de hardinfo                            " "$AGI hardinfo"
-displayandexec "Installation de hdparm                              " "$AGI hdparm"
-displayandexec "Installation de htop                                " "$AGI htop"
-displayandexec "Installation de hugo                                " "$AGI hugo"
-displayandexec "Installation de hydra-gtk                           " "$AGI hydra-gtk"
-displayandexec "Installation de hwinfo                              " "$AGI hwinfo"
-displayandexec "Installation de icdiff                              " "$AGI icdiff"
-displayandexec "Installation de iftop                               " "$AGI iftop"
-displayandexec "Installation de inxi                                " "$AGI inxi"
-displayandexec "Installation de inkscape                            " "$AGI inkscape"
-displayandexec "Installation de iotop                               " "$AGI iotop"
-displayandexec "Installation de ipcalc                              " "$AGI ipcalc"
-displayandexec "Installation de jq                                  " "$AGI jq"
-displayandexec "Installation de libnotify-bin                       " "$AGI libnotify-bin"
-displayandexec "Installation de linux-cpupower                      " "$AGI linux-cpupower"
-displayandexec "Installation de linux-perf                          " "$AGI linux-perf"
-displayandexec "Installation de lnav                                " "$AGI lnav"
-displayandexec "Installation de locate                              " "$AGI locate"
-displayandexec "Installation de lshw                                " "$AGI lshw"
-displayandexec "Installation de lynx                                " "$AGI lynx"
-displayandexec "Installation de lz4                                 " "$AGI lz4"
-displayandexec "Installation de macchanger                          " "$AGI macchanger"
-displayandexec "Installation de make                                " "$AGI make"
-displayandexec "Installation de mediainfo-gui                       " "$AGI mediainfo mediainfo-gui"
-displayandexec "Installation de mpv                                 " "$AGI mpv youtube-dl-"
-# on n'install pas la dépendance youtube-dl requise par mpv car la version des dépots debian est trop ancienne
-# ref : [ubuntu - How do I get apt-get to ignore some dependencies? - Server Fault](https://serverfault.com/questions/250224/how-do-i-get-apt-get-to-ignore-some-dependencies/663803#663803)
-displayandexec "Installation de msitools                            " "$AGI msitools" # à noter qu'on peut aussi utiliser "7z x" pour extraire le contenu de fichier .msi mais msiextract a l'avantage de garder la structure des répertoires ainsi que les noms et majuscules des fichiers à l'intérieur
-if [ "$bullseye" == 1 ]; then
-  displayandexec "Installation de nautilus-gtkhash                    " "$AGI nautilus-gtkhash"
-fi
-# nautilus-gtkhash a été enlevé de la release bookworm bien qu'il n'y a aucune infos à ce sujet dans le tracker du paquet ou dans le bugtrack
-# ref : [Debian -- Package Search Results -- nautilus-gtkhash](https://packages.debian.org/search?keywords=nautilus-gtkhash)
-# [Draft: Upgrade to Debian 12 (Bookworm) (!1119) · Merge requests · tails / tails · GitLab](https://gitlab.tails.boum.org/tails/tails/-/merge_requests/1119/diffs?commit_id=8d6c7499b0199f31d92566eb868d5b3fa44d2404)
-# [#1016988 - transition: nautilus 43 - Debian Bug report logs](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1016988)
-if [ "$bullseye" == 1 ]; then
-  displayandexec "Installation de nautilus-wipe                       " "$AGI nautilus-wipe"
-fi
-# nautilus-wipe a été supprimé de bookworm car Nautilus utilise GTK4 dans bookworm
-# ref : [#1017619 - nautilus-wipe: Fails to build with nautilus 43 - Debian Bug report logs](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1017619)
-displayandexec "Installation de ncdu                                " "$AGI ncdu"
-displayandexec "Installation de netdiscover                         " "$AGI netdiscover"
-displayandexec "Installation de network-manager-openvpn-gnome       " "$AGI network-manager-openvpn-gnome"
-displayandexec "Installation de network-manager-vpnc-gnome          " "$AGI network-manager-vpnc-gnome"
-# displayandexec "Installation de nextcloud-desktop                   " "$AGI nextcloud-desktop"
-displayandexec "Installation de ngrep                               " "$AGI ngrep"
-displayandexec "Installation de nikto                               " "$AGI nikto"
-displayandexec "Installation de nnn                                 " "$AGI nnn"
-displayandexec "Installation de nmap                                " "$AGI nmap"
-displayandexec "Installation de nvme-cli                            " "$AGI nvme-cli"
-displayandexec "Installation de oathtool                            " "$AGI oathtool"
-displayandexec "Installation de ocrfeeder                           " "$AGI ocrfeeder"
-displayandexec "Installation de openvpn                             " "$AGI openvpn"
-displayandexec "Installation de p7zip-full                          " "$AGI p7zip-full"
-displayandexec "Installation de p7zip-rar                           " "$AGI p7zip-rar"
-displayandexec "Installation de pdfgrep                             " "$AGI pdfgrep"
-displayandexec "Installation de pipx                                " "$AGI pipx"
-displayandexec "Installation de pavucontrol                         " "$AGI pavucontrol"
-displayandexec "Installation de printer-driver-all                  " "$AGI printer-driver-all"
-displayandexec "Installation de pv                                  " "$AGI pv"
-displayandexec "Installation de python3-pip                         " "$AGI python3-pip"
-displayandexec "Installation de python3-scapy                       " "$AGI python3-scapy"
-displayandexec "Installation de rclone                              " "$AGI rclone"
-displayandexec "Installation de rdesktop                            " "$AGI rdesktop"
-displayandexec "Installation de rkhunter                            " "$AGI rkhunter"
-displayandexec "Installation de rsync                               " "$AGI rsync"
-displayandexec "Installation de sdparm                              " "$AGI sdparm"
-displayandexec "Installation de secure-delete                       " "$AGI secure-delete"
-displayandexec "Installation de sg3-utils                           " "$AGI sg3-utils"
-displayandexec "Installation de shotwell                            " "$AGI shotwell"
-displayandexec "Installation de snmp                                " "$AGI snmp"
-displayandexec "Installation de smem                                " "$AGI smem"
-displayandexec "Installation de sqlitebrowser                       " "$AGI sqlitebrowser"
-displayandexec "Installation de screen                              " "$AGI screen"
-displayandexec "Installation de ssh                                 " "$AGI ssh"
-displayandexec "Installation de sshfs                               " "$AGI sshfs"
-displayandexec "Installation de sshpass                             " "$AGI sshpass"
-displayandexec "Installation de strace                              " "$AGI strace"
-displayandexec "Installation de sudo                                " "$AGI sudo"
-displayandexec "Installation de sysstat                             " "$AGI sysstat"
-displayandexec "Installation de tcpdump                             " "$AGI tcpdump"
-displayandexec "Installation de telnet                              " "$AGI telnet"
-displayandexec "Installation de tesseract-ocr                       " "$AGI tesseract-ocr tesseract-ocr-fra"
-displayandexec "Installation de testdisk                            " "$AGI testdisk"
-displayandexec "Installation de testssl.sh                          " "$AGI testssl.sh"
-displayandexec "Installation de tree                                " "$AGI tree"
-displayandexec "Installation de tigervnc-viewer                     " "$AGI tigervnc-viewer"
-displayandexec "Installation de tshark                              " "$AGI tshark"
-displayandexec "Installation de ufw                                 " "$AGI ufw"
-displayandexec "Installation de unoconv                             " "$AGI unoconv"
-displayandexec "Installation de unrar                               " "$AGI unrar"
-displayandexec "Installation de vlc                                 " "$AGI vlc"
-displayandexec "Installation de vpnc                                " "$AGI vpnc"
-displayandexec "Installation de wget                                " "$AGI wget"
-displayandexec "Installation de wine                                " "$AGI wine"
-# displayandexec "Installation de wine32                              " "dpkg --add-architecture i386 && $AG update ; $AGI wine32"
-displayandexec "Installation de wipe                                " "$AGI wipe"
-displayandexec "Installation de wireshark                           " "$AGI wireshark"
-displayandexec "Installation de xclip                               " "$AGI xclip"
-displayandexec "Installation de xfsprogs                            " "$AGI xfsprogs" # nécessaire pour manipuler des filesystems XFS
-displayandexec "Installation de xinput                              " "$AGI xinput"
-displayandexec "Installation de xorriso                             " "$AGI xorriso"
-displayandexec "Installation de xournalpp                           " "$AGI xournalpp"
-displayandexec "Installation de xz-utils                            " "$AGI xz-utils"
-displayandexec "Installation de yersinia                            " "$AGI yersinia" # à réflechir si c'est encore utile
-# displayandexec "Installation de zenmap                              " "$AGI zenmap"
-# zenmap n'est pas dispo dans debian bullseye car python2 est EOL, pour traquer l'avencement du portage du code vers python3 : https://github.com/nmap/nmap/issues/1176
-displayandexec "Installation de zbar-tools                          " "$AGI zbar-tools" # utile pour lire les QRcode en CLI
-displayandexec "Installation de zip                                 " "$AGI zip"
-displayandexec "Installation de zutils                              " "$AGI zutils"
-displayandexec "Installation de zsh                                 " "$AGI zsh zsh-syntax-highlighting"
-displayandexec "Installation de zstd                                " "$AGI zstd"
-displayandexec "Installation de wireguard                           " "$AGI wireguard"
-displayandexec "Installation de whois                               " "$AGI whois"
+install_debian_apt_package() {
+  displayandexec "Installation de ascii                               " "$AGI ascii"
+  displayandexec "Installation de aria2                               " "$AGI aria2"
+  displayandexec "Installation de arping                              " "$AGI arping"
+  displayandexec "Installation de auditd                              " "$AGI auditd"
+  displayandexec "Installation de audacity                            " "$AGI audacity"
+  displayandexec "Installation de apparmor-profiles                   " "$AGI apparmor-profiles"
+  displayandexec "Installation de apparmor-profiles-extra             " "$AGI apparmor-profiles-extra"
+  displayandexec "Installation de bind9-dnsutils                      " "$AGI bind9-dnsutils"
+  displayandexec "Installation de binwalk                             " "$AGI binwalk"
+  displayandexec "Installation de bpftool                             " "$AGI bpftool"
+  displayandexec "Installation de bwm-ng                              " "$AGI bwm-ng"
+  displayandexec "Installation de cadaver                             " "$AGI cadaver"
+  displayandexec "Installation de calibre                             " "$AGI calibre"
+  displayandexec "Installation de chkrootkit                          " "$AGI chkrootkit"
+  displayandexec "Installation de chromium                            " "$AGI chromium-l10n"
+  displayandexec "Installation de clamav                              " "$AGI clamav clamtk clamtk-gnome libclamunrar"
+  displayandexec "Installation de colordiff                           " "$AGI colordiff"
+  displayandexec "Installation de cups                                " "$AGI cups"
+  displayandexec "Installation de curl                                " "$AGI curl"
+  displayandexec "Installation de debconf-utils                       " "$AGI debconf-utils"
+  displayandexec "Installation de dmidecode                           " "$AGI dmidecode"
+  displayandexec "Installation de dmitry                              " "$AGI dmitry"
+  displayandexec "Installation de dos2unix                            " "$AGI dos2unix"
+  displayandexec "Installation de elfutils                            " "$AGI elfutils"
+  displayandexec "Installation de ethtool                             " "$AGI ethtool"
+  displayandexec "Installation de ettercap-graphical                  " "$AGI ettercap-graphical" # à vérifier, mais peut-être que ce paquet pourra être supprimer
+  displayandexec "Installation de evince                              " "$AGI evince"
+  displayandexec "Installation de exiv2                               " "$AGI exiv2"
+  displayandexec "Installation de ffmpeg                              " "$AGI ffmpeg"
+  displayandexec "Installation de filezilla                           " "$AGI filezilla"
+  displayandexec "Installation de firefox-esr-l10n-fr                 " "$AGI firefox-esr-l10n-fr"
+  displayandexec "Installation de firejail                            " "$AGI firejail firejail-profiles"
+  displayandexec "Installation de flameshot                           " "$AGI flameshot"
+  displayandexec "Installation de freerdp2-wayland                    " "$AGI freerdp2-wayland"
+  displayandexec "Installation de gcc                                 " "$AGI gcc"
+  displayandexec "Installation de genisoimage                         " "$AGI genisoimage" # needed to get isoinfo binnary
+  displayandexec "Installation de gimp                                " "$AGI gimp"
+  displayandexec "Installation de git                                 " "$AGI git"
+  displayandexec "Installation de gitk                                " "$AGI gitk"
+  displayandexec "Installation de gparted                             " "$AGI gparted"
+  displayandexec "Installation de gsmartcontrol                       " "$AGI gsmartcontrol"
+  displayandexec "Installation de handbrake                           " "$AGI handbrake"
+  displayandexec "Installation de hardinfo                            " "$AGI hardinfo"
+  displayandexec "Installation de hdparm                              " "$AGI hdparm"
+  displayandexec "Installation de htop                                " "$AGI htop"
+  displayandexec "Installation de hugo                                " "$AGI hugo"
+  displayandexec "Installation de hydra-gtk                           " "$AGI hydra-gtk"
+  displayandexec "Installation de hwinfo                              " "$AGI hwinfo"
+  displayandexec "Installation de icdiff                              " "$AGI icdiff"
+  displayandexec "Installation de iftop                               " "$AGI iftop"
+  displayandexec "Installation de inxi                                " "$AGI inxi"
+  displayandexec "Installation de inkscape                            " "$AGI inkscape"
+  displayandexec "Installation de iotop                               " "$AGI iotop"
+  displayandexec "Installation de ipcalc                              " "$AGI ipcalc"
+  displayandexec "Installation de jq                                  " "$AGI jq"
+  displayandexec "Installation de libnotify-bin                       " "$AGI libnotify-bin"
+  displayandexec "Installation de linux-cpupower                      " "$AGI linux-cpupower"
+  displayandexec "Installation de linux-perf                          " "$AGI linux-perf"
+  displayandexec "Installation de lnav                                " "$AGI lnav"
+  displayandexec "Installation de locate                              " "$AGI locate"
+  displayandexec "Installation de lshw                                " "$AGI lshw"
+  displayandexec "Installation de lynx                                " "$AGI lynx"
+  displayandexec "Installation de lz4                                 " "$AGI lz4"
+  displayandexec "Installation de macchanger                          " "$AGI macchanger"
+  displayandexec "Installation de make                                " "$AGI make"
+  displayandexec "Installation de mediainfo-gui                       " "$AGI mediainfo mediainfo-gui"
+  displayandexec "Installation de mpv                                 " "$AGI mpv youtube-dl-"
+  # on n'install pas la dépendance youtube-dl requise par mpv car la version des dépots debian est trop ancienne
+  # ref : [ubuntu - How do I get apt-get to ignore some dependencies? - Server Fault](https://serverfault.com/questions/250224/how-do-i-get-apt-get-to-ignore-some-dependencies/663803#663803)
+  displayandexec "Installation de msitools                            " "$AGI msitools" # à noter qu'on peut aussi utiliser "7z x" pour extraire le contenu de fichier .msi mais msiextract a l'avantage de garder la structure des répertoires ainsi que les noms et majuscules des fichiers à l'intérieur
+  if [ "$bullseye" == 1 ]; then
+    displayandexec "Installation de nautilus-gtkhash                    " "$AGI nautilus-gtkhash"
+  fi
+  # nautilus-gtkhash a été enlevé de la release bookworm bien qu'il n'y a aucune infos à ce sujet dans le tracker du paquet ou dans le bugtrack
+  # ref : [Debian -- Package Search Results -- nautilus-gtkhash](https://packages.debian.org/search?keywords=nautilus-gtkhash)
+  # [Draft: Upgrade to Debian 12 (Bookworm) (!1119) · Merge requests · tails / tails · GitLab](https://gitlab.tails.boum.org/tails/tails/-/merge_requests/1119/diffs?commit_id=8d6c7499b0199f31d92566eb868d5b3fa44d2404)
+  # [#1016988 - transition: nautilus 43 - Debian Bug report logs](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1016988)
+  if [ "$bullseye" == 1 ]; then
+    displayandexec "Installation de nautilus-wipe                       " "$AGI nautilus-wipe"
+  fi
+  # nautilus-wipe a été supprimé de bookworm car Nautilus utilise GTK4 dans bookworm
+  # ref : [#1017619 - nautilus-wipe: Fails to build with nautilus 43 - Debian Bug report logs](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1017619)
+  displayandexec "Installation de ncdu                                " "$AGI ncdu"
+  displayandexec "Installation de netdiscover                         " "$AGI netdiscover"
+  displayandexec "Installation de network-manager-openvpn-gnome       " "$AGI network-manager-openvpn-gnome"
+  displayandexec "Installation de network-manager-vpnc-gnome          " "$AGI network-manager-vpnc-gnome"
+  # displayandexec "Installation de nextcloud-desktop                   " "$AGI nextcloud-desktop"
+  displayandexec "Installation de ngrep                               " "$AGI ngrep"
+  displayandexec "Installation de nikto                               " "$AGI nikto"
+  displayandexec "Installation de nnn                                 " "$AGI nnn"
+  displayandexec "Installation de nmap                                " "$AGI nmap"
+  displayandexec "Installation de nvme-cli                            " "$AGI nvme-cli"
+  displayandexec "Installation de oathtool                            " "$AGI oathtool"
+  displayandexec "Installation de ocrfeeder                           " "$AGI ocrfeeder"
+  displayandexec "Installation de openvpn                             " "$AGI openvpn"
+  displayandexec "Installation de p7zip-full                          " "$AGI p7zip-full"
+  displayandexec "Installation de p7zip-rar                           " "$AGI p7zip-rar"
+  displayandexec "Installation de pdfgrep                             " "$AGI pdfgrep"
+  displayandexec "Installation de pipx                                " "$AGI pipx"
+  displayandexec "Installation de pavucontrol                         " "$AGI pavucontrol"
+  displayandexec "Installation de printer-driver-all                  " "$AGI printer-driver-all"
+  displayandexec "Installation de pv                                  " "$AGI pv"
+  displayandexec "Installation de python3-pip                         " "$AGI python3-pip"
+  displayandexec "Installation de python3-scapy                       " "$AGI python3-scapy"
+  displayandexec "Installation de rclone                              " "$AGI rclone"
+  displayandexec "Installation de rdesktop                            " "$AGI rdesktop"
+  displayandexec "Installation de rkhunter                            " "$AGI rkhunter"
+  displayandexec "Installation de rsync                               " "$AGI rsync"
+  displayandexec "Installation de sdparm                              " "$AGI sdparm"
+  displayandexec "Installation de secure-delete                       " "$AGI secure-delete"
+  displayandexec "Installation de sg3-utils                           " "$AGI sg3-utils"
+  displayandexec "Installation de shotwell                            " "$AGI shotwell"
+  displayandexec "Installation de snmp                                " "$AGI snmp"
+  displayandexec "Installation de smem                                " "$AGI smem"
+  displayandexec "Installation de sqlitebrowser                       " "$AGI sqlitebrowser"
+  displayandexec "Installation de ssh                                 " "$AGI ssh"
+  displayandexec "Installation de sshfs                               " "$AGI sshfs"
+  displayandexec "Installation de sshpass                             " "$AGI sshpass"
+  displayandexec "Installation de strace                              " "$AGI strace"
+  displayandexec "Installation de sudo                                " "$AGI sudo"
+  displayandexec "Installation de sysstat                             " "$AGI sysstat"
+  displayandexec "Installation de tcpdump                             " "$AGI tcpdump"
+  displayandexec "Installation de telnet                              " "$AGI telnet"
+  displayandexec "Installation de tesseract-ocr                       " "$AGI tesseract-ocr tesseract-ocr-fra"
+  displayandexec "Installation de testdisk                            " "$AGI testdisk"
+  displayandexec "Installation de testssl.sh                          " "$AGI testssl.sh"
+  displayandexec "Installation de tmux                                " "$AGI tmux"
+  displayandexec "Installation de tree                                " "$AGI tree"
+  displayandexec "Installation de tigervnc-viewer                     " "$AGI tigervnc-viewer"
+  displayandexec "Installation de tshark                              " "$AGI tshark"
+  displayandexec "Installation de ufw                                 " "$AGI ufw"
+  displayandexec "Installation de unoconv                             " "$AGI unoconv"
+  displayandexec "Installation de unrar                               " "$AGI unrar"
+  displayandexec "Installation de vlc                                 " "$AGI vlc"
+  displayandexec "Installation de vpnc                                " "$AGI vpnc"
+  displayandexec "Installation de wget                                " "$AGI wget"
+  displayandexec "Installation de wine                                " "$AGI wine"
+  # displayandexec "Installation de wine32                              " "dpkg --add-architecture i386 && $AG update ; $AGI wine32"
+  displayandexec "Installation de wipe                                " "$AGI wipe"
+  displayandexec "Installation de wireshark                           " "$AGI wireshark"
+  displayandexec "Installation de xclip                               " "$AGI xclip"
+  displayandexec "Installation de xfsprogs                            " "$AGI xfsprogs" # nécessaire pour manipuler des filesystems XFS
+  displayandexec "Installation de xinput                              " "$AGI xinput"
+  displayandexec "Installation de xorriso                             " "$AGI xorriso"
+  displayandexec "Installation de xournalpp                           " "$AGI xournalpp"
+  displayandexec "Installation de xz-utils                            " "$AGI xz-utils"
+  displayandexec "Installation de yersinia                            " "$AGI yersinia" # à réflechir si c'est encore utile
+  # displayandexec "Installation de zenmap                              " "$AGI zenmap"
+  # zenmap n'est pas dispo dans debian bullseye car python2 est EOL, pour traquer l'avencement du portage du code vers python3 : https://github.com/nmap/nmap/issues/1176
+  displayandexec "Installation de zbar-tools                          " "$AGI zbar-tools" # utile pour lire les QRcode en CLI
+  displayandexec "Installation de zip                                 " "$AGI zip"
+  displayandexec "Installation de zutils                              " "$AGI zutils"
+  displayandexec "Installation de zsh                                 " "$AGI zsh zsh-syntax-highlighting"
+  displayandexec "Installation de zstd                                " "$AGI zstd"
+  displayandexec "Installation de wireguard                           " "$AGI wireguard"
+  displayandexec "Installation de whois                               " "$AGI whois"
+}
+install_debian_apt_package
+
+check_if_package_present_in_backports_repo() {
+  local package="$1"
+  apt-cache policy "$package" | sed -n '/Version table:/{n;n;p;}' | grep -eq '-backports' &>/dev/null
+}
 
 install_from_backports() {
-  if apt-cache policy firejail | sed -n '/Version table:/{n;n;p;}' | grep -e '-backports' &> /dev/null; then
-    displayandexec "Installation de firejail                            " "$AG -t "$debian_release"-backports install -y firejail firejail-profiles"
-  fi
+  local package="$1"
+  displayandexec "Installation de "$package"                            " "$AG -t "$debian_release"-backports install -y "$package""
 }
-# a savoir que juste après la release de la latest stable de debian, les paquets ne sont probablement pas disponnibles dans les backports et qu'il faut donc les garder aussi dans l'installation des paquets depuis le main standard pour pouvoir être compatible avec une instable from scratch apès une nouvelle release de debian.
-# On permet toutefois l'install de la dernière version disponnible dans backport si elle existe (vérification avec la commande apt-cache policy firejail | sed -n '/Version table:/{n;n;p;}' | grep -e '-backports')
 install_from_backports
+# a savoir que juste après la release de la latest stable de debian, les paquets ne sont probablement pas disponnibles dans les backports et qu'il faut donc les garder aussi dans l'installation des paquets depuis le "main" standard pour pouvoir être compatible avec une install from scratch apès une nouvelle release de debian.
+# On permet toutefois l'install de la dernière version disponnible dans backport si elle existe (vérification avec la commande apt-cache policy firejail | sed -n '/Version table:/{n;n;p;}' | grep -eq '-backports')
+
+package_to_install_from_backports_if_available='
+firejail
+firejail-profiles
+'
+check_and_install_package_from_backports() {
+  for package in $package_to_install_from_backports_if_available; do
+    check_if_package_present_in_backports_repo "$package" && \
+    install_from_backports "$package"
+  done
+}
+check_and_install_package_from_backports
 
 install_zfs() {
   # il peut arriver que l'install ne fonctionne pas (notamment juste après l'install de debian) car il manque le paquet linux-headers-"$(uname -r)", il faut donc s'assurer qu'il soit présent avant l'install des paquets ZFS
   execandlog "$AGI linux-headers-"$(uname -r)""
-  if apt-cache policy zfsutils-linux zfs-dkms zfs-zed | sed -n '/Version table:/{n;n;p;}' | grep -e '-backports' &> /dev/null; then
+  if apt-cache policy zfsutils-linux zfs-dkms zfs-zed | sed -n '/Version table:/{n;n;p;}' | grep -e '-backports' &>/dev/null; then
     displayandexec "Installation de ZFS                                 " "\
     echo 'zfs-dkms	zfs-dkms/stop-build-for-32bit-kernel	boolean	true' | debconf-set-selections && \
     echo 'zfs-dkms	zfs-dkms/note-incompatible-licenses	note' | debconf-set-selections && \
@@ -1406,7 +1446,11 @@ install_hardware_acceleration
 
 
 displayandexec "Installation des dépendances manquantes             " "$AG -o DPkg::Options::=--force-confnew -o DPkg::Options::=--force-confmiss install -y"
-displayandexec "Désinstalation des paquets qui ne sont plus utilisés" "$AG autoremove -y"
+
+remove_no_longer_required_package() {
+  displayandexec "Désinstalation des paquets qui ne sont plus utilisés" "$AG autoremove -y"
+}
+remove_no_longer_required_package
 
 #//////////////////////////////////////////////////////////////////////////////#
 #                       INSTALL MANUAL INSTALL APPS                            #
@@ -1421,20 +1465,6 @@ echo ''
 # création du répertoire qui contiendra les logiciels avec une installation spéciale
 manual_install_dir='/opt/manual_install'
 execandlog "is_dir_present_or_mkdir "$manual_install_dir""
-
-################################################################################
-## instalation de atom
-##------------------------------------------------------------------------------
-install_atom() {
-  displayandexec "Installation des dépendances de atom                " "$AGI libgconf-2-4 gvfs-bin gconf2-common"
-  displayandexec "Installation de atom                                " "\
-[ -f /usr/share/keyrings/atom-archive-keyring.gpg ] && rm -f /usr/share/keyrings/atom-archive-keyring.gpg; \
-$WGET --output-document - 'https://packagecloud.io/AtomEditor/atom/gpgkey' | gpg --dearmor --output /usr/share/keyrings/atom-archive-keyring.gpg && \
-echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/atom-archive-keyring.gpg] https://packagecloud.io/AtomEditor/atom/any/ any main' > /etc/apt/sources.list.d/atom.list && \
-$AG update && \
-$AGI atom"
-}
-################################################################################
 
 ################################################################################
 ## instalation de WinSCP
@@ -1483,9 +1513,9 @@ install_spotify() {
   cat> /etc/apt/sources.list.d/spotify.list << 'EOF'
 deb [signed-by=/usr/share/keyrings/spotify-archive-keyring.gpg] http://repository.spotify.com stable non-free
 EOF
+  spotify_repo_gpg_pubkey="$($CURL 'https://www.spotify.com/download/linux/' | tr -s '<' '\n' | grep -Po '(/pubkey_)\K[[:xdigit:]]+(?=.gpg)+')"
   displayandexec "Installation de spotify                             " "\
   is_file_present_and_rmfile "/usr/share/keyrings/spotify-archive-keyring.gpg" && \
-  spotify_repo_gpg_pubkey="$($CURL 'https://www.spotify.com/download/linux/' | tr -s '<' '\n' | grep -Po '(/pubkey_)\K[[:xdigit:]]+(?=.gpg)+')" && \
   $CURL 'https://download.spotify.com/debian/pubkey_'"$spotify_repo_gpg_pubkey"'.gpg' | gpg --dearmor --output /usr/share/keyrings/spotify-archive-keyring.gpg && \
   $AG update && \
   $AGI spotify-client"
@@ -1963,6 +1993,7 @@ install_opensnitch() {
 }
 # l'installation de OpenSnitch est intérecatif mais n'utilise pas d'entrés dans debconf-set-selections
 # potentiellement qu'on peut corriger le problème avec debian non-interractive
+# c'est probablement lié au fait que dpkg ne respect peut être pas la variable DEBIAN_FRONTEND
 ################################################################################
 
 ################################################################################
@@ -2095,17 +2126,38 @@ EOF
 }
 install_timeshift_bookworm() {
   cat> /etc/apt/sources.list.d/timeshift.list << 'EOF'
-deb [arch=amd64 signed-by=/usr/share/keyrings/timeshift-archive-keyring.gpg] http://ppa.launchpad.net/teejee2008/timeshift/ubuntu kinetic main
-#deb-src http://ppa.launchpad.net/teejee2008/timeshift/ubuntu kinetic main
+deb [arch=amd64 signed-by=/usr/share/keyrings/timeshift-archive-keyring.gpg] http://packages.linuxmint.com faye backport
+#deb-src http://packages.linuxmint.com faye backport
 EOF
   displayandexec "Installation de timeshift                           " "\
   is_file_present_and_rmfile "/usr/share/keyrings/timeshift-archive-keyring.gpg" && \
-  $WGET --output-document - 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x1B32B87ABAEE357218F6B48CB5B116B72D0F61F0' | gpg --dearmor --output /usr/share/keyrings/timeshift-archive-keyring.gpg && \
+  $WGET --output-document - 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xa6616109451bbbf2' | gpg --dearmor --output /usr/share/keyrings/timeshift-archive-keyring.gpg && \
   $AG update && \
   $AGI timeshift"
 }
 # to get the GPG Key version : https://keyserver.ubuntu.com/pks/lookup?fingerprint=on&op=index&search=0x1B32B87ABAEE357218F6B48CB5B116B72D0F61F0
 # https://launchpad.net/~teejee2008/+archive/ubuntu/timeshift
+
+# ancienne install depuis Ubuntu :
+# install_timeshift_bookworm() {
+#   cat> /etc/apt/sources.list.d/timeshift.list << 'EOF'
+# deb [arch=amd64 signed-by=/usr/share/keyrings/timeshift-archive-keyring.gpg] http://ppa.launchpad.net/teejee2008/timeshift/ubuntu kinetic main
+# #deb-src http://ppa.launchpad.net/teejee2008/timeshift/ubuntu kinetic main
+# EOF
+#   displayandexec "Installation de timeshift                           " "\
+#   is_file_present_and_rmfile "/usr/share/keyrings/timeshift-archive-keyring.gpg" && \
+#   $WGET --output-document - 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x1B32B87ABAEE357218F6B48CB5B116B72D0F61F0' | gpg --dearmor --output /usr/share/keyrings/timeshift-archive-keyring.gpg && \
+#   $AG update && \
+#   $AGI timeshift"
+# }
+
+# depuis que timeshift a été repris par Mint, son dépot APT est ici : http://packages.linuxmint.com/pool/backport/t/timeshift/
+# le soucis, c'est qu'on ne sait pas si on ne risque pas de casser APT en important un paquet de Mint
+# si on se base sur LMDE (Linux Mint Debian Edition), il faudrait prendre le paquet du pool Faye pour correspondre à bookworm, cf https://en.wikipedia.org/wiki/Linux_Mint#Releases
+# curl -sL 'http://packages.linuxmint.com/pool/backport/t/timeshift/' | tr -s '<' '\n' | grep 'timeshift_.*_amd64.deb$' | grep -i 'Faye'
+# Pou récupérer la clé PGP : curl -sL 'http://packages.linuxmint.com/dists/faye/Release.gpg'
+# Bon je ne comprend pas bien pourquoi, mais ça ne fonctionne pas en utilisant la clé http://packages.linuxmint.com/dists/faye/Release.gpg, par contre ça fonctionne quand on l'import en utilisant son short ID depuis keyserver.ubuntu.com
+# Pour récupérer le key ID depuis la clé GPG d'origine : curl -sL 'http://packages.linuxmint.com/dists/faye/Release.gpg' | gpg --list-packets | grep 'keyid'
 ################################################################################
 
 ################################################################################
@@ -2185,7 +2237,6 @@ done
 check_latest_version_manual_install_apps
 
 install_all_manual_install_apps_bullseye() {
-  # install_atom
   # install_winscp
   install_veracrypt
   install_spotify
@@ -2219,7 +2270,6 @@ install_all_manual_install_apps_bullseye() {
 }
 
 install_all_manual_install_apps_bookworm() {
-  # install_atom
   # install_winscp
   install_veracrypt
   install_spotify
@@ -2382,7 +2432,7 @@ install_GSE_bullseye() {
   # https://github.com/kgshank/gse-sound-output-device-chooser
 
   enable_GSE() {
-    $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")' &> /dev/null && \
+    $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")' &>/dev/null && \
     $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'gnome-shell-screenshot@ttll.de'
     $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'system-monitor@paradoxxx.zero.gmail.com'
     $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'sound-output-device-chooser@kgshank.net'
@@ -2399,7 +2449,7 @@ local_user="$(awk -F':' '/:1000:/{print $1}' /etc/passwd)"
 local_user_UID="$(id -u "$local_user")"
 ExeAsUser="sudo -u "$local_user""
 
-$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")' &> /dev/null
+$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")' &>/dev/null
 EOF
     chmod +x /tmp/reload_GnomeShell.sh && \
     chown "$local_user":"$local_user" /tmp/reload_GnomeShell.sh
@@ -2474,7 +2524,7 @@ install_GSE_bookworm() {
   # https://github.com/kgshank/gse-sound-output-device-chooser
 
   enable_GSE() {
-    $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")' &> /dev/null && \
+    $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")' &>/dev/null && \
     $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'gnome-shell-screenshot@ttll.de'
     $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'system-monitor@paradoxxx.zero.gmail.com'
     $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'sound-output-device-chooser@kgshank.net'
@@ -2491,7 +2541,7 @@ local_user="$(awk -F':' '/:1000:/{print $1}' /etc/passwd)"
 local_user_UID="$(id -u "$local_user")"
 ExeAsUser="sudo -u "$local_user""
 
-$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")' &> /dev/null
+$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")' &>/dev/null
 EOF
     chmod +x /tmp/reload_GnomeShell.sh && \
     chown "$local_user":"$local_user" /tmp/reload_GnomeShell.sh
@@ -2585,36 +2635,6 @@ echo '     ################################################################'
 echo ''
 
 ################################################################################
-## install du script gitupdate
-##------------------------------------------------------------------------------
-install_gitupdate() {
-  cat> "$my_bin_path"/gitupdate << 'EOF'
-#!/bin/bash
-
-# store the current dir
-CUR_DIR="$(pwd)"
-# Find all git repositories and update it to the master latest revision
-for i in "$(find / -name '.git' | cut -c 2-)"; do
-    echo ''
-    echo "\033[33m"+"$i"+"\033[0m"
-    # We have to go to the .git parent directory to call the pull command
-    cd /"$i"
-    cd ..
-    # finally pull
-    git pull origin master
-    # lets get back to the CUR_DIR
-    cd "$CUR_DIR"
-done
-
-exit 0
-EOF
-  displayandexec "Installation du script gitupdate                    " "\
-  chmod +x "$my_bin_path"/gitupdate"
-}
-# probablement améliorer le script gitupdate avec une condition if quand la branche principal n'est pas origin master
-################################################################################
-
-################################################################################
 ## install du script sysupdate
 ##------------------------------------------------------------------------------
 install_sysupdate() {
@@ -2630,7 +2650,7 @@ install_sysupdate() {
 ##------------------------------------------------------------------------------
 install_check_backport_update() {
   # porbablement qu'il vaudrait lister les paquets qui peuvent être mis à jours avec sudo apt-get update && sudo apt list --upgradable
-  # certainement avec quelque chose comme : awk '/~bpo/ && /.bpo/ {print $0}' <(sudo apt list --upgradable 2> /dev/null)
+  # certainement avec quelque chose comme : awk '/~bpo/ && /.bpo/ {print $0}' <(sudo apt list --upgradable 2>/dev/null)
   # c'est beaucoup plus rapide
   cat> "$my_bin_path"/check_backport_update << 'EOF'
 #!/bin/bash
@@ -2742,7 +2762,7 @@ install_check_domain_creation_date() {
 #!/bin/bash
 
 check_if_domain_exist() {
-  if $(whois "$1" | grep 'No entries found' > /dev/null); then
+  if $(whois "$1" | grep 'No entries found' >/dev/null); then
     echo "Le domaine "$1" n'existe pas."
     exit 1
   fi
@@ -2787,11 +2807,11 @@ install_appairmebt() {
   cat> "$my_bin_path"/appairmebt << 'EOF'
 #!/bin/bash
 
-gdbus call --session --dest org.gnome.SettingsDaemon.Rfkill --object-path /org/gnome/SettingsDaemon/Rfkill --method org.freedesktop.DBus.Properties.Set "org.gnome.SettingsDaemon.Rfkill" "BluetoothAirplaneMode" "<false>" > /dev/null
-bluetoothctl select AA:AA:AA:AA:AA:AA > /dev/null
-bluetoothctl power on > /dev/null
-bluetoothctl trust BB:BB:BB:BB:BB:BB > /dev/null
-bluetoothctl connect BB:BB:BB:BB:BB:BB > /dev/null
+gdbus call --session --dest org.gnome.SettingsDaemon.Rfkill --object-path /org/gnome/SettingsDaemon/Rfkill --method org.freedesktop.DBus.Properties.Set "org.gnome.SettingsDaemon.Rfkill" "BluetoothAirplaneMode" "<false>" >/dev/null
+bluetoothctl select AA:AA:AA:AA:AA:AA >/dev/null
+bluetoothctl power on >/dev/null
+bluetoothctl trust BB:BB:BB:BB:BB:BB >/dev/null
+bluetoothctl connect BB:BB:BB:BB:BB:BB >/dev/null
 EOF
   displayandexec "Installation du script appairmebt                   " "\
   chmod +x "$my_bin_path"/appairmebt"
@@ -2861,7 +2881,7 @@ install_desactivebt() {
   cat> "$my_bin_path"/desactivebt << 'EOF'
 #!/bin/bash
 
-gdbus call --session --dest org.gnome.SettingsDaemon.Rfkill --object-path /org/gnome/SettingsDaemon/Rfkill --method org.freedesktop.DBus.Properties.Set "org.gnome.SettingsDaemon.Rfkill" "BluetoothAirplaneMode" "<true>" > /dev/null
+gdbus call --session --dest org.gnome.SettingsDaemon.Rfkill --object-path /org/gnome/SettingsDaemon/Rfkill --method org.freedesktop.DBus.Properties.Set "org.gnome.SettingsDaemon.Rfkill" "BluetoothAirplaneMode" "<true>" >/dev/null
 EOF
   displayandexec "Installation du script desactivebt                  " "\
   chmod +x "$my_bin_path"/desactivebt"
@@ -2876,7 +2896,7 @@ install_play_pause_chromium() {
 #!/bin/bash
 
 dbus_dest_org="$(dbus-send --session --dest=org.freedesktop.DBus --type=method_call --print-reply /org/freedesktop/DBus org.freedesktop.DBus.ListNames | awk '/org.mpris.MediaPlayer2.chromium/{gsub(/\"/,"");print $2}')" && \
-dbus-send --print-reply --dest="$dbus_dest_org" /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player.PlayPause > /dev/null
+dbus-send --print-reply --dest="$dbus_dest_org" /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player.PlayPause >/dev/null
 EOF
   displayandexec "Installation du script play_pause_chromium          " "\
   chmod +x "$my_bin_path"/play_pause_chromium"
@@ -2937,7 +2957,6 @@ EOF
 ################################################################################
 
 install_all_perso_script() {
-  install_gitupdate
   install_sysupdate
   install_check_backport_update
   install_wsudo
@@ -3132,12 +3151,12 @@ configure_freshclam
 ##------------------------------------------------------------------------------
 configure_wireshark() {
   local conf_wireshark_tls_sni='	"TLS_SNI", "%Cus:tls.handshake.extensions_server_name:0:R"' && \
-  [ -f /root/.config/wireshark/preferences ] && \
+  is_file_present "/root/.config/wireshark/preferences" && \
   if ! sed -n '/^gui.column.format:/,/^$/p' /root/.config/wireshark/preferences | grep -q "$conf_wireshark_tls_sni" 2>/dev/null
     then sed -i '/^gui.column.format:/,/^$/{s/\"$/\",/;s/^$/'"$conf_wireshark_tls_sni"'\n/}' /root/.config/wireshark/preferences
   fi
   local conf_wireshark_dst_port='	"Destination Port", "%D"' && \
-  [ -f /root/.config/wireshark/preferences ] && \
+  is_file_present "/root/.config/wireshark/preferences" && \
   if ! sed -n '/^gui.column.format:/,/^$/p' /root/.config/wireshark/preferences | grep -q "$conf_wireshark_tls_sni" 2>/dev/null
     then sed -i '/^gui.column.format:/,/^$/{s/\"$/\",/;s/^$/'"$conf_wireshark_dst_port"'\n/}' /root/.config/wireshark/preferences
   fi
@@ -3206,8 +3225,8 @@ configure_rkhunter
 ## configuration des fichiers template
 ##------------------------------------------------------------------------------
 create_template_for_new_file() {
-  [ -d /home/"$local_user"/Modèles ] && template_dir="/home/"$local_user"/Modèles"
-  [ -d /home/"$local_user"/Templates ] && template_dir="/home/"$local_user"/Templates"
+  is_dir_present "/home/"$local_user"/Modèles" && template_dir="/home/"$local_user"/Modèles"
+  is_dir_present "/home/"$local_user"/Templates" && template_dir="/home/"$local_user"/Templates"
   $ExeAsUser touch ""$template_dir"/Fichier Texte.txt" && \
   $ExeAsUser touch ""$template_dir"/Document ODT.txt" && \
   $ExeAsUser unoconv -f odt ""$template_dir"/Document ODT.txt" && \
@@ -3224,16 +3243,16 @@ if [ "$bullseye" == 1 ]; then
 fi
 
 create_template_for_new_file_new() {
-  [ -d /home/"$local_user"/Modèles ] && template_dir="/home/"$local_user"/Modèles"
-  [ -d /home/"$local_user"/Templates ] && template_dir="/home/"$local_user"/Templates"
+  is_dir_present "/home/"$local_user"/Modèles" && template_dir="/home/"$local_user"/Modèles"
+  is_dir_present "/home/"$local_user"/Templates" && template_dir="/home/"$local_user"/Templates"
   displayandexec "Configuration des templates libreoffice             " "\
-  $ExeAsUser touch ""$template_dir"/Fichier Texte.txt" && \
-  $ExeAsUser touch ""$template_dir"/Document ODT.txt" && \
-  $ExeAsUser libreoffice --nologo --nofirststartwizard --invisible --norestore --headless --convert-to odt ""$template_dir"/Document ODT.txt" --outdir "$template_dir" && \
-  rm -f ""$template_dir"/Document ODT.txt" && \
-  $ExeAsUser touch ""$template_dir"/Document ODS.txt" && \
-  $ExeAsUser libreoffice --calc --nologo --nofirststartwizard --invisible --norestore --headless --convert-to ods ""$template_dir"/Document ODS.txt" --outdir "$template_dir" && \
-  rm -f ""$template_dir"/Document ODS.txt""
+  $ExeAsUser touch "$template_dir/Fichier Texte.txt" && \
+  $ExeAsUser touch "$template_dir/Document ODT.txt" && \
+  $ExeAsUser libreoffice --nologo --nofirststartwizard --invisible --norestore --headless --convert-to odt "$template_dir/Document ODT.txt" --outdir "$template_dir" && \
+  rm -f "$template_dir/Document ODT.txt" && \
+  $ExeAsUser touch "$template_dir/Document ODS.txt" && \
+  $ExeAsUser libreoffice --calc --nologo --nofirststartwizard --invisible --norestore --headless --convert-to ods "$template_dir/Document ODS.txt" --outdir "$template_dir" && \
+  rm -f "$template_dir/Document ODS.txt""
 # ref : https://ask.libreoffice.org/en/question/153444/how-to-create-empty-libreoffice-file-in-a-current-directory-on-the-command-line/
 # Pour voir tous les formats supportés par unoconv : unoconv --show
 }
@@ -3259,7 +3278,7 @@ configure_libreoffice() {
   # disable java settings in LibreOffice
   # $ExeAsUser sed -i 's%<enabled xsi:nil="false">true</enabled>%<enabled xsi:nil="false">false</enabled>%g' /home/"$local_user"/.config/libreoffice/4/user/config/javasettings_Linux_X86_64.xml
   # il faut potentiellement le mettre comme ça :
-  [ -f /home/"$local_user"/.config/libreoffice/4/user/config/javasettings_Linux_X86_64.xml ] && \
+  is_file_present "/home/"$local_user"/.config/libreoffice/4/user/config/javasettings_Linux_X86_64.xml" && \
   $ExeAsUser sed -i 's%<enabled xsi:nil=".*>$%<enabled xsi:nil="false">false</enabled>%g' /home/"$local_user"/.config/libreoffice/4/user/config/javasettings_Linux_X86_64.xml
 
   # ref : https://ask.libreoffice.org/en/question/167622/how-to-disable-java-in-configuration-files/
@@ -3274,7 +3293,7 @@ configure_libreoffice() {
 
   # cette configuration n'existe pas dans le fichier après une install, il faut donc trouver le moyen de l'ajouter en insérant la ligne
   # Pour changer la valeur du niveau de sécurité des macros de Elevé à Très Elevé
-  [ -f /home/"$local_user"/.config/libreoffice/4/user/registrymodifications.xcu ] && \
+  is_file_present "/home/"$local_user"/.config/libreoffice/4/user/registrymodifications.xcu" && \
   $ExeAsUser sed -i 's%<item oor:path="/org.openoffice.Office.Common/Security/Scripting"><prop oor:name="MacroSecurityLevel" oor:op="fuse"><value>2</value></prop></item>%<item oor:path="/org.openoffice.Office.Common/Security/Scripting"><prop oor:name="MacroSecurityLevel" oor:op="fuse"><value>3</value></prop></item>%g' /home/"$local_user"/.config/libreoffice/4/user/registrymodifications.xcu
   # rajouter || créer le contenu du fichier avec un cat EOF
 
@@ -3321,44 +3340,6 @@ configure_apt-fast
 ################################################################################
 
 ################################################################################
-## configuration de atom
-##------------------------------------------------------------------------------
-configure_atom() {
-  execandlog "reset_dir_as_user "/home/"$local_user"/.atom/""
-  $ExeAsUser cat> /home/"$local_user"/.atom/config.cson << 'EOF'
-"*":
-  autosave:
-    enabled: true
-  core:
-    telemetryConsent: "no"
-  editor:
-    softWrap: true
-  welcome:
-    showOnStartup: false
-EOF
-  displayandexec "Installation des plugins pour Atom                  " "\
-  $ExeAsUser apm install language-cisco && \
-  $ExeAsUser apm install language-powershell && \
-  $ExeAsUser apm install script && \
-  $ExeAsUser apm install vertical-tabs && \
-  $ExeAsUser apm install tab-title && \
-  $ExeAsUser apm install language-ansible && \
-  $ExeAsUser apm install language-diff && \
-  $ExeAsUser apm install language-yara"
-}
-# configure_atom
-# Les plugins atom en commentaire sont encore en cour de validation
-# apm install autoclose-html-plus
-# apm install atom-beautify
-# apm install markdown-themeable-pdf
-# apm install markdown-pdf
-# apm install atom-marp
-# regarder pour faire du collaboratif avec atom : https://atom.io/packages/teletype
-
-# pour voir la liste des plugins installés : apm ls
-################################################################################
-
-################################################################################
 ## configuration de bat
 ##------------------------------------------------------------------------------
 configure_bat() {
@@ -3372,6 +3353,18 @@ configure_bat() {
 EOF
 }
 configure_bat
+
+configure_bat_root_user() {
+  displayandexec "Configuration de bat pour l'utilisateur root        " "\
+  is_file_present_and_rmfile "/root/.config/bat/config" && \
+  bat --generate-config-file"
+  cat>> /root/.config/bat/config << 'EOF'
+
+--paging=never
+--style=header-filename
+EOF
+}
+configure_bat_root_user
 # cette configuration permet de désactiver l'utilisation du pager ainsi que d'afficher le nom du fichier avant sa lecture
 ################################################################################
 
@@ -3568,7 +3561,7 @@ configure_mpv
 configure_typora() {
   displayandexec "Configuration de typora                             " "\
   reset_dir_as_user "/home/"$local_user"/.config/Typora/"" && \
-$ExeAsUser cat> /home/"$local_user"/.config/Typora/profile.data << 'EOF'
+  $ExeAsUser cat> /home/"$local_user"/.config/Typora/profile.data << 'EOF'
 7b22696e697469616c697a655f766572223a22302e392e3738222c226c696e655f656e64696e675f63726c66223a66616c73652c227072654c696e65627265616b4f6e4578706f7274223a747275652c2275756964223a2237346265383439362d343239372d343362382d616633632d336439343463646432376439222c227374726963745f6d6f6465223a747275652c22636f70795f6d61726b646f776e5f62795f64656661756c74223a747275652c226261636b67726f756e64436f6c6f72223a2223333633423430222c227468656d65223a226e696768742e637373222c22736964656261725f746162223a22222c2273656e645f75736167655f696e666f223a66616c73652c22656e61626c654175746f53617665223a747275652c226c617374436c6f736564426f756e6473223a7b2266756c6c73637265656e223a66616c73652c226d6178696d697a6564223a747275657d7d
 EOF
 }
@@ -3612,7 +3605,7 @@ configure_handbrake
 # On est obliger de créer le fichier de conf (/home/"$local_user"/.config/geeqie/geeqierc.xml) en lancant geeqie graphiquement et ensuite en allant dans Edit -> Preference -> cliquer sur OK
 # Il semblerait que le fichier de conf se créer aussi lorsqu'on lance Geeqie et qu'on le quitte proprement (en appuyant sur la croix en haut de la fenêtre)
 configure_geeqie() {
-  if [ -f /home/"$local_user"/.config/geeqie/geeqierc.xml ]; then
+  if is_file_present "/home/"$local_user"/.config/geeqie/geeqierc.xml"; then
     $ExeAsUser sed -i -E 's/image.alpha_color_1 = "#[[:digit:]]+"/image.alpha_color_1 = "#FFFFFFFFFFFF"/' /home/"$local_user"/.config/geeqie/geeqierc.xml
     $ExeAsUser sed -i -E 's/image.alpha_color_2 = "#[[:digit:]]+"/image.alpha_color_2 = "#FFFFFFFFFFFF"/' /home/"$local_user"/.config/geeqie/geeqierc.xml
 
@@ -3652,7 +3645,8 @@ execandlog "reset_dir_as_user "/home/"$local_user"/.config/autostart/""
 # StartupWMClass=Signal
 # Categories=Network;InstantMessaging;Chat;
 # EOF
-ln -s /usr/share/applications/signal-desktop.desktop /home/"$local_user"/.config/autostart/signal-desktop.desktop
+ln -s /usr/share/applications/signal-desktop.desktop /home/"$local_user"/.config/autostart/signal-desktop.disable_for_now
+# on n'active pas le démarage automatique de Signal pour être sur qu'il n'y a pas de risques de créer des problèmes pour le re-import des données depuis l'ancienne install debian
 
 #terminal
 $ExeAsUser cat> /home/"$local_user"/.config/autostart/terminal.desktop << 'EOF'
@@ -3699,7 +3693,7 @@ ln -s /usr/share/applications/joplin.desktop /home/"$local_user"/.config/autosta
 configure_keepassxc() {
   displayandexec "Configuration de KeePassXC                          " "\
   reset_dir_as_user "/home/"$local_user"/.config/keepassxc/""
-$ExeAsUser tee /home/"$local_user"/.config/keepassxc/keepassxc.ini << 'EOF' >/dev/null
+  $ExeAsUser tee /home/"$local_user"/.config/keepassxc/keepassxc.ini << 'EOF' >/dev/null
 [General]
 AutoReloadOnChange=true
 AutoSaveAfterEveryChange=true
@@ -4177,6 +4171,9 @@ configure_audio
 
 # apparement obligatoire pour executer Signal
 execandlog "chmod 4755 /opt/Signal/chrome-sandbox"
+# à noter que la recommandation officiel de la part de Signal est plutôt d'utiliser l'option --no-sandbox pour le lancement de l'appli Signal
+# ref : [/opt/Signal/chrome-sandbox gets installed with 0755 instead of 4755 on Debian. · Issue #3627 · signalapp/Signal-Desktop](https://github.com/signalapp/Signal-Desktop/issues/3627#issuecomment-542383195)
+# [Fail to start on debian testing · Issue #6382 · signalapp/Signal-Desktop](https://github.com/signalapp/Signal-Desktop/issues/6382#issuecomment-1520624248)
 
 ################################################################################
 ## configuration du programme par défaut pour execter les commandes apt-*
@@ -4225,10 +4222,11 @@ fi
 ################################################################################
 ## configuration du bashrc et du zshrc
 ##------------------------------------------------------------------------------
-# alias for the user
-execandlog "is_file_present_and_rmfile "/home/"$local_user"/.bashrc" && \
-cp "$script_path"/.bashrc /home/"$local_user"/.bashrc"
-$ExeAsUser cat>> /home/"$local_user"/.bashrc << EOF
+configure_bashrc_user() {
+  # alias for the user
+  execandlog "is_file_present_and_rmfile "/home/"$local_user"/.bashrc" && \
+  cp "$script_path"/.bashrc /home/"$local_user"/.bashrc"
+  $ExeAsUser cat>> /home/"$local_user"/.bashrc << EOF
 
 # alias perso
 alias ll='ls --color=always -l -h'
@@ -4265,9 +4263,9 @@ alias last_apt_kernel='apt-cache search --names-only "linux-(headers|image)-[[:d
 HISTTIMEFORMAT="%Y/%m/%d %T   "
 is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/\$1 ;}
 to_lower() { tr [:upper:] [:lower:] <<< "\$@" ;}
-mpv_youtube() { mpv <(/usr/bin/yt-dlp -o - "\$1") }
-mpv_audio_youtube() { mpv --no-video <(/usr/bin/yt-dlp -o - "\$1") }
-youtube_description() { yt-dlp --playlist-items 0 --print description "\$1" }
+mpv_youtube() { mpv <(/usr/bin/yt-dlp -o - "\$1") ;}
+mpv_audio_youtube() { mpv --no-video <(/usr/bin/yt-dlp -o - "\$1") ;}
+youtube_description() { yt-dlp --playlist-items 0 --print description "\$1" ;}
 
 # for Ansible vault editor
 export EDITOR=nano
@@ -4283,11 +4281,13 @@ PROMPT_COMMAND="history -n; history -a"
 unset HISTFILESIZE
 HISTSIZE=2000
 EOF
+}
 
-# alias for root
-execandlog "is_file_present_and_rmfile "/root/.bashrc" && \
-cp "$script_path"/.bashrc /root/.bashrc"
-cat>> /root/.bashrc << EOF
+configure_bashrc_root() {
+  # alias for root
+  execandlog "is_file_present_and_rmfile "/root/.bashrc" && \
+  cp "$script_path"/.bashrc /root/.bashrc"
+  cat>> /root/.bashrc << EOF
 
 # alias perso
 alias ll='ls --color=always -l -h'
@@ -4322,11 +4322,12 @@ PROMPT_COMMAND="history -n; history -a"
 unset HISTFILESIZE
 HISTSIZE=2000
 EOF
-displayandexec "Configuration du bashrc                             " "stat /root/.bashrc && stat /home/"$local_user"/.bashrc"
+}
 
-execandlog "is_file_present_and_rmfile "/home/"$local_user"/.zshrc" && \
-cp "$script_path"/.zshrc /home/"$local_user"/.zshrc"
-$ExeAsUser cat>> /home/"$local_user"/.zshrc << EOF
+configure_zshrc_user() {
+  execandlog "is_file_present_and_rmfile "/home/"$local_user"/.zshrc" && \
+  cp "$script_path"/.zshrc /home/"$local_user"/.zshrc"
+  $ExeAsUser cat>> /home/"$local_user"/.zshrc << EOF
 
 # alias perso
 alias ll='ls --color=always -l -h'
@@ -4361,9 +4362,9 @@ alias my_ext_ip="curl --silent --location 'https://ipinfo.io/ip'"
 alias last_apt_kernel='apt-cache search --names-only "linux-(headers|image)-[[:digit:]]\.[[:digit:]]+\.[[:digit:]]+.*[[:digit:]]-(amd64$|amd64-unsigned$)" | sort'
 is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/\$1 ;}
 to_lower() { tr [:upper:] [:lower:] <<< "\$@" ;}
-mpv_youtube() { mpv <(/usr/bin/yt-dlp -o - "\$1") }
-mpv_audio_youtube() { mpv --no-video <(/usr/bin/yt-dlp -o - "\$1") }
-youtube_description() { yt-dlp --playlist-items 0 --print description "\$1" }
+mpv_youtube() { mpv <(/usr/bin/yt-dlp -o - "\$1") ;}
+mpv_audio_youtube() { mpv --no-video <(/usr/bin/yt-dlp -o - "\$1") ;}
+youtube_description() { yt-dlp --playlist-items 0 --print description "\$1" ;}
 
 # for Ansible vault editor
 export EDITOR=nano
@@ -4371,10 +4372,12 @@ export EDITOR=nano
 # for python binnary
 export PATH="\$PATH:/home/$local_user/.local/bin"
 EOF
+}
 
-execandlog "is_file_present_and_rmfile "/root/.zshrc" && \
-cp "$script_path"/.zshrc /root/.zshrc"
-cat>> /root/.zshrc << EOF
+configure_zshrc_root() {
+  execandlog "is_file_present_and_rmfile "/root/.zshrc" && \
+  cp "$script_path"/.zshrc /root/.zshrc"
+  cat>> /root/.zshrc << EOF
 
 # alias perso
 alias ll='ls --color=always -l -h'
@@ -4400,23 +4403,25 @@ alias free='free -ht'
 is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/\$1 ;}
 to_lower() { tr [:upper:] [:lower:] <<< "\$@" ;}
 EOF
+}
 
-displayandexec "Configuration du zshrc                              " "\
-stat /home/"$local_user"/.zshrc && \
-stat /root/.zshrc"
+configure_bashrc() {
+  configure_bashrc_user
+  configure_bashrc_root
+  displayandexec "Configuration du bashrc                             " "\
+  stat /home/"$local_user"/.bashrc && \
+  stat /root/.bashrc"
+}
+configure_bashrc
 
-displayandexec "Configuration de zsh en tant que shell par défaut   " "\
-sed -i 's/auth       required   pam_shells.so/auth       sufficient   pam_shells.so/' /etc/pam.d/chsh && \
-$ExeAsUser chsh -s "$(command -v zsh)" && \
-chsh -s "$(command -v zsh)" && \
-sed -i 's/auth       sufficient   pam_shells.so/auth       required   pam_shells.so/' /etc/pam.d/chsh"
-# l'excution de cette commande demande un logoff/login du user pour prendre éffet
-# on est obliger de changer la valeur de /etc/pam.d/chsh car sinon la commande nous demande de rentrer le mdp de l'utilisateur et donc l'execution de la commande devient intéractif.
-# ref : [command line - chsh always asking a password , and get `PAM: Authentication failure` - Ask Ubuntu](https://askubuntu.com/questions/812420/chsh-always-asking-a-password-and-get-pam-authentication-failure/812426#812426)
-# on change donc la valeur dans /etc/pam.d/chsh avant et après l'execution de la commande chsh
-
-# Pour zsh, on ne configure pas l'affichage des dates devant les commandes avec la variable HISTTIMEFORMAT mais on le fait avec l'utilisation de la commande fc -li 1
-# ref : [How to view datetime stamp for history command in Zsh shell - Unix & Linux Stack Exchange](https://unix.stackexchange.com/questions/103398/how-to-view-datetime-stamp-for-history-command-in-zsh-shell/436221#436221)
+configure_zshrc() {
+  configure_zshrc_user
+  configure_zshrc_root
+  displayandexec "Configuration du zshrc                              " "\
+  stat /home/"$local_user"/.zshrc && \
+  stat /root/.zshrc"
+}
+configure_zshrc
 
 if [ "$conf_perso" == 1 ]; then
   configure_bashrc_perso
@@ -4426,6 +4431,22 @@ if [ "$conf_pro" == 1 ]; then
   configure_bashrc_pro
   configure_zshrc_pro
 fi
+
+configure_default_shell() {
+  displayandexec "Configuration de zsh en tant que shell par défaut   " "\
+  sed -i 's/auth       required   pam_shells.so/auth       sufficient   pam_shells.so/' /etc/pam.d/chsh && \
+  $ExeAsUser chsh --shell "$(command -v zsh)" && \
+  chsh --shell "$(command -v zsh)" && \
+  sed -i 's/auth       sufficient   pam_shells.so/auth       required   pam_shells.so/' /etc/pam.d/chsh"
+}
+configure_default_shell
+# l'excution de cette commande demande un logoff/login du user pour prendre éffet
+# on est obliger de changer la valeur de /etc/pam.d/chsh car sinon la commande nous demande de rentrer le mdp de l'utilisateur et donc l'execution de la commande devient intéractif.
+# ref : [command line - chsh always asking a password , and get `PAM: Authentication failure` - Ask Ubuntu](https://askubuntu.com/questions/812420/chsh-always-asking-a-password-and-get-pam-authentication-failure/812426#812426)
+# on change donc la valeur dans /etc/pam.d/chsh avant et après l'execution de la commande chsh
+
+# Pour zsh, on ne configure pas l'affichage des dates devant les commandes avec la variable HISTTIMEFORMAT mais on le fait avec l'utilisation de la commande fc -li 1
+# ref : [How to view datetime stamp for history command in Zsh shell - Unix & Linux Stack Exchange](https://unix.stackexchange.com/questions/103398/how-to-view-datetime-stamp-for-history-command-in-zsh-shell/436221#436221)
 ################################################################################
 
 # Commande temporaire pour éviter que des fichiers de /home/user/.config n'appartienent à root lors de l'install, sans qu'on comprenne bien pourquoi (executé par ExeAsUser)
@@ -4462,9 +4483,9 @@ backup_LUKS_header() {
   root_lvm_parent_partition="$(lsblk -o PKNAME,FSTYPE,NAME | awk '/'"$root_pv_name"'/{print $1}')"
   luks_partition="$(lsblk -o NAME,FSTYPE /dev/"$root_lvm_parent_partition" | awk '/crypto_LUKS/{print $1}')"
   displayandexec "Création d'un backup de l'entête LUKS               " "\
-  is_dir_present_or_mkdir_as_user "/home/"$local_user"/.backup/" && \
+  is_dir_present_or_mkdir_as_user "/home/"$local_user"/.backup/LUKS/" && \
   cryptsetup isLuks /dev/"$luks_partition" && \
-  cryptsetup luksHeaderBackup /dev/"$luks_partition" --header-backup-file /home/"$local_user"/.backup/"$luks_partition"_LUKS_Header_Backup-"$now".img"
+  cryptsetup luksHeaderBackup /dev/"$luks_partition" --header-backup-file /home/"$local_user"/.backup/LUKS/"$luks_partition"_LUKS_header_backup-"$now".img"
 }
 backup_LUKS_header
 # on s'assure dans un premier temps de récupérer uniquement le path de la partition qui contient le lvm du système (lv root) pour être sur de ne faire que la sauvegarde du LUKS du système
@@ -4483,9 +4504,10 @@ backup_LUKS_header
 disable_bluetooth() {
   hte_gdbus_call_disable_bluetooth="'<true>'"
   displayandexec "Désactivation du bluetooth                          " "\
-  $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gdbus call --session --dest org.gnome.SettingsDaemon.Rfkill --object-path /org/gnome/SettingsDaemon/Rfkill --method org.freedesktop.DBus.Properties.Set "org.gnome.SettingsDaemon.Rfkill" "BluetoothAirplaneMode" "$hte_gdbus_call_disable_bluetooth" > /dev/null"
+  $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gdbus call --session --dest org.gnome.SettingsDaemon.Rfkill --object-path /org/gnome/SettingsDaemon/Rfkill --method org.freedesktop.DBus.Properties.Set "org.gnome.SettingsDaemon.Rfkill" "BluetoothAirplaneMode" "$hte_gdbus_call_disable_bluetooth" >/dev/null"
 }
 disable_bluetooth
+# Pour vérifier les valeures actuellements positionnées : gdbus call --session --dest org.gnome.SettingsDaemon.Rfkill --object-path /org/gnome/SettingsDaemon/Rfkill --method org.freedesktop.DBus.Properties.GetAll org.gnome.SettingsDaemon.Rfkill | tr -s ',' '\n'
 ################################################################################
 
 ################################################################################
@@ -4524,7 +4546,8 @@ disable_unneeded_services
 ################################################################################
 ## configuration des règles de firewall
 ##------------------------------------------------------------------------------
-displayandexec "Configuration du firewall                           " "\
+configure_firewall() {
+  displayandexec "Configuration du firewall                           " "\
   ufw --force reset && \
   ufw default deny incoming && \
   ufw default allow outgoing && \
@@ -4532,6 +4555,8 @@ displayandexec "Configuration du firewall                           " "\
   ufw limit "$SSH_Port"/tcp && \
   ufw logging high && \
   ufw --force enable"
+}
+configure_firewall
 ################################################################################
 
 tmp_all_package_list_after="$(dpkg --get-selections | awk '{if ($2 == "install") {print $1}}' | bash -c "grep -w$(for pkg in alpine balsa biabam bsd-mailx claws-mail dovecot-sieve enigmail exim4-base exim4-config exim4-daemon-heavy exim4-daemon-light exmh filter gnarwl gnome-gmail gnumail.app im kmail kontact maildrop mailutils mailutils-mh mew mew-beta mew-beta-bin mew-bin mutt nmh notmuch prayer procmail sendemail sensible-mda sqwebmail-de sylpheed uw-mailutils vm wl wl-beta yample; do echo -n " -e '"$pkg"'"; done)")"
@@ -4553,23 +4578,32 @@ cd
 ## Création d'un snapshot avec Timeshift
 ##------------------------------------------------------------------------------
 create_root_part_snapshot_with_timeshift_rsync() {
-  displayandexec "Création d'un snapshot avec Timeshift               " "\
+  displayandexec "Création d'un snapshot de / avec Timeshift          " "\
   umount -l /run/timeshift/backup; \
   timeshift --scripted --create --rsync --comments 'first snapshot, after postinstall script' --snapshot-device /dev/"$root_part_kname""
   # cette étape est très longue lorsqu'il faut faire un premier snapshot (car timeshift doit faire en fait un miroir du système existant)
   # sur un HDD pas très rapide, il y en a pour à peu près une heure
 }
-create_root_part_snapshot_with_timeshift_btrfs() {
-  displayandexec "Création d'un snapshot avec Timeshift               " "\
-  umount -l /run/timeshift/backup; \
-  timeshift --scripted --create --btrfs --comments 'first snapshot, after postinstall script' --snapshot-device /dev/"$root_part_kname""
+
+create_root_part_snapshot_with_btrfs() {
+  displayandexec "Création d'un snapshot BTRFS de /                   " "\
+  mkdir /.snapshot/ && \
+  btrfs subvolume list / && \
+  btrfs subvolume snapshot / /.snapshot/@"$now" && \
+  btrfs subvolume list /"
 }
 
 check_if_root_part_is_btrfs() {
-  if $(findmnt / --raw --noheadings --output=FSTYPE | grep -qw 'btrfs' &> /dev/null); then
-    create_root_part_snapshot_with_timeshift_btrfs
+  if $(findmnt / --raw --noheadings --output=FSTYPE | grep -qw 'btrfs' &>/dev/null); then
+    create_root_part_snapshot_with_btrfs
   else
     create_root_part_snapshot_with_timeshift_rsync
+    execandlog "timeshift --list"
+    # On fait le timeshift --list qu'on redirige dans le fichier de log juste pour avoir les infos de la création du snapshot.
+    # Après l'execution du script ng_install et du snapshot avec timeshift, il y a environ 26 Go d'utilisé sur / pour un système basé sur bullseye
+    execandlog "umount -l /run/timeshift/backup"
+    # on démonte le point de montage de timeshift car il n'est plus nécessaire
+    # peut être qu'à terme il serait intéressant de voir pour ajouer une partition dédié pour les backups
   fi
 }
 check_if_root_part_is_btrfs
@@ -4577,14 +4611,18 @@ check_if_root_part_is_btrfs
 if [ -z "$fisrt_time_script_executed" ]; then
   root_part_kname="$(lsblk -o KNAME,MOUNTPOINT | awk '{{if ($2 == "/") print $1}}')"
   check_if_root_part_is_btrfs 
-  execandlog "timeshift --list"
-  # On fait le timeshift --list qu'on redirige dans le fichier de log juste pour avoir les infos de la création du snapshot.
-  # Après l'execution du script ng_install et du snapshot avec timeshift, il y a environ 26 Go d'utilisé sur / pour un système basé sur bullseye
-  execandlog "umount -l /run/timeshift/backup"
-  # on démonte le point de montage de timeshift car il n'est plus nécessaire
-  # peut être qu'à terme il serait intéressant de voir pour ajouer une partition dédié pour les backups
 fi
 # on éffectue uniquement un snapshot de la partition root qu'à la première excution du script (c'est à dire, juste après une install au propre du script suite à l'installation de la debian)
+# à noter que timeshift est maitenus par Mint désormais
+
+# create_root_part_snapshot_with_timeshift_btrfs() {
+#   displayandexec "Création d'un snapshot avec Timeshift               " "\
+#   umount -l /run/timeshift/backup; \
+#   timeshift --scripted --create --btrfs --comments 'first snapshot, after postinstall script' --snapshot-device /dev/"$root_part_kname""
+# }
+# on ne peut pas utiliser timeshift pour faire un snapshot BTRFS à cause de cette érreur : [Timeshift does not recognize BTRFS subvolume structure · Issue #241 · teejee2008/timeshift · GitHub](https://github.com/teejee2008/timeshift/issues/241)
+# [linuxmint/timeshift: System restore tool for Linux. Creates filesystem snapshots using rsync+hardlinks, or BTRFS snapshots. Supports scheduled snapshots, multiple backup levels, and exclude filters. Snapshots can be restored while system is running or from Live CD/USB.](https://github.com/linuxmint/timeshift?tab=readme-ov-file#btrfs-volumes)
+# [#1042538 - timeshift: Debian installer makes BTRFS root subvolume named "@rootfs" and timeshift requires "@" - Debian Bug report logs](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1042538)
 ################################################################################
 
 print_end_of_script_in_log_file() {
