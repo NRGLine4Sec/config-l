@@ -268,7 +268,7 @@ export -f is_dir_present_or_mkdir
 
 is_dir_present_and_rmdir() {
   local dir="$1"
-  [ -d "$dir" ] || true
+  [ -d "$dir" ] || return 0
   [ -d "$dir" ] && rm -rf "$dir"
 }
 export -f is_dir_present_and_rmdir
@@ -282,7 +282,7 @@ export -f reset_dir
 
 is_file_present_and_rmfile() {
   local file="$1"
-  [ -f "$file" ] || true
+  [ -f "$file" ] || return 0
   [ -f "$file" ] && rm -f "$file"
 }
 export -f is_file_present_and_rmfile
@@ -938,7 +938,7 @@ tmp_all_package_list_before="$(dpkg --get-selections | awk '{if ($2 == "install"
 configure_apt() {
   cat> /etc/apt/preferences.d/my_apt_preference << 'EOF'
 # blacklist some unwanted MTA
-Package: exim4-base exim4-config exim4-daemon-heavy exim4-daemon-light mailutils bsd-mailx ssmtp sendemail-base sendemail-bin sendemail-cf
+Package: exim4-base exim4-config exim4-daemon-heavy exim4-daemon-light mailutils bsd-mailx ssmtp sendmail-base sendmail-bin sendmail-cf
 Pin: release *
 Pin-Priority: -1
 
@@ -1026,7 +1026,7 @@ force_kill_and_disable_debian_unattended_upgrades
 ##------------------------------------------------------------------------------
 remove_gnome_initial_setup() {
   displayandexec "Supression de gnome-initial-setup                   " "\
-  pkill --echo --full --exact -KILL '^/usr/libexec/gnome-initial-setup'; \
+  pkill --echo --full --exact -KILL '^/usr/libexec/gnome-initial-setup.*'; \
   $AG purge -y gnome-initial-setup"
 }
 remove_gnome_initial_setup
@@ -1984,10 +1984,10 @@ install_opensnitch() {
   displayandexec "Installation des dépendances de OpenSnitch          " "$AGI libnetfilter-queue1"
   displayandexec "Installation de OpenSnitch                          " "\
   $AGI python3-pyqt5.qtsql python3-pyinotify python3-grpcio python3-slugify python3-notify2 && \
-  $WGET -P "$tmp_dir" https://github.com/evilsocket/opensnitch/releases/download/v"$opensnitch_latest_version"/python3-opensnitch-ui_"$opensnitch_latest_version"-1_all.deb && \
-  $WGET -P "$tmp_dir" https://github.com/evilsocket/opensnitch/releases/download/v"$opensnitch_latest_version"/opensnitch_"$opensnitch_latest_version"-1_amd64.deb && \
-  dpkg -i "$tmp_dir"/opensnitch_"$opensnitch_latest_version"-1_amd64.deb && \
-  dpkg -i "$tmp_dir"/python3-opensnitch-ui_"$opensnitch_latest_version"-1_all.deb && \
+  $WGET -P "$tmp_dir" https://github.com/evilsocket/opensnitch/releases/download/v"$opensnitch_stable_version"/python3-opensnitch-ui_"$opensnitch_stable_version"-1_all.deb && \
+  $WGET -P "$tmp_dir" https://github.com/evilsocket/opensnitch/releases/download/v"$opensnitch_stable_version"/opensnitch_"$opensnitch_stable_version"-1_amd64.deb && \
+  dpkg -i "$tmp_dir"/opensnitch_"$opensnitch_stable_version"-1_amd64.deb && \
+  dpkg -i "$tmp_dir"/python3-opensnitch-ui_"$opensnitch_stable_version"-1_all.deb && \
   $AG install -f -y; \
   rm -rf "$tmp_dir""
 }
@@ -2406,13 +2406,13 @@ install_GSE_bullseye() {
   #system-monitor
   install_GSE_system_monitor() {
     execandlog "$AGI gnome-shell-extension-system-monitor"
-    hte_dconf_system_monitor_memory_style="'digit'"
+    hte_dconf_system_monitor_memory_style="\"'digit'\""
     execandlog "$ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/memory-style "$hte_dconf_system_monitor_memory_style""
     # on configure avec la commande ci-dessus l'affichage de la métrique de la RAM sous forme de pourcentage plustôt que de graph
     hte_dconf_system_monitor_gpu_show_menu='"true"'
     execandlog "$ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/gpu-show-menu "$hte_dconf_system_monitor_gpu_show_menu""
     # on active la vue de l'utilisation du GPU dans le menu
-    hte_dconf_system_monitor_disk_usage_style="'bar'"
+    hte_dconf_system_monitor_disk_usage_style="\"'bar'\""
     execandlog "$ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/disk-usage-style "$hte_dconf_system_monitor_disk_usage_style""
     # on chosie l'option de l'affichage de l'utilisation des disk par des barres horizontales à la place du graph en demi cercle
   }
@@ -2498,13 +2498,13 @@ install_GSE_bookworm() {
   #system-monitor
   install_GSE_system_monitor() {
     execandlog "$AGI gnome-shell-extension-system-monitor"
-    hte_dconf_system_monitor_memory_style="'digit'"
+    hte_dconf_system_monitor_memory_style="\"'digit'\""
     execandlog "$ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/memory-style "$hte_dconf_system_monitor_memory_style""
     # on configure avec la commande ci-dessus l'affichage de la métrique de la RAM sous forme de pourcentage plustôt que de graph
     hte_dconf_system_monitor_gpu_show_menu='"true"'
     execandlog "$ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/gpu-show-menu "$hte_dconf_system_monitor_gpu_show_menu""
     # on active la vue de l'utilisation du GPU dans le menu
-    hte_dconf_system_monitor_disk_usage_style="'bar'"
+    hte_dconf_system_monitor_disk_usage_style="\"'bar'\""
     execandlog "$ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/disk-usage-style "$hte_dconf_system_monitor_disk_usage_style""
     # on chosie l'option de l'affichage de l'utilisation des disk par des barres horizontales à la place du graph en demi cercle
   }
@@ -4587,7 +4587,7 @@ create_root_part_snapshot_with_timeshift_rsync() {
 
 create_root_part_snapshot_with_btrfs() {
   displayandexec "Création d'un snapshot BTRFS de /                   " "\
-  mkdir /.snapshot/ && \
+  is_dir_present_or_mkdir /.snapshot/ && \
   btrfs subvolume list / && \
   btrfs subvolume snapshot / /.snapshot/@"$now" && \
   btrfs subvolume list /"
