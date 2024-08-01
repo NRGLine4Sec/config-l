@@ -145,17 +145,6 @@
 ################################################################################
 
 ################################################################################
-## Log de debug (on redirige set -x dans /tmp/ng_install_set-x_logfile)
-##------------------------------------------------------------------------------
-redirect_and_enable_bash_debug_log() {
-  exec 19>/tmp/ng_install_set-x_logfile
-  BASH_XTRACEFD='19'
-  set -x
-}
-redirect_and_enable_bash_debug_log
-################################################################################
-
-################################################################################
 ## Test que le script est executé en tant que root
 ##------------------------------------------------------------------------------
 check_script_run_with_privileges() {
@@ -165,6 +154,17 @@ check_script_run_with_privileges() {
   fi
 }
 check_script_run_with_privileges
+################################################################################
+
+################################################################################
+## Log de debug (on redirige set -x dans /tmp/ng_install_set-x_logfile)
+##------------------------------------------------------------------------------
+redirect_and_enable_bash_debug_log() {
+  exec 19>/tmp/ng_install_set-x_logfile
+  BASH_XTRACEFD='19'
+  set -x
+}
+redirect_and_enable_bash_debug_log
 ################################################################################
 
 ################################################################################
@@ -286,6 +286,9 @@ is_file_present_and_rmfile() {
   [ -f "$file" ] && rm -f "$file"
 }
 export -f is_file_present_and_rmfile
+
+# PS: à noter qu'on utilise [ -f "$file" ] || return 0 pour ne pas renvoyer de code d'érreur si le fichier n'existe pas
+# on ne peut pas rajouter le || return 0 à la fin de la commande rm car sinon on aura un retour positif même dans les cas ou la suppression du fichier a été un échec
 
 ################################################################################
 ## création des fichiers de log
@@ -513,9 +516,9 @@ is_script_launch_with_gnome_terminal() {
         [[ $pid -gt 1 ]] && get_all_parent_PID $ppid
       )
   }
-if get_all_parent_PID | grep 'gnome-terminal' &>/dev/null; then
-  script_is_launch_with_gnome_terminal='1'
-fi
+  if get_all_parent_PID | grep 'gnome-terminal' &>/dev/null; then
+    script_is_launch_with_gnome_terminal='1'
+  fi
 }
 is_script_launch_with_gnome_terminal
 ################################################################################
@@ -602,11 +605,11 @@ check_latest_version_manual_install_apps() {
   fi
   # check version : https://github.com/laurent22/joplin/releases/
 
-  krita_version="$($CURL 'https://krita.org/fr/telechargement/krita-desktop/' | grep 'stable' | grep -m1 -e '.appimage' | grep -Po '(?<=/stable/krita/)([[:digit:]]+\.+[[:digit:]]+\.[[:digit:]]+)')"
+  krita_version="$($CURL 'https://krita.org/fr/download/'| tr -s '<' '\n' | grep 'stable' | grep -m1 -e '.appimage' | grep -Po '(?<=/stable/krita/)([[:digit:]]+\.+[[:digit:]]+\.[[:digit:]]+)')"
   if [ $? != 0 ] || [ -z "$krita_version" ]; then
-    krita_version='5.1.5'
+    krita_version='5.2.3'
   fi
-  # check version : https://krita.org/fr/telechargement/krita-desktop/
+  # check version : https://krita.org/fr/download/
 
   opensnitch_stable_version="$($CURL 'https://api.github.com/repos/evilsocket/opensnitch/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
   if [ $? != 0 ] || [ -z "$opensnitch_stable_version" ]; then
@@ -686,7 +689,7 @@ manual_check_latest_version() {
   echo 'bat : '"$bat_version"
   joplin_version="$($CURL 'https://api.github.com/repos/laurent22/joplin/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
   echo 'Joplin : '"$joplin_version"
-  krita_version="$($CURL 'https://krita.org/fr/telechargement/krita-desktop/' | grep 'stable' | grep -m1 -e '.appimage' | grep -Po '(?<=/stable/krita/)([[:digit:]]+\.+[[:digit:]]+\.[[:digit:]]+)')"
+  krita_version="$($CURL 'https://krita.org/fr/download/'| tr -s '<' '\n' | grep 'stable' | grep -m1 -e '.appimage' | grep -Po '(?<=/stable/krita/)([[:digit:]]+\.+[[:digit:]]+\.[[:digit:]]+)')"
   echo 'Krita : '"$krita_version"
   opensnitch_stable_version="$($CURL 'https://api.github.com/repos/evilsocket/opensnitch/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
   echo 'OpenSnitch stable : '"$opensnitch_stable_version"
@@ -938,7 +941,7 @@ tmp_all_package_list_before="$(dpkg --get-selections | awk '{if ($2 == "install"
 configure_apt() {
   cat> /etc/apt/preferences.d/my_apt_preference << 'EOF'
 # blacklist some unwanted MTA
-Package: exim4-base exim4-config exim4-daemon-heavy exim4-daemon-light mailutils bsd-mailx ssmtp sendmail-base sendmail-bin sendmail-cf
+Package: exim4-base exim4-config exim4-daemon-heavy exim4-daemon-light mailutils bsd-mailx ssmtp sendmail sendmail-base sendmail-bin sendmail-cf
 Pin: release *
 Pin-Priority: -1
 
@@ -969,7 +972,7 @@ configure_apt
 force_kill_and_disable_debian_unattended_upgrades() {
   displayandexec "Désactivation permanente de unattended-upgrades     " "\
   systemctl stop unattended-upgrades.service; \
-  pkill --signal SIGKILL unattended-upgrades; \
+  pkill --echo --full --signal SIGKILL unattended-upgrades; \
   systemctl mask --now unattended-upgrades.service"
 }
 force_kill_and_disable_debian_unattended_upgrades
@@ -1019,6 +1022,9 @@ force_kill_and_disable_debian_unattended_upgrades
 # [[ Dustin Kirkland ] (bb29a9a5) · Commits · PackageKit and AppStream / software-properties · GitLab](https://salsa.debian.org/pkgutopia-team/software-properties/-/commit/bb29a9a5c500ea4a1cf37b7e4dde2bccb72b7c03)
 # "python3-software-properties Recommends unattended-upgrades, which means it gets pulled in automatically on a default desktop install."
 # ref : https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=447701#80
+
+# Une autre option pour kill le PID de unattended-upgrades :
+# kill -kill "$(systemctl show --property MainPID --value unattended-upgrades.service)"
 ################################################################################
 
 ################################################################################
@@ -1367,7 +1373,7 @@ install_debian_apt_package() {
 }
 install_debian_apt_package
 
-check_if_package_present_in_backports_repo() {
+check_if_package_is_present_in_backports_repo() {
   local package="$1"
   apt-cache policy "$package" | sed -n '/Version table:/{n;n;p;}' | grep -eq '-backports' &>/dev/null
 }
@@ -1376,7 +1382,6 @@ install_from_backports() {
   local package="$1"
   displayandexec "Installation de "$package"                            " "$AG -t "$debian_release"-backports install -y "$package""
 }
-install_from_backports
 # a savoir que juste après la release de la latest stable de debian, les paquets ne sont probablement pas disponnibles dans les backports et qu'il faut donc les garder aussi dans l'installation des paquets depuis le "main" standard pour pouvoir être compatible avec une install from scratch apès une nouvelle release de debian.
 # On permet toutefois l'install de la dernière version disponnible dans backport si elle existe (vérification avec la commande apt-cache policy firejail | sed -n '/Version table:/{n;n;p;}' | grep -eq '-backports')
 
@@ -1384,9 +1389,10 @@ package_to_install_from_backports_if_available='
 firejail
 firejail-profiles
 '
+
 check_and_install_package_from_backports() {
   for package in $package_to_install_from_backports_if_available; do
-    check_if_package_present_in_backports_repo "$package" && \
+    check_if_package_is_present_in_backports_repo "$package" && \
     install_from_backports "$package"
   done
 }
@@ -1695,36 +1701,65 @@ install_virtualbox_bookworm() {
   # sudo VBoxManage extpack uninstall "Oracle VM VirtualBox Extension Pack" && sudo VBoxManage extpack cleanup
 
   configure_SecureBoot_params() {
-  # création du dossier qui contiendra les signatures pour le SecureBoot
-  [ -d /usr/share/manual_sign_kernel_module ] && mv /usr/share/manual_sign_kernel_module /usr/share/manual_sign_kernel_module.bkp_"$now"
-  mkdir /usr/share/manual_sign_kernel_module
-  # création du script qui permet de signer les modules vboxdrv vboxnetflt vboxnetadp vboxpci pour VirtualBox
-  cat> /opt/sign_virtualbox_kernel_module.sh << 'EOF'
+    # création du dossier qui contiendra les signatures pour le SecureBoot
+    [ -d /usr/share/manual_sign_kernel_module ] && mv /usr/share/manual_sign_kernel_module /usr/share/manual_sign_kernel_module.bkp_"$now"
+    mkdir /usr/share/manual_sign_kernel_module
+    # création du script qui permet de signer les modules vboxdrv vboxnetflt vboxnetadp vboxpci pour VirtualBox
+    cat> /opt/sign_virtualbox_kernel_module.sh << 'EOF'
 #!/bin/bash
 
 # Test que le script est lancer en root
 if [ $EUID != 0 ]; then
-    echo "Le script doit être executer en root: # sudo $0" 1>&2
-    exit 1
+  echo "Le script doit être executer en root: # sudo $0" 1>&2
+  exit 1
 fi
 
 UNAMER="$(uname -r)"
+
 mkdir -p /usr/share/manual_sign_kernel_module/virtualbox
 cd /usr/share/manual_sign_kernel_module/virtualbox
-openssl req -new -x509 -newkey rsa:2048 -keyout vboxdrv.priv -outform DER -out vboxdrv.der -nodes -days 36500 -subj "/CN=vboxdrv/"
-/usr/src/linux-headers-"$UNAMER"/scripts/sign-file sha256 ./vboxdrv.priv ./vboxdrv.der /lib/modules/"$UNAMER"/misc/vboxdrv.ko
-openssl req -new -x509 -newkey rsa:2048 -keyout vboxnetflt.priv -outform DER -out vboxnetflt.der -nodes -days 36500 -subj "/CN=vboxnetflt/"
-/usr/src/linux-headers-"$UNAMER"/scripts/sign-file sha256 ./vboxnetflt.priv ./vboxnetflt.der /lib/modules/"$UNAMER"/misc/vboxnetflt.ko
-openssl req -new -x509 -newkey rsa:2048 -keyout vboxnetadp.priv -outform DER -out vboxnetadp.der -nodes -days 36500 -subj "/CN=vboxnetadp/"
-/usr/src/linux-headers-"$UNAMER"/scripts/sign-file sha256 ./vboxnetadp.priv ./vboxnetadp.der /lib/modules/"$UNAMER"/misc/vboxnetadp.ko
-openssl req -new -x509 -newkey rsa:2048 -keyout vboxpci.priv -outform DER -out vboxpci.der -nodes -days 36500 -subj "/CN=vboxpci/"
-/usr/src/linux-headers-"$UNAMER"/scripts/sign-file sha256 ./vboxpci.priv ./vboxpci.der /lib/modules/"$UNAMER"/misc/vboxpci.ko
+
+virtualbox_modules='
+vboxdrv
+vboxnetflt
+vboxnetadp
+vboxpci
+'
+
+for module in $virtualbox_modules; do
+  openssl req \
+    -new \
+    -x509 \
+    -newkey rsa:2048 \
+    -keyout "$module".priv \
+    -outform DER \
+    -out "$module".der \
+    -nodes \
+    -days 36500 \
+    -subj "/CN="$module"/" && \
+  /usr/src/linux-headers-"$UNAMER"/scripts/sign-file \
+    sha256 \
+    ./"$module".priv \
+    ./"$module".der \
+    /lib/modules/"$UNAMER"/misc/"$module".ko
+done
+
+# openssl req -new -x509 -newkey rsa:2048 -keyout vboxnetflt.priv -outform DER -out vboxnetflt.der -nodes -days 36500 -subj "/CN=vboxnetflt/"
+# /usr/src/linux-headers-"$UNAMER"/scripts/sign-file sha256 ./vboxnetflt.priv ./vboxnetflt.der /lib/modules/"$UNAMER"/misc/vboxnetflt.ko
+
+# openssl req -new -x509 -newkey rsa:2048 -keyout vboxnetadp.priv -outform DER -out vboxnetadp.der -nodes -days 36500 -subj "/CN=vboxnetadp/"
+# /usr/src/linux-headers-"$UNAMER"/scripts/sign-file sha256 ./vboxnetadp.priv ./vboxnetadp.der /lib/modules/"$UNAMER"/misc/vboxnetadp.ko
+
+# openssl req -new -x509 -newkey rsa:2048 -keyout vboxpci.priv -outform DER -out vboxpci.der -nodes -days 36500 -subj "/CN=vboxpci/"
+# /usr/src/linux-headers-"$UNAMER"/scripts/sign-file sha256 ./vboxpci.priv ./vboxpci.der /lib/modules/"$UNAMER"/misc/vboxpci.ko
+
 mokutil --import vboxdrv.der
 mokutil --import vboxnetflt.der
 mokutil --import vboxnetadp.der
 mokutil --import vboxpci.der
 # normallement on peut faire le mokutil avec l'import de plusieurs fichiers en même temps, il faudra tester si c'est possible avant d'intégrer la ligne suivante dans le script
 #mokutil --import vboxdrv.der vboxnetflt.der vboxnetadp.der vboxpci.der
+
 reboot
 EOF
     chmod +x /opt/sign_virtualbox_kernel_module.sh
@@ -1742,10 +1777,10 @@ EOF
 ##------------------------------------------------------------------------------
 install_keepassxc() {
   displayandexec "Installation de KeePassXC                           " "\
-reset_dir ""$manual_install_dir"/KeePassXC/" && \
-$WGET -P "$manual_install_dir"/KeePassXC/ https://github.com/keepassxreboot/keepassxc/releases/download/"$keepassxc_version"/KeePassXC-"$keepassxc_version"-x86_64.AppImage && \
-chmod +x "$manual_install_dir"/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage && \
-$WGET -P "$manual_install_dir"/KeePassXC/ 'https://raw.githubusercontent.com/keepassxreboot/keepassxc/develop/share/icons/application/256x256/apps/keepassxc.png'"
+  reset_dir ""$manual_install_dir"/KeePassXC/" && \
+  $WGET -P "$manual_install_dir"/KeePassXC/ https://github.com/keepassxreboot/keepassxc/releases/download/"$keepassxc_version"/KeePassXC-"$keepassxc_version"-x86_64.AppImage && \
+  chmod +x "$manual_install_dir"/KeePassXC/KeePassXC-"$keepassxc_version"-x86_64.AppImage && \
+  $WGET -P "$manual_install_dir"/KeePassXC/ 'https://raw.githubusercontent.com/keepassxreboot/keepassxc/develop/share/icons/application/256x256/apps/keepassxc.png'"
   cat> /usr/share/applications/keepassxc.desktop << EOF
 [Desktop Entry]
 Comment=Password Manager
@@ -2076,8 +2111,7 @@ install_weasyprint() {
 install_geeqie() {
   displayandexec "Installation de Geeqie                              " "\
   reset_dir ""$manual_install_dir"/Geeqie/" && \
-  $WGET -P "$manual_install_dir"/Geeqie/ https://github.com/BestImageViewer/geeqie/releases/download/continuous/Geeqie-latest-x86_64.AppImage
- && \
+  $WGET -P "$manual_install_dir"/Geeqie/ 'https://github.com/BestImageViewer/geeqie/releases/download/continuous/Geeqie-latest-x86_64.AppImage' && \
   $WGET -P "$manual_install_dir"/Geeqie/ 'https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/geeqie.svg' && \
   chmod +x "$manual_install_dir"/Geeqie/Geeqie-latest-x86_64.AppImage"
   cat> /usr/share/applications/geeqie.desktop << EOF
@@ -2388,12 +2422,12 @@ displayandexec "Désinstalation de Gnome Parental Control            " "$AG remo
 # gnome-extensions est disponnible a partir de Gnome 34
 # should restart gdm with Alt+F2+r
 
-install_GSE_bullseye() {
+install_GSE() {
   #Screenshot Tool
   install_GSE_screenshot_tool() {
     local tmp_dir="$(mktemp -d)"
     local GnomeShellExtensionUUID='gnome-shell-screenshot@ttll.de' && \
-    local GnomeShellExtensionVersion='56' && \
+    local GnomeShellExtensionVersion="$1" && \
     execandlog "reset_dir_as_user "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
     $WGET -P "$tmp_dir" "https://extensions.gnome.org/extension-data/gnome-shell-screenshotttll.de.v"$GnomeShellExtensionVersion".shell-extension.zip" && \
     unzip -q "$tmp_dir"/gnome-shell-screenshotttll.de.v"$GnomeShellExtensionVersion".shell-extension.zip -d "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
@@ -2416,104 +2450,15 @@ install_GSE_bullseye() {
     execandlog "$ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/disk-usage-style "$hte_dconf_system_monitor_disk_usage_style""
     # on chosie l'option de l'affichage de l'utilisation des disk par des barres horizontales à la place du graph en demi cercle
   }
+  # à noter que si on ne voulait pas utiliser la variable hte_dconf_system_monitor_memory_style avec en plus les escapes des doubles quote à l'intérieur, il faudrait utiliser :
+  # '"'\''digit'\''"'
+  # de sorte à obternir "'digit'" dans l'execution du subshell de execandlog
 
   #Sound Input & Output Device Chooser
   install_GSE_sound_output_device_chooser() {
     local tmp_dir="$(mktemp -d)"
     local GnomeShellExtensionUUID='sound-output-device-chooser@kgshank.net' && \
-    local GnomeShellExtensionVersion='40' && \
-    execandlog "reset_dir_as_user "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
-    $WGET -P "$tmp_dir" "https://extensions.gnome.org/extension-data/sound-output-device-chooserkgshank.net.v"$GnomeShellExtensionVersion".shell-extension.zip" && \
-    unzip -q "$tmp_dir"/sound-output-device-chooserkgshank.net.v"$GnomeShellExtensionVersion".shell-extension.zip -d "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
-    chown -R "$local_user":"$local_user" "$gnome_shell_extension_path"; \
-    rm -rf "$tmp_dir""
-  }
-  # to check the latest version : https://extensions.gnome.org/extension/906/sound-output-device-chooser/
-  # https://github.com/kgshank/gse-sound-output-device-chooser
-
-  enable_GSE() {
-    $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")' &>/dev/null && \
-    $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'gnome-shell-screenshot@ttll.de'
-    $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'system-monitor@paradoxxx.zero.gmail.com'
-    $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'sound-output-device-chooser@kgshank.net'
-  }
-
-  check_for_enable_GSE() {
-  if [ -z "$script_is_launch_with_gnome_terminal" ]; then
-    enable_GSE
-  else
-    cat> /tmp/reload_GnomeShell.sh << 'EOF'
-#!/bin/bash
-
-local_user="$(awk -F':' '/:1000:/{print $1}' /etc/passwd)"
-local_user_UID="$(id -u "$local_user")"
-ExeAsUser="sudo -u "$local_user""
-
-$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")' &>/dev/null
-EOF
-    chmod +x /tmp/reload_GnomeShell.sh && \
-    chown "$local_user":"$local_user" /tmp/reload_GnomeShell.sh
-    cat> /tmp/enable_GSE.sh << 'EOF'
-#!/bin/bash
-
-local_user="$(awk -F':' '/:1000:/{print $1}' /etc/passwd)"
-local_user_UID="$(id -u "$local_user")"
-ExeAsUser="sudo -u "$local_user""
-
-$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'gnome-shell-screenshot@ttll.de'
-$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'system-monitor@paradoxxx.zero.gmail.com'
-$ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'sound-output-device-chooser@kgshank.net'
-EOF
-    chmod +x /tmp/enable_GSE.sh && \
-    chown "$local_user":"$local_user" /tmp/enable_GSE.sh
-  fi
-  }
-
-  install_GSE_screenshot_tool
-  install_GSE_system_monitor
-  install_GSE_sound_output_device_chooser
-  check_for_enable_GSE
-
-  displayandexec "Installation des Gnome Shell Extension              " "\
-  stat "$gnome_shell_extension_path"/gnome-shell-screenshot@ttll.de/metadata.json && \
-  stat "$gnome_shell_extension_path"/sound-output-device-chooser@kgshank.net/metadata.json && \
-  stat /usr/share/gnome-shell/extensions/system-monitor@paradoxxx.zero.gmail.com/metadata.json"
-}
-
-install_GSE_bookworm() {
-  #Screenshot Tool
-  install_GSE_screenshot_tool() {
-    local tmp_dir="$(mktemp -d)"
-    local GnomeShellExtensionUUID='gnome-shell-screenshot@ttll.de' && \
-    local GnomeShellExtensionVersion='70' && \
-    execandlog "reset_dir_as_user "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
-    $WGET -P "$tmp_dir" "https://extensions.gnome.org/extension-data/gnome-shell-screenshotttll.de.v"$GnomeShellExtensionVersion".shell-extension.zip" && \
-    unzip -q "$tmp_dir"/gnome-shell-screenshotttll.de.v"$GnomeShellExtensionVersion".shell-extension.zip -d "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
-    chown -R "$local_user":"$local_user" "$gnome_shell_extension_path"; \
-    rm -rf "$tmp_dir""
-  }
-  # to check the latest version : https://extensions.gnome.org/extension/1112/screenshot-tool/
-  # https://github.com/OttoAllmendinger/gnome-shell-screenshot/
-
-  #system-monitor
-  install_GSE_system_monitor() {
-    execandlog "$AGI gnome-shell-extension-system-monitor"
-    hte_dconf_system_monitor_memory_style="\"'digit'\""
-    execandlog "$ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/memory-style "$hte_dconf_system_monitor_memory_style""
-    # on configure avec la commande ci-dessus l'affichage de la métrique de la RAM sous forme de pourcentage plustôt que de graph
-    hte_dconf_system_monitor_gpu_show_menu='"true"'
-    execandlog "$ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/gpu-show-menu "$hte_dconf_system_monitor_gpu_show_menu""
-    # on active la vue de l'utilisation du GPU dans le menu
-    hte_dconf_system_monitor_disk_usage_style="\"'bar'\""
-    execandlog "$ExeAsUser $DCONF_write /org/gnome/shell/extensions/system-monitor/disk-usage-style "$hte_dconf_system_monitor_disk_usage_style""
-    # on chosie l'option de l'affichage de l'utilisation des disk par des barres horizontales à la place du graph en demi cercle
-  }
-
-  #Sound Input & Output Device Chooser
-  install_GSE_sound_output_device_chooser() {
-    local tmp_dir="$(mktemp -d)"
-    local GnomeShellExtensionUUID='sound-output-device-chooser@kgshank.net' && \
-    local GnomeShellExtensionVersion='43' && \
+    local GnomeShellExtensionVersion="$1" && \
     execandlog "reset_dir_as_user "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
     $WGET -P "$tmp_dir" "https://extensions.gnome.org/extension-data/sound-output-device-chooserkgshank.net.v"$GnomeShellExtensionVersion".shell-extension.zip" && \
     unzip -q "$tmp_dir"/sound-output-device-chooserkgshank.net.v"$GnomeShellExtensionVersion".shell-extension.zip -d "$gnome_shell_extension_path"/"$GnomeShellExtensionUUID" && \
@@ -2531,10 +2476,10 @@ install_GSE_bookworm() {
   }
 
   check_for_enable_GSE() {
-  if [ -z "$script_is_launch_with_gnome_terminal" ]; then
-    enable_GSE
-  else
-    cat> /tmp/reload_GnomeShell.sh << 'EOF'
+    if [ -z "$script_is_launch_with_gnome_terminal" ]; then
+      enable_GSE
+    else
+      cat> /tmp/reload_GnomeShell.sh << 'EOF'
 #!/bin/bash
 
 local_user="$(awk -F':' '/:1000:/{print $1}' /etc/passwd)"
@@ -2543,9 +2488,9 @@ ExeAsUser="sudo -u "$local_user""
 
 $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")' &>/dev/null
 EOF
-    chmod +x /tmp/reload_GnomeShell.sh && \
-    chown "$local_user":"$local_user" /tmp/reload_GnomeShell.sh
-    cat> /tmp/enable_GSE.sh << 'EOF'
+      chmod +x /tmp/reload_GnomeShell.sh && \
+      chown "$local_user":"$local_user" /tmp/reload_GnomeShell.sh
+      cat> /tmp/enable_GSE.sh << 'EOF'
 #!/bin/bash
 
 local_user="$(awk -F':' '/:1000:/{print $1}' /etc/passwd)"
@@ -2556,14 +2501,14 @@ $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" 
 $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'system-monitor@paradoxxx.zero.gmail.com'
 $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'sound-output-device-chooser@kgshank.net'
 EOF
-    chmod +x /tmp/enable_GSE.sh && \
-    chown "$local_user":"$local_user" /tmp/enable_GSE.sh
-  fi
+      chmod +x /tmp/enable_GSE.sh && \
+      chown "$local_user":"$local_user" /tmp/enable_GSE.sh
+    fi
   }
 
-  install_GSE_screenshot_tool
+  install_GSE_screenshot_tool "$GSE_screenshot_tool_version"
   install_GSE_system_monitor
-  install_GSE_sound_output_device_chooser
+  install_GSE_sound_output_device_chooser "$GSE_sound_output_device_chooser_version"
   if [ "$bookworm" != 1 ]; then
     check_for_enable_GSE
   fi
@@ -2576,8 +2521,8 @@ EOF
 # il est nécessaire de recharger Gnome Shell avant de pouvoit faire un gnome-extensions enable
 # la commande suivante permet de recharger Gnome Shell :
 # $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")'
-# Par contre elle coupe tout ce qui est executer au moment du lancement de la commande
-# elle fait l'quivalent de la fermeture + réouverture de la session sans avoir à renseigner le mdp
+# Par contre elle coupe tout ce qui est executé au moment du lancement de la commande dans la session Gnome
+# elle fait l'équivalent de la fermeture + réouverture de la session sans avoir à renseigner le mdp
 # il n'est pas nécessaire de recharger Gnome Shell après avoir activé les extensions pour les voir apparaitre dans la barre supérieure
 
 # Il est aussi possible d'installer les extensions à partir d'un appel dbus grâce à leurs UUID, avec cette méthode, l'extensions est télécharger depuis le site https://extensions.gnome.org/
@@ -2588,13 +2533,20 @@ EOF
            # --method org.gnome.Shell.Extensions.InstallRemoteExtension \
            # "gsconnect@andyholmes.github.io"
 # ref: [Enable Gnome Extensions without session restart - Desktop - GNOME Discourse](https://discourse.gnome.org/t/enable-gnome-extensions-without-session-restart/7936/4)
+# Peut aussi se faire avec busctl ou dbus-send :
+# busctl --user call org.gnome.Shell.Extensions /org/gnome/Shell/Extensions org.gnome.Shell.Extensions InstallRemoteExtension s ${EXTENSION_ID}
+# OU
+# dbus-send --session --type=method_call --print-reply --dest=org.gnome.Shell.Extensions /org/gnome/Shell/Extensions org.gnome.Shell.Extensions.InstallRemoteExtension string:${EXTENSION_ID}
+# ref : [How does gnome-browser-extension and chrome-gnome-shell load extension without reloading gnome session - Stack Overflow](https://stackoverflow.com/questions/72857634/how-does-gnome-browser-extension-and-chrome-gnome-shell-load-extension-without-r/73044893#73044893)
 
-if [ "$bullseye" == 1 ]; then
-  install_GSE_bullseye
-fi
+# à noter qu'il y a cette issue qui décrit exactement mon besoin : [allow installing GNOME extensions from the command line without user interaction (#7469) · Issues · GNOME / gnome-shell · GitLab](https://gitlab.gnome.org/GNOME/gnome-shell/-/issues/7469)
+
+# à noter ce tool qui semble très intéressant : [essembeh/gnome-extensions-cli: Command line tool to manage your Gnome Shell extensions](https://github.com/essembeh/gnome-extensions-cli)
 
 if [ "$bookworm" == 1 ]; then
-  install_GSE_bookworm
+  GSE_screenshot_tool_version='70'
+  GSE_sound_output_device_chooser_version='43'
+  install_GSE
 fi
 
 # Pour obtenir la liste des extensions installés :
@@ -3037,6 +2989,18 @@ configure_sshfs
 ################################################################################
 
 ################################################################################
+## configuration d'un répertoire pour monter des loop_device
+##------------------------------------------------------------------------------
+# création du répertoire qui servira de point de montage pour des loop device
+# on le créer dans /home/"$local_user"/.mnt/loop_device/ car cela permet de lire et écrire sans élévation de privilège lors de l'execution du mount
+configure_loop_device_mount_dir() {
+  displayandexec "Configuration d'un répertoire pour mount loop_device" "\
+  is_dir_present_or_mkdir_as_user "/home/"$local_user"/.mnt/loop_device/""
+}
+configure_loop_device_mount_dir
+################################################################################
+
+################################################################################
 ## configuration du logrotate pour le auth.log
 ##------------------------------------------------------------------------------
 configure_logrotate_auth_log() {
@@ -3181,10 +3145,10 @@ configure_wireshark
 ## configuration de stacer
 ##------------------------------------------------------------------------------
 configure_stacer() {
-execandlog "[ -d /home/"$local_user"/.config/stacer/ ] || $ExeAsUser mkdir /home/"$local_user"/.config/stacer/"
-$ExeAsUser echo '[General]
-AppQuitDialogDontAsk=true
-Language=fr' > /home/"$local_user"/.config/stacer/settings.ini
+  execandlog "[ -d /home/"$local_user"/.config/stacer/ ] || $ExeAsUser mkdir /home/"$local_user"/.config/stacer/"
+  $ExeAsUser echo '[General]
+  AppQuitDialogDontAsk=true
+  Language=fr' > /home/"$local_user"/.config/stacer/settings.ini
 }
 configure_stacer
 ################################################################################
@@ -3195,7 +3159,7 @@ configure_stacer
 configure_etcher() {
   displayandexec "Configuration de etcher                             " "\
   reset_dir_as_user "/home/"$local_user"/.config/balena-etcher-electron/""
-$ExeAsUser cat> /home/"$local_user"/.config/balena-etcher-electron/config.json << 'EOF'
+  $ExeAsUser cat> /home/"$local_user"/.config/balena-etcher-electron/config.json << 'EOF'
 {
   "errorReporting": false,
   "updatesEnabled": false,
@@ -3245,23 +3209,23 @@ fi
 create_template_for_new_file_new() {
   is_dir_present "/home/"$local_user"/Modèles" && template_dir="/home/"$local_user"/Modèles"
   is_dir_present "/home/"$local_user"/Templates" && template_dir="/home/"$local_user"/Templates"
-  displayandexec "Configuration des templates libreoffice             " "\
-  $ExeAsUser touch "$template_dir/Fichier Texte.txt" && \
-  $ExeAsUser touch "$template_dir/Document ODT.txt" && \
-  $ExeAsUser libreoffice --nologo --nofirststartwizard --invisible --norestore --headless --convert-to odt "$template_dir/Document ODT.txt" --outdir "$template_dir" && \
-  rm -f "$template_dir/Document ODT.txt" && \
-  $ExeAsUser touch "$template_dir/Document ODS.txt" && \
-  $ExeAsUser libreoffice --calc --nologo --nofirststartwizard --invisible --norestore --headless --convert-to ods "$template_dir/Document ODS.txt" --outdir "$template_dir" && \
-  rm -f "$template_dir/Document ODS.txt""
+  # displayandexec "Configuration des templates libreoffice             " "\
+  $ExeAsUser touch ""$template_dir"/Fichier Texte.txt" && \
+  $ExeAsUser touch ""$template_dir"/Document ODT.txt" && \
+  $ExeAsUser "$(realpath $(command -v libreoffice))".bin --nologo --nofirststartwizard --invisible --norestore --headless --convert-to odt ""$template_dir"/Document ODT.txt" --outdir "$template_dir" && \
+  rm -f ""$template_dir"/Document ODT.txt" && \
+  $ExeAsUser touch ""$template_dir"/Document ODS.txt" && \
+  $ExeAsUser "$(realpath $(command -v libreoffice))".bin --calc --nologo --nofirststartwizard --invisible --norestore --headless --convert-to ods ""$template_dir"/Document ODS.txt" --outdir "$template_dir" && \
+  rm -f ""$template_dir"/Document ODS.txt"
 # ref : https://ask.libreoffice.org/en/question/153444/how-to-create-empty-libreoffice-file-in-a-current-directory-on-the-command-line/
 # Pour voir tous les formats supportés par unoconv : unoconv --show
 }
 if [ "$bookworm" == 1 ]; then
   create_template_for_new_file_new
-  execandlog "find /home/"$local_user"/ -user 'root' -not -type l"
-  execandlog "chown -R "$local_user":"$local_user" /home/"$local_user"/"
-  create_template_for_new_file_new
 fi
+
+# On est obliger d'utiliser "$(realpath $(command -v libreoffice))".bin à la place de "libreoffice", c'est à dire le binaire soffice et non le script de lancement produit par Debian, car sinon on obtiens cette érreur lorsqu'on tente de lancer la commande via sudo -u "$local_user" :
+# /usr/bin/libreoffice: 56: cd: can't cd to /root
 
 # cette fonction permet d'obtenir dans le clique droit de nautilus l'accès à "Nouveau Document -> Ficher Texte"
 ################################################################################
@@ -3323,7 +3287,7 @@ configure_nano
 ## configuration de apt-fast
 ##------------------------------------------------------------------------------
 configure_apt-fast() {
-cat>> /etc/apt-fast.conf << 'EOF'
+  cat>> /etc/apt-fast.conf << 'EOF'
 
 
 # Verbose output
@@ -3863,6 +3827,9 @@ configure_gnome_dconf
 
 # à voir donc s'il est nécessaire de le créer manuellement en positionnement uniquement la valeur à travers le dconf ou s'il est généré automatiquement avec le dconf
 
+# à voir si c'est utile ou pas de faire la commande dconf update
+# ref : https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html/customizing_the_gnome_desktop_environment/enabling-and-enforcing-gnome-shell-extensions_customizing-the-gnome-desktop-environment#enabling-and-enforcing-gnome-shell-extensions_customizing-the-gnome-desktop-environment
+
 CustomGnomeShortcut() {
 	local name="$1"
 	local command="$2"
@@ -3937,15 +3904,15 @@ ConfigureGnomeTerminal() {
     # we create an ID with uuidgen to create a new profile
     new_profile_id="$(uuidgen)"
 
-        # récupère l'uuid de la conf par défaut du terminal
+    # récupère l'uuid de la conf par défaut du terminal
     if [[ -n "$($ExeAsUser $DCONF_read "$base_key_path"/default)" ]]; then
-          default_profile_id=$($ExeAsUser $DCONF_read "$base_key_path"/default | tr -d \')
-      else
-        default_profile_id=$($ExeAsUser $DCONF_list "$base_key_path"/ | grep -m1 '^:' | tr -d :/)
-        # on récupère le premier id du profil disponnible dans la list des profiles
-        # default_profile_id=$($ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus gsettings get org.gnome.Terminal.ProfilesList default)"
-        # attention, à pirio la commande gsettings ne donne pas le même résultat pour le profil par défaut quand il y en a un d'accessible avec dconf
-        # peut aussi se faire uniquement avec awk 'NR==1,/^:/{gsub(/:/,"");gsub(/\//,""); print}'
+      default_profile_id=$($ExeAsUser $DCONF_read "$base_key_path"/default | tr -d \')
+    else
+      default_profile_id=$($ExeAsUser $DCONF_list "$base_key_path"/ | grep -m1 '^:' | tr -d :/)
+      # on récupère le premier id du profil disponnible dans la list des profiles
+      # default_profile_id=$($ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus gsettings get org.gnome.Terminal.ProfilesList default)"
+      # attention, à pirio la commande gsettings ne donne pas le même résultat pour le profil par défaut quand il y en a un d'accessible avec dconf
+      # peut aussi se faire uniquement avec awk 'NR==1,/^:/{gsub(/:/,"");gsub(/\//,""); print}'
     fi
 
     default_profile_id_key=""$base_key_path"/:$default_profile_id"
@@ -3967,41 +3934,41 @@ ConfigureGnomeTerminal() {
     dconf_set use-theme-colors "false"
     dconf_set use-theme-background "false"
 
-  # autre version qui fonctionne aussi et permet d'éviter avoir à faire des dconf write
-  #     cat << 'EOF' | $ExeAsUser $DCONF_load "$new_profile_id_key"/
-  # [/]
-  # foreground-color='#abb2bf'
-  # visible-name='One Dark'
-  # palette=['#000000', '#e06c75', '#98c379', '#d19a66', '#61afef', '#c678dd', '#56b6c2', '#abb2bf', '#5c6370', '#e06c75', '#98c379', '#d19a66', '#61afef', '#c678dd', '#56b6c2', '#ffffff']
-  # use-theme-colors=false
-  # use-theme-background=false
-  # bold-color-same-as-fg=true
-  # bold-color='#ABB2BF'
-  # background-color='#282c34'
-  # EOF
+    # autre version qui fonctionne aussi et permet d'éviter avoir à faire des dconf write
+    #     cat << 'EOF' | $ExeAsUser $DCONF_load "$new_profile_id_key"/
+    # [/]
+    # foreground-color='#abb2bf'
+    # visible-name='One Dark'
+    # palette=['#000000', '#e06c75', '#98c379', '#d19a66', '#61afef', '#c678dd', '#56b6c2', '#abb2bf', '#5c6370', '#e06c75', '#98c379', '#d19a66', '#61afef', '#c678dd', '#56b6c2', '#ffffff']
+    # use-theme-colors=false
+    # use-theme-background=false
+    # bold-color-same-as-fg=true
+    # bold-color='#ABB2BF'
+    # background-color='#282c34'
+    # EOF
 
-elif [[ -n "$($ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gsettings get org.gnome.Terminal.ProfilesList default)" ]]; then
-  new_profile_id="$(uuidgen)"
-  default_profile_id=$($ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gsettings get org.gnome.Terminal.ProfilesList default | tr -d \')
+  elif [[ -n "$($ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gsettings get org.gnome.Terminal.ProfilesList default)" ]]; then
+    new_profile_id="$(uuidgen)"
+    default_profile_id=$($ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gsettings get org.gnome.Terminal.ProfilesList default | tr -d \')
 
-  default_profile_id_key=""$base_key_path"/:$default_profile_id"
-  new_profile_id_key=""$base_key_path"/:"$new_profile_id""
+    default_profile_id_key=""$base_key_path"/:$default_profile_id"
+    new_profile_id_key=""$base_key_path"/:"$new_profile_id""
 
-  # copy existing settings from default profile
-  $ExeAsUser $DCONF_dump "$default_profile_id_key"/ | $ExeAsUser $DCONF_load "$new_profile_id_key"/
+    # copy existing settings from default profile
+    $ExeAsUser $DCONF_dump "$default_profile_id_key"/ | $ExeAsUser $DCONF_load "$new_profile_id_key"/
 
-  # add new copy to list of profiles
-  dconf_list_append "$base_key_path"/list "$new_profile_id"
+    # add new copy to list of profiles
+    dconf_list_append "$base_key_path"/list "$new_profile_id"
 
-  # update profile valueues with theme options
-  dconf_set visible-name "'$profile_name'"
-  dconf_set palette "['#000000', '#e06c75', '#98c379', '#d19a66', '#61afef', '#c678dd', '#56b6c2', '#abb2bf', '#5c6370', '#e06c75', '#98c379', '#d19a66', '#61afef', '#c678dd', '#56b6c2', '#ffffff']"
-  dconf_set background-color "'#282c34'"
-  dconf_set foreground-color "'#abb2bf'"
-  dconf_set bold-color "'#ABB2BF'"
-  dconf_set bold-color-same-as-fg "true"
-  dconf_set use-theme-colors "false"
-  dconf_set use-theme-background "false"
+    # update profile valueues with theme options
+    dconf_set visible-name "'$profile_name'"
+    dconf_set palette "['#000000', '#e06c75', '#98c379', '#d19a66', '#61afef', '#c678dd', '#56b6c2', '#abb2bf', '#5c6370', '#e06c75', '#98c379', '#d19a66', '#61afef', '#c678dd', '#56b6c2', '#ffffff']"
+    dconf_set background-color "'#282c34'"
+    dconf_set foreground-color "'#abb2bf'"
+    dconf_set bold-color "'#ABB2BF'"
+    dconf_set bold-color-same-as-fg "true"
+    dconf_set use-theme-colors "false"
+    dconf_set use-theme-background "false"
   fi
 }
 # script based from https://github.com/denysdovhan/one-gnome-terminal
@@ -4103,6 +4070,9 @@ fi
 
 # pour supprimer des options internes à nautilus, il faudrait modifier son code source et le recompiler
 # ref : [Comment supprimer Change Desktop Background du clic droit?](https://qastack.fr/ubuntu/34803/how-to-remove-change-desktop-background-from-right-click)
+
+# à noter qu'on fait le check avec bullseye parce que nautilus-wipe a été supprimé de bookworm car Nautilus utilise GTK4 dans bookworm
+# ref : [#1017619 - nautilus-wipe: Fails to build with nautilus 43 - Debian Bug report logs](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1017619)
 ################################################################################
 
 ################################################################################
@@ -4252,7 +4222,6 @@ alias yt-dlp='yt-dlp -o "%(title)s.%(ext)s"'
 alias yt-dlp_best='yt-dlp -o "%(title)s.%(ext)s" -f "bestvideo+bestaudio"'
 alias yt-dlp_1080p='yt-dlp -o "%(title)s.%(ext)s" -f '\''bestvideo[height<=1080]+bestaudio'\'''
 alias yt-dlp_1440p='yt-dlp -o "%(title)s.%(ext)s" -f '\''bestvideo[height<=1440]+bestaudio'\'''
-alias spyme='sudo lnav /var/log/syslog /var/log/auth.log'
 alias free='free -ht'
 alias showshortcut='dconf dump /org/gnome/settings-daemon/plugins/media-keys/'
 alias update_my_sysupdate_script='sudo bash -c '\''rm -f $my_bin_path/sysupdate && wget -q -P $my_bin_path "https://raw.githubusercontent.com/NRGLine4Sec/config-l/main/sysupdate" && chmod +x $my_bin_path/sysupdate'\'''
@@ -4308,7 +4277,6 @@ alias upp='ag update && ag upgrade'
 alias uppr='ag update && ag dist-upgrade'
 alias xx='shutdown now'
 alias xwx='poweroff'
-alias spyme='lnav /var/log/syslog /var/log/auth.log'
 alias free='free -ht'
 HISTTIMEFORMAT=\"%Y/%m/%d %T   \"
 is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/\$1 ;}
@@ -4352,7 +4320,6 @@ alias yt-dlp='yt-dlp -o "%(title)s.%(ext)s"'
 alias yt-dlp_best='yt-dlp -o "%(title)s.%(ext)s" -f "bestvideo+bestaudio"'
 alias yt-dlp_1080p='yt-dlp -o "%(title)s.%(ext)s" -f '\''bestvideo[height<=1080]+bestaudio'\'''
 alias yt-dlp_1440p='yt-dlp -o "%(title)s.%(ext)s" -f '\''bestvideo[height<=1440]+bestaudio'\'''
-alias spyme='sudo lnav /var/log/syslog /var/log/auth.log'
 alias free='free -ht'
 alias update_my_sysupdate_script='sudo bash -c '\''rm -f $my_bin_path/sysupdate && wget -q -P $my_bin_path "https://raw.githubusercontent.com/NRGLine4Sec/config-l/main/sysupdate" && chmod +x $my_bin_path/sysupdate'\'''
 alias showshortcut='dconf dump /org/gnome/settings-daemon/plugins/media-keys/'
@@ -4398,7 +4365,6 @@ alias upp='ag update && ag upgrade'
 alias uppr='ag update && ag dist-upgrade'
 alias xx='shutdown now'
 alias xwx='poweroff'
-alias spyme='lnav /var/log/syslog /var/log/auth.log'
 alias free='free -ht'
 is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/\$1 ;}
 to_lower() { tr [:upper:] [:lower:] <<< "\$@" ;}
@@ -4489,7 +4455,7 @@ backup_LUKS_header() {
 }
 backup_LUKS_header
 # on s'assure dans un premier temps de récupérer uniquement le path de la partition qui contient le lvm du système (lv root) pour être sur de ne faire que la sauvegarde du LUKS du système
-# On ne peut pas utiliser root_lvm_parent_partition="$(lsblk -o PKNAME,FSTYPE,NAME --json | grep "$root_pv_name" | grep -Po '("pkname":")\K([A-Za-z0-9\-]+)(?=")')"
+# au final, il est préférable de ne pas utiliser root_lvm_parent_partition="$(lsblk -o PKNAME,FSTYPE,NAME --json | grep "$root_pv_name" | grep -Po '("pkname":")\K([A-Za-z0-9\-]+)(?=")')"
 # car ils ont changer le format d'affichage du output json entre les versions lsblk from util-linux 2.36.1 (bullseye) et lsblk de util-linux 2.38.1 (bookworm)
 
 # on est obligé de faire export LVM_SUPPRESS_FD_WARNINGS=1 pour éviter d'avoir un message d'érreur lors de l'execution de la commande pvdisplay
@@ -4539,7 +4505,7 @@ disable_unneeded_services() {
   systemctl mask --now postfix-mta-sts-resolver.service"
   # plus d'infos concernant le rôle du paquet postfix-mta-sts-resolver : [Setup MTA-STS and TLSRPT – Jean's Blog](https://blog.jeanbruenn.info/2021/07/31/howto-setup-mta-sts-and-tlsrpt/)
 }
-disable_unneeded_services
+# disable_unneeded_services
 ################################################################################
 
 
@@ -4606,7 +4572,6 @@ check_if_root_part_is_btrfs() {
     # peut être qu'à terme il serait intéressant de voir pour ajouer une partition dédié pour les backups
   fi
 }
-check_if_root_part_is_btrfs
 
 if [ -z "$fisrt_time_script_executed" ]; then
   root_part_kname="$(lsblk -o KNAME,MOUNTPOINT | awk '{{if ($2 == "/") print $1}}')"
@@ -4620,7 +4585,8 @@ fi
 #   umount -l /run/timeshift/backup; \
 #   timeshift --scripted --create --btrfs --comments 'first snapshot, after postinstall script' --snapshot-device /dev/"$root_part_kname""
 # }
-# on ne peut pas utiliser timeshift pour faire un snapshot BTRFS à cause de cette érreur : [Timeshift does not recognize BTRFS subvolume structure · Issue #241 · teejee2008/timeshift · GitHub](https://github.com/teejee2008/timeshift/issues/241)
+# on ne peut pas utiliser timeshift pour faire un snapshot BTRFS à cause de cette érreur :
+# [Timeshift does not recognize BTRFS subvolume structure · Issue #241 · teejee2008/timeshift · GitHub](https://github.com/teejee2008/timeshift/issues/241)
 # [linuxmint/timeshift: System restore tool for Linux. Creates filesystem snapshots using rsync+hardlinks, or BTRFS snapshots. Supports scheduled snapshots, multiple backup levels, and exclude filters. Snapshots can be restored while system is running or from Live CD/USB.](https://github.com/linuxmint/timeshift?tab=readme-ov-file#btrfs-volumes)
 # [#1042538 - timeshift: Debian installer makes BTRFS root subvolume named "@rootfs" and timeshift requires "@" - Debian Bug report logs](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1042538)
 ################################################################################
