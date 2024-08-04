@@ -937,11 +937,11 @@ make_apt_source_list_clean
 ################################################################################
 ## Configuration de apt
 ##------------------------------------------------------------------------------
-tmp_all_package_list_before="$(dpkg --get-selections | awk '{if ($2 == "install") {print $1}}' | bash -c "grep -w$(for pkg in alpine balsa biabam bsd-mailx claws-mail dovecot-sieve enigmail exim4-base exim4-config exim4-daemon-heavy exim4-daemon-light exmh filter gnarwl gnome-gmail gnumail.app im kmail kontact maildrop mailutils mailutils-mh mew mew-beta mew-beta-bin mew-bin mutt nmh notmuch prayer procmail sendemail sensible-mda sqwebmail-de sylpheed uw-mailutils vm wl wl-beta yample; do echo -n " -e '"$pkg"'"; done)")"
+tmp_all_package_list_before="$(dpkg --get-selections | awk '{if ($2 == "install") {print $1}}' | bash -c "grep -w$(for pkg in alpine balsa biabam bsd-mailx claws-mail dovecot-sieve enigmail exim4-base exim4-config exim4-daemon-heavy exim4-daemon-light exmh filter gnarwl gnome-gmail gnumail.app im kmail kontact maildrop mailutils mailutils-mh mew mew-beta mew-beta-bin mew-bin mutt nmh notmuch prayer procmail sendemail sensible-mda sqwebmail-de sylpheed uw-mailutils vm wl wl-beta yample; do echo -n " -e '"$pkg"'"; done)" | grep -v 'im-config')"
 configure_apt() {
   cat> /etc/apt/preferences.d/my_apt_preference << 'EOF'
-# blacklist some unwanted MTA
-Package: exim4-base exim4-config exim4-daemon-heavy exim4-daemon-light mailutils bsd-mailx ssmtp sendmail sendmail-base sendmail-bin sendmail-cf
+# blacklist some unwanted MTA and email packages
+Package: exim4-base exim4-config exim4-daemon-heavy exim4-daemon-light mailutils bsd-mailx ssmtp sendmail sendmail-base sendmail-bin sendmail-cf biabam mew mew-beta mew-beta-bin mew-bin sylpheed yample
 Pin: release *
 Pin-Priority: -1
 
@@ -950,7 +950,7 @@ Package: icedtea-netx libreoffice-java-common
 Pin: release *
 Pin-Priority: -1
 
-# blacklist some packages to prevent conflict
+# blacklist some packages to prevent conflict with manual install
 Package: yt-dlp youtube-dl keepassxc python3-opensnitch-ui opensnitch ansible ansible-core
 Pin: release *
 Pin-Priority: -1
@@ -959,11 +959,23 @@ Pin-Priority: -1
 Package: gnome-initial-setup
 Pin: release *
 Pin-Priority: -1
+
+# blacklist most gnome-games
+Package: five-or-more four-in-a-row gnome-klotski gnome-mahjongg gnome-mines gnome-nibbles gnome-robots gnome-sudoku gnome-taquin gnome-tetravex hitori iagno lightsoff quadrapassel swell-foop tali aisleriot
+Pin: release *
+Pin-Priority: -1
+
+# blacklist unwanted package manager
+Package: synaptic aptitude
+Pin: release *
+Pin-Priority: -1
 EOF
 }
 configure_apt
 # Cette configuration permet d'interdire l'installation de ces paquets (ligne Package:) par apt. Ca évite notamment d'avoir à gérer les problèmes de paquets qui pourraient être mis comme des dépendances d'autres paquets (comme pour youtube-dl et keepassxc) alors qu'on les install déjà d'une autre manière (par AppImage ou bien un binnaire plus récent).
 # on évite qu'il y ait trop d'élements contenant des potentiels execution java en blacklistant notamment le paquet libreoffice-java-common et icedtea-netx qui peuvent poser des problèmes de sécurité
+# PS: à garder pour chercher rapidement tous les paquets d'une catégorie en particulier :
+# grep-aptavail -sPackage --field Tag "admin::package-management" | grep -Po '(^Package: )\K.*' | sort -u
 ################################################################################
 
 ################################################################################
@@ -972,7 +984,7 @@ configure_apt
 force_kill_and_disable_debian_unattended_upgrades() {
   displayandexec "Désactivation permanente de unattended-upgrades     " "\
   systemctl stop unattended-upgrades.service; \
-  pkill --echo --full --signal SIGKILL unattended-upgrades; \
+  pkill --echo --full --signal SIGKILL --exact ".*/usr/share/unattended-upgrades/.*"; \
   systemctl mask --now unattended-upgrades.service"
 }
 force_kill_and_disable_debian_unattended_upgrades
@@ -1227,6 +1239,7 @@ install_debian_apt_package() {
   displayandexec "Installation de bwm-ng                              " "$AGI bwm-ng"
   displayandexec "Installation de cadaver                             " "$AGI cadaver"
   displayandexec "Installation de calibre                             " "$AGI calibre"
+  displayandexec "Installation de dctrl-tools                         " "$AGI dctrl-tools"
   displayandexec "Installation de chkrootkit                          " "$AGI chkrootkit"
   displayandexec "Installation de chromium                            " "$AGI chromium-l10n"
   displayandexec "Installation de clamav                              " "$AGI clamav clamtk clamtk-gnome libclamunrar"
@@ -1296,6 +1309,8 @@ install_debian_apt_package() {
   fi
   # nautilus-wipe a été supprimé de bookworm car Nautilus utilise GTK4 dans bookworm
   # ref : [#1017619 - nautilus-wipe: Fails to build with nautilus 43 - Debian Bug report logs](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1017619)
+  # il semble que la dépendance qui posait problème a été retirée et que nautilus-wipe pourrait certainement être intégré dans la release de Debian après Bookworm : [#1069334 - Not installable due to hardcoded pre-t64 library deps - Debian Bug report logs](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1069334)
+  # [#1017619 - nautilus-wipe: Fails to build with nautilus 43 - Debian Bug report logs](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1017619)
   displayandexec "Installation de ncdu                                " "$AGI ncdu"
   displayandexec "Installation de netdiscover                         " "$AGI netdiscover"
   displayandexec "Installation de network-manager-openvpn-gnome       " "$AGI network-manager-openvpn-gnome"
@@ -1320,7 +1335,8 @@ install_debian_apt_package() {
   displayandexec "Installation de python3-scapy                       " "$AGI python3-scapy"
   displayandexec "Installation de rclone                              " "$AGI rclone"
   displayandexec "Installation de rdesktop                            " "$AGI rdesktop"
-  displayandexec "Installation de rkhunter                            " "$AGI rkhunter"
+  displayandexec "Installation de remmina                             " "$AGI remmina"
+  # displayandexec "Installation de rkhunter                            " "$AGI rkhunter" # because [#1057470 - Outdated rkhunter since 2018-02 - Debian Bug report logs](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1057470#10)
   displayandexec "Installation de rsync                               " "$AGI rsync"
   displayandexec "Installation de sdparm                              " "$AGI sdparm"
   displayandexec "Installation de secure-delete                       " "$AGI secure-delete"
@@ -1388,6 +1404,7 @@ install_from_backports() {
 package_to_install_from_backports_if_available='
 firejail
 firejail-profiles
+remmina
 '
 
 check_and_install_package_from_backports() {
@@ -1791,7 +1808,7 @@ Type=Application
 Icon=$manual_install_dir/KeePassXC/keepassxc.png
 Categories=Utility;Security;Qt;
 MimeType=application/x-keepass2;
-X-GNOME-Autostart-enabled=true' > /usr/share/applications/keepassxc.desktop
+X-GNOME-Autostart-enabled=true
 EOF
 }
 ################################################################################
@@ -2356,12 +2373,6 @@ echo '     #           DESINSTALATION DES PAQUETS NON SOUHAITES           #'
 echo '     ################################################################'
 echo ''
 
-#Konqueror
-displayandexec "Désinstalation de konqueror                         " "$AG remove -y konqueror*"
-
-#iceweasel
-displayandexec "Désinstalation de iceweasel                         " "$AG remove -y iceweasel*"
-
 #jeux Gnome sauf jeu d'échech (gnome-chess)
 displayandexec "Désinstalation des jeux Gnome                       " "$AG remove -y five-or-more \
 four-in-a-row \
@@ -2544,7 +2555,8 @@ EOF
 # à noter ce tool qui semble très intéressant : [essembeh/gnome-extensions-cli: Command line tool to manage your Gnome Shell extensions](https://github.com/essembeh/gnome-extensions-cli)
 
 if [ "$bookworm" == 1 ]; then
-  GSE_screenshot_tool_version='70'
+  # GSE_screenshot_tool_version='70' # on test si l'extension fonctionne avec la v73, si c'est la cas, on gardera la v73
+  GSE_screenshot_tool_version='73'
   GSE_sound_output_device_chooser_version='43'
   install_GSE
 fi
@@ -2682,9 +2694,9 @@ install_rktscan() {
   cat> "$my_bin_path"/rktscan << 'EOF'
 #!/bin/bash
 
-echo "scan de rootkit avec rkhunter"
-sudo rkhunter --checkall --report-warnings-only
-echo "--------------------------------------------------------------------------------"
+# echo "scan de rootkit avec rkhunter"
+# sudo rkhunter --checkall --report-warnings-only
+# echo "--------------------------------------------------------------------------------"
 echo "scan de rootkit avec chkrootkit"
 sudo chkrootkit -q
 echo "--------------------------------------------------------------------------------"
@@ -3182,7 +3194,7 @@ configure_rkhunter() {
   sed -i 's/MIRRORS_MODE=1/MIRRORS_MODE=0/' /etc/rkhunter.conf && \
   sed -i 's%WEB_CMD=\"/bin/false\"%WEB_CMD=""%' /etc/rkhunter.conf"
 }
-configure_rkhunter
+# configure_rkhunter
 ################################################################################
 
 ################################################################################
@@ -3220,9 +3232,9 @@ create_template_for_new_file_new() {
 # ref : https://ask.libreoffice.org/en/question/153444/how-to-create-empty-libreoffice-file-in-a-current-directory-on-the-command-line/
 # Pour voir tous les formats supportés par unoconv : unoconv --show
 }
-if [ "$bookworm" == 1 ]; then
+# if [ "$bookworm" == 1 ]; then
   create_template_for_new_file_new
-fi
+# fi
 
 # On est obliger d'utiliser "$(realpath $(command -v libreoffice))".bin à la place de "libreoffice", c'est à dire le binaire soffice et non le script de lancement produit par Debian, car sinon on obtiens cette érreur lorsqu'on tente de lancer la commande via sudo -u "$local_user" :
 # /usr/bin/libreoffice: 56: cd: can't cd to /root
@@ -3911,7 +3923,7 @@ ConfigureGnomeTerminal() {
       default_profile_id=$($ExeAsUser $DCONF_list "$base_key_path"/ | grep -m1 '^:' | tr -d :/)
       # on récupère le premier id du profil disponnible dans la list des profiles
       # default_profile_id=$($ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus gsettings get org.gnome.Terminal.ProfilesList default)"
-      # attention, à pirio la commande gsettings ne donne pas le même résultat pour le profil par défaut quand il y en a un d'accessible avec dconf
+      # attention, à priori la commande gsettings ne donne pas le même résultat pour le profil par défaut quand il y en a un d'accessible avec dconf
       # peut aussi se faire uniquement avec awk 'NR==1,/^:/{gsub(/:/,"");gsub(/\//,""); print}'
     fi
 
@@ -3935,7 +3947,7 @@ ConfigureGnomeTerminal() {
     dconf_set use-theme-background "false"
 
     # autre version qui fonctionne aussi et permet d'éviter avoir à faire des dconf write
-    #     cat << 'EOF' | $ExeAsUser $DCONF_load "$new_profile_id_key"/
+    # cat << 'EOF' | $ExeAsUser $DCONF_load "$new_profile_id_key"/
     # [/]
     # foreground-color='#abb2bf'
     # visible-name='One Dark'
@@ -3971,7 +3983,7 @@ ConfigureGnomeTerminal() {
     dconf_set use-theme-background "false"
   fi
 }
-# script based from https://github.com/denysdovhan/one-gnome-terminal
+# script mostly based from https://github.com/denysdovhan/one-gnome-terminal
 ConfigureGnomeTerminal
 ################################################################################
 
@@ -4139,54 +4151,18 @@ configure_audio
 # ref : [Managin a user-local pulseaudio daemon with runit in voidlinux](https://gist.github.com/yyny/c60b02dd629fc6ed9856c66595688f15#file-pulse-common-sh-L10)
 ################################################################################
 
-# apparement obligatoire pour executer Signal
+# apparement obligatoire pour executer Signal depuis la CLI
 execandlog "chmod 4755 /opt/Signal/chrome-sandbox"
 # à noter que la recommandation officiel de la part de Signal est plutôt d'utiliser l'option --no-sandbox pour le lancement de l'appli Signal
 # ref : [/opt/Signal/chrome-sandbox gets installed with 0755 instead of 4755 on Debian. · Issue #3627 · signalapp/Signal-Desktop](https://github.com/signalapp/Signal-Desktop/issues/3627#issuecomment-542383195)
 # [Fail to start on debian testing · Issue #6382 · signalapp/Signal-Desktop](https://github.com/signalapp/Signal-Desktop/issues/6382#issuecomment-1520624248)
+# d'ailleurs, il y a l'option "--no-sandbox" dans le .desktop qui provient du .deb officiel de Signal
 
 ################################################################################
 ## configuration du programme par défaut pour execter les commandes apt-*
 ##------------------------------------------------------------------------------
 execandlog "ln -s "$(command -v apt-fast)" /usr/bin/ag"
 # on ne le définie pas en tant qu'un alias pour qu'il puisse être utilisé dans un subshell
-################################################################################
-
-################################################################################
-## configuration spéficique pour le pc pro
-##------------------------------------------------------------------------------
-configure_for_pro() {
-  echo ''
-  echo '     ################################################################'
-  echo '     #             CONFIGURATION SPECIFIQUE POUR PC PRO             #'
-  echo '     ################################################################'
-  echo ''
-  source /home/"$local_user"/postinstall_pro.sh
-  exec 19>>/tmp/ng_install_set-x_logfile
-  BASH_XTRACEFD='19'
-}
-if [ "$conf_pro" == 1 ]; then
-  configure_for_pro
-fi
-# https://privatebin.net/?a6afba924ca26454#BDfwXqhPL4wYAwBDELCKDfXt858y5YD4rMsSfeWM6pQz
-################################################################################
-
-################################################################################
-## configuration spéficique pour le pc perso
-##------------------------------------------------------------------------------
-configure_for_perso() {
-  echo ''
-  echo '     ################################################################'
-  echo '     #            CONFIGURATION SPECIFIQUE POUR PC PERSO            #'
-  echo '     ################################################################'
-  echo ''
-  source /home/"$local_user"/postinstall_perso.sh
-  exec 19>>/tmp/ng_install_set-x_logfile
-  BASH_XTRACEFD='19'
-}
-if [ "$conf_perso" == 1 ]; then
-  configure_for_perso
-fi
 ################################################################################
 
 ################################################################################
@@ -4415,6 +4391,43 @@ configure_default_shell
 # ref : [How to view datetime stamp for history command in Zsh shell - Unix & Linux Stack Exchange](https://unix.stackexchange.com/questions/103398/how-to-view-datetime-stamp-for-history-command-in-zsh-shell/436221#436221)
 ################################################################################
 
+################################################################################
+## configuration spéficique pour le pc pro
+##------------------------------------------------------------------------------
+configure_for_pro() {
+  echo ''
+  echo '     ################################################################'
+  echo '     #             CONFIGURATION SPECIFIQUE POUR PC PRO             #'
+  echo '     ################################################################'
+  echo ''
+  source /home/"$local_user"/postinstall_pro.sh
+  exec 19>>/tmp/ng_install_set-x_logfile
+  BASH_XTRACEFD='19'
+}
+if [ "$conf_pro" == 1 ]; then
+  configure_for_pro
+fi
+# https://privatebin.net/?a6afba924ca26454#BDfwXqhPL4wYAwBDELCKDfXt858y5YD4rMsSfeWM6pQz
+################################################################################
+
+################################################################################
+## configuration spéficique pour le pc perso
+##------------------------------------------------------------------------------
+configure_for_perso() {
+  echo ''
+  echo '     ################################################################'
+  echo '     #            CONFIGURATION SPECIFIQUE POUR PC PERSO            #'
+  echo '     ################################################################'
+  echo ''
+  source /home/"$local_user"/postinstall_perso.sh
+  exec 19>>/tmp/ng_install_set-x_logfile
+  BASH_XTRACEFD='19'
+}
+if [ "$conf_perso" == 1 ]; then
+  configure_for_perso
+fi
+################################################################################
+
 # Commande temporaire pour éviter que des fichiers de /home/user/.config n'appartienent à root lors de l'install, sans qu'on comprenne bien pourquoi (executé par ExeAsUser)
 execandlog "find /home/"$local_user"/ -user 'root' -not -type l"
 execandlog "chown -R "$local_user":"$local_user" /home/"$local_user"/"
@@ -4429,7 +4442,7 @@ update_rkhunter() {
   rkhunter --update ;\
   rkhunter --propupd"
 }
-update_rkhunter
+# update_rkhunter
 ################################################################################
 
 ################################################################################
@@ -4525,7 +4538,7 @@ configure_firewall() {
 configure_firewall
 ################################################################################
 
-tmp_all_package_list_after="$(dpkg --get-selections | awk '{if ($2 == "install") {print $1}}' | bash -c "grep -w$(for pkg in alpine balsa biabam bsd-mailx claws-mail dovecot-sieve enigmail exim4-base exim4-config exim4-daemon-heavy exim4-daemon-light exmh filter gnarwl gnome-gmail gnumail.app im kmail kontact maildrop mailutils mailutils-mh mew mew-beta mew-beta-bin mew-bin mutt nmh notmuch prayer procmail sendemail sensible-mda sqwebmail-de sylpheed uw-mailutils vm wl wl-beta yample; do echo -n " -e '"$pkg"'"; done)")"
+tmp_all_package_list_after="$(dpkg --get-selections | awk '{if ($2 == "install") {print $1}}' | bash -c "grep -w$(for pkg in alpine balsa biabam bsd-mailx claws-mail dovecot-sieve enigmail exim4-base exim4-config exim4-daemon-heavy exim4-daemon-light exmh filter gnarwl gnome-gmail gnumail.app im kmail kontact maildrop mailutils mailutils-mh mew mew-beta mew-beta-bin mew-bin mutt nmh notmuch prayer procmail sendemail sensible-mda sqwebmail-de sylpheed uw-mailutils vm wl wl-beta yample; do echo -n " -e '"$pkg"'"; done)" | grep -v 'im-config')"
 
 #réapplication de la cond par défaut pour la mise en veille automatique
 # $ExeAsUser $DCONF_write /org/gnome/settings-daemon/plugins/power/sleep-inactive-battery-type "'suspend'"
