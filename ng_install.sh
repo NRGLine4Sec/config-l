@@ -795,6 +795,12 @@ is_file_present_and_rmfile_as_user() {
 }
 export -f is_file_present_and_rmfile_as_user
 
+add_to_user_crontab() {
+  local crontab_line_to_add="$1"
+  { crontab -l -u "$local_user"; echo "$crontab_line_to_add"; } | crontab -u "$local_user" -
+}
+export -f add_to_user_crontab
+
 exec_graphic_app_with_root_privileges() {
   export DISPLAY=:0
   sudo -u "$local_user" xhost +SI:localuser:root
@@ -941,7 +947,7 @@ tmp_all_package_list_before="$(dpkg --get-selections | awk '{if ($2 == "install"
 configure_apt() {
   cat> /etc/apt/preferences.d/my_apt_preference << 'EOF'
 # blacklist some unwanted MTA and email packages
-Package: exim4-base exim4-config exim4-daemon-heavy exim4-daemon-light mailutils bsd-mailx ssmtp sendmail sendmail-base sendmail-bin sendmail-cf biabam mew mew-beta mew-beta-bin mew-bin sylpheed yample
+Package: exim4-base exim4-config exim4-daemon-heavy exim4-daemon-light mailutils bsd-mailx ssmtp sendmail sendmail-base sendmail-bin sendmail-cf biabam mew mew-beta mew-beta-bin mew-bin sylpheed yample opensmtpd nullmailer msmtp esmtp dma courier-base courier-imap courier-ldap courier-mta courier-pcp courier-pop postfix
 Pin: release *
 Pin-Priority: -1
 
@@ -984,7 +990,7 @@ configure_apt
 force_kill_and_disable_debian_unattended_upgrades() {
   displayandexec "Désactivation permanente de unattended-upgrades     " "\
   systemctl stop unattended-upgrades.service; \
-  pkill --echo --full --signal SIGKILL --exact ".*/usr/share/unattended-upgrades/.*"; \
+  pkill --echo --full --signal SIGKILL --exact '.*/usr/share/unattended-upgrades/.*'; \
   systemctl mask --now unattended-upgrades.service"
 }
 force_kill_and_disable_debian_unattended_upgrades
@@ -2436,6 +2442,7 @@ displayandexec "Désinstalation de Gnome Parental Control            " "$AG remo
 install_GSE() {
   #Screenshot Tool
   install_GSE_screenshot_tool() {
+    execandlog "$AGI gnome-screenshot"
     local tmp_dir="$(mktemp -d)"
     local GnomeShellExtensionUUID='gnome-shell-screenshot@ttll.de' && \
     local GnomeShellExtensionVersion="$1" && \
@@ -2447,6 +2454,7 @@ install_GSE() {
   }
   # to check the latest version : https://extensions.gnome.org/extension/1112/screenshot-tool/
   # https://github.com/OttoAllmendinger/gnome-shell-screenshot/
+  # gnome-screenshot est une dépendance de 'gnome-shell-screenshot@ttll.de', ref : [gnome-shell-screenshot/README.md at master · OttoAllmendinger/gnome-shell-screenshot](https://github.com/OttoAllmendinger/gnome-shell-screenshot/blob/master/README.md#errors-with-gnome-screenshot-backend)
 
   #system-monitor
   install_GSE_system_monitor() {
@@ -2555,7 +2563,6 @@ EOF
 # à noter ce tool qui semble très intéressant : [essembeh/gnome-extensions-cli: Command line tool to manage your Gnome Shell extensions](https://github.com/essembeh/gnome-extensions-cli)
 
 if [ "$bookworm" == 1 ]; then
-  # GSE_screenshot_tool_version='70' # on test si l'extension fonctionne avec la v73, si c'est la cas, on gardera la v73
   GSE_screenshot_tool_version='73'
   GSE_sound_output_device_chooser_version='43'
   install_GSE
@@ -3200,41 +3207,50 @@ configure_rkhunter() {
 ################################################################################
 ## configuration des fichiers template
 ##------------------------------------------------------------------------------
-create_template_for_new_file() {
-  is_dir_present "/home/"$local_user"/Modèles" && template_dir="/home/"$local_user"/Modèles"
-  is_dir_present "/home/"$local_user"/Templates" && template_dir="/home/"$local_user"/Templates"
-  $ExeAsUser touch ""$template_dir"/Fichier Texte.txt" && \
-  $ExeAsUser touch ""$template_dir"/Document ODT.txt" && \
-  $ExeAsUser unoconv -f odt ""$template_dir"/Document ODT.txt" && \
-  rm -f ""$template_dir"/Document ODT.txt" && \
-  $ExeAsUser touch ""$template_dir"/Document ODS.txt" && \
-  $ExeAsUser unoconv -f ods ""$template_dir"/Document ODS.txt" && \
-  rm -f ""$template_dir"/Document ODS.txt"
+# create_template_for_new_file() {
+#   is_dir_present "/home/"$local_user"/Modèles" && template_dir="/home/"$local_user"/Modèles"
+#   is_dir_present "/home/"$local_user"/Templates" && template_dir="/home/"$local_user"/Templates"
+#   $ExeAsUser touch ""$template_dir"/Fichier Texte.txt" && \
+#   $ExeAsUser touch ""$template_dir"/Document ODT.txt" && \
+#   $ExeAsUser unoconv -f odt ""$template_dir"/Document ODT.txt" && \
+#   rm -f ""$template_dir"/Document ODT.txt" && \
+#   $ExeAsUser touch ""$template_dir"/Document ODS.txt" && \
+#   $ExeAsUser unoconv -f ods ""$template_dir"/Document ODS.txt" && \
+#   rm -f ""$template_dir"/Document ODS.txt"
+# # ref : https://ask.libreoffice.org/en/question/153444/how-to-create-empty-libreoffice-file-in-a-current-directory-on-the-command-line/
+# # Pour voir tous les formats supportés par unoconv : unoconv --show
+# }
+# # create_template_for_new_file
+# if [ "$bullseye" == 1 ]; then
+#   create_template_for_new_file
+# fi
+# unoconv is deprecated, ref : [#1076522 - unoconv: Broken with Python 3.12 because of usage of distutils - Debian Bug report logs](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1076522)
+
+# create_template_for_new_file_new() {
 # ref : https://ask.libreoffice.org/en/question/153444/how-to-create-empty-libreoffice-file-in-a-current-directory-on-the-command-line/
 # Pour voir tous les formats supportés par unoconv : unoconv --show
-}
-# create_template_for_new_file
-if [ "$bullseye" == 1 ]; then
-  create_template_for_new_file
-fi
+# }
+# if [ "$bookworm" == 1 ]; then
+  # create_template_for_new_file_new
+# fi
 
-create_template_for_new_file_new() {
+tmp_test_configure_libreoffice_template() {
   is_dir_present "/home/"$local_user"/Modèles" && template_dir="/home/"$local_user"/Modèles"
   is_dir_present "/home/"$local_user"/Templates" && template_dir="/home/"$local_user"/Templates"
-  # displayandexec "Configuration des templates libreoffice             " "\
-  $ExeAsUser touch ""$template_dir"/Fichier Texte.txt" && \
+  $ExeAsUser touch ""$template_dir"/Fichier Texte.txt"
+
   $ExeAsUser touch ""$template_dir"/Document ODT.txt" && \
   $ExeAsUser "$(realpath $(command -v libreoffice))".bin --nologo --nofirststartwizard --invisible --norestore --headless --convert-to odt ""$template_dir"/Document ODT.txt" --outdir "$template_dir" && \
-  rm -f ""$template_dir"/Document ODT.txt" && \
+  rm -f ""$template_dir"/Document ODT.txt"
+
   $ExeAsUser touch ""$template_dir"/Document ODS.txt" && \
   $ExeAsUser "$(realpath $(command -v libreoffice))".bin --calc --nologo --nofirststartwizard --invisible --norestore --headless --convert-to ods ""$template_dir"/Document ODS.txt" --outdir "$template_dir" && \
   rm -f ""$template_dir"/Document ODS.txt"
-# ref : https://ask.libreoffice.org/en/question/153444/how-to-create-empty-libreoffice-file-in-a-current-directory-on-the-command-line/
-# Pour voir tous les formats supportés par unoconv : unoconv --show
 }
-# if [ "$bookworm" == 1 ]; then
-  create_template_for_new_file_new
-# fi
+export -f tmp_test_configure_libreoffice_template
+
+displayandexec "Configuration des templates libreoffice             " "\
+  tmp_test_configure_libreoffice_template"
 
 # On est obliger d'utiliser "$(realpath $(command -v libreoffice))".bin à la place de "libreoffice", c'est à dire le binaire soffice et non le script de lancement produit par Debian, car sinon on obtiens cette érreur lorsqu'on tente de lancer la commande via sudo -u "$local_user" :
 # /usr/bin/libreoffice: 56: cd: can't cd to /root
@@ -3916,6 +3932,8 @@ ConfigureGnomeTerminal() {
     # we create an ID with uuidgen to create a new profile
     new_profile_id="$(uuidgen)"
 
+    profile_name='One Dark'
+
     # récupère l'uuid de la conf par défaut du terminal
     if [[ -n "$($ExeAsUser $DCONF_read "$base_key_path"/default)" ]]; then
       default_profile_id=$($ExeAsUser $DCONF_read "$base_key_path"/default | tr -d \')
@@ -3963,6 +3981,8 @@ ConfigureGnomeTerminal() {
     new_profile_id="$(uuidgen)"
     default_profile_id=$($ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gsettings get org.gnome.Terminal.ProfilesList default | tr -d \')
 
+    profile_name='One Dark'
+
     default_profile_id_key=""$base_key_path"/:$default_profile_id"
     new_profile_id_key=""$base_key_path"/:"$new_profile_id""
 
@@ -3985,6 +4005,19 @@ ConfigureGnomeTerminal() {
 }
 # script mostly based from https://github.com/denysdovhan/one-gnome-terminal
 ConfigureGnomeTerminal
+
+# tmp_multiline_grep="$(cat << 'EOF'
+# background-color='#282c34'
+# bold-color='#ABB2BF'
+# bold-color-same-as-fg=true
+# foreground-color='#abb2bf'
+# palette=['#000000', '#e06c75', '#98c379', '#d19a66', '#61afef', '#c678dd', '#56b6c2', '#abb2bf', '#5c6370', '#e06c75', '#98c379', '#d19a66', '#61afef', '#c678dd', '#56b6c2', '#ffffff']
+# use-theme-background=false
+# use-theme-colors=false
+# EOF
+# )" && \
+# $ExeAsUser $DCONF_dump /org/gnome/terminal/ | sed -E 's/[[:blank:]]+/ /g' | tr '\n' ' ' | grep -o "$(sed -E 's/[[:blank:]]+/ /g' <<< "$tmp_multiline_grep" | tr '\n' ' ')"
+# $ExeAsUser $DCONF_dump /org/gnome/terminal/
 ################################################################################
 
 # Pour obtenir le lien de l'image utilisé commend fond d'écran
@@ -4171,7 +4204,8 @@ execandlog "ln -s "$(command -v apt-fast)" /usr/bin/ag"
 configure_bashrc_user() {
   # alias for the user
   execandlog "is_file_present_and_rmfile "/home/"$local_user"/.bashrc" && \
-  cp "$script_path"/.bashrc /home/"$local_user"/.bashrc"
+  cp "$script_path"/.bashrc /home/"$local_user"/.bashrc && \
+  chown "$local_user":"$local_user" /home/"$local_user"/.bashrc"
   $ExeAsUser cat>> /home/"$local_user"/.bashrc << EOF
 
 # alias perso
@@ -4270,7 +4304,8 @@ EOF
 
 configure_zshrc_user() {
   execandlog "is_file_present_and_rmfile "/home/"$local_user"/.zshrc" && \
-  cp "$script_path"/.zshrc /home/"$local_user"/.zshrc"
+  cp "$script_path"/.zshrc /home/"$local_user"/.zshrc && \
+  chown "$local_user":"$local_user" /home/"$local_user"/.zshrc"
   $ExeAsUser cat>> /home/"$local_user"/.zshrc << EOF
 
 # alias perso
@@ -4513,14 +4548,12 @@ restart_ssh
 ## désactivation des services par défaut qui ne nous sont pas nécessaires
 ##------------------------------------------------------------------------------
 disable_unneeded_services() {
-  execandlog "systemctl status postfix-mta-sts-resolver.service"
+  execandlog "systemctl status .service"
   displayandexec "Désactivation des services non nécessaires          " "\
-  systemctl mask --now postfix-mta-sts-resolver.service"
-  # plus d'infos concernant le rôle du paquet postfix-mta-sts-resolver : [Setup MTA-STS and TLSRPT – Jean's Blog](https://blog.jeanbruenn.info/2021/07/31/howto-setup-mta-sts-and-tlsrpt/)
+  systemctl mask --now .service"
 }
 # disable_unneeded_services
 ################################################################################
-
 
 ################################################################################
 ## configuration des règles de firewall
@@ -4603,6 +4636,9 @@ fi
 # [linuxmint/timeshift: System restore tool for Linux. Creates filesystem snapshots using rsync+hardlinks, or BTRFS snapshots. Supports scheduled snapshots, multiple backup levels, and exclude filters. Snapshots can be restored while system is running or from Live CD/USB.](https://github.com/linuxmint/timeshift?tab=readme-ov-file#btrfs-volumes)
 # [#1042538 - timeshift: Debian installer makes BTRFS root subvolume named "@rootfs" and timeshift requires "@" - Debian Bug report logs](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1042538)
 ################################################################################
+
+# tmp avant l'import du répertoire de Signal
+execandlog "chmod -x /opt/Signal/signal-desktop"
 
 print_end_of_script_in_log_file() {
   cat>> "$log_file" << 'EOF'
