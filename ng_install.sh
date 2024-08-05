@@ -161,8 +161,9 @@ check_script_run_with_privileges
 ##------------------------------------------------------------------------------
 redirect_and_enable_bash_debug_log() {
   exec 19>/tmp/ng_install_set-x_logfile
-  BASH_XTRACEFD='19'
+  export BASH_XTRACEFD='19'
   set -x
+  export SHELLOPTS
 }
 redirect_and_enable_bash_debug_log
 ################################################################################
@@ -709,13 +710,13 @@ manual_check_latest_version() {
 # manual_check_latest_version
 ################################################################################
 
-local_user="$(awk -F':' '/:1000:/{print $1}' /etc/passwd)"
+export local_user="$(awk -F':' '/:1000:/{print $1}' /etc/passwd)"
 # l'inconvénient des autres méthodes ci-dessous c'est que leur execution suppose qu'on se soit loggé avec le user avant de lancer le script (ce n'est pas le cas s'il est executer directement en post-install du preseed par exemple)
 # autre méthode pour obtenir le user, lorsqu'il est à l'origine de la session en cour : "$(who | awk 'FNR == 1 {print $1}')"
 # ou encore id -nu "$(cat /proc/self/loginuid)"
 # encore une autre méthode qui fonctionne aussi dans un sudo : who | awk -v vt=tty$(fgconsole 2>/dev/null) '$0 ~ vt {print $1}'
 
-local_user_UID="$(id -u "$local_user")"
+export local_user_UID="$(id -u "$local_user")"
 gnome_shell_extension_path="/home/"$local_user"/.local/share/gnome-shell/extensions"
 export ExeAsUser="sudo -u "$local_user""
 AGI='apt-get -o DPkg::Options::=--force-confnew -o DPkg::Options::=--force-confmiss install -y'
@@ -943,7 +944,6 @@ make_apt_source_list_clean
 ################################################################################
 ## Configuration de apt
 ##------------------------------------------------------------------------------
-tmp_all_package_list_before="$(dpkg --get-selections | awk '{if ($2 == "install") {print $1}}' | bash -c "grep -w$(for pkg in alpine balsa biabam bsd-mailx claws-mail dovecot-sieve enigmail exim4-base exim4-config exim4-daemon-heavy exim4-daemon-light exmh filter gnarwl gnome-gmail gnumail.app im kmail kontact maildrop mailutils mailutils-mh mew mew-beta mew-beta-bin mew-bin mutt nmh notmuch prayer procmail sendemail sensible-mda sqwebmail-de sylpheed uw-mailutils vm wl wl-beta yample; do echo -n " -e '"$pkg"'"; done)" | grep -v 'im-config')"
 configure_apt() {
   cat> /etc/apt/preferences.d/my_apt_preference << 'EOF'
 # blacklist some unwanted MTA and email packages
@@ -990,7 +990,7 @@ configure_apt
 force_kill_and_disable_debian_unattended_upgrades() {
   displayandexec "Désactivation permanente de unattended-upgrades     " "\
   systemctl stop unattended-upgrades.service; \
-  pkill --echo --full --signal SIGKILL --exact '.*/usr/share/unattended-upgrades/.*'; \
+  kill -kill "$(systemctl show --property MainPID --value unattended-upgrades.service)"; \
   systemctl mask --now unattended-upgrades.service"
 }
 force_kill_and_disable_debian_unattended_upgrades
@@ -1040,9 +1040,6 @@ force_kill_and_disable_debian_unattended_upgrades
 # [[ Dustin Kirkland ] (bb29a9a5) · Commits · PackageKit and AppStream / software-properties · GitLab](https://salsa.debian.org/pkgutopia-team/software-properties/-/commit/bb29a9a5c500ea4a1cf37b7e4dde2bccb72b7c03)
 # "python3-software-properties Recommends unattended-upgrades, which means it gets pulled in automatically on a default desktop install."
 # ref : https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=447701#80
-
-# Une autre option pour kill le PID de unattended-upgrades :
-# kill -kill "$(systemctl show --property MainPID --value unattended-upgrades.service)"
 ################################################################################
 
 ################################################################################
@@ -2488,17 +2485,18 @@ install_GSE() {
   # https://github.com/kgshank/gse-sound-output-device-chooser
 
   enable_GSE() {
-    $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")' &>/dev/null && \
+    # $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")' &>/dev/null && \
     $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'gnome-shell-screenshot@ttll.de'
     $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'system-monitor@paradoxxx.zero.gmail.com'
     $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'sound-output-device-chooser@kgshank.net'
   }
 
   check_for_enable_GSE() {
-    if [ -z "$script_is_launch_with_gnome_terminal" ]; then
+    # if [ -z "$script_is_launch_with_gnome_terminal" ]; then
       enable_GSE
-    else
-      cat> /tmp/reload_GnomeShell.sh << 'EOF'
+    # else
+      is_dir_present_or_mkdir_as_user "/home/"$local_user"/.tmp/"
+      cat> /home/"$local_user"/.tmp/reload_GnomeShell.sh << 'EOF'
 #!/bin/bash
 
 local_user="$(awk -F':' '/:1000:/{print $1}' /etc/passwd)"
@@ -2507,9 +2505,9 @@ ExeAsUser="sudo -u "$local_user""
 
 $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")' &>/dev/null
 EOF
-      chmod +x /tmp/reload_GnomeShell.sh && \
-      chown "$local_user":"$local_user" /tmp/reload_GnomeShell.sh
-      cat> /tmp/enable_GSE.sh << 'EOF'
+      chmod +x /home/"$local_user"/.tmp/reload_GnomeShell.sh && \
+      chown "$local_user":"$local_user" /home/"$local_user"/.tmp/reload_GnomeShell.sh
+      cat> /home/"$local_user"/.tmp/enable_GSE.sh << 'EOF'
 #!/bin/bash
 
 local_user="$(awk -F':' '/:1000:/{print $1}' /etc/passwd)"
@@ -2520,9 +2518,9 @@ $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" 
 $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'system-monitor@paradoxxx.zero.gmail.com'
 $ExeAsUser DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" gnome-extensions enable 'sound-output-device-chooser@kgshank.net'
 EOF
-      chmod +x /tmp/enable_GSE.sh && \
-      chown "$local_user":"$local_user" /tmp/enable_GSE.sh
-    fi
+      chmod +x /home/"$local_user"/.tmp/enable_GSE.sh && \
+      chown "$local_user":"$local_user" /home/"$local_user"/.tmp/enable_GSE.sh
+    # fi
   }
 
   install_GSE_screenshot_tool "$GSE_screenshot_tool_version"
@@ -4570,8 +4568,6 @@ configure_firewall() {
 }
 configure_firewall
 ################################################################################
-
-tmp_all_package_list_after="$(dpkg --get-selections | awk '{if ($2 == "install") {print $1}}' | bash -c "grep -w$(for pkg in alpine balsa biabam bsd-mailx claws-mail dovecot-sieve enigmail exim4-base exim4-config exim4-daemon-heavy exim4-daemon-light exmh filter gnarwl gnome-gmail gnumail.app im kmail kontact maildrop mailutils mailutils-mh mew mew-beta mew-beta-bin mew-bin mutt nmh notmuch prayer procmail sendemail sensible-mda sqwebmail-de sylpheed uw-mailutils vm wl wl-beta yample; do echo -n " -e '"$pkg"'"; done)" | grep -v 'im-config')"
 
 #réapplication de la cond par défaut pour la mise en veille automatique
 # $ExeAsUser $DCONF_write /org/gnome/settings-daemon/plugins/power/sleep-inactive-battery-type "'suspend'"
