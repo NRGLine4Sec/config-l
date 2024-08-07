@@ -994,9 +994,8 @@ configure_apt
 ##------------------------------------------------------------------------------
 force_kill_and_disable_debian_unattended_upgrades() {
   displayandexec "Désactivation permanente de unattended-upgrades     " "\
-  systemctl stop unattended-upgrades.service; \
-  pgrep --full '.*/usr/share/unattended-upgrades/.*' | xargs --no-run-if-empty kill -kill; \
-  systemctl mask --now unattended-upgrades.service"
+  systemctl mask --now unattended-upgrades.service; \
+  pgrep --full '.*/usr/share/unattended-upgrades/.*' | xargs --no-run-if-empty kill -kill"
 }
 force_kill_and_disable_debian_unattended_upgrades
 # https://wiki.debian.org/UnattendedUpgrades
@@ -1434,6 +1433,7 @@ install_zfs() {
     echo 'zfs-dkms	zfs-dkms/stop-build-for-32bit-kernel	boolean	true' | debconf-set-selections && \
     echo 'zfs-dkms	zfs-dkms/note-incompatible-licenses	note' | debconf-set-selections && \
     echo 'zfs-dkms	zfs-dkms/stop-build-for-unknown-kernel	boolean	true'| debconf-set-selections && \
+    unset SHELLOPTS && \
     $AG -t "$debian_release"-backports install -y zfsutils-linux zfs-dkms zfs-zed && \
     modprobe zfs"
   else
@@ -1441,6 +1441,7 @@ install_zfs() {
     echo 'zfs-dkms	zfs-dkms/stop-build-for-32bit-kernel	boolean	true' | debconf-set-selections && \
     echo 'zfs-dkms	zfs-dkms/note-incompatible-licenses	note' | debconf-set-selections && \
     echo 'zfs-dkms	zfs-dkms/stop-build-for-unknown-kernel	boolean	true'| debconf-set-selections && \
+    unset SHELLOPTS && \
     $AGI zfsutils-linux zfs-dkms zfs-zed && \
     modprobe zfs"
   fi
@@ -1645,7 +1646,7 @@ EOF
 ## instalation de VirtualBox
 ##------------------------------------------------------------------------------
 install_virtualbox() {
-  displayandexec "Installation des dépendances de VirtualBox          " "$AGI dkms"
+  displayandexec "Installation des dépendances de VirtualBox          " "unset SHELLOPTS && $AGI dkms"
   displayandexec "Installation de VirtualBox                          " "\
   echo 'deb [signed-by=/usr/share/keyrings/virtualbox-archive-keyring.gpg] https://download.virtualbox.org/virtualbox/debian bullseye contrib' > /etc/apt/sources.list.d/virtualbox.list && \
   is_file_present_and_rmfile "/usr/share/keyrings/virtualbox-archive-keyring.gpg" && \
@@ -1708,7 +1709,7 @@ EOF
 }
 
 install_virtualbox_bookworm() {
-  displayandexec "Installation des dépendances de VirtualBox          " "$AGI dkms"
+  displayandexec "Installation des dépendances de VirtualBox          " "unset SHELLOPTS && $AGI dkms"
   displayandexec "Installation de VirtualBox                          " "\
   echo 'deb [signed-by=/usr/share/keyrings/virtualbox-archive-keyring.gpg] https://download.virtualbox.org/virtualbox/debian bookworm contrib' > /etc/apt/sources.list.d/virtualbox.list && \
   is_file_present_and_rmfile "/usr/share/keyrings/virtualbox-archive-keyring.gpg" && \
@@ -2312,7 +2313,7 @@ install_all_manual_install_apps_bullseye() {
   install_etcher
   install_shotcut
   install_signal
-  install_stacer
+  # install_stacer
   install_asbru
   install_bat
   # install_youtubedl
@@ -2345,7 +2346,7 @@ install_all_manual_install_apps_bookworm() {
   install_etcher
   install_shotcut
   install_signal
-  install_stacer
+  # install_stacer
   install_asbru
   install_bat
   # install_youtubedl
@@ -2501,7 +2502,7 @@ install_GSE() {
 
   check_for_enable_GSE() {
     # if [ -z "$script_is_launch_with_gnome_terminal" ]; then
-      enable_GSE
+      # enable_GSE
     # else
       is_dir_present_or_mkdir_as_user "/home/"$local_user"/.tmp/"
       cat> /home/"$local_user"/.tmp/reload_GnomeShell.sh << 'EOF'
@@ -2611,6 +2612,8 @@ echo '     #                INSTALLATION DES SCRIPTS PERSO                #'
 echo '     ################################################################'
 echo ''
 
+# on utilise la patern "__my_script__" au début des scripts perso de sorte à pouvoir les retrouver facilement ultérieurement grâce à un grep sur ce patern
+
 ################################################################################
 ## install du script sysupdate
 ##------------------------------------------------------------------------------
@@ -2631,6 +2634,7 @@ install_check_backport_update() {
   # c'est beaucoup plus rapide
   cat> "$my_bin_path"/check_backport_update << 'EOF'
 #!/bin/bash
+# __my_script__
 
 debian_release="$(lsb_release -sc)"
 list_backport="$(dpkg-query -W | awk '/~bpo/{print $1}')"
@@ -2652,6 +2656,7 @@ EOF
 install_wsudo() {
   cat> "$my_bin_path"/wsudo << 'EOF'
 #!/bin/bash
+# __my_script__
 
 #small script to enable root access to x-windows system
 xhost +SI:localuser:root
@@ -2671,6 +2676,9 @@ EOF
 ##------------------------------------------------------------------------------
 install_launch_url_file() {
   cat> "$my_bin_path"/launch_url_file << 'EOF'
+#!/bin/bash
+# __my_script__
+
 chromium "$(tail -n 1 "$@" | cut -c 5-)"
 EOF
   displayandexec "Installation du script launch_url_file              " "\
@@ -2693,6 +2701,9 @@ EOF
 ##------------------------------------------------------------------------------
 install_scanmyhome() {
   cat> "$my_bin_path"/scanmyhome << 'EOF'
+#!/bin/bash
+# __my_script__
+
 clamscan --recursive --infected /home/
 EOF
   displayandexec "Installation du script scanmyhome                   " "\
@@ -2706,6 +2717,7 @@ EOF
 install_rktscan() {
   cat> "$my_bin_path"/rktscan << 'EOF'
 #!/bin/bash
+# __my_script__
 
 # echo "scan de rootkit avec rkhunter"
 # sudo rkhunter --checkall --report-warnings-only
@@ -2724,6 +2736,8 @@ EOF
 ##------------------------------------------------------------------------------
 install_spyme() {
   cat> "$my_bin_path"/spyme << 'EOF'
+# __my_script__
+
 sudo bash -c "journalctl --all --follow --lines=10000 _TRANSPORT=syslog + _TRANSPORT=kernel + _TRANSPORT=journal + _TRANSPORT=stdout | lnav"
 EOF
   displayandexec "Installation du script spyme                        " "\
@@ -2737,6 +2751,7 @@ EOF
 install_check_domain_creation_date() {
   cat> "$my_bin_path"/check_domain_creation_date << 'EOF'
 #!/bin/bash
+# __my_script__
 
 check_if_domain_exist() {
   if $(whois "$1" | grep 'No entries found' >/dev/null); then
@@ -2783,6 +2798,7 @@ EOF
 install_appairmebt() {
   cat> "$my_bin_path"/appairmebt << 'EOF'
 #!/bin/bash
+# __my_script__
 
 gdbus call --session --dest org.gnome.SettingsDaemon.Rfkill --object-path /org/gnome/SettingsDaemon/Rfkill --method org.freedesktop.DBus.Properties.Set "org.gnome.SettingsDaemon.Rfkill" "BluetoothAirplaneMode" "<false>" >/dev/null
 bluetoothctl select AA:AA:AA:AA:AA:AA >/dev/null
@@ -2857,6 +2873,7 @@ EOF
 install_desactivebt() {
   cat> "$my_bin_path"/desactivebt << 'EOF'
 #!/bin/bash
+# __my_script__
 
 gdbus call --session --dest org.gnome.SettingsDaemon.Rfkill --object-path /org/gnome/SettingsDaemon/Rfkill --method org.freedesktop.DBus.Properties.Set "org.gnome.SettingsDaemon.Rfkill" "BluetoothAirplaneMode" "<true>" >/dev/null
 EOF
@@ -2871,6 +2888,7 @@ EOF
 install_play_pause_chromium() {
   cat> "$my_bin_path"/play_pause_chromium << 'EOF'
 #!/bin/bash
+# __my_script__
 
 dbus_dest_org="$(dbus-send --session --dest=org.freedesktop.DBus --type=method_call --print-reply /org/freedesktop/DBus org.freedesktop.DBus.ListNames | awk '/org.mpris.MediaPlayer2.chromium/{gsub(/\"/,"");print $2}')" && \
 dbus-send --print-reply --dest="$dbus_dest_org" /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player.PlayPause >/dev/null
@@ -2886,6 +2904,7 @@ EOF
 install_decomp() {
   cat> "$my_bin_path"/decomp << 'EOF'
 #!/bin/bash
+# __my_script__
 
 if [ -f $1 ]; then
   case $1 in
@@ -2920,6 +2939,7 @@ EOF
 install_waitforssh() {
   cat> "$my_bin_path"/waitforssh << 'EOF'
 #!/bin/bash
+# __my_script__
 
 ssh_target="$1"
 ssh_port="$2"
@@ -3175,7 +3195,7 @@ configure_stacer() {
   AppQuitDialogDontAsk=true
   Language=fr' > /home/"$local_user"/.config/stacer/settings.ini
 }
-configure_stacer
+# configure_stacer
 ################################################################################
 
 ################################################################################
@@ -3255,6 +3275,9 @@ tmp_test_configure_libreoffice_template() {
   # $ExeAsUser touch ""$template_dir"/Document ODT.txt" && \
   # $ExeAsUser "$(realpath $(command -v libreoffice))".bin --nologo --nofirststartwizard --invisible --norestore --headless --convert-to odt ""$template_dir"/Document ODT.txt" --outdir "$template_dir" && \
   # rm -f ""$template_dir"/Document ODT.txt"
+
+  # initialise /home/"$local_user"/.config/libreoffice/
+  $ExeAsUser "$(realpath $(command -v libreoffice))".bin --nologo --nofirststartwizard --invisible --norestore --headless
 
   $ExeAsUser touch ""$template_dir"/Document ODS.txt" && \
   $ExeAsUser "$(realpath $(command -v libreoffice))".bin --calc --nologo --nofirststartwizard --invisible --norestore --headless --convert-to ods ""$template_dir"/Document ODS.txt" --outdir "$template_dir" && \
