@@ -360,6 +360,8 @@ displayandexec() {
     echo -e "\r $message                ${GREEN}[OK]${RESET} " | tee --append "$stdout_file"
   fi
   return $ret
+  export BASH_XTRACEFD='19'
+  # on ré-export la variable BASH_XTRACEFD au cas ou que certains scripts bash exécuter à l'intérieur des fonctions l'ait supprimé ou modifier (exemple DKMS)
 }
 # la variable message récupère la valeur du premier argument passé à la fonction "le message", c'est à dire ce que l'on veut afficher à l'écran lors de l'execution du script (to stdout)
 # shift permet de remplacer sur la même ligne l'affichage de "[En cours]" à "[ERROR]" ou "[OK]"
@@ -383,6 +385,8 @@ execandlog() {
   bash -c "$*" >> "$log_file" 2>&1
   local ret=$?
   return $ret
+  export BASH_XTRACEFD='19'
+  # on ré-export la variable BASH_XTRACEFD au cas ou que certains scripts bash exécuter à l'intérieur des fonctions l'ait supprimé ou modifier (exemple DKMS)
 }
 ################################################################################
 
@@ -762,6 +766,7 @@ DCONF_reset="DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus
 # les variables DCONF_* ne doivent pas être appelés entre parenthèses
 
 my_bin_path='/usr/local/bin'
+# ref : [Filesystem Hierarchy Standard](https://refspecs.linuxfoundation.org/FHS_2.3/fhs-2.3.html#USRLOCALLOCALHIERARCHY)
 
 # on active le mode case insensitive de bash
 shopt -s nocasematch
@@ -990,7 +995,7 @@ configure_apt
 force_kill_and_disable_debian_unattended_upgrades() {
   displayandexec "Désactivation permanente de unattended-upgrades     " "\
   systemctl stop unattended-upgrades.service; \
-  kill -kill "$(systemctl show --property MainPID --value unattended-upgrades.service)"; \
+  pgrep --full '.*/usr/share/unattended-upgrades/.*' | xargs --no-run-if-empty kill -kill; \
   systemctl mask --now unattended-upgrades.service"
 }
 force_kill_and_disable_debian_unattended_upgrades
@@ -1040,6 +1045,9 @@ force_kill_and_disable_debian_unattended_upgrades
 # [[ Dustin Kirkland ] (bb29a9a5) · Commits · PackageKit and AppStream / software-properties · GitLab](https://salsa.debian.org/pkgutopia-team/software-properties/-/commit/bb29a9a5c500ea4a1cf37b7e4dde2bccb72b7c03)
 # "python3-software-properties Recommends unattended-upgrades, which means it gets pulled in automatically on a default desktop install."
 # ref : https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=447701#80
+
+# Une autre option pour kill le PID de unattended-upgrades :
+# kill -kill "$(systemctl show --property MainPID --value unattended-upgrades.service | grep -v '^0$')"
 ################################################################################
 
 ################################################################################
@@ -1675,13 +1683,13 @@ UNAMER="$(uname -r)"
 mkdir -p /usr/share/manual_sign_kernel_module/virtualbox
 cd /usr/share/manual_sign_kernel_module/virtualbox
 openssl req -new -x509 -newkey rsa:2048 -keyout vboxdrv.priv -outform DER -out vboxdrv.der -nodes -days 36500 -subj "/CN=vboxdrv/"
-/usr/src/linux-headers-"$UNAMER"/scripts/sign-file sha256 ./vboxdrv.priv ./vboxdrv.der /lib/modules/"$UNAMER"/misc/vboxdrv.ko
+/usr/src/linux-headers-"$UNAMER"/scripts/sign-file sha512 ./vboxdrv.priv ./vboxdrv.der /lib/modules/"$UNAMER"/misc/vboxdrv.ko
 openssl req -new -x509 -newkey rsa:2048 -keyout vboxnetflt.priv -outform DER -out vboxnetflt.der -nodes -days 36500 -subj "/CN=vboxnetflt/"
-/usr/src/linux-headers-"$UNAMER"/scripts/sign-file sha256 ./vboxnetflt.priv ./vboxnetflt.der /lib/modules/"$UNAMER"/misc/vboxnetflt.ko
+/usr/src/linux-headers-"$UNAMER"/scripts/sign-file sha512 ./vboxnetflt.priv ./vboxnetflt.der /lib/modules/"$UNAMER"/misc/vboxnetflt.ko
 openssl req -new -x509 -newkey rsa:2048 -keyout vboxnetadp.priv -outform DER -out vboxnetadp.der -nodes -days 36500 -subj "/CN=vboxnetadp/"
-/usr/src/linux-headers-"$UNAMER"/scripts/sign-file sha256 ./vboxnetadp.priv ./vboxnetadp.der /lib/modules/"$UNAMER"/misc/vboxnetadp.ko
+/usr/src/linux-headers-"$UNAMER"/scripts/sign-file sha512 ./vboxnetadp.priv ./vboxnetadp.der /lib/modules/"$UNAMER"/misc/vboxnetadp.ko
 openssl req -new -x509 -newkey rsa:2048 -keyout vboxpci.priv -outform DER -out vboxpci.der -nodes -days 36500 -subj "/CN=vboxpci/"
-/usr/src/linux-headers-"$UNAMER"/scripts/sign-file sha256 ./vboxpci.priv ./vboxpci.der /lib/modules/"$UNAMER"/misc/vboxpci.ko
+/usr/src/linux-headers-"$UNAMER"/scripts/sign-file sha512 ./vboxpci.priv ./vboxpci.der /lib/modules/"$UNAMER"/misc/vboxpci.ko
 mokutil --import vboxdrv.der
 mokutil --import vboxnetflt.der
 mokutil --import vboxnetadp.der
@@ -1758,20 +1766,20 @@ for module in $virtualbox_modules; do
     -days 36500 \
     -subj "/CN="$module"/" && \
   /usr/src/linux-headers-"$UNAMER"/scripts/sign-file \
-    sha256 \
+    sha512 \
     ./"$module".priv \
     ./"$module".der \
     /lib/modules/"$UNAMER"/misc/"$module".ko
 done
 
 # openssl req -new -x509 -newkey rsa:2048 -keyout vboxnetflt.priv -outform DER -out vboxnetflt.der -nodes -days 36500 -subj "/CN=vboxnetflt/"
-# /usr/src/linux-headers-"$UNAMER"/scripts/sign-file sha256 ./vboxnetflt.priv ./vboxnetflt.der /lib/modules/"$UNAMER"/misc/vboxnetflt.ko
+# /usr/src/linux-headers-"$UNAMER"/scripts/sign-file sha512 ./vboxnetflt.priv ./vboxnetflt.der /lib/modules/"$UNAMER"/misc/vboxnetflt.ko
 
 # openssl req -new -x509 -newkey rsa:2048 -keyout vboxnetadp.priv -outform DER -out vboxnetadp.der -nodes -days 36500 -subj "/CN=vboxnetadp/"
-# /usr/src/linux-headers-"$UNAMER"/scripts/sign-file sha256 ./vboxnetadp.priv ./vboxnetadp.der /lib/modules/"$UNAMER"/misc/vboxnetadp.ko
+# /usr/src/linux-headers-"$UNAMER"/scripts/sign-file sha512 ./vboxnetadp.priv ./vboxnetadp.der /lib/modules/"$UNAMER"/misc/vboxnetadp.ko
 
 # openssl req -new -x509 -newkey rsa:2048 -keyout vboxpci.priv -outform DER -out vboxpci.der -nodes -days 36500 -subj "/CN=vboxpci/"
-# /usr/src/linux-headers-"$UNAMER"/scripts/sign-file sha256 ./vboxpci.priv ./vboxpci.der /lib/modules/"$UNAMER"/misc/vboxpci.ko
+# /usr/src/linux-headers-"$UNAMER"/scripts/sign-file sha512 ./vboxpci.priv ./vboxpci.der /lib/modules/"$UNAMER"/misc/vboxpci.ko
 
 mokutil --import vboxdrv.der
 mokutil --import vboxnetflt.der
@@ -2526,9 +2534,9 @@ EOF
   install_GSE_screenshot_tool "$GSE_screenshot_tool_version"
   install_GSE_system_monitor
   install_GSE_sound_output_device_chooser "$GSE_sound_output_device_chooser_version"
-  if [ "$bookworm" != 1 ]; then
+  # if [ "$bookworm" != 1 ]; then
     check_for_enable_GSE
-  fi
+  # fi
 
   displayandexec "Installation des Gnome Shell Extension              " "\
   stat "$gnome_shell_extension_path"/gnome-shell-screenshot@ttll.de/metadata.json && \
@@ -3232,18 +3240,31 @@ configure_rkhunter() {
   # create_template_for_new_file_new
 # fi
 
+execandlog "find /home/"$local_user"/.config/libreoffice/ -ls"
+# le fait que la première execution fail à créer le fichier mais ne produise pas de code d'érreur pourrait venir du fait que le répertoire des config de librroffice n'existe pas encore avant la première execution de la commande, et que il quitte son execution mais en construisant le repertoire de config ce qui permet à la deuxième commande de s'executer correctement
+# ref : [ms office - unoconv not working while trying to convert. throws Error: Unable to connect or start own listener. Aborting - Stack Overflow](https://stackoverflow.com/questions/9259975/unoconv-not-working-while-trying-to-convert-throws-error-unable-to-connect-or/28611685#28611685)
+# si c'est bien le cas, on devrait voir la création du template s'inverser maintenant qu"on a changé l'ordre de création du template (avant = 1:ODT 2:ODS; maintenant = 1:ODS 2:ODT), donc à priori c'est le fichier .odt qui devrait être fait
+# [linux - Libreoffice --headless refuses to convert unless root, won't work from PHP script - Stack Overflow](https://stackoverflow.com/questions/12101855/libreoffice-headless-refuses-to-convert-unless-root-wont-work-from-php-scrip)
+# [Error in function createSettingsDocument (elements.cxx) when using a libreoffice command - Ask Ubuntu](https://askubuntu.com/questions/678125/error-in-function-createsettingsdocument-elements-cxx-when-using-a-libreoffice/1092715#1092715)
+
 tmp_test_configure_libreoffice_template() {
   is_dir_present "/home/"$local_user"/Modèles" && template_dir="/home/"$local_user"/Modèles"
   is_dir_present "/home/"$local_user"/Templates" && template_dir="/home/"$local_user"/Templates"
   $ExeAsUser touch ""$template_dir"/Fichier Texte.txt"
 
-  $ExeAsUser touch ""$template_dir"/Document ODT.txt" && \
-  $ExeAsUser "$(realpath $(command -v libreoffice))".bin --nologo --nofirststartwizard --invisible --norestore --headless --convert-to odt ""$template_dir"/Document ODT.txt" --outdir "$template_dir" && \
-  rm -f ""$template_dir"/Document ODT.txt"
+  # $ExeAsUser touch ""$template_dir"/Document ODT.txt" && \
+  # $ExeAsUser "$(realpath $(command -v libreoffice))".bin --nologo --nofirststartwizard --invisible --norestore --headless --convert-to odt ""$template_dir"/Document ODT.txt" --outdir "$template_dir" && \
+  # rm -f ""$template_dir"/Document ODT.txt"
 
   $ExeAsUser touch ""$template_dir"/Document ODS.txt" && \
   $ExeAsUser "$(realpath $(command -v libreoffice))".bin --calc --nologo --nofirststartwizard --invisible --norestore --headless --convert-to ods ""$template_dir"/Document ODS.txt" --outdir "$template_dir" && \
   rm -f ""$template_dir"/Document ODS.txt"
+  find /home/"$local_user"/.config/libreoffice/ -ls
+
+  $ExeAsUser touch ""$template_dir"/Document ODT.txt" && \
+  $ExeAsUser "$(realpath $(command -v libreoffice))".bin --nologo --nofirststartwizard --invisible --norestore --headless --convert-to odt ""$template_dir"/Document ODT.txt" --outdir "$template_dir" && \
+  rm -f ""$template_dir"/Document ODT.txt"
+  find /home/"$local_user"/.config/libreoffice/ -ls
 }
 export -f tmp_test_configure_libreoffice_template
 
@@ -4406,6 +4427,11 @@ if [ "$conf_pro" == 1 ]; then
   configure_bashrc_pro
   configure_zshrc_pro
 fi
+
+# à noter que cette ligne "export PATH="\$PATH:/home/$local_user/.local/bin" dans les .zshrc et .bashrc n'est probablement plus nécessaire depuis la version "4.4.18-1" de bash dans Debian, car le PATH est censé être intégré dans ~/.profile
+# ref :
+# [Import Debian changes 4.4.18-1 (d8797dfc) · Commits · Debian / bash · GitLab](https://salsa.debian.org/debian/bash/-/commit/d8797dfccb5a299d2e5af988c0d95554d762b7b6)
+# [debian/skel.profile · debian/master · Debian / bash · GitLab](https://salsa.debian.org/debian/bash/-/blob/debian/master/debian/skel.profile?ref_type=heads#L24)
 
 configure_default_shell() {
   displayandexec "Configuration de zsh en tant que shell par défaut   " "\
