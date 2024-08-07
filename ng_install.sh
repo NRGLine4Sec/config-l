@@ -166,6 +166,8 @@ redirect_and_enable_bash_debug_log() {
   export SHELLOPTS
 }
 redirect_and_enable_bash_debug_log
+# à noter qu'on utilise : set +x
+# à l'intérieur des fonctions qui nécessient d'installer DKMS car sinon cela pose problème pour l'install de DKMS et en plus la variable BASH_XTRACEFD n'est pas respéctée, donc la sortie de XTRACE se retrouve dans la stderr, et donc dans le fichier de log, et surtout DKMS produit une quantité de log XTRACE absolument énorme car ça doit faire appel à beaucoup de scripts qui font beaucoup de check
 ################################################################################
 
 ################################################################################
@@ -995,7 +997,7 @@ configure_apt
 force_kill_and_disable_debian_unattended_upgrades() {
   displayandexec "Désactivation permanente de unattended-upgrades     " "\
   systemctl mask --now unattended-upgrades.service; \
-  pgrep --full '.*/usr/share/unattended-upgrades/.*' | xargs --no-run-if-empty kill -kill"
+  pgrep --full --exact '^/usr/bin/python3 /usr/share/unattended-upgrades/.*' | xargs --no-run-if-empty kill -kill"
 }
 force_kill_and_disable_debian_unattended_upgrades
 # https://wiki.debian.org/UnattendedUpgrades
@@ -1047,6 +1049,9 @@ force_kill_and_disable_debian_unattended_upgrades
 
 # Une autre option pour kill le PID de unattended-upgrades :
 # kill -kill "$(systemctl show --property MainPID --value unattended-upgrades.service | grep -v '^0$')"
+
+# encore une autre option pour récupérer le pid de unattended-upgrades :
+# ps -eo pid,command --no-headers | grep '.*[/]usr/share/unattended-upgrades/.*' | awk '{print $1}'
 ################################################################################
 
 ################################################################################
@@ -1433,7 +1438,7 @@ install_zfs() {
     echo 'zfs-dkms	zfs-dkms/stop-build-for-32bit-kernel	boolean	true' | debconf-set-selections && \
     echo 'zfs-dkms	zfs-dkms/note-incompatible-licenses	note' | debconf-set-selections && \
     echo 'zfs-dkms	zfs-dkms/stop-build-for-unknown-kernel	boolean	true'| debconf-set-selections && \
-    unset SHELLOPTS && \
+    set +x && \
     $AG -t "$debian_release"-backports install -y zfsutils-linux zfs-dkms zfs-zed && \
     modprobe zfs"
   else
@@ -1441,7 +1446,7 @@ install_zfs() {
     echo 'zfs-dkms	zfs-dkms/stop-build-for-32bit-kernel	boolean	true' | debconf-set-selections && \
     echo 'zfs-dkms	zfs-dkms/note-incompatible-licenses	note' | debconf-set-selections && \
     echo 'zfs-dkms	zfs-dkms/stop-build-for-unknown-kernel	boolean	true'| debconf-set-selections && \
-    unset SHELLOPTS && \
+    set +x && \
     $AGI zfsutils-linux zfs-dkms zfs-zed && \
     modprobe zfs"
   fi
@@ -1646,7 +1651,7 @@ EOF
 ## instalation de VirtualBox
 ##------------------------------------------------------------------------------
 install_virtualbox() {
-  displayandexec "Installation des dépendances de VirtualBox          " "unset SHELLOPTS && $AGI dkms"
+  displayandexec "Installation des dépendances de VirtualBox          " "set +x && $AGI dkms"
   displayandexec "Installation de VirtualBox                          " "\
   echo 'deb [signed-by=/usr/share/keyrings/virtualbox-archive-keyring.gpg] https://download.virtualbox.org/virtualbox/debian bullseye contrib' > /etc/apt/sources.list.d/virtualbox.list && \
   is_file_present_and_rmfile "/usr/share/keyrings/virtualbox-archive-keyring.gpg" && \
@@ -1709,7 +1714,7 @@ EOF
 }
 
 install_virtualbox_bookworm() {
-  displayandexec "Installation des dépendances de VirtualBox          " "unset SHELLOPTS && $AGI dkms"
+  displayandexec "Installation des dépendances de VirtualBox          " "set +x && $AGI dkms"
   displayandexec "Installation de VirtualBox                          " "\
   echo 'deb [signed-by=/usr/share/keyrings/virtualbox-archive-keyring.gpg] https://download.virtualbox.org/virtualbox/debian bookworm contrib' > /etc/apt/sources.list.d/virtualbox.list && \
   is_file_present_and_rmfile "/usr/share/keyrings/virtualbox-archive-keyring.gpg" && \
