@@ -293,6 +293,13 @@ export -f is_file_present_and_rmfile
 # PS: à noter qu'on utilise [ -f "$file" ] || return 0 pour ne pas renvoyer de code d'érreur si le fichier n'existe pas
 # on ne peut pas rajouter le || return 0 à la fin de la commande rm car sinon on aura un retour positif même dans les cas ou la suppression du fichier a été un échec
 
+is_dir_empty() {
+  local dir="$1"
+  find "$dir" -maxdepth 0 -type d -empty 2>/dev/null | grep -q .
+}
+export -f is_dir_empty
+# inspiré de : [Bash scripting: test for empty directory - Super User](https://superuser.com/questions/352289/bash-scripting-test-for-empty-directory/352387#352387)
+
 ################################################################################
 ## création des fichiers de log
 ##------------------------------------------------------------------------------
@@ -4246,6 +4253,42 @@ execandlog "ln -s "$(command -v apt-fast)" /usr/bin/ag"
 ################################################################################
 
 ################################################################################
+## configuration spéficique pour le pc pro
+##------------------------------------------------------------------------------
+configure_for_pro() {
+  echo ''
+  echo '     ################################################################'
+  echo '     #             CONFIGURATION SPECIFIQUE POUR PC PRO             #'
+  echo '     ################################################################'
+  echo ''
+  source /home/"$local_user"/postinstall_pro.sh
+  exec 19>>/tmp/ng_install_set-x_logfile
+  BASH_XTRACEFD='19'
+}
+if [ "$conf_pro" == 1 ]; then
+  configure_for_pro
+fi
+################################################################################
+
+################################################################################
+## configuration spéficique pour le pc perso
+##------------------------------------------------------------------------------
+configure_for_perso() {
+  echo ''
+  echo '     ################################################################'
+  echo '     #            CONFIGURATION SPECIFIQUE POUR PC PERSO            #'
+  echo '     ################################################################'
+  echo ''
+  source /home/"$local_user"/postinstall_perso.sh
+  exec 19>>/tmp/ng_install_set-x_logfile
+  BASH_XTRACEFD='19'
+}
+if [ "$conf_perso" == 1 ]; then
+  configure_for_perso
+fi
+################################################################################
+
+################################################################################
 ## configuration du bashrc et du zshrc
 ##------------------------------------------------------------------------------
 configure_bashrc_user() {
@@ -4476,43 +4519,6 @@ configure_default_shell
 
 # Pour zsh, on ne configure pas l'affichage des dates devant les commandes avec la variable HISTTIMEFORMAT mais on le fait avec l'utilisation de la commande fc -li 1
 # ref : [How to view datetime stamp for history command in Zsh shell - Unix & Linux Stack Exchange](https://unix.stackexchange.com/questions/103398/how-to-view-datetime-stamp-for-history-command-in-zsh-shell/436221#436221)
-################################################################################
-
-################################################################################
-## configuration spéficique pour le pc pro
-##------------------------------------------------------------------------------
-configure_for_pro() {
-  echo ''
-  echo '     ################################################################'
-  echo '     #             CONFIGURATION SPECIFIQUE POUR PC PRO             #'
-  echo '     ################################################################'
-  echo ''
-  source /home/"$local_user"/postinstall_pro.sh
-  exec 19>>/tmp/ng_install_set-x_logfile
-  BASH_XTRACEFD='19'
-}
-if [ "$conf_pro" == 1 ]; then
-  configure_for_pro
-fi
-# https://privatebin.net/?a6afba924ca26454#BDfwXqhPL4wYAwBDELCKDfXt858y5YD4rMsSfeWM6pQz
-################################################################################
-
-################################################################################
-## configuration spéficique pour le pc perso
-##------------------------------------------------------------------------------
-configure_for_perso() {
-  echo ''
-  echo '     ################################################################'
-  echo '     #            CONFIGURATION SPECIFIQUE POUR PC PERSO            #'
-  echo '     ################################################################'
-  echo ''
-  source /home/"$local_user"/postinstall_perso.sh
-  exec 19>>/tmp/ng_install_set-x_logfile
-  BASH_XTRACEFD='19'
-}
-if [ "$conf_perso" == 1 ]; then
-  configure_for_perso
-fi
 ################################################################################
 
 # Commande temporaire pour éviter que des fichiers de /home/user/.config n'appartienent à root lors de l'install, sans qu'on comprenne bien pourquoi (executé par ExeAsUser)
