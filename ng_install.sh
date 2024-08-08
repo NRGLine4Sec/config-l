@@ -300,6 +300,18 @@ is_dir_empty() {
 export -f is_dir_empty
 # inspiré de : [Bash scripting: test for empty directory - Super User](https://superuser.com/questions/352289/bash-scripting-test-for-empty-directory/352387#352387)
 
+is_dir_not_present_or_empty() {
+  local dir="$1"
+  ( is_dir_present "$dir" && is_dir_empty "$dir" ) || return 0
+}
+export -f is_dir_present_or_empty
+
+is_dir_present_and_empty() {
+  local dir="$1"
+  is_dir_present "$dir" && is_dir_empty "$dir"
+}
+export -f is_dir_present_and_empty
+
 ################################################################################
 ## création des fichiers de log
 ##------------------------------------------------------------------------------
@@ -812,9 +824,10 @@ export -f is_file_present_and_rmfile_as_user
 
 add_to_user_crontab() {
   local crontab_line_to_add="$1"
-  { crontab -l -u "$local_user"; echo "$crontab_line_to_add"; } | crontab -u "$local_user" -
+  { crontab -l -u "$local_user" 2>/dev/null || true; echo "$crontab_line_to_add"; } | crontab -u "$local_user" -
 }
 export -f add_to_user_crontab
+# inspiré de : [linux - How do I create a crontab through a script - Stack Overflow](https://stackoverflow.com/questions/4880290/how-do-i-create-a-crontab-through-a-script/51497394#51497394)
 
 exec_graphic_app_with_root_privileges() {
   export DISPLAY=:0
@@ -3289,17 +3302,15 @@ tmp_test_configure_libreoffice_template() {
   # rm -f ""$template_dir"/Document ODT.txt"
 
   # initialise /home/"$local_user"/.config/libreoffice/
-  $ExeAsUser "$(realpath $(command -v libreoffice))".bin --nologo --nofirststartwizard --invisible --norestore --headless
+  $ExeAsUser timeout --signal=TERM --kill-after=25s 20s "$(realpath $(command -v libreoffice))".bin --nologo --nofirststartwizard --invisible --norestore --headless
 
   $ExeAsUser touch ""$template_dir"/Document ODS.txt" && \
-  $ExeAsUser "$(realpath $(command -v libreoffice))".bin --calc --nologo --nofirststartwizard --invisible --norestore --headless --convert-to ods ""$template_dir"/Document ODS.txt" --outdir "$template_dir" && \
+  $ExeAsUser timeout --signal=TERM --kill-after=25s 20s "$(realpath $(command -v libreoffice))".bin --calc --nologo --nofirststartwizard --invisible --norestore --headless --convert-to ods ""$template_dir"/Document ODS.txt" --outdir "$template_dir" && \
   rm -f ""$template_dir"/Document ODS.txt"
-  find /home/"$local_user"/.config/libreoffice/ -ls
 
   $ExeAsUser touch ""$template_dir"/Document ODT.txt" && \
-  $ExeAsUser "$(realpath $(command -v libreoffice))".bin --nologo --nofirststartwizard --invisible --norestore --headless --convert-to odt ""$template_dir"/Document ODT.txt" --outdir "$template_dir" && \
+  $ExeAsUser timeout --signal=TERM --kill-after=25s 20s "$(realpath $(command -v libreoffice))".bin --nologo --nofirststartwizard --invisible --norestore --headless --convert-to odt ""$template_dir"/Document ODT.txt" --outdir "$template_dir" && \
   rm -f ""$template_dir"/Document ODT.txt"
-  find /home/"$local_user"/.config/libreoffice/ -ls
 }
 export -f tmp_test_configure_libreoffice_template
 
