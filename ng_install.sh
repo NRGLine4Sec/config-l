@@ -304,7 +304,7 @@ is_dir_not_present_or_empty() {
   local dir="$1"
   ( is_dir_present "$dir" && is_dir_empty "$dir" ) || return 0
 }
-export -f is_dir_present_or_empty
+export -f is_dir_not_present_or_empty
 
 is_dir_present_and_empty() {
   local dir="$1"
