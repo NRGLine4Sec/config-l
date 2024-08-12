@@ -1318,6 +1318,7 @@ install_debian_apt_package() {
   displayandexec "Installation de ipcalc                              " "$AGI ipcalc"
   displayandexec "Installation de jq                                  " "$AGI jq"
   displayandexec "Installation de libnotify-bin                       " "$AGI libnotify-bin"
+  displayandexec "Installation de libsecret-tools                     " "$AGI libsecret-tools"
   displayandexec "Installation de linux-cpupower                      " "$AGI linux-cpupower"
   displayandexec "Installation de linux-perf                          " "$AGI linux-perf"
   displayandexec "Installation de lnav                                " "$AGI lnav"
@@ -1410,6 +1411,7 @@ install_debian_apt_package() {
   displayandexec "Installation de xinput                              " "$AGI xinput"
   displayandexec "Installation de xorriso                             " "$AGI xorriso"
   displayandexec "Installation de xournalpp                           " "$AGI xournalpp"
+  displayandexec "Installation de xxd                                 " "$AGI xxd"
   displayandexec "Installation de xz-utils                            " "$AGI xz-utils"
   displayandexec "Installation de yersinia                            " "$AGI yersinia" # à réflechir si c'est encore utile
   # displayandexec "Installation de zenmap                              " "$AGI zenmap"
@@ -3285,7 +3287,6 @@ configure_rkhunter() {
   # create_template_for_new_file_new
 # fi
 
-execandlog "find /home/"$local_user"/.config/libreoffice/ -ls"
 # le fait que la première execution fail à créer le fichier mais ne produise pas de code d'érreur pourrait venir du fait que le répertoire des config de librroffice n'existe pas encore avant la première execution de la commande, et que il quitte son execution mais en construisant le repertoire de config ce qui permet à la deuxième commande de s'executer correctement
 # ref : [ms office - unoconv not working while trying to convert. throws Error: Unable to connect or start own listener. Aborting - Stack Overflow](https://stackoverflow.com/questions/9259975/unoconv-not-working-while-trying-to-convert-throws-error-unable-to-connect-or/28611685#28611685)
 # si c'est bien le cas, on devrait voir la création du template s'inverser maintenant qu"on a changé l'ordre de création du template (avant = 1:ODT 2:ODS; maintenant = 1:ODS 2:ODT), donc à priori c'est le fichier .odt qui devrait être fait
@@ -3881,6 +3882,7 @@ gtk-im-module='gtk-im-context-simple'
 clock-show-seconds=false
 clock-show-weekday=true
 gtk-theme='Adwaita-dark'
+color-scheme='prefer-dark'
 
 [gnome/desktop/wm/preferences]
 button-layout='appmenu:minimize,maximize,close'
