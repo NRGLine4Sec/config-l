@@ -30,6 +30,7 @@ RESET='\e[0m'
 NOIR='\e[0;30m'
 
 manual_install_dir='/opt/manual_install'
+my_bin_path='/usr/local/bin'
 AG='apt-get'
 WGET='wget -q'
 CURL='curl --silent --location --show-error'
@@ -262,7 +263,7 @@ CheckUpdateWinscp() {
 
 CheckUpdateVentoy() {
   local SoftwareName='Ventoy'
-  local v1="$(cat "$(sed -n 's/^sudo \(.*\)\/.*/\1/p' /usr/bin/ventoy)"/ventoy/version)"
+  local v1="$(cat "$(sed -n 's/^sudo \(.*\)\/.*/\1/p' "$my_bin_path"/ventoy)"/ventoy/version)"
   local v2="$($CURL 'https://api.github.com/repos/ventoy/Ventoy/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
@@ -409,12 +410,12 @@ UpdateHashcat() {
   local hashcat_version="$1"
   local tmp_dir="$(mktemp -d)" && \
   rm -rf "$manual_install_dir"/hashcat/ && \
-  rm -f /usr/bin/hashcat && \
+  rm -f "$my_bin_path"/hashcat && \
   mkdir "$manual_install_dir"/hashcat/ && \
   $WGET -P "$tmp_dir" https://github.com/hashcat/hashcat/releases/download/v"$hashcat_version"/hashcat-"$hashcat_version".7z && \
   7z x "$tmp_dir"/hashcat-"$hashcat_version".7z -o"$manual_install_dir"/hashcat > /dev/null && \
   chown -R "$local_user":"$local_user" "$manual_install_dir"/hashcat && \
-  ln -s "$manual_install_dir"/hashcat/hashcat-"$hashcat_version"/hashcat.bin /usr/bin/hashcat
+  ln -s "$manual_install_dir"/hashcat/hashcat-"$hashcat_version"/hashcat.bin "$my_bin_path"/hashcat
   rm -rf "$tmp_dir"
 }
 
@@ -446,8 +447,8 @@ UpdateVentoy() {
   [ -d "$manual_install_dir"/ventoy/ ] && rm -rf "$manual_install_dir"/ventoy/ && \
   mkdir "$manual_install_dir"/ventoy/ && \
   tar --directory "$manual_install_dir"/ventoy -xzf "$tmp_dir"/ventoy-"$ventoy_version"-linux.tar.gz && \
-  echo -e "#!/bin/bash\nsudo "$manual_install_dir"/ventoy/ventoy-"$ventoy_version"/VentoyGUI.x86_64" > /usr/bin/ventoy && \
-  chmod +x /usr/bin/ventoy
+  echo -e "#!/bin/bash\nsudo "$manual_install_dir"/ventoy/ventoy-"$ventoy_version"/VentoyGUI.x86_64" > "$my_bin_path"/ventoy && \
+  chmod +x "$my_bin_path"/ventoy
   rm -rf "$tmp_dir"
 }
 
@@ -473,8 +474,6 @@ AddTo_software_update_failed() {
 
 software_list='
 Shotcut
-Youtube-dl
-Boostnote
 Keepassxc
 Joplin
 Bat
@@ -484,10 +483,12 @@ Etcher
 Yt-dlp
 Hashcat
 Veracrypt
+Geeqie
 Ventoy'
-#Stacer
+# Boostnote
+# Stacer
+# Youtube-dl
 # Winscp
-#Geeqie
 # on supprimer Geeqie de la liste temporairement car les nouveaux AppImage ne fonctionnent pas, la dernière version qui fonctionne correctement sur bullseye est celle la : Geeqie-v2.0+20220921.AppImage
 # cf le lien du bug ci-dessous :
 # [Latest AppImages fail to run on Debian 11 · Issue #1055 · BestImageViewer/geeqie](https://github.com/BestImageViewer/geeqie/issues/1055)

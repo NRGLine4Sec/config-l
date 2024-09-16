@@ -1412,6 +1412,7 @@ install_debian_apt_package() {
   displayandexec "Installation de xorriso                             " "$AGI xorriso"
   displayandexec "Installation de xournalpp                           " "$AGI xournalpp"
   displayandexec "Installation de xxd                                 " "$AGI xxd"
+  displayandexec "Installation de xxhash                              " "$AGI xxhash"
   displayandexec "Installation de xz-utils                            " "$AGI xz-utils"
   displayandexec "Installation de yersinia                            " "$AGI yersinia" # à réflechir si c'est encore utile
   # displayandexec "Installation de zenmap                              " "$AGI zenmap"
@@ -3601,6 +3602,11 @@ r cycle_values video-rotate 90 180 270 0
 # ref : [Add new default keys to pan, zoom and rotate · Issue #5458 · mpv-player/mpv · GitHub](https://github.com/mpv-player/mpv/issues/5458)
 Alt+- add video-zoom -0.10
 Alt+= add video-zoom 0.10
+
+Alt+left  add video-pan-x  0.05         # move the video right
+Alt+right add video-pan-x -0.05         # move the video left
+Alt+up    add video-pan-y  0.05         # move the video down
+Alt+down  add video-pan-y -0.05         # move the video up
 EOF
   $ExeAsUser cat> /home/"$local_user"/.config/mpv/mpv.conf << 'EOF'
 # Enable hardware decoding if available
