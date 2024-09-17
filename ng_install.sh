@@ -2300,6 +2300,25 @@ EOF
 }
 ################################################################################
 
+################################################################################
+## instalation de BindToInterface
+##------------------------------------------------------------------------------
+install_bindtointerface() {
+  local tmp_dir="$(mktemp -d)" && \
+  displayandexec "Installation de BindToInterface                     " "\
+  $WGET -P "$tmp_dir" 'https://github.com/JsBergbau/BindToInterface/archive/main.zip' && \
+  unzip -j "$tmp_dir"/main.zip -d "$manual_install_dir"/BindToInterface" && \
+  cat> "$manual_install_dir"/BindToInterface/compil_BindToInterface.sh << EOF
+#!/bin/bash
+sudo gcc -nostartfiles -fpic -shared "$manual_install_dir"/BindToInterface/bindToInterface.c -o "$manual_install_dir"/BindToInterface/bindToInterface.so -ldl -D_GNU_SOURCE
+EOF
+  execandlog "chmod +x "$manual_install_dir"/BindToInterface/compil_BindToInterface.sh; \
+  rm -rf "$tmp_dir""
+}
+# pour l'instant je préfère ne pas intégrer le fait de faire la compilation directemant dans le script post install tout en laissant la possibilité de le faire simplement via l'execution du script compil_BindToInterface.sh
+# [GitHub - JsBergbau/BindToInterface: With this program you can bind applications to a specific network interface / network adapter. This is very useful if you have multiple (internet) connections and want your program to use a specific one.](https://github.com/JsBergbau/BindToInterface)
+################################################################################
+
 # Pour facilier la gestion du passage d'une version de debian à une autre
 get_available_distrib_version_repo_url() {
 repo_url='
@@ -2358,6 +2377,7 @@ install_all_manual_install_apps_bullseye() {
   install_vscode
   install_brave
   install_ventoy
+  install_bindtointerface
 }
 
 install_all_manual_install_apps_bookworm() {
@@ -2391,6 +2411,7 @@ install_all_manual_install_apps_bookworm() {
   install_vscode
   install_brave
   install_ventoy
+  install_bindtointerface
 }
 
 if [ -z "$fisrt_time_script_executed" ]; then
