@@ -1295,7 +1295,8 @@ install_debian_apt_package() {
   displayandexec "Installation de firefox-esr-l10n-fr                 " "$AGI firefox-esr-l10n-fr"
   displayandexec "Installation de firejail                            " "$AGI firejail firejail-profiles"
   displayandexec "Installation de flameshot                           " "$AGI flameshot"
-  displayandexec "Installation de freerdp2-wayland                    " "$AGI freerdp2-wayland"
+  displayandexec "Installation de freerdp3-sdl                        " "$AGI freerdp3-sdl"
+  displayandexec "Installation de freerdp3-wayland                    " "$AGI freerdp3-wayland"
   displayandexec "Installation de gcc                                 " "$AGI gcc"
   displayandexec "Installation de genisoimage                         " "$AGI genisoimage" # needed to get isoinfo binnary
   displayandexec "Installation de gimp                                " "$AGI gimp"
@@ -1443,6 +1444,7 @@ package_to_install_from_backports_if_available='
 firejail
 firejail-profiles
 remmina
+freerdp3-sdl
 '
 
 check_and_install_package_from_backports() {
@@ -3174,6 +3176,21 @@ configure_etc_inputrc
 ################################################################################
 
 ################################################################################
+## configuration de wlfreerdp
+##------------------------------------------------------------------------------
+configure_wlfreerdp() {
+  execandlog "ln -s /usr/bin/wlfreerdp3 /usr/bin/wlfreerdp"
+}
+configure_wlfreerdp
+# suite au passage de debian du paquet freerdp2-wayland à freerdp3-wayland, ils se sont amuser à changer le nom du binaire de freerdp pour wayland, ça doit surement être parceque dans Bookworm, il existe en même temps les paquets freerdp2-wayland et freerdp3-wayland
+# à prori c'est aussi lié à des breaking change dans la syntaxe des options de la commande wlfreerdp avec freerdp3-wayland
+# pour éviter d'avoir à modifier mes scripts et mes commandes dans mon joplin, on créer le lien symbolique pour permettre d'utiliser l'ancien nom du binaire
+# à noter qu'il semblerait que freerdp3-wayland soit déjà deprecated et qu'il faille utiliser sdl-freerdp3, mais dans le même temps le paquet sdl-freerdp3 est noté en experimental, donc pour le moment on va continuer d'utiliser freerdp3-wayland tout en installant sdl-freerdp3, quand on jugera que c'est le bon moment, on changera le symlink pour sdl-freerdp3
+# ref : [[client] add deprecation/experimental warnings · FreeRDP/FreeRDP@8af35bd](https://github.com/FreeRDP/FreeRDP/commit/8af35bd42ab42acac542a5e290ffb779a0ed521a)
+# [Deprecation warn by akallabeth · Pull Request #8732 · FreeRDP/FreeRDP](https://github.com/FreeRDP/FreeRDP/pull/8732)
+################################################################################
+
+################################################################################
 ## configuration de freshclam (clamav)
 ##------------------------------------------------------------------------------
 configure_freshclam() {
@@ -3449,6 +3466,16 @@ configure_bat_root_user
 ################################################################################
 
 ################################################################################
+## configuration de cups-browsed
+##------------------------------------------------------------------------------
+configure_cups_browsed() {
+  execandlog "systemctl mask --now cups-browsed"
+}
+configure_cups_browsed
+# harden cups-browsed because of [Attacking UNIX Systems via CUPS, Part I](https://www.evilsocket.net/2024/09/26/Attacking-UNIX-systems-via-CUPS-Part-I/)
+################################################################################
+
+################################################################################
 ## configuration de Firefox
 ##------------------------------------------------------------------------------
 # on ajoute la possibilité d'ouvrir directement la navigateur firefox dans une fenêtre de navigation privée
@@ -3574,6 +3601,7 @@ configure_vscode() {
   execandlog "$ExeAsUser code --force --install-extension marduc812.nmap-peek"
   execandlog "$ExeAsUser code --force --install-extension william-voyek.vscode-nginx"
   execandlog "$ExeAsUser code --force --install-extension yzhang.markdown-all-in-one"
+  execandlog "$ExeAsUser code --force --install-extension dgenzer.suricata-highlight-vscode"
   $ExeAsUser tee /home/"$local_user"/.config/Code/User/settings.json << 'EOF' >/dev/null
 {
     "workbench.colorTheme": "Atom One Dark",
@@ -4365,16 +4393,17 @@ alias yt-dlp_1440p='yt-dlp -o "%(title)s.%(ext)s" -f '\''bestvideo[height<=1440]
 alias free='free -ht'
 alias showshortcut='dconf dump /org/gnome/settings-daemon/plugins/media-keys/'
 alias update_my_sysupdate_script='sudo bash -c '\''rm -f $my_bin_path/sysupdate && wget -q -P $my_bin_path "https://raw.githubusercontent.com/NRGLine4Sec/config-l/main/sysupdate" && chmod +x $my_bin_path/sysupdate'\'''
+alias update_my_auditd_rules='sudo bash -c '\''rm -f /etc/audit/rules.d/audit.rules && wget -q -P /etc/audit/rules.d/ "https://raw.githubusercontent.com/NRGLine4Sec/config-l/main/audit.rules" && augenrules --check && systemctl restart auditd'\'''
 alias bitcoin='curl -s "https://api.coindesk.com/v1/bpi/currentprice.json" | jq ".bpi.EUR.rate" | tr -d \"'
 alias sshuttle='sudo /root/.local/bin/sshuttle'
 alias my_ext_ip="curl --silent --location 'https://ipinfo.io/ip'"
-alias last_apt_kernel='apt-cache search --names-only "linux-(headers|image)-[[:digit:]]\.[[:digit:]]+\.[[:digit:]]+.*[[:digit:]]-(amd64$|amd64-unsigned$)" | sort'
+alias last_apt_kernel='apt-cache search --names-only "linux-(headers|image)-[[:digit:]]\.[[:digit:]]+\.[[:digit:]]+(-[[:digit:]]+|\+bpo)-(amd64$|amd64-unsigned$)" | sort'
 HISTTIMEFORMAT="%Y/%m/%d %T   "
 is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/\$1 ;}
 to_lower() { tr [:upper:] [:lower:] <<< "\$@" ;}
-mpv_youtube() { mpv <(/usr/bin/yt-dlp -o - "\$1") ;}
-mpv_audio_youtube() { mpv --no-video <(/usr/bin/yt-dlp -o - "\$1") ;}
-youtube_description() { yt-dlp --playlist-items 0 --print description "\$1" ;}
+mpv_youtube() { mpv <($my_bin_path/yt-dlp -o - "\$1") ;}
+mpv_audio_youtube() { mpv --no-video <($my_bin_path/yt-dlp -o - "\$1") ;}
+youtube_description() { $my_bin_path/yt-dlp --playlist-items 0 --print description "\$1" ;}
 
 # for Ansible vault editor
 export EDITOR=nano
@@ -4463,16 +4492,17 @@ alias yt-dlp_1080p='yt-dlp -o "%(title)s.%(ext)s" -f '\''bestvideo[height<=1080]
 alias yt-dlp_1440p='yt-dlp -o "%(title)s.%(ext)s" -f '\''bestvideo[height<=1440]+bestaudio'\'''
 alias free='free -ht'
 alias update_my_sysupdate_script='sudo bash -c '\''rm -f $my_bin_path/sysupdate && wget -q -P $my_bin_path "https://raw.githubusercontent.com/NRGLine4Sec/config-l/main/sysupdate" && chmod +x $my_bin_path/sysupdate'\'''
+alias update_my_auditd_rules='sudo bash -c '\''rm -f /etc/audit/rules.d/audit.rules && wget -q -P /etc/audit/rules.d/ "https://raw.githubusercontent.com/NRGLine4Sec/config-l/main/audit.rules" && augenrules --check && systemctl restart auditd'\'''
 alias showshortcut='dconf dump /org/gnome/settings-daemon/plugins/media-keys/'
 alias bitcoin='curl -s "https://api.coindesk.com/v1/bpi/currentprice.json" | jq ".bpi.EUR.rate" | tr -d \"'
 alias sshuttle='sudo /root/.local/bin/sshuttle'
 alias my_ext_ip="curl --silent --location 'https://ipinfo.io/ip'"
-alias last_apt_kernel='apt-cache search --names-only "linux-(headers|image)-[[:digit:]]\.[[:digit:]]+\.[[:digit:]]+.*[[:digit:]]-(amd64$|amd64-unsigned$)" | sort'
+alias last_apt_kernel='apt-cache search --names-only "linux-(headers|image)-[[:digit:]]\.[[:digit:]]+\.[[:digit:]]+(-[[:digit:]]+|\+bpo)-(amd64$|amd64-unsigned$)" | sort'
 is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/\$1 ;}
 to_lower() { tr [:upper:] [:lower:] <<< "\$@" ;}
-mpv_youtube() { mpv <(/usr/bin/yt-dlp -o - "\$1") ;}
-mpv_audio_youtube() { mpv --no-video <(/usr/bin/yt-dlp -o - "\$1") ;}
-youtube_description() { yt-dlp --playlist-items 0 --print description "\$1" ;}
+mpv_youtube() { mpv <($my_bin_path/yt-dlp -o - "\$1") ;}
+mpv_audio_youtube() { mpv --no-video <($my_bin_path/yt-dlp -o - "\$1") ;}
+youtube_description() { $my_bin_path/yt-dlp --playlist-items 0 --print description "\$1" ;}
 
 # for Ansible vault editor
 export EDITOR=nano

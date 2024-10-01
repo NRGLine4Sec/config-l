@@ -44,6 +44,21 @@ log_dir_path='/var/log/sysupdate'
 # make debian non-interactive
 export DEBIAN_FRONTEND='noninteractive'
 
+print_usage_guide() {
+  cat << EOF
+Usage: sudo bash $my_bin_path $program_name [OPTIONS]
+Options:
+  help              or --help 			        Print this message.
+  only_one_check=   or --only_one_check     Only check available update for one software
+  only_one_update=  or --only_one_update    Only update one software
+  check             or --check              Check available update on all softwares of \$software_list
+  update            or --update             Update all software with available updates
+  list              or --list               List all software in \$software_list
+  Usage examples:
+  $program_name only_one_check=Geeqie
+EOF
+}
+
 create_log_file() {
   [ -d "$log_dir_path" ] || mkdir "$log_dir_path"
   log_file=""$log_dir_path"/sysupdate-"$now".log"
@@ -619,11 +634,13 @@ while [[ $# -gt 0 ]]; do
           CheckUpdate;;
       "list" )
           ListSoftware;;
+      "--help" )
+          print_usage_guide;;
       "--optional" )
           OPTION;;     #set to some default value
       "--optional=*" )
           OPTIONAL="${opt#*=}";;             #take argument
-      *) echo >&2 "Invalid option: $@"; exit 1;;
+      *) echo >&2 "Invalid option: $@"; print_usage_guide; exit 1;;
    esac
 done
 

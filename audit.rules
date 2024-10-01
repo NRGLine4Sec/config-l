@@ -346,6 +346,7 @@
 -w /usr/local/bin/xfreerdp -p x -k T1219_Remote_Access_Tools
 -w /usr/bin/nmap -p x -k susp_activity
 -w /usr/bin/systemd-detect-virt -p x -k susp_activity
+-w /usr/bin/getent -p x -k susp_activity
 
 ## Added to catch netcat on Debian based distribution
 -w /bin/nc.openbsd -p x -k susp_activity
@@ -362,6 +363,7 @@
 -w /usr/sbin/tcpdump -p x -k sbin_susp
 -w /usr/sbin/traceroute -p x -k sbin_susp
 -w /usr/sbin/ufw -p x -k sbin_susp
+-w /usr/sbin/capsh -p x -k sbin_susp
 
 ## dbus-send invocation
 ### may indicate privilege escalation CVE-2021-3560
