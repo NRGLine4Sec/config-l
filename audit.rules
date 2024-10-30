@@ -472,6 +472,12 @@
 -a always,exit -F arch=b32 -S socket -F a0=10 -k T1011_Exfiltration_Over_Other_Network_Medium
 -a always,exit -F arch=b64 -S socket -F a0=10 -k T1011_Exfiltration_Over_Other_Network_Medium
 
+# Namesapce usage
+-a always,exit -F arch=b64 -S unshare -k susp_namespace_activity
+# clone syscall with CLONE_NEWNS flag (0x00020000) is present in first argument "a0")
+-a always,exit -F arch=b64 -S clone -F a0&0x00020000 -k susp_namespace_activity
+-a always,exit -F arch=b64 -S setns -k susp_namespace_activity
+
 # Software Management ---------------------------------------------------------
 
 # DPKG / APT-GET (Debian/Ubuntu)
