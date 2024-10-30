@@ -214,8 +214,8 @@
 
 ## Pam configuration
 -w /etc/pam.d/ -p wa -k pam
--w /etc/security/limits.conf -p wa  -k pam
--w /etc/security/limits.d -p wa  -k pam
+-w /etc/security/limits.conf -p wa -k pam
+-w /etc/security/limits.d -p wa -k pam
 -w /etc/security/pam_env.conf -p wa -k pam
 -w /etc/security/namespace.conf -p wa -k pam
 -w /etc/security/namespace.d -p wa -k pam
@@ -295,7 +295,7 @@
 -a always,exit -F arch=b32 -S lsetxattr -F auid>=1000 -F auid!=-1 -k perm_mod
 -a always,exit -F arch=b32 -S removexattr -F auid>=1000 -F auid!=-1 -k perm_mod
 -a always,exit -F arch=b32 -S setxattr -F auid>=1000 -F auid!=-1 -k perm_mod
--a always,exit -F arch=b64 -S chmod  -F auid>=1000 -F auid!=-1 -k perm_mod
+-a always,exit -F arch=b64 -S chmod -F auid>=1000 -F auid!=-1 -k perm_mod
 -a always,exit -F arch=b64 -S chown -F auid>=1000 -F auid!=-1 -k perm_mod
 -a always,exit -F arch=b64 -S fchmod -F auid>=1000 -F auid!=-1 -k perm_mod
 -a always,exit -F arch=b64 -S fchmodat -F auid>=1000 -F auid!=-1 -k perm_mod
@@ -466,8 +466,8 @@
 
 # Socket Creations
 # will catch both IPv4 and IPv6
--a always,exit -F arch=b32 -S socket -F a0=2  -k T1011_Exfiltration_Over_Other_Network_Medium
--a always,exit -F arch=b64 -S socket -F a0=2  -k T1011_Exfiltration_Over_Other_Network_Medium
+-a always,exit -F arch=b32 -S socket -F a0=2 -k T1011_Exfiltration_Over_Other_Network_Medium
+-a always,exit -F arch=b64 -S socket -F a0=2 -k T1011_Exfiltration_Over_Other_Network_Medium
 
 -a always,exit -F arch=b32 -S socket -F a0=10 -k T1011_Exfiltration_Over_Other_Network_Medium
 -a always,exit -F arch=b64 -S socket -F a0=10 -k T1011_Exfiltration_Over_Other_Network_Medium
