@@ -540,12 +540,14 @@
 -w /usr/bin/VBoxManage -p x -k VBoxManage
 
 ## VMware tools
--a never,exit -F arch=b32 -S fork -F success=0 -F path=/usr/lib/vmware-tools -F subj_type=initrc_t -F exit=-2
--a never,exit -F arch=b64 -S fork -F success=0 -F path=/usr/lib/vmware-tools -F subj_type=initrc_t -F exit=-2
 -a exit,never -F arch=b32 -S all -F exe=/usr/bin/vmtoolsd
 -a exit,never -F arch=b64 -S all -F exe=/usr/bin/vmtoolsd
--a exit,never -F arch=b32 -S fork -F success=0 -F path=/etc/vmware-tools -F subj_type=initrc_t -F exit=-2
--a exit,never -F arch=b64 -S fork -F success=0 -F path=/etc/vmware-tools -F subj_type=initrc_t -F exit=-2
+# subj_type=initrc_t work only if SELinux is loaded
+# it produce this error on Debian with default AppArmor : kernel: auditfilter: audit rule for LSM 'initrc_t' is invalid
+# -a never,exit -F arch=b32 -S fork -F success=0 -F path=/usr/lib/vmware-tools -F subj_type=initrc_t -F exit=-2
+# -a never,exit -F arch=b64 -S fork -F success=0 -F path=/usr/lib/vmware-tools -F subj_type=initrc_t -F exit=-2
+# -a exit,never -F arch=b32 -S fork -F success=0 -F path=/etc/vmware-tools -F subj_type=initrc_t -F exit=-2
+# -a exit,never -F arch=b64 -S fork -F success=0 -F path=/etc/vmware-tools -F subj_type=initrc_t -F exit=-2
 
 # ipc system call
 # /usr/include/linux/ipc.h
