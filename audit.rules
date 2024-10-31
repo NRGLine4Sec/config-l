@@ -89,7 +89,7 @@
 
 ## Kernel parameters
 -w /etc/sysctl.conf -p wa -k sysctl
--w /etc/sysctl.d -p wa -k sysctl
+-w /etc/sysctl.d/ -p wa -k sysctl
 
 ## Kernel module loading and unloading
 -a always,exit -F perm=x -F auid!=unset -F path=/sbin/insmod -k modules
@@ -100,7 +100,7 @@
 
 ## Modprobe configuration
 -w /etc/modprobe.conf -p wa -k modprobe
--w /etc/modprobe.d -p wa -k modprobe
+-w /etc/modprobe.d/ -p wa -k modprobe
 
 ## KExec usage (all actions)
 -a always,exit -F arch=b64 -S kexec_load -k KEXEC
@@ -115,8 +115,8 @@
 -a always,exit -F arch=b32 -S mount -S umount -S umount2 -F auid!=unset -k mount
 
 ### NFS mount
--a always,exit -F path=/sbin/mount.nfs -F perm=x -F auid>=500 -F  auid!=unset -k T1078_Valid_Accounts
--a always,exit -F path=/usr/sbin/mount.nfs -F perm=x -F auid>=500 -F  auid!=unset -k T1078_Valid_Accounts
+-a always,exit -F path=/sbin/mount.nfs -F perm=x -F auid>=500 -F auid!=unset -k T1078_Valid_Accounts
+-a always,exit -F path=/usr/sbin/mount.nfs -F perm=x -F auid>=500 -F auid!=unset -k T1078_Valid_Accounts
 
 ## Change swap (only attributable)
 -a always,exit -F arch=b64 -S swapon -S swapoff -F auid!=unset -k swap
@@ -215,10 +215,10 @@
 ## Pam configuration
 -w /etc/pam.d/ -p wa -k pam
 -w /etc/security/limits.conf -p wa -k pam
--w /etc/security/limits.d -p wa -k pam
+-w /etc/security/limits.d/ -p wa -k pam
 -w /etc/security/pam_env.conf -p wa -k pam
 -w /etc/security/namespace.conf -p wa -k pam
--w /etc/security/namespace.d -p wa -k pam
+-w /etc/security/namespace.d/ -p wa -k pam
 -w /etc/security/namespace.init -p wa -k pam
 
 ## Mail configuration
@@ -241,7 +241,7 @@
 ## https://systemd.network/systemd.generator.html
 -w /etc/systemd/system-generators/ -p wa -k T1543_Create_or_Modify_System_Process_systemd_generator
 -w /usr/local/lib/systemd/system-generators/ -p wa -k T1543_Create_or_Modify_System_Process_systemd_generator
--w /usr/lib/systemd/system-generators -p wa -k T1543_Create_or_Modify_System_Process_systemd_generator
+-w /usr/lib/systemd/system-generators/ -p wa -k T1543_Create_or_Modify_System_Process_systemd_generator
 
 -w /etc/systemd/user-generators/ -p wa -k T1543_Create_or_Modify_System_Process_systemd_generator
 -w /usr/local/lib/systemd/user-generators/ -p wa -k T1543_Create_or_Modify_System_Process_systemd_generator
@@ -251,8 +251,8 @@
 -w /etc/selinux/ -p wa -k mac_policy
 ### setfiles
 ### https://www.stigviewer.com/stig/red_hat_enterprise_linux_8/2021-12-03/finding/V-230430
--a always,exit -F path=/usr/bin/setfiles -F perm=x -F auid>=500 -F  auid!=unset -k mac_policy
--a always,exit -F path=/usr/sbin/setfiles -F perm=x -F auid>=500 -F  auid!=unset -k mac_policy
+-a always,exit -F path=/usr/bin/setfiles -F perm=x -F auid>=500 -F auid!=unset -k mac_policy
+-a always,exit -F path=/usr/sbin/setfiles -F perm=x -F auid>=500 -F auid!=unset -k mac_policy
 
 ## Critical elements access failures
 -a always,exit -F arch=b64 -S open -F dir=/etc -F success=0 -k unauthedfileaccess
@@ -372,16 +372,16 @@
 -w /usr/bin/busctl -p x -k busctl_call
 
 ### dbus
--a always,exit -F path=/lib64/dbus-1/dbus-daemon-launch-helper -F perm=x -F auid>=500 -F  auid!=unset -k T1078_Valid_Accounts
--a always,exit -F path=/usr/lib64/dbus-1/dbus-daemon-launch-helper -F perm=x -F auid>=500 -F  auid!=unset -k T1078_Valid_Accounts
+-a always,exit -F path=/lib64/dbus-1/dbus-daemon-launch-helper -F perm=x -F auid>=500 -F auid!=unset -k T1078_Valid_Accounts
+-a always,exit -F path=/usr/lib64/dbus-1/dbus-daemon-launch-helper -F perm=x -F auid>=500 -F auid!=unset -k T1078_Valid_Accounts
 
 ## setfiles
--a always,exit -F path=/usr/bin/setfiles -F perm=x -F auid>=500 -F  auid!=unset -k -F T1078_Valid_Accounts
--a always,exit -F path=/usr/sbin/setfiles -F perm=x -F auid>=500 -F  auid!=unset -k -F T1078_Valid_Accounts
+-a always,exit -F path=/usr/bin/setfiles -F perm=x -F auid>=500 -F auid!=unset -k -F T1078_Valid_Accounts
+-a always,exit -F path=/usr/sbin/setfiles -F perm=x -F auid>=500 -F auid!=unset -k -F T1078_Valid_Accounts
 
 ## vte-2.91
--a always,exit -F path=/lib64/vte-2.91/gnome-pty-helper -F perm=x -F auid>=500 -F  auid!=unset -k T1078_Valid_Accounts
--a always,exit -F path=/usr/lib64/vte-2.91/gnome-pty-helper -F perm=x -F auid>=500 -F  auid!=unset -k T1078_Valid_Accounts
+-a always,exit -F path=/lib64/vte-2.91/gnome-pty-helper -F perm=x -F auid>=500 -F auid!=unset -k T1078_Valid_Accounts
+-a always,exit -F path=/usr/lib64/vte-2.91/gnome-pty-helper -F perm=x -F auid>=500 -F auid!=unset -k T1078_Valid_Accounts
 
 ## pkexec invocation
 ### may indicate privilege escalation CVE-2021-4034
