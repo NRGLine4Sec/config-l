@@ -95,7 +95,6 @@
 -a always,exit -F perm=x -F auid!=unset -F path=/sbin/modprobe -k modules
 -a always,exit -F perm=x -F auid!=unset -F path=/sbin/rmmod -k modules
 -a always,exit -F arch=b64 -S finit_module -S init_module -S delete_module -F auid!=unset -k modules
--a always,exit -F arch=b32 -S finit_module -S init_module -S delete_module -F auid!=unset -k modules
 
 ## Modprobe configuration
 -w /etc/modprobe.conf -p wa -k modprobe
@@ -118,7 +117,6 @@
 -a always,exit -F arch=b64 -S swapon -S swapoff -F auid!=unset -k swap
 
 ## Time
-# -a always,exit -F arch=b32 -F uid!=ntp -S adjtimex -S settimeofday -S clock_settime -k time
 # -a always,exit -F arch=b64 -F uid!=ntp -S adjtimex -S settimeofday -S clock_settime -k time
 ### Local time zone
 -w /etc/localtime -p wa -k localtime
@@ -272,19 +270,6 @@
 -w /var/log/wtmp -p wa -k session
 
 ## Discretionary Access Control (DAC) modifications
--a always,exit -F arch=b32 -S chmod -F auid>=1000 -F auid!=unset -k perm_mod
--a always,exit -F arch=b32 -S chown -F auid>=1000 -F auid!=unset -k perm_mod
--a always,exit -F arch=b32 -S fchmod -F auid>=1000 -F auid!=unset -k perm_mod
--a always,exit -F arch=b32 -S fchmodat -F auid>=1000 -F auid!=unset -k perm_mod
--a always,exit -F arch=b32 -S fchown -F auid>=1000 -F auid!=unset -k perm_mod
--a always,exit -F arch=b32 -S fchownat -F auid>=1000 -F auid!=unset -k perm_mod
--a always,exit -F arch=b32 -S fremovexattr -F auid>=1000 -F auid!=unset -k perm_mod
--a always,exit -F arch=b32 -S fsetxattr -F auid>=1000 -F auid!=unset -k perm_mod
--a always,exit -F arch=b32 -S lchown -F auid>=1000 -F auid!=unset -k perm_mod
--a always,exit -F arch=b32 -S lremovexattr -F auid>=1000 -F auid!=unset -k perm_mod
--a always,exit -F arch=b32 -S lsetxattr -F auid>=1000 -F auid!=unset -k perm_mod
--a always,exit -F arch=b32 -S removexattr -F auid>=1000 -F auid!=unset -k perm_mod
--a always,exit -F arch=b32 -S setxattr -F auid>=1000 -F auid!=unset -k perm_mod
 -a always,exit -F arch=b64 -S chmod -F auid>=1000 -F auid!=unset -k perm_mod
 -a always,exit -F arch=b64 -S chown -F auid>=1000 -F auid!=unset -k perm_mod
 -a always,exit -F arch=b64 -S fchmod -F auid>=1000 -F auid!=unset -k perm_mod
@@ -435,13 +420,9 @@
 ## Injection
 ### These rules watch for code injection by the ptrace facility.
 ### This could indicate someone trying to do something bad or just debugging
--a always,exit -F arch=b32 -S ptrace -F a0=0x4 -k code_injection
 -a always,exit -F arch=b64 -S ptrace -F a0=0x4 -k code_injection
--a always,exit -F arch=b32 -S ptrace -F a0=0x5 -k data_injection
 -a always,exit -F arch=b64 -S ptrace -F a0=0x5 -k data_injection
--a always,exit -F arch=b32 -S ptrace -F a0=0x6 -k register_injection
 -a always,exit -F arch=b64 -S ptrace -F a0=0x6 -k register_injection
--a always,exit -F arch=b32 -S ptrace -k tracing
 -a always,exit -F arch=b64 -S ptrace -k tracing
 
 ## Anonymous File Creation
@@ -533,9 +514,7 @@
 # it produce this error on Debian with default AppArmor : kernel: auditfilter: audit rule for LSM 'initrc_t' is invalid
 # ref : https://unix.stackexchange.com/questions/727584/im-using-auditd-how-to-exclude-auditd-collect-log-about-cron-ubuntu20-04
 # https://manpages.debian.org/unstable/auditd/auditctl.8.en.html#subj_type
-# -a never,exit -F arch=b32 -S fork -F success=0 -F path=/usr/lib/vmware-tools -F subj_type=initrc_t -F exit=-2
 # -a never,exit -F arch=b64 -S fork -F success=0 -F path=/usr/lib/vmware-tools -F subj_type=initrc_t -F exit=-2
-# -a exit,never -F arch=b32 -S fork -F success=0 -F path=/etc/vmware-tools -F subj_type=initrc_t -F exit=-2
 # -a exit,never -F arch=b64 -S fork -F success=0 -F path=/etc/vmware-tools -F subj_type=initrc_t -F exit=-2
 
 # ipc system call
@@ -579,7 +558,6 @@
 -a always,exit -F arch=b64 -F euid=0 -F auid>=1000 -F auid!=unset -S execve -k rootcmd
 
 ## File Deletion Events by User
-# -a always,exit -F arch=b32 -S rmdir -S unlink -S unlinkat -S rename -S renameat -F auid>=1000 -F auid!=unset -k file_delete_by_user
 # -a always,exit -F arch=b64 -S rmdir -S unlink -S unlinkat -S rename -S renameat -F auid>=1000 -F auid!=unset -k file_delete_by_user
 # these two rules cause to much volume, we disable it for now
 # il faudrait restreindre la portée des règles et au minimum ne pas auditer dans /home avec ces règles-ci
