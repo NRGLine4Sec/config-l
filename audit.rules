@@ -350,6 +350,7 @@
 ### dbus
 -a always,exit -F path=/lib64/dbus-1/dbus-daemon-launch-helper -F perm=x -F auid>=500 -F auid!=unset -k T1078_Valid_Accounts
 -a always,exit -F path=/usr/lib64/dbus-1/dbus-daemon-launch-helper -F perm=x -F auid>=500 -F auid!=unset -k T1078_Valid_Accounts
+-a always,exit -F path=/usr/lib/dbus-1.0/dbus-daemon-launch-helper -F perm=x -F auid>=500 -F auid!=unset -k T1078_Valid_Accounts
 
 ## setfiles
 -a always,exit -F path=/usr/bin/setfiles -F perm=x -F auid>=500 -F auid!=unset -k T1078_Valid_Accounts
