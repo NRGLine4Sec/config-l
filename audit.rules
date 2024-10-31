@@ -20,6 +20,7 @@
 # 		https://github.com/linux-audit/audit-userspace/blob/master/rules/30-nispom.rules
 
 # Remove any existing rules
+# important to add in ruleset, ref : [augenrules fails with “rule exists” when loading rules into auditd · Major Hayden](https://major.io/p/augenrules-fails-with-rule-exists-when-loading-rules-into-auditd/)
 -D
 
 # Buffer Size
@@ -104,15 +105,12 @@
 
 ## KExec usage (all actions)
 -a always,exit -F arch=b64 -S kexec_load -k KEXEC
--a always,exit -F arch=b32 -S sys_kexec_load -k KEXEC
 
 ## Special files
--a always,exit -F arch=b32 -S mknod -S mknodat -k specialfiles
 -a always,exit -F arch=b64 -S mknod -S mknodat -k specialfiles
 
 ## Mount operations (only attributable)
 -a always,exit -F arch=b64 -S mount -S umount2 -F auid!=unset -k mount
--a always,exit -F arch=b32 -S mount -S umount -S umount2 -F auid!=unset -k mount
 
 ### NFS mount
 -a always,exit -F path=/sbin/mount.nfs -F perm=x -F auid>=500 -F auid!=unset -k T1078_Valid_Accounts
@@ -120,7 +118,6 @@
 
 ## Change swap (only attributable)
 -a always,exit -F arch=b64 -S swapon -S swapoff -F auid!=unset -k swap
--a always,exit -F arch=b32 -S swapon -S swapoff -F auid!=unset -k swap
 
 ## Time
 # -a always,exit -F arch=b32 -F uid!=ntp -S adjtimex -S settimeofday -S clock_settime -k time
@@ -175,22 +172,17 @@
 
 ## Network Environment
 ### Changes to hostname
--a always,exit -F arch=b32 -S sethostname -S setdomainname -k network_modifications
 -a always,exit -F arch=b64 -S sethostname -S setdomainname -k network_modifications
 
 ### Detect Remote Shell Use
--a always,exit -F arch=b32 -F exe=/bin/bash -F success=1 -S connect -k "remote_shell"
 -a always,exit -F arch=b64 -F exe=/bin/bash -F success=1 -S connect -k "remote_shell"
--a always,exit -F arch=b32 -F exe=/usr/bin/bash -F success=1 -S connect -k "remote_shell"
 -a always,exit -F arch=b64 -F exe=/usr/bin/bash -F success=1 -S connect -k "remote_shell"
 
 ### Successful IPv4 Connections
 -a always,exit -F arch=b64 -S connect -F a2=16 -F success=1 -F key=network_connect_4
--a always,exit -F arch=b32 -S connect -F a2=16 -F success=1 -F key=network_connect_4
 
 ### Successful IPv6 Connections
 -a always,exit -F arch=b64 -S connect -F a2=28 -F success=1 -F key=network_connect_6
--a always,exit -F arch=b32 -S connect -F a2=28 -F success=1 -F key=network_connect_6
 
 ### Changes to other files
 -w /etc/hosts -p wa -k network_modifications
@@ -458,7 +450,6 @@
 ### "memfd_create" creates anonymous file and returns a file descriptor to access it
 ### When combined with "fexecve" can be used to stealthily run binaries in memory without touching disk
 -a always,exit -F arch=b64 -S memfd_create -F key=anon_file_create
--a always,exit -F arch=b32 -S memfd_create -F key=anon_file_create
 
 ## Privilege Abuse
 ### The purpose of this rule is to detect when an admin may be abusing power by looking in user's home dir.
@@ -466,10 +457,8 @@
 
 # Socket Creations
 # will catch both IPv4 and IPv6
--a always,exit -F arch=b32 -S socket -F a0=2 -k T1011_Exfiltration_Over_Other_Network_Medium
 -a always,exit -F arch=b64 -S socket -F a0=2 -k T1011_Exfiltration_Over_Other_Network_Medium
 
--a always,exit -F arch=b32 -S socket -F a0=10 -k T1011_Exfiltration_Over_Other_Network_Medium
 -a always,exit -F arch=b64 -S socket -F a0=10 -k T1011_Exfiltration_Over_Other_Network_Medium
 
 # Namesapce usage
@@ -540,7 +529,6 @@
 -w /usr/bin/VBoxManage -p x -k VBoxManage
 
 ## VMware tools
--a exit,never -F arch=b32 -S all -F exe=/usr/bin/vmtoolsd
 -a exit,never -F arch=b64 -S all -F exe=/usr/bin/vmtoolsd
 # subj_type=initrc_t work only if SELinux is loaded
 # it produce this error on Debian with default AppArmor : kernel: auditfilter: audit rule for LSM 'initrc_t' is invalid
@@ -590,7 +578,6 @@
 
 ## Root command executions
 -a always,exit -F arch=b64 -F euid=0 -F auid>=1000 -F auid!=unset -S execve -k rootcmd
--a always,exit -F arch=b32 -F euid=0 -F auid>=1000 -F auid!=unset -S execve -k rootcmd
 
 ## File Deletion Events by User
 # -a always,exit -F arch=b32 -S rmdir -S unlink -S unlinkat -S rename -S renameat -F auid>=1000 -F auid!=unset -k file_delete_by_user
@@ -601,21 +588,15 @@
 
 ## File Access
 ### Unauthorized Access (unsuccessful)
--a always,exit -F arch=b32 -S creat -S open -S openat -S open_by_handle_at -S truncate -S ftruncate -F exit=-EACCES -F auid>=1000 -F auid!=unset -k file_access
--a always,exit -F arch=b32 -S creat -S open -S openat -S open_by_handle_at -S truncate -S ftruncate -F exit=-EPERM -F auid>=1000 -F auid!=unset -k file_access
 -a always,exit -F arch=b64 -S creat -S open -S openat -S open_by_handle_at -S truncate -S ftruncate -F exit=-EACCES -F auid>=1000 -F auid!=unset -k file_access
 -a always,exit -F arch=b64 -S creat -S open -S openat -S open_by_handle_at -S truncate -S ftruncate -F exit=-EPERM -F auid>=1000 -F auid!=unset -k file_access
 
 ### Unsuccessful Creation
--a always,exit -F arch=b32 -S creat,link,mknod,mkdir,symlink,mknodat,linkat,symlinkat -F exit=-EACCES -k file_creation
 -a always,exit -F arch=b64 -S mkdir,creat,link,symlink,mknod,mknodat,linkat,symlinkat -F exit=-EACCES -k file_creation
--a always,exit -F arch=b32 -S link,mkdir,symlink,mkdirat -F exit=-EPERM -k file_creation
 -a always,exit -F arch=b64 -S mkdir,link,symlink,mkdirat -F exit=-EPERM -k file_creation
 
 ### Unsuccessful Modification
--a always,exit -F arch=b32 -S rename -S renameat -S truncate -S chmod -S setxattr -S lsetxattr -S removexattr -S lremovexattr -F exit=-EACCES -k file_modification
 -a always,exit -F arch=b64 -S rename -S renameat -S truncate -S chmod -S setxattr -S lsetxattr -S removexattr -S lremovexattr -F exit=-EACCES -k file_modification
--a always,exit -F arch=b32 -S rename -S renameat -S truncate -S chmod -S setxattr -S lsetxattr -S removexattr -S lremovexattr -F exit=-EPERM -k file_modification
 -a always,exit -F arch=b64 -S rename -S renameat -S truncate -S chmod -S setxattr -S lsetxattr -S removexattr -S lremovexattr -F exit=-EPERM -k file_modification
 
 ## 32bit API Exploitation
