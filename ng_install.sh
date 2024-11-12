@@ -1268,6 +1268,7 @@ install_debian_apt_package() {
   displayandexec "Installation de audacity                            " "$AGI audacity"
   displayandexec "Installation de apparmor-profiles                   " "$AGI apparmor-profiles"
   displayandexec "Installation de apparmor-profiles-extra             " "$AGI apparmor-profiles-extra"
+  displayandexec "Installation de b3sum                               " "$AGI b3sum"
   displayandexec "Installation de bind9-dnsutils                      " "$AGI bind9-dnsutils"
   displayandexec "Installation de binwalk                             " "$AGI binwalk"
   displayandexec "Installation de bpftool                             " "$AGI bpftool"
@@ -1348,11 +1349,13 @@ install_debian_apt_package() {
   # ref : [#1017619 - nautilus-wipe: Fails to build with nautilus 43 - Debian Bug report logs](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1017619)
   # il semble que la dépendance qui posait problème a été retirée et que nautilus-wipe pourrait certainement être intégré dans la release de Debian après Bookworm : [#1069334 - Not installable due to hardcoded pre-t64 library deps - Debian Bug report logs](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1069334)
   # [#1017619 - nautilus-wipe: Fails to build with nautilus 43 - Debian Bug report logs](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1017619)
+  displayandexec "Installation de nbd-client                          " "$AGI nbd-client"
   displayandexec "Installation de ncdu                                " "$AGI ncdu"
   displayandexec "Installation de netdiscover                         " "$AGI netdiscover"
   displayandexec "Installation de network-manager-openvpn-gnome       " "$AGI network-manager-openvpn-gnome"
   displayandexec "Installation de network-manager-vpnc-gnome          " "$AGI network-manager-vpnc-gnome"
   # displayandexec "Installation de nextcloud-desktop                   " "$AGI nextcloud-desktop"
+  displayandexec "Installation de nfs-common                          " "$AGI nfs-common"
   displayandexec "Installation de ngrep                               " "$AGI ngrep"
   displayandexec "Installation de nikto                               " "$AGI nikto"
   displayandexec "Installation de nnn                                 " "$AGI nnn"
@@ -2312,7 +2315,7 @@ install_bindtointerface() {
   unzip -j "$tmp_dir"/main.zip -d "$manual_install_dir"/BindToInterface" && \
   cat> "$manual_install_dir"/BindToInterface/compil_BindToInterface.sh << EOF
 #!/bin/bash
-sudo gcc -nostartfiles -fpic -shared "$manual_install_dir"/BindToInterface/bindToInterface.c -o "$manual_install_dir"/BindToInterface/bindToInterface.so -ldl -D_GNU_SOURCE
+sudo gcc -nostartfiles -fpic -shared $manual_install_dir/BindToInterface/bindToInterface.c -o $manual_install_dir/BindToInterface/bindToInterface.so -ldl -D_GNU_SOURCE
 EOF
   execandlog "chmod +x "$manual_install_dir"/BindToInterface/compil_BindToInterface.sh; \
   rm -rf "$tmp_dir""
