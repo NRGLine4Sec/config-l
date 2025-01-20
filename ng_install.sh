@@ -1271,7 +1271,9 @@ install_debian_apt_package() {
   displayandexec "Installation de b3sum                               " "$AGI b3sum"
   displayandexec "Installation de bind9-dnsutils                      " "$AGI bind9-dnsutils"
   displayandexec "Installation de binwalk                             " "$AGI binwalk"
+  displayandexec "Installation de bpfcc-tools                         " "$AGI bpfcc-tools"
   displayandexec "Installation de bpftool                             " "$AGI bpftool"
+  displayandexec "Installation de bpftrace                            " "$AGI bpftrace"
   displayandexec "Installation de bwm-ng                              " "$AGI bwm-ng"
   displayandexec "Installation de cadaver                             " "$AGI cadaver"
   displayandexec "Installation de calibre                             " "$AGI calibre"
@@ -1330,7 +1332,7 @@ install_debian_apt_package() {
   displayandexec "Installation de lz4                                 " "$AGI lz4"
   displayandexec "Installation de macchanger                          " "$AGI macchanger"
   displayandexec "Installation de make                                " "$AGI make"
-  displayandexec "Installation de mediainfo-gui                       " "$AGI mediainfo mediainfo-gui"
+  displayandexec "Installation de mediainfo                           " "$AGI mediainfo mediainfo-gui"
   displayandexec "Installation de mpv                                 " "$AGI mpv youtube-dl-"
   # on n'install pas la dépendance youtube-dl requise par mpv car la version des dépots debian est trop ancienne
   # ref : [ubuntu - How do I get apt-get to ignore some dependencies? - Server Fault](https://serverfault.com/questions/250224/how-do-i-get-apt-get-to-ignore-some-dependencies/663803#663803)
@@ -1448,6 +1450,7 @@ firejail
 firejail-profiles
 remmina
 freerdp3-sdl
+curl
 '
 
 check_and_install_package_from_backports() {
@@ -1589,6 +1592,12 @@ EOF
   $AGI spotify-client"
 }
 # pour obtenir la clé publique lorsqu'elle expire : https://www.spotify.com/fr/download/linux/
+
+# Pour changer la clé après coup :
+# spotify_repo_gpg_pubkey="$(curl -sL 'https://www.spotify.com/download/linux/' | tr -s '<' '\n' | grep -Po '(/pubkey_)\K[[:xdigit:]]+(?=.gpg)+')" && \
+# sudo rm -f "/usr/share/keyrings/spotify-archive-keyring.gpg" && \
+# curl -sL 'https://download.spotify.com/debian/pubkey_'"$spotify_repo_gpg_pubkey"'.gpg' | sudo gpg --dearmor --output /usr/share/keyrings/spotify-archive-keyring.gpg && \
+# apt-get update
 ################################################################################
 
 ################################################################################

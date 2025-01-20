@@ -299,8 +299,11 @@
 ## Suspicious activity
 -w /usr/bin/wget -p x -k susp_activity
 -w /usr/bin/curl -p x -k susp_activity
+-w /usr/bin/lwp-request -p x -k susp_activity
 -w /usr/bin/base64 -p x -k susp_activity
+-w /usr/bin/base32 -p x -k susp_activity
 -w /bin/nc -p x -k susp_activity
+
 -w /bin/netcat -p x -k susp_activity
 -w /usr/bin/ncat -p x -k susp_activity
 -w /usr/bin/ss -p x -k susp_activity
@@ -314,15 +317,13 @@
 -w /usr/bin/tshark -p x -k susp_activity
 -w /usr/bin/rawshark -p x -k susp_activity
 -w /usr/bin/rdesktop -p x -k T1219_Remote_Access_Tools
--w /usr/local/bin/rdesktop -p x -k T1219_Remote_Access_Tools
 -w /usr/bin/wlfreerdp -p x -k T1219_Remote_Access_Tools
--w /usr/local/bin/wlfreerdp -p x -k T1219_Remote_Access_Tools
 -w /usr/bin/xfreerdp -p x -k T1219_Remote_Access_Tools
--w /usr/local/bin/xfreerdp -p x -k T1219_Remote_Access_Tools
 -w /usr/bin/sdl-freerdp3 -p x -k T1219_Remote_Access_Tools
 -w /usr/bin/nmap -p x -k susp_activity
 -w /usr/bin/systemd-detect-virt -p x -k susp_activity
 -w /usr/bin/getent -p x -k susp_activity
+-w /usr/bin/utmpdump -p x -k susp_activity
 
 ## Added to catch netcat on Debian based distribution
 -w /bin/nc.openbsd -p x -k susp_activity
@@ -442,7 +443,6 @@
 # Socket Creations
 # will catch both IPv4 and IPv6
 -a always,exit -F arch=b64 -S socket -F a0=2 -k T1011_Exfiltration_Over_Other_Network_Medium
-
 -a always,exit -F arch=b64 -S socket -F a0=10 -k T1011_Exfiltration_Over_Other_Network_Medium
 
 # Namesapce usage
@@ -590,3 +590,16 @@
 # Make The Configuration Immutable --------------------------------------------
 
 ##-e 2
+
+## Exclusion for openat syscall with htop
+-A never,exit -F arch=b64 -S openat -F exe=/usr/bin/htop
+
+## Exclusion for connect syscall with web browser
+-A never,exit -F arch=b64 -S connect -F exe=/usr/lib/firefox-esr/firefox-esr
+-A never,exit -F arch=b64 -S connect -F exe=/opt/brave.com/brave/brave
+-A never,exit -F arch=b64 -S connect -F exe=/usr/lib/chromium/chromium
+
+## Exclusion for socket syscall with web browser
+-A never,exit -F arch=b64 -S socket -F exe=/usr/lib/firefox-esr/firefox-esr
+-A never,exit -F arch=b64 -S socket -F exe=/opt/brave.com/brave/brave
+-A never,exit -F arch=b64 -S socket -F exe=/usr/lib/chromium/chromium
