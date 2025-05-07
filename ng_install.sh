@@ -619,12 +619,6 @@ check_latest_version_manual_install_apps() {
   fi
   # check version : https://github.com/sharkdp/bat/releases/
 
-  youtubedl_version="$($CURL 'https://api.github.com/repos/ytdl-org/youtube-dl/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
-  if [ $? != 0 ] || [ -z "$youtubedl_version" ]; then
-    youtubedl_version='2021.12.17'
-  fi
-  # check version : https://github.com/ytdl-org/youtube-dl/releases/
-
   joplin_version="$($CURL 'https://api.github.com/repos/laurent22/joplin/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
   if [ $? != 0 ] || [ -z "$joplin_version" ]; then
     joplin_version='3.0.14'
@@ -709,8 +703,6 @@ manual_check_latest_version() {
   echo 'Stacer : '"$stacer_version"
   keepassxc_version="$($CURL 'https://api.github.com/repos/keepassxreboot/keepassxc/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
   echo 'KeePassXC : '"$keepassxc_version"
-  youtubedl_version="$($CURL 'https://api.github.com/repos/ytdl-org/youtube-dl/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
-  echo 'youtube-dl : '"$youtubedl_version"
   bat_version="$($CURL 'https://api.github.com/repos/sharkdp/bat/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
   echo 'bat : '"$bat_version"
   joplin_version="$($CURL 'https://api.github.com/repos/laurent22/joplin/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
@@ -736,6 +728,7 @@ manual_check_latest_version() {
 ################################################################################
 
 export local_user="$(awk -F':' '/:1000:/{print $1}' /etc/passwd)"
+# Peut aussi se faire avec getent passwd 1000 | awk -F':' '{print $1}'
 # l'inconvénient des autres méthodes ci-dessous c'est que leur execution suppose qu'on se soit loggé avec le user avant de lancer le script (ce n'est pas le cas s'il est executer directement en post-install du preseed par exemple)
 # autre méthode pour obtenir le user, lorsqu'il est à l'origine de la session en cour : "$(who | awk 'FNR == 1 {print $1}')"
 # ou encore id -nu "$(cat /proc/self/loginuid)"
@@ -796,6 +789,9 @@ if [[ "$debian_release" =~ bullseye ]]; then
 fi
 if [[ "$debian_release" =~ bookworm ]]; then
   bookworm=1
+fi
+if [[ "$debian_release" =~ trixie ]]; then
+  trixie=1
 fi
 # on déscactive le mode case insensitive de bash
 shopt -u nocasematch
@@ -1333,7 +1329,7 @@ install_debian_apt_package() {
   displayandexec "Installation de macchanger                          " "$AGI macchanger"
   displayandexec "Installation de make                                " "$AGI make"
   displayandexec "Installation de mediainfo                           " "$AGI mediainfo mediainfo-gui"
-  displayandexec "Installation de mpv                                 " "$AGI mpv youtube-dl-"
+  displayandexec "Installation de mpv                                 " "$AGI mpv youtube-dl- yt-dlp-"
   # on n'install pas la dépendance youtube-dl requise par mpv car la version des dépots debian est trop ancienne
   # ref : [ubuntu - How do I get apt-get to ignore some dependencies? - Server Fault](https://serverfault.com/questions/250224/how-do-i-get-apt-get-to-ignore-some-dependencies/663803#663803)
   displayandexec "Installation de msitools                            " "$AGI msitools" # à noter qu'on peut aussi utiliser "7z x" pour extraire le contenu de fichier .msi mais msiextract a l'avantage de garder la structure des répertoires ainsi que les noms et majuscules des fichiers à l'intérieur
@@ -1437,6 +1433,9 @@ check_if_package_is_present_in_backports_repo() {
   local package="$1"
   apt-cache policy "$package" | sed -n '/Version table:/{n;n;p;}' | grep -eq '-backports' &>/dev/null
 }
+# on a pas le choix de le faire comme ça car apt-cache ne supporte pas l'option --target-release
+# [#115520 - --target-release (-t) for apt-cache [show?] - Debian Bug report logs](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=115520)
+# Potentiel alternative : apt list --quiet=2 '?name(^'"$package"'$)?narrow(~Abackports)' 2>/dev/null | grep -e 'stable-backports' &>/dev/null
 
 install_from_backports() {
   local package="$1"
@@ -1605,17 +1604,6 @@ EOF
 ##------------------------------------------------------------------------------
 install_apt-fast() {
   cat> /etc/apt/sources.list.d/apt-fast.list << 'EOF'
-deb [arch=amd64 signed-by=/usr/share/keyrings/apt-fast-archive-keyring.gpg] http://ppa.launchpad.net/apt-fast/stable/ubuntu hirsute main
-#deb-src http://ppa.launchpad.net/apt-fast/stable/ubuntu hirsute main
-EOF
-  displayandexec "Installation de apt-fast                            " "\
-  is_file_present_and_rmfile "/usr/share/keyrings/apt-fast-archive-keyring.gpg" && \
-  $WGET --output-document - 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xA2166B8DE8BDC3367D1901C11EE2FF37CA8DA16B' | gpg --dearmor --output /usr/share/keyrings/apt-fast-archive-keyring.gpg && \
-  $AG update && \
-  $AGI apt-fast"
-}
-install_apt-fast_bookworm() {
-  cat> /etc/apt/sources.list.d/apt-fast.list << 'EOF'
 deb [arch=amd64 signed-by=/usr/share/keyrings/apt-fast-archive-keyring.gpg] http://ppa.launchpad.net/apt-fast/stable/ubuntu kinetic main
 #deb-src http://ppa.launchpad.net/apt-fast/stable/ubuntu kinetic main
 EOF
@@ -1656,19 +1644,6 @@ EOF
 ################################################################################
 
 ################################################################################
-## instalation de Boostnote
-##------------------------------------------------------------------------------
-install_boostnote() {
-  displayandexec "Installation des dépendances de Boostnote           " "$AGI gconf2 gconf-service"
-  local tmp_dir="$(mktemp -d)"
-  displayandexec "Installation de Boostnote                           " "\
-$WGET -P "$tmp_dir" https://github.com/BoostIO/boost-releases/releases/download/v"$boostnote_version"/boostnote_"$boostnote_version"_amd64.deb && \
-dpkg -i "$tmp_dir"/boostnote_"$boostnote_version"_amd64.deb; \
-rm -rf "$tmp_dir""
-}
-################################################################################
-
-################################################################################
 ## instalation de Typora
 ##------------------------------------------------------------------------------
 install_typora() {
@@ -1687,69 +1662,6 @@ EOF
 ################################################################################
 ## instalation de VirtualBox
 ##------------------------------------------------------------------------------
-install_virtualbox() {
-  displayandexec "Installation des dépendances de VirtualBox          " "set +x && $AGI dkms"
-  displayandexec "Installation de VirtualBox                          " "\
-  echo 'deb [signed-by=/usr/share/keyrings/virtualbox-archive-keyring.gpg] https://download.virtualbox.org/virtualbox/debian bullseye contrib' > /etc/apt/sources.list.d/virtualbox.list && \
-  is_file_present_and_rmfile "/usr/share/keyrings/virtualbox-archive-keyring.gpg" && \
-  $WGET --output-document - 'https://www.virtualbox.org/download/oracle_vbox_2016.asc' | gpg --dearmor --output /usr/share/keyrings/virtualbox-archive-keyring.gpg && \
-  $AG update && \
-  $AGI virtualbox-7.0"
-  local tmp_dir="$(mktemp -d)"
-  virtualbox_version="$(virtualbox --help 2>/dev/null | grep -Po '( v)\K[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+')"
-  displayandexec "Installation de VM VirtualBox Extension Pack        " "\
-  $WGET -P "$tmp_dir" https://download.virtualbox.org/virtualbox/"$virtualbox_version"/Oracle_VM_VirtualBox_Extension_Pack-"$virtualbox_version".vbox-extpack && \
-  echo y | /usr/bin/VBoxManage extpack install --replace "$tmp_dir"/Oracle_VM_VirtualBox_Extension_Pack-"$virtualbox_version".vbox-extpack; \
-  rm -rf "$tmp_dir""
-  # Une solution qui devrait marché mais il faut avoir le hachage de la licence pour pouvoir l'executer et on obtient le hachage qu'en lançant une première fois la commande
-  # VBoxManage extpack install --replace Oracle_VM_VirtualBox_Extension_Pack-$virtualbox_version.vbox-extpack --accept-license --accept-license=56be48f923303c8cababb0bb4c478284b688ed23f16d775d729b89a2e8e5f9eb
-  # https://www.virtualbox.org/ticket/16674
-  # Pour lister les extensions virutlabox une fois l'installation terminé : VBoxManage list extpacks
-  # Pour supprimer une ancienne version du pack d'extension :
-  # sudo VBoxManage extpack uninstall "Oracle VM VirtualBox Extension Pack" && sudo VBoxManage extpack cleanup
-
-  configure_SecureBoot_params() {
-    # création du dossier qui contiendra les signatures pour le SecureBoot
-    [ -d /usr/share/manual_sign_kernel_module ] && mv /usr/share/manual_sign_kernel_module /usr/share/manual_sign_kernel_module.bkp_"$now"
-    mkdir /usr/share/manual_sign_kernel_module
-    # création du script qui permet de signer les modules vboxdrv vboxnetflt vboxnetadp vboxpci pour VirtualBox
-    cat> /opt/sign_virtualbox_kernel_module.sh << 'EOF'
-#!/bin/bash
-
-# Test que le script est lancer en root
-if [ $EUID != 0 ]; then
-    echo "Le script doit être executer en root: # sudo $0" 1>&2
-    exit 1
-fi
-
-UNAMER="$(uname -r)"
-mkdir -p /usr/share/manual_sign_kernel_module/virtualbox
-cd /usr/share/manual_sign_kernel_module/virtualbox
-openssl req -new -x509 -newkey rsa:2048 -keyout vboxdrv.priv -outform DER -out vboxdrv.der -nodes -days 36500 -subj "/CN=vboxdrv/"
-/usr/src/linux-headers-"$UNAMER"/scripts/sign-file sha512 ./vboxdrv.priv ./vboxdrv.der /lib/modules/"$UNAMER"/misc/vboxdrv.ko
-openssl req -new -x509 -newkey rsa:2048 -keyout vboxnetflt.priv -outform DER -out vboxnetflt.der -nodes -days 36500 -subj "/CN=vboxnetflt/"
-/usr/src/linux-headers-"$UNAMER"/scripts/sign-file sha512 ./vboxnetflt.priv ./vboxnetflt.der /lib/modules/"$UNAMER"/misc/vboxnetflt.ko
-openssl req -new -x509 -newkey rsa:2048 -keyout vboxnetadp.priv -outform DER -out vboxnetadp.der -nodes -days 36500 -subj "/CN=vboxnetadp/"
-/usr/src/linux-headers-"$UNAMER"/scripts/sign-file sha512 ./vboxnetadp.priv ./vboxnetadp.der /lib/modules/"$UNAMER"/misc/vboxnetadp.ko
-openssl req -new -x509 -newkey rsa:2048 -keyout vboxpci.priv -outform DER -out vboxpci.der -nodes -days 36500 -subj "/CN=vboxpci/"
-/usr/src/linux-headers-"$UNAMER"/scripts/sign-file sha512 ./vboxpci.priv ./vboxpci.der /lib/modules/"$UNAMER"/misc/vboxpci.ko
-mokutil --import vboxdrv.der
-mokutil --import vboxnetflt.der
-mokutil --import vboxnetadp.der
-mokutil --import vboxpci.der
-# normallement on peut faire le mokutil avec l'import de plusieurs fichiers en même temps, il faudra tester si c'est possible avant d'intégrer la ligne suivante dans le script
-#mokutil --import vboxdrv.der vboxnetflt.der vboxnetadp.der vboxpci.der
-reboot
-EOF
-    chmod +x /opt/sign_virtualbox_kernel_module.sh
-  }
-  # ref : [Debian, SecureBoot et les modules noyaux DKMS - Where is it?](https://medspx.fr/blog/Debian/secure_boot_dkms/)
-
-  if [ "$secureboot_enable" == 1 ]; then
-    configure_SecureBoot_params
-  fi
-}
-
 install_virtualbox_bookworm() {
   displayandexec "Installation des dépendances de VirtualBox          " "set +x && $AGI dkms"
   displayandexec "Installation de VirtualBox                          " "\
@@ -1871,18 +1783,6 @@ EOF
 ## instalation de MKVToolNix
 ##------------------------------------------------------------------------------
 install_mkvtoolnix() {
-  cat> /etc/apt/sources.list.d/mkvtoolnix.list << 'EOF'
-deb [signed-by=/usr/share/keyrings/mkvtoolnix-archive-keyring.gpg] https://mkvtoolnix.download/debian/ bullseye main
-#deb-src https://mkvtoolnix.download/debian/ bullseye main
-EOF
-  displayandexec "Installation de MKVToolNix                          " "\
-  is_file_present_and_rmfile "/usr/share/keyrings/mkvtoolnix-archive-keyring.gpg" && \
-  $WGET --output-document - 'https://mkvtoolnix.download/gpg-pub-moritzbunkus.txt' | gpg --dearmor --output /usr/share/keyrings/mkvtoolnix-archive-keyring.gpg && \
-  $AG update && \
-  $AGI mkvtoolnix mkvtoolnix-gui"
-}
-
-install_mkvtoolnix_bookworm() {
   cat> /etc/apt/sources.list.d/mkvtoolnix.list << 'EOF'
 deb [signed-by=/usr/share/keyrings/mkvtoolnix-archive-keyring.gpg] https://mkvtoolnix.download/debian/ bookworm main
 #deb-src https://mkvtoolnix.download/debian/ bookworm main
@@ -2009,20 +1909,6 @@ install_bat() {
 ################################################################################
 
 ################################################################################
-## instalation de youtube-dl
-##------------------------------------------------------------------------------
-install_youtubedl() {
-  displayandexec "Installation de youtube-dl                          " "\
-  is_file_present_and_rmfile ""$my_bin_path"/youtube-dl" && \
-  $WGET -P "$my_bin_path" https://github.com/ytdl-org/youtube-dl/releases/download/"$youtubedl_version"/youtube-dl && \
-  chmod +x "$my_bin_path"/youtube-dl && \
-  ln -s /usr/bin/python3 /usr/bin/python"
-}
-# le lien symbolique de python3 vers python est nécessaire car youtube-dl utilise "#!/usr/bin/env python"
-# Une autre solution pourrait être de modifier le fichier /usr/bin/youtube-dl pour utiliser python3 directement avec un sed par exemple
-################################################################################
-
-################################################################################
 ## instalation de yt-dlp
 ##------------------------------------------------------------------------------
 install_yt-dlp() {
@@ -2106,22 +1992,6 @@ install_opensnitch() {
 ## instalation de Ansible
 ##------------------------------------------------------------------------------
 install_ansible() {
-  cat> /etc/apt/sources.list.d/ansible.list << 'EOF'
-deb [arch=amd64 signed-by=/usr/share/keyrings/ansible-archive-keyring.gpg] http://ppa.launchpad.net/ansible/ansible-5/ubuntu hirsute main
-EOF
-  displayandexec "Installation de Ansible                             " "\
-  is_file_present_and_rmfile "/usr/share/keyrings/ansible-archive-keyring.gpg" && \
-  $WGET --output-document - 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x93C4A3FD7BB9C367' | gpg --dearmor --output /usr/share/keyrings/ansible-archive-keyring.gpg && \
-  $AG update && \
-  $AGI ansible"
-  $ExeAsUser cat>> /home/"$local_user"/.bashrc << 'EOF'
-
-# for Ansible vault editor
-export EDITOR=nano
-EOF
-}
-
-install_ansible_bookworm() {
   displayandexec "Installation de Ansible                             " "\
   $ExeAsUser pipx install --include-deps ansible && \
   $ExeAsUser pipx inject ansible proxmoxer && \
@@ -2156,10 +2026,6 @@ install_hashcat() {
 ## instalation de sshuttle
 ##------------------------------------------------------------------------------
 install_sshuttle() {
-  displayandexec "Installation de sshuttle                            " "\
-  pip3 install sshuttle"
-}
-install_sshuttle_bookworm() {
   displayandexec "Installation de sshuttle                            " "\
   pipx install sshuttle"
 }
@@ -2218,17 +2084,6 @@ EOF
 ################################################################################
 ## instalation de timeshift
 ##------------------------------------------------------------------------------
-install_timeshift() {
-  cat> /etc/apt/sources.list.d/timeshift.list << 'EOF'
-deb [arch=amd64 signed-by=/usr/share/keyrings/timeshift-archive-keyring.gpg] http://ppa.launchpad.net/teejee2008/timeshift/ubuntu hirsute main
-#deb-src http://ppa.launchpad.net/teejee2008/timeshift/ubuntu hirsute main
-EOF
-  displayandexec "Installation de timeshift                           " "\
-  is_file_present_and_rmfile "/usr/share/keyrings/timeshift-archive-keyring.gpg" && \
-  $WGET --output-document - 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x1B32B87ABAEE357218F6B48CB5B116B72D0F61F0' | gpg --dearmor --output /usr/share/keyrings/timeshift-archive-keyring.gpg && \
-  $AG update && \
-  $AGI timeshift"
-}
 install_timeshift_bookworm() {
   cat> /etc/apt/sources.list.d/timeshift.list << 'EOF'
 deb [arch=amd64 signed-by=/usr/share/keyrings/timeshift-archive-keyring.gpg] http://packages.linuxmint.com faye backport
@@ -2360,15 +2215,14 @@ done
 # apelle à la fonction qui permet de récupérer toutes les versions des logiciels qui s'installent manuellement
 check_latest_version_manual_install_apps
 
-install_all_manual_install_apps_bullseye() {
+install_all_manual_install_apps_bookworm() {
   # install_winscp
   install_veracrypt
   install_spotify
   install_apt-fast
   install_drawio
-  # install_boostnote
   install_typora
-  install_virtualbox
+  install_virtualbox_bookworm
   install_keepassxc
   install_mkvtoolnix
   install_etcher
@@ -2377,7 +2231,6 @@ install_all_manual_install_apps_bullseye() {
   # install_stacer
   install_asbru
   install_bat
-  # install_youtubedl
   install_yt-dlp
   install_joplin
   install_krita
@@ -2385,40 +2238,6 @@ install_all_manual_install_apps_bullseye() {
   install_ansible
   install_hashcat
   install_sshuttle
-  install_weasyprint
-  install_geeqie
-  install_timeshift
-  install_vscode
-  install_brave
-  install_ventoy
-  install_bindtointerface
-}
-
-install_all_manual_install_apps_bookworm() {
-  # install_winscp
-  install_veracrypt
-  install_spotify
-  install_apt-fast_bookworm
-  install_drawio
-  # install_boostnote
-  install_typora
-  install_virtualbox_bookworm
-  install_keepassxc
-  install_mkvtoolnix_bookworm
-  install_etcher
-  install_shotcut
-  install_signal
-  # install_stacer
-  install_asbru
-  install_bat
-  # install_youtubedl
-  install_yt-dlp
-  install_joplin
-  install_krita
-  install_opensnitch
-  install_ansible_bookworm
-  install_hashcat
-  install_sshuttle_bookworm
   install_weasyprint
   install_geeqie
   install_timeshift_bookworm
@@ -2429,11 +2248,11 @@ install_all_manual_install_apps_bookworm() {
 }
 
 if [ -z "$fisrt_time_script_executed" ]; then
-  if [ "$bullseye" == 1 ]; then
-    install_all_manual_install_apps_bullseye
-  fi
   if [ "$bookworm" == 1 ]; then
     install_all_manual_install_apps_bookworm
+  fi
+  if [ "$trixie" == 1 ]; then
+    install_all_manual_install_apps_trixie
   fi
 fi
 # Pour l'instant on désactive l'installation des programmes avec une installation manuelle lorsque ce n'est pas la première fois que le script s'execute
@@ -2801,7 +2620,7 @@ install_spyme() {
   cat> "$my_bin_path"/spyme << 'EOF'
 # __my_script__
 
-sudo bash -c "journalctl --all --follow --lines=10000 _TRANSPORT=syslog + _TRANSPORT=kernel + _TRANSPORT=journal + _TRANSPORT=stdout | lnav"
+sudo bash -c "journalctl --no-hostname --all --no-pager --follow --lines=10000 _TRANSPORT=syslog + _TRANSPORT=kernel + _TRANSPORT=journal + _TRANSPORT=stdout | lnav"
 EOF
   displayandexec "Installation du script spyme                        " "\
   chmod +x "$my_bin_path"/spyme"
@@ -4397,7 +4216,6 @@ alias upp='sudo ag update && sudo ag upgrade'
 alias uppr='sudo ag update && sudo ag dist-upgrade'
 alias xx='sudo shutdown now'
 alias xwx='sudo poweroff'
-alias youtube-dl='youtube-dl -o "%(title)s.%(ext)s"'
 alias yt-dlp='yt-dlp -o "%(title)s.%(ext)s"'
 alias yt-dlp_best='yt-dlp -o "%(title)s.%(ext)s" -f "bestvideo+bestaudio"'
 alias yt-dlp_1080p='yt-dlp -o "%(title)s.%(ext)s" -f '\''bestvideo[height<=1080]+bestaudio'\'''
@@ -4497,7 +4315,6 @@ alias upp='sudo ag update && sudo ag upgrade'
 alias uppr='sudo ag update && sudo ag dist-upgrade'
 alias xx='sudo shutdown now'
 alias xwx='sudo poweroff'
-alias youtube-dl='youtube-dl -o "%(title)s.%(ext)s"'
 alias yt-dlp='yt-dlp -o "%(title)s.%(ext)s"'
 alias yt-dlp_best='yt-dlp -o "%(title)s.%(ext)s" -f "bestvideo+bestaudio"'
 alias yt-dlp_1080p='yt-dlp -o "%(title)s.%(ext)s" -f '\''bestvideo[height<=1080]+bestaudio'\'''
