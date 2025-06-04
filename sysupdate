@@ -224,9 +224,10 @@ CheckUpdateGeeqie() {
   local v1="$(grep -Po '^Exec.*-v\K([[:digit:]]\.[[:digit:]]+\+[[:digit:]]+|[[:digit:]]\.[[:digit:]]+\.[[:digit:]]+\+[[:digit:]]+)(?=\-x86_64.AppImage)' /usr/share/applications/geeqie.desktop)"
   local v2="$($CURL 'https://api.github.com/repos/BestImageViewer/geeqie/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
-  return 0
+  # return 0
   # depuis le passage de Geeqie à la création de AppImage à partir de la CI/CD Github dans "Continuous build", il est inutil de check la version car il est hautement probable qu'il existe une nouvelle release de dispo
   # si jamais ils reviennent à un mode de publication de AppImage sur la base de version en mode release, il faudra supprimer le return 0 à la fin de la fonction
+  # il semble que Geeqie soit revenu à un versioning en mode release, si jamais ils rechangent à nouveau, il suffira d'ajouter return 0 à la fin de la fonction
 }
 
 CheckUpdateYt-dlp() {
@@ -373,24 +374,24 @@ UpdateEtcher() {
   [ -f "$manual_install_dir"/balenaEtcher/icon.png ] || $WGET -P "$manual_install_dir"/balenaEtcher/ 'https://github.com/balena-io/etcher/raw/master/assets/icon.png'
 }
 
-UpdateGeeqie() {
-  local geeqie_version="$1"
-  rm -f "$manual_install_dir"/Geeqie/Geeqie-*.AppImage && \
-  $WGET -P "$manual_install_dir"/Geeqie/ 'https://github.com/BestImageViewer/geeqie/releases/download/continuous/Geeqie-latest-x86_64.AppImage' && \
-  chmod +x "$manual_install_dir"/Geeqie/Geeqie-latest-x86_64.AppImage && \
-  sed -i "s,^Exec=.*,Exec=$manual_install_dir/Geeqie/Geeqie-latest-x86_64.AppImage,g" /usr/share/applications/geeqie.desktop
-  [ -f "$manual_install_dir"/Geeqie/geeqie.svg ] || $WGET -P "$manual_install_dir"/Geeqie/ 'https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/geeqie.svg'
-}
-
-# Ancienne fonction UpdateGeeqie avec le mode de version par Release
 # UpdateGeeqie() {
 #   local geeqie_version="$1"
-#   rm -f "$manual_install_dir"/Geeqie/Geeqie-v*.AppImage && \
-#   $WGET -P "$manual_install_dir"/Geeqie/ https://github.com/BestImageViewer/geeqie/releases/download/v"$geeqie_version"/Geeqie-v"$geeqie_version"-x86_64.AppImage && \
-#   chmod +x "$manual_install_dir"/Geeqie/Geeqie-v"$geeqie_version"-x86_64.AppImage && \
-#   sed -i "s,^Exec=.*,Exec=$manual_install_dir/Geeqie/Geeqie-v"$geeqie_version"-x86_64.AppImage,g" /usr/share/applications/geeqie.desktop
+#   rm -f "$manual_install_dir"/Geeqie/Geeqie-*.AppImage && \
+#   $WGET -P "$manual_install_dir"/Geeqie/ 'https://github.com/BestImageViewer/geeqie/releases/download/continuous/Geeqie-latest-x86_64.AppImage' && \
+#   chmod +x "$manual_install_dir"/Geeqie/Geeqie-latest-x86_64.AppImage && \
+#   sed -i "s,^Exec=.*,Exec=$manual_install_dir/Geeqie/Geeqie-latest-x86_64.AppImage,g" /usr/share/applications/geeqie.desktop
 #   [ -f "$manual_install_dir"/Geeqie/geeqie.svg ] || $WGET -P "$manual_install_dir"/Geeqie/ 'https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/geeqie.svg'
 # }
+
+# Ancienne fonction UpdateGeeqie avec le mode de version par Continuous build (avant que Geeqie ne repasse à un mode normal par Release)
+UpdateGeeqie() {
+  local geeqie_version="$1"
+  rm -f "$manual_install_dir"/Geeqie/Geeqie-v*.AppImage && \
+  $WGET -P "$manual_install_dir"/Geeqie/ https://github.com/BestImageViewer/geeqie/releases/download/v"$geeqie_version"/Geeqie-v"$geeqie_version"-x86_64.AppImage && \
+  chmod +x "$manual_install_dir"/Geeqie/Geeqie-v"$geeqie_version"-x86_64.AppImage && \
+  sed -i "s,^Exec=.*,Exec=$manual_install_dir/Geeqie/Geeqie-v"$geeqie_version"-x86_64.AppImage,g" /usr/share/applications/geeqie.desktop
+  [ -f "$manual_install_dir"/Geeqie/geeqie.svg ] || $WGET -P "$manual_install_dir"/Geeqie/ 'https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/geeqie.svg'
+}
 
 UpdateYt-dlp() {
   displayandexec "Mise à jour de yt-dlp                               " "yt-dlp --update"
