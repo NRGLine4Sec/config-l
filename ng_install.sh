@@ -780,6 +780,7 @@ DCONF_reset="DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus
 # les variables DCONF_* ne doivent pas être appelés entre parenthèses
 
 my_bin_path='/usr/local/bin'
+my_local_bin_path='/home/"$local_user"/.local/bin'
 # ref : [Filesystem Hierarchy Standard](https://refspecs.linuxfoundation.org/FHS_2.3/fhs-2.3.html#USRLOCALLOCALHIERARCHY)
 
 # on active le mode case insensitive de bash
@@ -996,6 +997,11 @@ Pin-Priority: -1
 
 # blacklist unwanted package manager
 Package: synaptic aptitude
+Pin: release *
+Pin-Priority: -1
+
+# blacklist other unwanted packages
+Package: malcontent malcontent-gui
 Pin: release *
 Pin-Priority: -1
 EOF
@@ -1217,9 +1223,11 @@ if awk '{print $2}' /proc/bus/pci/devices | grep '^1002' &>/dev/null; then
       displayandexec "Installation de firmware-amd-graphics               " "$AGI firmware-amd-graphics"
       displayandexec "Installation de xserver-xorg-video-amdgpu           " "$AGI xserver-xorg-video-amdgpu"
       displayandexec "Installation de radeontop                           " "$AGI radeontop"
+      displayandexec "Installation de rocminfo                            " "$AGI rocminfo"
     fi
   done
 fi
+# apt policy firmware-amd-graphics xserver-xorg-video-amdgpu radeontop rocminfo
 
 # si CPU/GPU is Intel
 # awk '!/^[[:blank:]]/ && /^8086/' /usr/share/misc/pci.ids
@@ -1289,6 +1297,7 @@ install_debian_apt_package() {
   displayandexec "Installation de ettercap-graphical                  " "$AGI ettercap-graphical" # à vérifier, mais peut-être que ce paquet pourra être supprimer
   displayandexec "Installation de evince                              " "$AGI evince"
   displayandexec "Installation de exiv2                               " "$AGI exiv2"
+  displayandexec "Installation de libimage-exiftool-perl              " "$AGI libimage-exiftool-perl" # needed to get exiftool binnary
   displayandexec "Installation de ffmpeg                              " "$AGI ffmpeg"
   displayandexec "Installation de filezilla                           " "$AGI filezilla"
   displayandexec "Installation de firefox-esr-l10n-fr                 " "$AGI firefox-esr-l10n-fr"
@@ -1382,6 +1391,7 @@ install_debian_apt_package() {
   displayandexec "Installation de shotwell                            " "$AGI shotwell"
   displayandexec "Installation de snmp                                " "$AGI snmp"
   displayandexec "Installation de smem                                " "$AGI smem"
+  displayandexec "Installation de sqlite3                             " "$AGI sqlite3"
   displayandexec "Installation de sqlitebrowser                       " "$AGI sqlitebrowser"
   displayandexec "Installation de ssh                                 " "$AGI ssh"
   displayandexec "Installation de sshfs                               " "$AGI sshfs"
@@ -1417,6 +1427,7 @@ install_debian_apt_package() {
   displayandexec "Installation de xxhash                              " "$AGI xxhash"
   displayandexec "Installation de xz-utils                            " "$AGI xz-utils"
   displayandexec "Installation de yersinia                            " "$AGI yersinia" # à réflechir si c'est encore utile
+  displayandexec "Installation de yq                                  " "$AGI yq"
   # displayandexec "Installation de zenmap                              " "$AGI zenmap"
   # zenmap n'est pas dispo dans debian bullseye car python2 est EOL, pour traquer l'avencement du portage du code vers python3 : https://github.com/nmap/nmap/issues/1176
   displayandexec "Installation de zbar-tools                          " "$AGI zbar-tools" # utile pour lire les QRcode en CLI
@@ -1914,7 +1925,7 @@ install_bat() {
 install_yt-dlp() {
   displayandexec "Installation de yt-dlp                              " "\
   is_file_present_and_rmfile ""$my_bin_path"/yt-dlp" && \
-  $WGET -P "$my_bin_path" https://github.com/yt-dlp/yt-dlp/releases/download/"$ytdlp_version"/yt-dlp && \
+  $WGET -P "$my_bin_path" https://github.com/yt-dlp/yt-dlp/releases/download/"$ytdlp_version"/yt-dlp_linux  && \
   chmod +x "$my_bin_path"/yt-dlp"
 }
 ################################################################################
@@ -3241,8 +3252,9 @@ configure_libreoffice
 # la configuration de nano s'effectue dans le fichier /etc/nanorc
 configure_nano() {
   displayandexec "Configuration de nano                               " "\
-  sed -i 's/^# set linenumbers/set linenumbers/' /etc/nanorc && \
-  sed -i 's/^# set softwrap/set softwrap/' /etc/nanorc"
+  sed -i 's/^(#)?# set linenumbers/set linenumbers/' /etc/nanorc && \
+  sed -i 's/^(#)?# set softwrap/set softwrap/' /etc/nanorc && \
+  sed -i -E 's/^(#)?# set tabsize [[:digit:]]+/set tabsize 4/' /etc/nanorc"
 }
 configure_nano
 ################################################################################
@@ -3483,10 +3495,10 @@ r cycle_values video-rotate 90 180 270 0
 Alt+- add video-zoom -0.10
 Alt+= add video-zoom 0.10
 
-Alt+left  add video-pan-x  0.05         # move the video right
-Alt+right add video-pan-x -0.05         # move the video left
-Alt+up    add video-pan-y  0.05         # move the video down
-Alt+down  add video-pan-y -0.05         # move the video up
+Alt+left  add video-pan-x  0.02         # move the video right
+Alt+right add video-pan-x -0.02         # move the video left
+Alt+up    add video-pan-y  0.02         # move the video down
+Alt+down  add video-pan-y -0.02         # move the video up
 EOF
   $ExeAsUser cat> /home/"$local_user"/.config/mpv/mpv.conf << 'EOF'
 # Enable hardware decoding if available
@@ -3744,6 +3756,10 @@ numlock-state='on'
 
 [org/gnome/GWeather]
 temperature-unit='centigrade'
+
+[org/gnome/desktop/thumbnail-cache]
+maximum-age=365
+maximum-size=-1
 
 [gnome/gedit/preferences/editor]
 highlight-current-line=false
@@ -4216,10 +4232,10 @@ alias upp='sudo ag update && sudo ag upgrade'
 alias uppr='sudo ag update && sudo ag dist-upgrade'
 alias xx='sudo shutdown now'
 alias xwx='sudo poweroff'
-alias yt-dlp='yt-dlp -o "%(title)s.%(ext)s"'
-alias yt-dlp_best='yt-dlp -o "%(title)s.%(ext)s" -f "bestvideo+bestaudio"'
-alias yt-dlp_1080p='yt-dlp -o "%(title)s.%(ext)s" -f '\''bestvideo[height<=1080]+bestaudio'\'''
-alias yt-dlp_1440p='yt-dlp -o "%(title)s.%(ext)s" -f '\''bestvideo[height<=1440]+bestaudio'\'''
+alias yt-dlp='$my_bin_path/yt-dlp -o "%(title)s.%(ext)s"'
+alias yt-dlp_best='$my_bin_path/yt-dlp -o "%(title)s.%(ext)s" -f "bestvideo+bestaudio"'
+alias yt-dlp_1080p='$my_bin_path/yt-dlp -o "%(title)s.%(ext)s" -f '\''bestvideo[height<=1080]+bestaudio'\'''
+alias yt-dlp_1440p='$my_bin_path/yt-dlp -o "%(title)s.%(ext)s" -f '\''bestvideo[height<=1440]+bestaudio'\'''
 alias free='free -ht'
 alias showshortcut='dconf dump /org/gnome/settings-daemon/plugins/media-keys/'
 alias update_my_sysupdate_script='sudo bash -c '\''rm -f $my_bin_path/sysupdate && wget -q -P $my_bin_path "https://raw.githubusercontent.com/NRGLine4Sec/config-l/main/sysupdate" && chmod +x $my_bin_path/sysupdate'\'''
@@ -4315,10 +4331,10 @@ alias upp='sudo ag update && sudo ag upgrade'
 alias uppr='sudo ag update && sudo ag dist-upgrade'
 alias xx='sudo shutdown now'
 alias xwx='sudo poweroff'
-alias yt-dlp='yt-dlp -o "%(title)s.%(ext)s"'
-alias yt-dlp_best='yt-dlp -o "%(title)s.%(ext)s" -f "bestvideo+bestaudio"'
-alias yt-dlp_1080p='yt-dlp -o "%(title)s.%(ext)s" -f '\''bestvideo[height<=1080]+bestaudio'\'''
-alias yt-dlp_1440p='yt-dlp -o "%(title)s.%(ext)s" -f '\''bestvideo[height<=1440]+bestaudio'\'''
+alias yt-dlp='$my_bin_path/yt-dlp -o "%(title)s.%(ext)s"'
+alias yt-dlp_best='$my_bin_path/yt-dlp -o "%(title)s.%(ext)s" -f "bestvideo+bestaudio"'
+alias yt-dlp_1080p='$my_bin_path/yt-dlp -o "%(title)s.%(ext)s" -f '\''bestvideo[height<=1080]+bestaudio'\'''
+alias yt-dlp_1440p='$my_bin_path/yt-dlp -o "%(title)s.%(ext)s" -f '\''bestvideo[height<=1440]+bestaudio'\'''
 alias free='free -ht'
 alias update_my_sysupdate_script='sudo bash -c '\''rm -f $my_bin_path/sysupdate && wget -q -P $my_bin_path "https://raw.githubusercontent.com/NRGLine4Sec/config-l/main/sysupdate" && chmod +x $my_bin_path/sysupdate'\'''
 alias update_my_auditd_rules='sudo bash -c '\''rm -f /etc/audit/rules.d/audit.rules && wget -q -P /etc/audit/rules.d/ "https://raw.githubusercontent.com/NRGLine4Sec/config-l/main/audit.rules" && augenrules --check && systemctl restart auditd'\'''

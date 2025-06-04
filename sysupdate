@@ -30,11 +30,12 @@ RESET='\e[0m'
 NOIR='\e[0;30m'
 
 manual_install_dir='/opt/manual_install'
-my_bin_path='/usr/local/bin'
 AG='apt-get'
 WGET='wget -q'
 CURL='curl --silent --location --show-error'
 local_user="$(awk -F':' '/:1000:/{print $1}' /etc/passwd)"
+my_bin_path='/usr/local/bin'
+my_local_bin_path='/home/"$local_user"/.local/bin'
 ExeAsUser="sudo -u "$local_user""
 program_name="$0"
 program_options="$@"
@@ -152,20 +153,6 @@ CheckUpdateShotcut() {
   local SoftwareName='Shotcut'
   local v1="$("$(grep -Po '(^Exec=)\K(.*\.AppImage$)' /usr/share/applications/shotcut.desktop)" --version 2> /dev/null | grep -Po '(Shotcut )\K([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)')"
   local v2="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
-  CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
-}
-
-CheckUpdateYoutube-dl() {
-  local SoftwareName='youtube-dl'
-  local v1="$(youtube-dl --version)"
-  local v2="$($CURL 'https://api.github.com/repos/ytdl-org/youtube-dl/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
-  CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
-}
-
-CheckUpdateBoostnote() {
-  local SoftwareName='Boostnote'
-  local v1="$(grep -Po '"version": "\K[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+(?=")' /usr/lib/boostnote/resources/app/package.json)"
-  local v2="$($CURL 'https://api.github.com/repos/BoostIO/boost-releases/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
@@ -293,18 +280,6 @@ UpdateShotcut() {
 	chmod +x "$manual_install_dir"/shotcut/"$shotcut_appimage" && \
   sed -i "s,.*Exec=.*,Exec="$manual_install_dir"/shotcut/"$shotcut_appimage",g" /usr/share/applications/shotcut.desktop && \
   [ -f "$manual_install_dir"/shotcut/shotcut-logo-64.png ] || $WGET -P "$manual_install_dir"/shotcut/ 'https://github.com/mltframework/shotcut/raw/master/icons/shotcut-logo-64.png'
-}
-
-UpdateYoutube-dl() {
-  youtube-dl --update
-}
-
-UpdateBoostnote() {
-  local boostnote_version="$1"
-  local tmp_dir="$(mktemp -d)" && \
-  $WGET -P "$tmp_dir" https://github.com/BoostIO/boost-releases/releases/download/v$boostnote_version/boostnote_"$boostnote_version"_amd64.deb && \
-  dpkg -i "$tmp_dir"/boostnote_"$boostnote_version"_amd64.deb
-  rm -rf "$tmp_dir"
 }
 
 UpdateKeepassxc() {
@@ -500,9 +475,7 @@ Hashcat
 Veracrypt
 Geeqie
 Ventoy'
-# Boostnote
 # Stacer
-# Youtube-dl
 # Winscp
 # on supprimer Geeqie de la liste temporairement car les nouveaux AppImage ne fonctionnent pas, la dernière version qui fonctionne correctement sur bullseye est celle la : Geeqie-v2.0+20220921.AppImage
 # cf le lien du bug ci-dessous :
