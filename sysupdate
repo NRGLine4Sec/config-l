@@ -223,6 +223,7 @@ CheckUpdateGeeqie() {
   local SoftwareName='Geeqie'
   local v1="$(grep -Po '^Exec.*-v\K([[:digit:]]\.[[:digit:]]+\+[[:digit:]]+|[[:digit:]]\.[[:digit:]]+\.[[:digit:]]+\+[[:digit:]]+)(?=\-x86_64.AppImage)' /usr/share/applications/geeqie.desktop)"
   local v2="$($CURL 'https://api.github.com/repos/BestImageViewer/geeqie/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
+  if [[ -z "$v1" ]]; then v1=0; fi
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
   # return 0
   # depuis le passage de Geeqie à la création de AppImage à partir de la CI/CD Github dans "Continuous build", il est inutil de check la version car il est hautement probable qu'il existe une nouvelle release de dispo

@@ -2059,9 +2059,9 @@ install_weasyprint() {
 install_geeqie() {
   displayandexec "Installation de Geeqie                              " "\
   reset_dir ""$manual_install_dir"/Geeqie/" && \
-  $WGET -P "$manual_install_dir"/Geeqie/ 'https://github.com/BestImageViewer/geeqie/releases/download/continuous/Geeqie-latest-x86_64.AppImage' && \
+  $WGET -P "$manual_install_dir"/Geeqie/ https://github.com/BestImageViewer/geeqie/releases/download/v"$geeqie_version"/Geeqie-v"$geeqie_version"-x86_64.AppImage && \
   $WGET -P "$manual_install_dir"/Geeqie/ 'https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/geeqie.svg' && \
-  chmod +x "$manual_install_dir"/Geeqie/Geeqie-latest-x86_64.AppImage"
+  chmod +x "$manual_install_dir"/Geeqie/Geeqie-v"$geeqie_version"-x86_64.AppImage"
   cat> /usr/share/applications/geeqie.desktop << EOF
 [Desktop Entry]
 Name=Geeqie
@@ -2069,7 +2069,7 @@ GenericName=Image Viewer
 GenericName[fr]=Visualisateur d'images
 Comment=View and manage images
 Comment[fr]=Voir et gérer des images
-Exec=$manual_install_dir/Geeqie/Geeqie-latest-x86_64.AppImage
+Exec=$manual_install_dir/Geeqie/Geeqie-v$geeqie_version-x86_64.AppImage
 Icon=$manual_install_dir/Geeqie/geeqie.svg
 Type=Application
 Terminal=false
@@ -2085,11 +2085,13 @@ EOF
 
 # à noter que maintenant les AppImages sont générées automatiquement par la CI/CD Github dans "Continuous build" : [Release Continuous build · BestImageViewer/geeqie](https://github.com/BestImageViewer/geeqie/releases/tag/continuous)
 # à priori, il ne semble plus exister de AppImage pour une version spécifiquement, mais uniquement des AppImages créées automatiquement suite à un merge request du code source : [Where can I download a Geeqie Appimage 2.4 for Xubuntu · Issue #1404 · BestImageViewer/geeqie](https://github.com/BestImageViewer/geeqie/issues/1404#issuecomment-2183912638)
-# le code à utiliser si jamais ils décident de revenir à une AppImage par release :
-# $WGET -P "$manual_install_dir"/Geeqie/ https://github.com/BestImageViewer/geeqie/releases/download/v"$geeqie_version"/Geeqie-v"$geeqie_version"-x86_64.AppImage && \
-# chmod +x "$manual_install_dir"/Geeqie/Geeqie-v"$geeqie_version"-x86_64.AppImage"
 
-# Exec=$manual_install_dir/Geeqie/Geeqie-v$geeqie_version-x86_64.AppImage
+
+# le code à utiliser si jamais ils suppriment encore une fois la génération des AppImages via des releases
+#   $WGET -P "$manual_install_dir"/Geeqie/ 'https://github.com/BestImageViewer/geeqie/releases/download/continuous/Geeqie-latest-x86_64.AppImage' && \
+#   chmod +x "$manual_install_dir"/Geeqie/Geeqie-latest-x86_64.AppImage"
+
+# Exec=$manual_install_dir/Geeqie/Geeqie-latest-x86_64.AppImage
 ################################################################################
 
 ################################################################################
@@ -3184,14 +3186,43 @@ tmp_test_configure_libreoffice_template() {
   # rm -f ""$template_dir"/Document ODT.txt"
 
   # initialise /home/"$local_user"/.config/libreoffice/
-  $ExeAsUser timeout --signal=TERM --kill-after=25s 20s "$(realpath $(command -v libreoffice))".bin --nologo --nofirststartwizard --invisible --norestore --headless
+  $ExeAsUser timeout \
+  --signal=TERM \
+  --kill-after=25s 20s \
+  "$(realpath $(command -v libreoffice))".bin \
+  --nologo \
+  --nofirststartwizard \
+  --invisible \
+  --norestore \
+  --headless
 
   $ExeAsUser touch ""$template_dir"/Document ODS.txt" && \
-  $ExeAsUser timeout --signal=TERM --kill-after=25s 20s "$(realpath $(command -v libreoffice))".bin --calc --nologo --nofirststartwizard --invisible --norestore --headless --convert-to ods ""$template_dir"/Document ODS.txt" --outdir "$template_dir" && \
+  $ExeAsUser timeout \
+  --signal=TERM \
+  --kill-after=25s 20s \
+  "$(realpath $(command -v libreoffice))".bin \
+  --calc \
+  --nologo \
+  --nofirststartwizard \
+  --invisible \
+  --norestore \
+  --headless \
+  --convert-to ods ""$template_dir"/Document ODS.txt" \
+  --outdir "$template_dir" && \
   rm -f ""$template_dir"/Document ODS.txt"
 
   $ExeAsUser touch ""$template_dir"/Document ODT.txt" && \
-  $ExeAsUser timeout --signal=TERM --kill-after=25s 20s "$(realpath $(command -v libreoffice))".bin --nologo --nofirststartwizard --invisible --norestore --headless --convert-to odt ""$template_dir"/Document ODT.txt" --outdir "$template_dir" && \
+  $ExeAsUser timeout \
+  --signal=TERM \
+  --kill-after=25s 20s \
+  "$(realpath $(command -v libreoffice))".bin \
+  --nologo \
+  --nofirststartwizard \
+  --invisible \
+  --norestore \
+  --headless \
+  --convert-to odt ""$template_dir"/Document ODT.txt" \
+  --outdir "$template_dir" && \
   rm -f ""$template_dir"/Document ODT.txt"
 }
 export -f tmp_test_configure_libreoffice_template
