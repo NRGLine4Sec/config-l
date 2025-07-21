@@ -1659,12 +1659,12 @@ EOF
 ##------------------------------------------------------------------------------
 install_typora() {
   cat> /etc/apt/sources.list.d/typora.list << 'EOF'
-deb [signed-by=/usr/share/keyrings/typora-archive-keyring.gpg] https://typora.io/linux ./
-# deb-src https://typora.io/linux ./
+deb [signed-by=/usr/share/keyrings/typora-archive-keyring.gpg] https://downloads.typora.io/linux ./
+# deb-src https://downloads.typora.io/linux ./
 EOF
   displayandexec "Installation de Typora                              " "\
   is_file_present_and_rmfile "/usr/share/keyrings/typora-archive-keyring.gpg" && \
-  $WGET --output-document - 'https://typora.io/linux/public-key.asc' | gpg --dearmor --output /usr/share/keyrings/typora-archive-keyring.gpg && \
+  $WGET --output-document - 'https://downloads.typora.io/typora.gpg' | gpg --dearmor --output /usr/share/keyrings/typora-archive-keyring.gpg && \
   $AG update && \
   $AGI typora"
 }
@@ -3526,10 +3526,10 @@ r cycle_values video-rotate 90 180 270 0
 Alt+- add video-zoom -0.10
 Alt+= add video-zoom 0.10
 
-Alt+left  add video-pan-x  0.02         # move the video right
-Alt+right add video-pan-x -0.02         # move the video left
-Alt+up    add video-pan-y  0.02         # move the video down
-Alt+down  add video-pan-y -0.02         # move the video up
+Alt+left  add video-pan-x  0.01         # move the video right
+Alt+right add video-pan-x -0.01         # move the video left
+Alt+up    add video-pan-y  0.01         # move the video down
+Alt+down  add video-pan-y -0.01         # move the video up
 EOF
   $ExeAsUser cat> /home/"$local_user"/.config/mpv/mpv.conf << 'EOF'
 # Enable hardware decoding if available
