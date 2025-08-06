@@ -1273,6 +1273,7 @@ install_debian_apt_package() {
   displayandexec "Installation de apparmor-profiles                   " "$AGI apparmor-profiles"
   displayandexec "Installation de apparmor-profiles-extra             " "$AGI apparmor-profiles-extra"
   displayandexec "Installation de b3sum                               " "$AGI b3sum"
+  displayandexec "Installation de bat                                 " "$AGI bat"
   displayandexec "Installation de bind9-dnsutils                      " "$AGI bind9-dnsutils"
   displayandexec "Installation de binwalk                             " "$AGI binwalk"
   displayandexec "Installation de bpfcc-tools                         " "$AGI bpfcc-tools"
@@ -1312,7 +1313,7 @@ install_debian_apt_package() {
   displayandexec "Installation de gitk                                " "$AGI gitk"
   displayandexec "Installation de gparted                             " "$AGI gparted"
   displayandexec "Installation de gsmartcontrol                       " "$AGI gsmartcontrol"
-  displayandexec "Installation de handbrake                           " "$AGI handbrake"
+  # displayandexec "Installation de handbrake                           " "$AGI handbrake"
   displayandexec "Installation de hardinfo                            " "$AGI hardinfo"
   displayandexec "Installation de hdparm                              " "$AGI hdparm"
   displayandexec "Installation de htop                                " "$AGI htop"
@@ -1382,7 +1383,7 @@ install_debian_apt_package() {
   displayandexec "Installation de python3-scapy                       " "$AGI python3-scapy"
   displayandexec "Installation de rclone                              " "$AGI rclone"
   displayandexec "Installation de rdesktop                            " "$AGI rdesktop"
-  displayandexec "Installation de remmina                             " "$AGI remmina"
+  # displayandexec "Installation de remmina                             " "$AGI remmina"
   # displayandexec "Installation de rkhunter                            " "$AGI rkhunter" # because [#1057470 - Outdated rkhunter since 2018-02 - Debian Bug report logs](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1057470#10)
   displayandexec "Installation de rsync                               " "$AGI rsync"
   displayandexec "Installation de sdparm                              " "$AGI sdparm"
@@ -1458,10 +1459,10 @@ install_from_backports() {
 package_to_install_from_backports_if_available='
 firejail
 firejail-profiles
-remmina
 freerdp3-sdl
 curl
 '
+#remmina # useless after switching installation to flatpak
 
 check_and_install_package_from_backports() {
   for package in $package_to_install_from_backports_if_available; do
@@ -1791,22 +1792,6 @@ EOF
 ################################################################################
 
 ################################################################################
-## instalation de MKVToolNix
-##------------------------------------------------------------------------------
-install_mkvtoolnix() {
-  cat> /etc/apt/sources.list.d/mkvtoolnix.list << 'EOF'
-deb [signed-by=/usr/share/keyrings/mkvtoolnix-archive-keyring.gpg] https://mkvtoolnix.download/debian/ bookworm main
-#deb-src https://mkvtoolnix.download/debian/ bookworm main
-EOF
-  displayandexec "Installation de MKVToolNix                          " "\
-  is_file_present_and_rmfile "/usr/share/keyrings/mkvtoolnix-archive-keyring.gpg" && \
-  $WGET --output-document - 'https://mkvtoolnix.download/gpg-pub-moritzbunkus.txt' | gpg --dearmor --output /usr/share/keyrings/mkvtoolnix-archive-keyring.gpg && \
-  $AG update && \
-  $AGI mkvtoolnix mkvtoolnix-gui"
-}
-################################################################################
-
-################################################################################
 ## instalation de Etcher
 ##------------------------------------------------------------------------------
 install_etcher() {
@@ -1867,18 +1852,6 @@ EOF
   $AGI signal-desktop"
 }
 # https://signal.org/download/linux/
-################################################################################
-
-################################################################################
-## instalation de Stacer
-##------------------------------------------------------------------------------
-install_stacer() {
-  local tmp_dir="$(mktemp -d)"
-  displayandexec "Installation de Stacer                              " "\
-  $WGET -P "$tmp_dir" https://github.com/oguzhaninan/Stacer/releases/download/v"$stacer_version"/stacer_"$stacer_version"_amd64.deb && \
-  dpkg -i "$tmp_dir"/stacer_"$stacer_version"_amd64.deb; \
-  rm -rf "$tmp_dir""
-}
 ################################################################################
 
 ################################################################################
@@ -2201,12 +2174,37 @@ EOF
 # [GitHub - JsBergbau/BindToInterface: With this program you can bind applications to a specific network interface / network adapter. This is very useful if you have multiple (internet) connections and want your program to use a specific one.](https://github.com/JsBergbau/BindToInterface)
 ################################################################################
 
+################################################################################
+## instalation de Flatpak
+##------------------------------------------------------------------------------
+install_flatpak() {
+  displayandexec "Installation de Flatpak                             " "\
+  $AGI flatpak && \
+  $ExeAsUser flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo"
+}
+
+install_flatpak_software() {
+  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub org.onlyoffice.desktopeditors"
+  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub org.remmina.Remmina"
+  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub org.geeqie.Geeqie"
+  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub fr.handbrake.ghb"
+  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub com.jgraph.drawio.desktop"
+  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub org.bunkus.mkvtoolnix-gui"
+  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub io.github.flattool.Warehouse"
+  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub org.virt_manager.virt-viewer"
+  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub org.shotcut.Shotcut"
+  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub org.kde.krita"
+  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub com.spotify.Client"
+}
+# flatpak list --app
+# flatpak history
+################################################################################
+
 # Pour facilier la gestion du passage d'une version de debian à une autre
 get_available_distrib_version_repo_url() {
 repo_url='
 https://download.virtualbox.org/virtualbox/debian
 http://ppa.launchpad.net/apt-fast/stable/ubuntu
-https://mkvtoolnix.download/debian
 https://updates.signal.org/desktop/apt
 https://packagecloud.io/asbru-cm/asbru-cm/debian
 http://ppa.launchpad.net/ansible/ansible-5/ubuntu
@@ -2231,33 +2229,63 @@ check_latest_version_manual_install_apps
 install_all_manual_install_apps_bookworm() {
   # install_winscp
   install_veracrypt
-  install_spotify
+  # install_spotify
   install_apt-fast
-  install_drawio
+  # install_drawio
   install_typora
   install_virtualbox_bookworm
   install_keepassxc
-  install_mkvtoolnix
   install_etcher
-  install_shotcut
+  # install_shotcut
   install_signal
-  # install_stacer
   install_asbru
-  install_bat
+  # install_bat
   install_yt-dlp
   install_joplin
-  install_krita
+  # install_krita
   install_opensnitch
   install_ansible
   install_hashcat
   install_sshuttle
   install_weasyprint
-  install_geeqie
+  # install_geeqie
   install_timeshift_bookworm
   install_vscode
   install_brave
   install_ventoy
   install_bindtointerface
+  install_flatpak
+}
+
+install_all_manual_install_apps_trixie() {
+  # install_winscp
+  install_veracrypt
+  # install_spotify
+  install_apt-fast
+  # install_drawio
+  install_typora
+  # install_virtualbox_bookworm
+  install_keepassxc
+  install_etcher
+  # install_shotcut
+  install_signal
+  install_asbru
+  # install_bat
+  install_yt-dlp
+  install_joplin
+  # install_krita
+  install_opensnitch
+  install_ansible
+  install_hashcat
+  install_sshuttle
+  install_weasyprint
+  # install_geeqie
+  # install_timeshift_bookworm
+  install_vscode
+  install_brave
+  install_ventoy
+  install_bindtointerface
+  install_flatpak
 }
 
 if [ -z "$fisrt_time_script_executed" ]; then
@@ -3283,8 +3311,8 @@ configure_libreoffice
 # la configuration de nano s'effectue dans le fichier /etc/nanorc
 configure_nano() {
   displayandexec "Configuration de nano                               " "\
-  sed -i 's/^(#)?# set linenumbers/set linenumbers/' /etc/nanorc && \
-  sed -i 's/^(#)?# set softwrap/set softwrap/' /etc/nanorc && \
+  sed -i -E 's/^(#)?# set linenumbers/set linenumbers/' /etc/nanorc && \
+  sed -i -E 's/^(#)?# set softwrap/set softwrap/' /etc/nanorc && \
   sed -i -E 's/^(#)?# set tabsize [[:digit:]]+/set tabsize 4/' /etc/nanorc"
 }
 configure_nano
@@ -4276,7 +4304,7 @@ alias update_my_auditd_rules='sudo bash -c '\''rm -f /etc/audit/rules.d/audit.ru
 alias bitcoin='curl -s "https://api.coindesk.com/v1/bpi/currentprice.json" | jq ".bpi.EUR.rate" | tr -d \"'
 alias sshuttle='sudo /root/.local/bin/sshuttle'
 alias my_ext_ip="curl --silent --location 'https://ipinfo.io/ip'"
-alias last_apt_kernel='apt-cache search --names-only "linux-(headers|image)-[[:digit:]]\.[[:digit:]]+\.[[:digit:]]+(-[[:digit:]]+|\+bpo)-(amd64$|amd64-unsigned$)" | sort'
+alias last_apt_kernel='apt-cache search --names-only "^linux-(headers|image)-[0-9]+\.[0-9]+(\.[0-9]+)?([-+](bpo|deb)[^ -]*)?-(amd64$|amd64-unsigned$)" | sort'
 HISTTIMEFORMAT="%Y/%m/%d %T   "
 is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/\$1 ;}
 to_lower() { tr [:upper:] [:lower:] <<< "\$@" ;}
