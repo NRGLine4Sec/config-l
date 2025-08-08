@@ -2198,6 +2198,9 @@ install_flatpak_software() {
 }
 # flatpak list --app
 # flatpak history
+
+install_flatpak
+install_flatpak_software
 ################################################################################
 
 # Pour facilier la gestion du passage d'une version de debian à une autre
