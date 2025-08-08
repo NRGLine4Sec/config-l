@@ -4302,7 +4302,7 @@ alias showshortcut='dconf dump /org/gnome/settings-daemon/plugins/media-keys/'
 alias update_my_sysupdate_script='sudo bash -c '\''rm -f $my_bin_path/sysupdate && wget -q -P $my_bin_path "https://raw.githubusercontent.com/NRGLine4Sec/config-l/main/sysupdate" && chmod +x $my_bin_path/sysupdate'\'''
 alias update_my_auditd_rules='sudo bash -c '\''rm -f /etc/audit/rules.d/audit.rules && wget -q -P /etc/audit/rules.d/ "https://raw.githubusercontent.com/NRGLine4Sec/config-l/main/audit.rules" && augenrules --check && systemctl restart auditd'\'''
 alias bitcoin='curl -s "https://api.coindesk.com/v1/bpi/currentprice.json" | jq ".bpi.EUR.rate" | tr -d \"'
-alias sshuttle='sudo /root/.local/bin/sshuttle'
+alias sshuttle='sudo /home/$local_user/.local/pipx/venvs/sshuttle/bin/sshuttle'
 alias my_ext_ip="curl --silent --location 'https://ipinfo.io/ip'"
 alias last_apt_kernel='apt-cache search --names-only "^linux-(headers|image)-[0-9]+\.[0-9]+(\.[0-9]+)?([-+](bpo|deb)[^ -]*)?-(amd64$|amd64-unsigned$)" | sort'
 HISTTIMEFORMAT="%Y/%m/%d %T   "
@@ -4635,6 +4635,7 @@ create_root_part_snapshot_with_btrfs() {
   displayandexec "Création d'un snapshot BTRFS de /                   " "\
   is_dir_present_or_mkdir /.snapshot/ && \
   btrfs subvolume list / && \
+  mkdir -p /.snapshot && \
   btrfs subvolume snapshot / /.snapshot/@"$now" && \
   btrfs subvolume list /"
 }
