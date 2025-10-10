@@ -1338,6 +1338,7 @@ install_debian_apt_package() {
   displayandexec "Installation de lz4                                 " "$AGI lz4"
   displayandexec "Installation de macchanger                          " "$AGI macchanger"
   displayandexec "Installation de make                                " "$AGI make"
+  displayandexec "Installation de mat2                                " "$AGI mat2"
   displayandexec "Installation de mediainfo                           " "$AGI mediainfo mediainfo-gui"
   displayandexec "Installation de mpv                                 " "$AGI mpv youtube-dl- yt-dlp-"
   # on n'install pas la dépendance youtube-dl requise par mpv car la version des dépots debian est trop ancienne
@@ -1381,6 +1382,7 @@ install_debian_apt_package() {
   displayandexec "Installation de pv                                  " "$AGI pv"
   displayandexec "Installation de python3-pip                         " "$AGI python3-pip"
   displayandexec "Installation de python3-scapy                       " "$AGI python3-scapy"
+  displayandexec "Installation de qpdf                                " "$AGI qpdf"
   displayandexec "Installation de rclone                              " "$AGI rclone"
   displayandexec "Installation de rdesktop                            " "$AGI rdesktop"
   # displayandexec "Installation de remmina                             " "$AGI remmina"
@@ -1615,9 +1617,12 @@ EOF
 ## instalation de apt-fast
 ##------------------------------------------------------------------------------
 install_apt-fast() {
-  cat> /etc/apt/sources.list.d/apt-fast.list << 'EOF'
-deb [arch=amd64 signed-by=/usr/share/keyrings/apt-fast-archive-keyring.gpg] http://ppa.launchpad.net/apt-fast/stable/ubuntu kinetic main
-#deb-src http://ppa.launchpad.net/apt-fast/stable/ubuntu kinetic main
+  cat> /etc/apt/sources.list.d/apt-fast.sources << 'EOF'
+Types: deb
+URIs: http://ppa.launchpad.net/apt-fast/stable/ubuntu/
+Suites: kinetic
+Components: main
+Signed-By: /usr/share/keyrings/apt-fast-archive-keyring.gpg
 EOF
   displayandexec "Installation de apt-fast                            " "\
   is_file_present_and_rmfile "/usr/share/keyrings/apt-fast-archive-keyring.gpg" && \
@@ -1843,7 +1848,12 @@ EOF
 ##------------------------------------------------------------------------------
 install_signal() {
   cat> /etc/apt/sources.list.d/signal-desktop.list << 'EOF'
-deb [arch=amd64 signed-by=/usr/share/keyrings/signal-archive-keyring.gpg] https://updates.signal.org/desktop/apt xenial main
+Types: deb
+URIs: https://updates.signal.org/desktop/apt/
+Suites: xenial
+Components: main
+Architectures: amd64
+Signed-By: /usr/share/keyrings/signal-archive-keyring.gpg
 EOF
   displayandexec "Installation de Signal                              " "\
   is_file_present_and_rmfile "/usr/share/keyrings/signal-archive-keyring.gpg" && \
@@ -1858,9 +1868,12 @@ EOF
 ## instalation de asbru
 ##------------------------------------------------------------------------------
 install_asbru() {
-  cat> /etc/apt/sources.list.d/asbru-cm.list << 'EOF'
-deb [arch=amd64 signed-by=/usr/share/keyrings/asbru-archive-keyring.gpg] https://packagecloud.io/asbru-cm/asbru-cm/debian/ bullseye main
-#deb-src https://packagecloud.io/asbru-cm/asbru-cm/debian/ bullseye main
+  cat> /etc/apt/sources.list.d/asbru-cm.sources << 'EOF'
+Types: deb
+URIs: https://packagecloud.io/asbru-cm/asbru-cm/debian/
+Suites: bullseye
+Components: main
+Signed-By: /usr/share/keyrings/asbru-archive-keyring.gpg
 EOF
   displayandexec "Installation des dépendances de Asbru               " "$AGI perl libvte-2.91-0 libcairo-perl libglib-perl libpango-perl libsocket6-perl libexpect-perl libnet-proxy-perl libyaml-perl libcrypt-cbc-perl libcrypt-blowfish-perl libgtk3-perl libnet-arp-perl libossp-uuid-perl openssh-client telnet ftp libcrypt-rijndael-perl libxml-parser-perl libcanberra-gtk-module dbus-x11 libx11-guitest-perl libgtk3-simplelist-perl gir1.2-wnck-3.0 gir1.2-vte-2.91"
   displayandexec "Installation de Asbru                               " "\
@@ -1896,6 +1909,18 @@ install_bat() {
 ## instalation de yt-dlp
 ##------------------------------------------------------------------------------
 install_yt-dlp() {
+  # install Deno (JavaScript, TypeScript, and WebAssembly runtime) because of :
+  # [[Announcement] Upcoming new requirements for YouTube downloads · Issue #14404 · yt-dlp/yt-dlp](https://github.com/yt-dlp/yt-dlp/issues/14404)
+  # [[Announcement] Upcoming new requirements for YouTube downloads · Issue #14404 · yt-dlp/yt-dlp](https://github.com/yt-dlp/yt-dlp/issues/14404#issuecomment-3330980464)
+  # [[ie/youtube] Force player `0004de42` by seproDev · Pull Request #14398 · yt-dlp/yt-dlp](https://github.com/yt-dlp/yt-dlp/pull/14398)
+  # [[Announcement] Upcoming new requirements for YouTube downloads · Issue #14404 · yt-dlp/yt-dlp](https://github.com/yt-dlp/yt-dlp/issues/14404#issuecomment-3330980464)
+  
+  # local tmp_dir="$(mktemp -d)"
+  # $WGET -P "$my_bin_path" https://github.com/denoland/deno/releases/download/v2.5.2/deno-x86_64-unknown-linux-gnu.zip
+  # unzip "$tmp_dir"/deno-x86_64-unknown-linux-gnu.zip -d "$manual_install_dir"/ && \
+  # rm -rf "$tmp_dir"
+  # /tmp/test_unzip_deno/deno --version | grep -Po '^(deno )\K[0-9]+\.[0-9]+\.[0-9]+'
+
   displayandexec "Installation de yt-dlp                              " "\
   is_file_present_and_rmfile ""$my_bin_path"/yt-dlp" && \
   $WGET -P "$my_bin_path" https://github.com/yt-dlp/yt-dlp/releases/download/"$ytdlp_version"/yt-dlp_linux  && \
@@ -2071,9 +2096,12 @@ EOF
 ## instalation de timeshift
 ##------------------------------------------------------------------------------
 install_timeshift_bookworm() {
-  cat> /etc/apt/sources.list.d/timeshift.list << 'EOF'
-deb [arch=amd64 signed-by=/usr/share/keyrings/timeshift-archive-keyring.gpg] http://packages.linuxmint.com faye backport
-#deb-src http://packages.linuxmint.com faye backport
+  cat> /etc/apt/sources.list.d/timeshift.sources << 'EOF'
+Types: deb
+URIs: http://packages.linuxmint.com/
+Suites: faye
+Components: backport
+Signed-By: /usr/share/keyrings/timeshift-archive-keyring.gpg
 EOF
   displayandexec "Installation de timeshift                           " "\
   is_file_present_and_rmfile "/usr/share/keyrings/timeshift-archive-keyring.gpg" && \
@@ -2125,8 +2153,12 @@ EOF
 ## instalation de Brave
 ##------------------------------------------------------------------------------
 install_brave() {
-  cat> /etc/apt/sources.list.d/brave.list << 'EOF'
-deb [arch=amd64 signed-by=/usr/share/keyrings/brave-archive-keyring.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main
+  cat> /etc/apt/sources.list.d/brave.sources << 'EOF'
+Types: deb
+URIs: https://brave-browser-apt-release.s3.brave.com/
+Suites: stable
+Components: main
+Signed-By: /usr/share/keyrings/brave-archive-keyring.gpg
 EOF
   displayandexec "Installation de brave                               " "\
   is_file_present_and_rmfile "/usr/share/keyrings/brave-archive-keyring.gpg" && \
@@ -4292,8 +4324,6 @@ alias ip='ip --color=auto'
 alias u='sudo ag update'
 alias upp='sudo ag update && sudo ag upgrade'
 alias uppr='sudo ag update && sudo ag dist-upgrade'
-alias xx='sudo shutdown now'
-alias xwx='sudo poweroff'
 alias yt-dlp='$my_bin_path/yt-dlp -o "%(title)s.%(ext)s" --parse-metadata "[%(title)s](%(webpage_url)s):%(meta_description)s" --parse-metadata ":(?P<meta_synopsis>)" --embed-metadata --impersonate Chrome-133'
 alias yt-dlp_uniq='$my_bin_path/yt-dlp -o "%(title)s - %(epoch)s.%(ext)s" --parse-metadata "[%(title)s](%(webpage_url)s):%(meta_description)s" --parse-metadata ":(?P<meta_synopsis>)" --embed-metadata --impersonate Chrome-133'
 alias yt-dlp_best='$my_bin_path/yt-dlp -o "%(title)s.%(ext)s" --parse-metadata "[%(title)s](%(webpage_url)s):%(meta_description)s" --parse-metadata ":(?P<meta_synopsis>)" --embed-metadata --impersonate Chrome-133 -f "bestvideo+bestaudio"'
@@ -4304,16 +4334,15 @@ alias free='free -ht'
 alias showshortcut='dconf dump /org/gnome/settings-daemon/plugins/media-keys/'
 alias update_my_sysupdate_script='sudo bash -c '\''rm -f $my_bin_path/sysupdate && wget -q -P $my_bin_path "https://raw.githubusercontent.com/NRGLine4Sec/config-l/main/sysupdate" && chmod +x $my_bin_path/sysupdate'\'''
 alias update_my_auditd_rules='sudo bash -c '\''rm -f /etc/audit/rules.d/audit.rules && wget -q -P /etc/audit/rules.d/ "https://raw.githubusercontent.com/NRGLine4Sec/config-l/main/audit.rules" && augenrules --check && systemctl restart auditd'\'''
-alias bitcoin='curl -s "https://api.coindesk.com/v1/bpi/currentprice.json" | jq ".bpi.EUR.rate" | tr -d \"'
 alias sshuttle='sudo /home/$local_user/.local/pipx/venvs/sshuttle/bin/sshuttle'
 alias my_ext_ip="curl --silent --location 'https://ipinfo.io/ip'"
 alias last_apt_kernel='apt-cache search --names-only "^linux-(headers|image)-[0-9]+\.[0-9]+(\.[0-9]+)?([-+](bpo|deb)[^ -]*)?-(amd64$|amd64-unsigned$)" | sort'
 HISTTIMEFORMAT="%Y/%m/%d %T   "
 is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/\$1 ;}
 to_lower() { tr [:upper:] [:lower:] <<< "\$@" ;}
-mpv_youtube() { mpv <($my_bin_path/yt-dlp -o - "\$1") ;}
-mpv_audio_youtube() { mpv --no-video <($my_bin_path/yt-dlp -o - "\$1") ;}
-youtube_description() { $my_bin_path/yt-dlp --playlist-items 0 --print description "\$1" ;}
+mpv_youtube() { mpv <($my_bin_path --impersonate Chrome-133 -o - "\$1") }
+mpv_youtube_audio() { mpv --no-video <($my_bin_path -f bestaudio --extract-audio --audio-format best --impersonate Chrome-133 -o - "\$1") }
+youtube_description() { $my_bin_path/yt-dlp --impersonate Chrome-133 --playlist-items 0 --print description "\$1" ;}
 
 # for Ansible vault editor
 export EDITOR=nano
@@ -4327,7 +4356,7 @@ export PATH="\$PATH:/home/$local_user/.local/bin"
 shopt -s histappend
 PROMPT_COMMAND="history -n; history -a"
 unset HISTFILESIZE
-HISTSIZE=2000
+HISTSIZE=10000
 EOF
 }
 
@@ -4354,8 +4383,6 @@ alias ip='ip --color=auto'
 alias u='ag update'
 alias upp='ag update && ag upgrade'
 alias uppr='ag update && ag dist-upgrade'
-alias xx='shutdown now'
-alias xwx='poweroff'
 alias free='free -ht'
 HISTTIMEFORMAT=\"%Y/%m/%d %T   \"
 is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/\$1 ;}
@@ -4367,7 +4394,7 @@ to_lower() { tr [:upper:] [:lower:] <<< "\$@" ;}
 shopt -s histappend
 PROMPT_COMMAND="history -n; history -a"
 unset HISTFILESIZE
-HISTSIZE=2000
+HISTSIZE=10000
 EOF
 }
 
@@ -4393,8 +4420,6 @@ alias i='sudo ag install'
 alias u='sudo ag update'
 alias upp='sudo ag update && sudo ag upgrade'
 alias uppr='sudo ag update && sudo ag dist-upgrade'
-alias xx='sudo shutdown now'
-alias xwx='sudo poweroff'
 alias yt-dlp='$my_bin_path/yt-dlp -o "%(title)s.%(ext)s" --parse-metadata "[%(title)s](%(webpage_url)s):%(meta_description)s" --parse-metadata ":(?P<meta_synopsis>)" --embed-metadata --impersonate Chrome-133'
 alias yt-dlp_uniq='$my_bin_path/yt-dlp -o "%(title)s - %(epoch)s.%(ext)s" --parse-metadata "[%(title)s](%(webpage_url)s):%(meta_description)s" --parse-metadata ":(?P<meta_synopsis>)" --embed-metadata --impersonate Chrome-133'
 alias yt-dlp_best='$my_bin_path/yt-dlp -o "%(title)s.%(ext)s" --parse-metadata "[%(title)s](%(webpage_url)s):%(meta_description)s" --parse-metadata ":(?P<meta_synopsis>)" --embed-metadata --impersonate Chrome-133 -f "bestvideo+bestaudio"'
@@ -4405,15 +4430,14 @@ alias free='free -ht'
 alias update_my_sysupdate_script='sudo bash -c '\''rm -f $my_bin_path/sysupdate && wget -q -P $my_bin_path "https://raw.githubusercontent.com/NRGLine4Sec/config-l/main/sysupdate" && chmod +x $my_bin_path/sysupdate'\'''
 alias update_my_auditd_rules='sudo bash -c '\''rm -f /etc/audit/rules.d/audit.rules && wget -q -P /etc/audit/rules.d/ "https://raw.githubusercontent.com/NRGLine4Sec/config-l/main/audit.rules" && augenrules --check && systemctl restart auditd'\'''
 alias showshortcut='dconf dump /org/gnome/settings-daemon/plugins/media-keys/'
-alias bitcoin='curl -s "https://api.coindesk.com/v1/bpi/currentprice.json" | jq ".bpi.EUR.rate" | tr -d \"'
 alias sshuttle='sudo /root/.local/bin/sshuttle'
 alias my_ext_ip="curl --silent --location 'https://ipinfo.io/ip'"
 alias last_apt_kernel='apt-cache search --names-only "linux-(headers|image)-[[:digit:]]\.[[:digit:]]+\.[[:digit:]]+(-[[:digit:]]+|\+bpo)-(amd64$|amd64-unsigned$)" | sort'
 is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/\$1 ;}
 to_lower() { tr [:upper:] [:lower:] <<< "\$@" ;}
-mpv_youtube() { mpv <($my_bin_path/yt-dlp -o - "\$1") ;}
-mpv_audio_youtube() { mpv --no-video <($my_bin_path/yt-dlp -o - "\$1") ;}
-youtube_description() { $my_bin_path/yt-dlp --playlist-items 0 --print description "\$1" ;}
+mpv_youtube() { mpv <($my_bin_path --impersonate Chrome-133 -o - "\$1") }
+mpv_youtube_audio() { mpv --no-video <($my_bin_path -f bestaudio --extract-audio --audio-format best --impersonate Chrome-133 -o - "\$1") }
+youtube_description() { $my_bin_path/yt-dlp --impersonate Chrome-133 --playlist-items 0 --print description "\$1" ;}
 
 # for Ansible vault editor
 export EDITOR=nano
@@ -4445,8 +4469,6 @@ alias ip='ip --color=auto'
 alias u='ag update'
 alias upp='ag update && ag upgrade'
 alias uppr='ag update && ag dist-upgrade'
-alias xx='shutdown now'
-alias xwx='poweroff'
 alias free='free -ht'
 is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/\$1 ;}
 to_lower() { tr [:upper:] [:lower:] <<< "\$@" ;}
