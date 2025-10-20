@@ -1300,7 +1300,6 @@ install_debian_apt_package() {
   displayandexec "Installation de exiv2                               " "$AGI exiv2"
   displayandexec "Installation de libimage-exiftool-perl              " "$AGI libimage-exiftool-perl" # needed to get exiftool binnary
   displayandexec "Installation de ffmpeg                              " "$AGI ffmpeg"
-  displayandexec "Installation de filezilla                           " "$AGI filezilla"
   displayandexec "Installation de firefox-esr-l10n-fr                 " "$AGI firefox-esr-l10n-fr"
   displayandexec "Installation de firejail                            " "$AGI firejail firejail-profiles"
   displayandexec "Installation de flameshot                           " "$AGI flameshot"
@@ -1323,7 +1322,6 @@ install_debian_apt_package() {
   displayandexec "Installation de icdiff                              " "$AGI icdiff"
   displayandexec "Installation de iftop                               " "$AGI iftop"
   displayandexec "Installation de inxi                                " "$AGI inxi"
-  displayandexec "Installation de inkscape                            " "$AGI inkscape"
   displayandexec "Installation de iotop                               " "$AGI iotop"
   displayandexec "Installation de ipcalc                              " "$AGI ipcalc"
   displayandexec "Installation de jq                                  " "$AGI jq"
@@ -1371,7 +1369,20 @@ install_debian_apt_package() {
   displayandexec "Installation de nmap                                " "$AGI nmap"
   displayandexec "Installation de nvme-cli                            " "$AGI nvme-cli"
   displayandexec "Installation de oathtool                            " "$AGI oathtool"
-  displayandexec "Installation de ocrfeeder                           " "$AGI ocrfeeder"
+  displayandexec "Installation de ocrfeeder                           " "$AGI python3-standard-imghdr ocrfeeder"
+  # python3-standard-imghdr seems to be an unspecified dependance to ocrfeeder because I get this error of the package is not present
+#   Traceback (most recent call last):
+#   File "/usr/bin/ocrfeeder", line 31, in <module>
+#     from ocrfeeder.studio.studioBuilder import Studio
+#   File "/usr/lib/python3/dist-packages/ocrfeeder/studio/studioBuilder.py", line 29, in <module>
+#     from . import widgetPresenter
+#   File "/usr/lib/python3/dist-packages/ocrfeeder/studio/widgetPresenter.py", line 21, in <module>
+#     from .dataHolder import DataBox, TEXT_TYPE, IMAGE_TYPE
+#   File "/usr/lib/python3/dist-packages/ocrfeeder/studio/dataHolder.py", line 20, in <module>
+#     from ocrfeeder.util import graphics
+#   File "/usr/lib/python3/dist-packages/ocrfeeder/util/graphics.py", line 25, in <module>
+#     import imghdr
+# ModuleNotFoundError: No module named 'imghdr'
   displayandexec "Installation de openvpn                             " "$AGI openvpn"
   displayandexec "Installation de p7zip-full                          " "$AGI p7zip-full"
   displayandexec "Installation de p7zip-rar                           " "$AGI p7zip-rar"
@@ -1425,7 +1436,6 @@ install_debian_apt_package() {
   displayandexec "Installation de xfsprogs                            " "$AGI xfsprogs" # nécessaire pour manipuler des filesystems XFS
   displayandexec "Installation de xinput                              " "$AGI xinput"
   displayandexec "Installation de xorriso                             " "$AGI xorriso"
-  displayandexec "Installation de xournalpp                           " "$AGI xournalpp"
   displayandexec "Installation de xxd                                 " "$AGI xxd"
   displayandexec "Installation de xxhash                              " "$AGI xxhash"
   displayandexec "Installation de xz-utils                            " "$AGI xz-utils"
@@ -2227,9 +2237,19 @@ install_flatpak_software() {
   execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub org.shotcut.Shotcut"
   execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub org.kde.krita"
   execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub com.spotify.Client"
+  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub com.github.tchx84.Flatseal"
+  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub org.filezillaproject.Filezilla"
+  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub org.inkscape.Inkscape"
+  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub com.github.xournalpp.xournalpp"
+  # execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub com.vscodium.codium"
 }
 # flatpak list --app
 # flatpak history
+
+# à noter que VirtualBox pourrait à terme être installé via flatpak grâce au fork utilisant KVM
+# [johnny24x/VirtualBoxKVMFlatpak: 🔧 Package VirtualBox as a Flatpak, leveraging KVM support patches for efficient virtual machine management and easy installation on various systems.](https://github.com/johnny24x/VirtualBoxKVMFlatpak)
+# [#21797 (add VirtualBox to flathub.org / flatpak Integration for easier installation Linux) – Oracle VirtualBox](https://www.virtualbox.org/ticket/21797)
+# [Package VirtualBox - Requests - Flathub Discourse](https://discourse.flathub.org/t/package-virtualbox/4347/11)
 
 install_flatpak
 install_flatpak_software
@@ -3494,7 +3514,6 @@ view_details_columns_state4=@ByteArray(\0\0\0\xff\0\0\0\0\0\0\0\x1\0\0\0\x1\0\0\
 x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x1\xd3\0\0\0\x1\0\0\0\0\0\0\x6\xd8\0\0\0\x1\0\0\0\0\0\0\x4M\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x3\xe8\0\0\0\0\x64)
 EOF
   execandlog "reset_dir "/opt/opensnitch/allow_list/vscode/domains/""
-  execandlog "reset_dir "/opt/opensnitch/allow_list/vscode/regexp/""
   cat> /opt/opensnitch/allow_list/vscode/domains/vscode.domains << 'EOF'
 # ref : [Setup Visual Studio Code's Network Connection](https://code.visualstudio.com/docs/setup/network)
 # Visual Studio Marketplace
@@ -3510,12 +3529,40 @@ EOF
 # Used when logging in with GitHub or Microsoft for an extension or Settings Sync
 0.0.0.0 vscode.dev
 EOF
+  execandlog "reset_dir "/opt/opensnitch/allow_list/vscode/regexp/""
   cat> /opt/opensnitch/allow_list/vscode/regexp/vscode.regexp << 'EOF'
 # ref : [Setup Visual Studio Code's Network Connection](https://code.visualstudio.com/docs/setup/network)
 # Visual Studio Marketplace
 .*.gallery.vsassets.io
 # Visual Studio Marketplace
 .*.gallerycdn.vsassets.io
+EOF
+  execandlog "reset_dir "/opt/opensnitch/allow_list/joplin_plugin/domains/""
+cat> /opt/opensnitch/allow_list/joplin_plugin/domains/joplin_plugin.domains << 'EOF'
+# Github repository raw file access
+0.0.0.0 raw.githubusercontent.com
+# Github repository
+0.0.0.0 github.com
+# Github API
+0.0.0.0 api.github.com
+# Github release
+0.0.0.0 release-assets.githubusercontent.com
+# Github Gist
+0.0.0.0 gist.github.com
+EOF
+  execandlog "reset_dir "/opt/opensnitch/allow_list/signal-desktop/domains/""
+cat> /opt/opensnitch/allow_list/signal-desktop/domains/signal-desktop.domains << 'EOF'
+0.0.0.0 sfu.voip.signal.org
+0.0.0.0 turn2.voip.signal.org
+0.0.0.0 turn3.voip.signal.org
+0.0.0.0 chat.signal.org
+0.0.0.0 textsecure-service.whispersystems.org
+0.0.0.0 storage.signal.org
+0.0.0.0 cdn.signal.org
+0.0.0.0 cdn2.signal.org
+0.0.0.0 cdn3.signal.org
+0.0.0.0 updates2.signal.org
+0.0.0.0 uptime.signal.org
 EOF
 }
 configure_opensnitch
@@ -4093,7 +4140,7 @@ configure_mime_types() {
   $ExeAsUser cat> /home/"$local_user"/.config/mimeapps.list << 'EOF'
 [Added Associations]
 application/octet-stream=code.desktop;
-application/vnd.jgraph.mxfile=drawio.desktop;
+application/vnd.jgraph.mxfile=com.jgraph.drawio.desktop;
 application/x-php=code.desktop;
 application/x-mswinurl=launch_url_file.desktop;
 application/x-shellscript=code.desktop;
@@ -4113,7 +4160,7 @@ video/webm=mpv.desktop;
 video/x-flv=mpv.desktop;org.gnome.Totem.desktop;vlc.desktop;
 video/mp4=mpv.desktop;org.gnome.Totem.desktop;vlc.desktop;
 video/quicktime=mpv.desktop;
-image/webp=geeqie.desktop;
+image/webp=org.geeqie.Geeqie.desktop;
 
 [Default Applications]
 application/x-mswinurl=launch_url_file.desktop;
@@ -4133,8 +4180,8 @@ x-scheme-handler/http=chromium.desktop
 x-scheme-handler/https=chromium.desktop
 x-scheme-handler/about=chromium.desktop
 x-scheme-handler/unknown=chromium.desktop
-image/webp=geeqie.desktop
-image/heif=geeqie.desktop
+image/webp=org.geeqie.Geeqie.desktop
+image/heif=org.geeqie.Geeqie.desktop
 EOF
 }
 configure_mime_types
@@ -4356,7 +4403,7 @@ export PATH="\$PATH:/home/$local_user/.local/bin"
 shopt -s histappend
 PROMPT_COMMAND="history -n; history -a"
 unset HISTFILESIZE
-HISTSIZE=10000
+HISTSIZE=20000
 EOF
 }
 
@@ -4394,7 +4441,7 @@ to_lower() { tr [:upper:] [:lower:] <<< "\$@" ;}
 shopt -s histappend
 PROMPT_COMMAND="history -n; history -a"
 unset HISTFILESIZE
-HISTSIZE=10000
+HISTSIZE=20000
 EOF
 }
 
@@ -4640,6 +4687,19 @@ configure_firewall
 execandlog "rm -f /etc/resolv.conf && mv /etc/resolv.conf.old /etc/resolv.conf"
 
 ################################################################################
+## activation de systemd-resolved comme resolver DNS
+##------------------------------------------------------------------------------
+change_dns_resolver_to_systemd_resolved() {
+  displayandexec "Activation de systemd-resolved comme resolver DNS   " "\
+  $AGI systemd-resolved && \
+  $AGI openvpn-systemd-resolved && \
+  systemctl status systemd-resolved && \
+  resolvectl status"
+}
+change_dns_resolver_to_systemd_resolved
+################################################################################
+
+################################################################################
 ## Redirection du current directory dans /home
 ##------------------------------------------------------------------------------
 cd
@@ -4660,7 +4720,7 @@ create_root_part_snapshot_with_btrfs() {
   displayandexec "Création d'un snapshot BTRFS de /                   " "\
   is_dir_present_or_mkdir /.snapshot/ && \
   btrfs subvolume list / && \
-  mkdir -p /.snapshot && \
+  mkdir /.snapshot && \
   btrfs subvolume snapshot / /.snapshot/@"$now" && \
   btrfs subvolume list /"
 }
