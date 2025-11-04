@@ -109,6 +109,11 @@ CheckUpdateSystem() {
   #pip3 list --outdated | awk 'NR>2 {print $1}'
 }
 
+UpdateFlatpak() {
+  displayandexec "Mise à jour des applications Flatpak                " "flatpak update --assumeyes"
+}
+UpdateFlatpak
+
 ################################################################################
 
 CheckAvailableUpdate() {

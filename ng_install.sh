@@ -1310,6 +1310,7 @@ install_debian_apt_package() {
   displayandexec "Installation de gimp                                " "$AGI gimp"
   displayandexec "Installation de git                                 " "$AGI git"
   displayandexec "Installation de gitk                                " "$AGI gitk"
+  displayandexec "Installation de gocrypt                             " "$AGI gocryptfs"
   displayandexec "Installation de gparted                             " "$AGI gparted"
   displayandexec "Installation de gsmartcontrol                       " "$AGI gsmartcontrol"
   # displayandexec "Installation de handbrake                           " "$AGI handbrake"
@@ -1473,6 +1474,7 @@ firejail
 firejail-profiles
 freerdp3-sdl
 curl
+gocryptfs
 '
 #remmina # useless after switching installation to flatpak
 
@@ -1630,7 +1632,7 @@ install_apt-fast() {
   cat> /etc/apt/sources.list.d/apt-fast.sources << 'EOF'
 Types: deb
 URIs: http://ppa.launchpad.net/apt-fast/stable/ubuntu/
-Suites: kinetic
+Suites: plucky
 Components: main
 Signed-By: /usr/share/keyrings/apt-fast-archive-keyring.gpg
 EOF
@@ -2217,6 +2219,26 @@ EOF
 ################################################################################
 
 ################################################################################
+## instalation de Glow
+install_glow() {
+  cat> /etc/apt/sources.list.d/charm.sources << 'EOF'
+Types: deb
+URIs: https://repo.charm.sh/apt/
+Suites: *
+Components: *
+Signed-By: /usr/share/keyrings/charm-archive-keyring.gpg
+EOF
+  displayandexec "Installation de Glow                                " "\
+  is_file_present_and_rmfile "/usr/share/keyrings/charm-archive-keyring.gpg" && \
+  $WGET --output-document - 'https://repo.charm.sh/apt/gpg.key' | gpg --dearmor --output /usr/share/keyrings/charm-archive-keyring.gpg && \
+  $AG update && \
+  $AGI glow"
+}
+################################################################################
+
+################################################################################
+
+################################################################################
 ## instalation de Flatpak
 ##------------------------------------------------------------------------------
 install_flatpak() {
@@ -2262,7 +2284,6 @@ https://download.virtualbox.org/virtualbox/debian
 http://ppa.launchpad.net/apt-fast/stable/ubuntu
 https://updates.signal.org/desktop/apt
 https://packagecloud.io/asbru-cm/asbru-cm/debian
-http://ppa.launchpad.net/ansible/ansible-5/ubuntu
 http://ppa.launchpad.net/teejee2008/timeshift/ubuntu
 https://brave-browser-apt-release.s3.brave.com
 '
@@ -2310,6 +2331,7 @@ install_all_manual_install_apps_bookworm() {
   install_ventoy
   install_bindtointerface
   install_flatpak
+  install_glow
 }
 
 install_all_manual_install_apps_trixie() {
@@ -2341,6 +2363,7 @@ install_all_manual_install_apps_trixie() {
   install_ventoy
   install_bindtointerface
   install_flatpak
+  install_glow
 }
 
 if [ -z "$fisrt_time_script_executed" ]; then
@@ -3932,7 +3955,7 @@ button-layout='appmenu:minimize,maximize,close'
 
 [gnome/shell]
 app-picker-view=uint32 1
-favorite-apps=['chromium.desktop', 'org.gnome.Terminal.desktop', 'org.gnome.Nautilus.desktop', 'signal-desktop.desktop', 'joplin.desktop', 'firefox-esr.desktop', 'firefox-esr-private.desktop', 'brave-browser.desktop', 'code.desktop', 'org.gnome.Todo.desktop', 'veracrypt.desktop', 'spotify.desktop', 'libreoffice-writer.desktop', 'asbru-cm.desktop']
+favorite-apps=['brave-browser.desktop', 'chromium.desktop', 'org.gnome.Terminal.desktop', 'org.gnome.Nautilus.desktop', 'signal-desktop.desktop', 'joplin.desktop', 'firefox-esr.desktop', 'firefox-esr-private.desktop', 'code.desktop', 'org.gnome.Todo.desktop', 'veracrypt.desktop', 'spotify.desktop', 'libreoffice-writer.desktop', 'asbru-cm.desktop']
 had-bluetooth-devices-setup=false
 
 [gtk/settings/file-chooser]
@@ -4352,174 +4375,29 @@ configure_bashrc_user() {
   execandlog "is_file_present_and_rmfile "/home/"$local_user"/.bashrc" && \
   cp "$script_path"/.bashrc /home/"$local_user"/.bashrc && \
   chown "$local_user":"$local_user" /home/"$local_user"/.bashrc"
-  $ExeAsUser cat>> /home/"$local_user"/.bashrc << EOF
-
-# alias perso
-alias ll='ls --color=always -l -h'
-alias la='ls --color=always -A'
-alias l='ls --color=always -CF'
-alias asearch='apt-cache search'
-alias ashow='apt-cache show'
-alias h='history'
-alias nn='nano -c'
-alias cl='clear'
-alias grep='grep --color=auto'
-alias diff='diff --unified=0 --color=auto'
-alias diff_side_by_side='/usr/bin/diff --color=auto --side-by-side --width=\$COLUMNS'
-alias i='sudo ag install'
-alias ip='ip --color=auto'
-alias u='sudo ag update'
-alias upp='sudo ag update && sudo ag upgrade'
-alias uppr='sudo ag update && sudo ag dist-upgrade'
-alias yt-dlp='$my_bin_path/yt-dlp -o "%(title)s.%(ext)s" --parse-metadata "[%(title)s](%(webpage_url)s):%(meta_description)s" --parse-metadata ":(?P<meta_synopsis>)" --embed-metadata --impersonate Chrome-133'
-alias yt-dlp_uniq='$my_bin_path/yt-dlp -o "%(title)s - %(epoch)s.%(ext)s" --parse-metadata "[%(title)s](%(webpage_url)s):%(meta_description)s" --parse-metadata ":(?P<meta_synopsis>)" --embed-metadata --impersonate Chrome-133'
-alias yt-dlp_best='$my_bin_path/yt-dlp -o "%(title)s.%(ext)s" --parse-metadata "[%(title)s](%(webpage_url)s):%(meta_description)s" --parse-metadata ":(?P<meta_synopsis>)" --embed-metadata --impersonate Chrome-133 -f "bestvideo+bestaudio"'
-alias yt-dlp_1080p='$my_bin_path/yt-dlp -o "%(title)s.%(ext)s" --parse-metadata "[%(title)s](%(webpage_url)s):%(meta_description)s" --parse-metadata ":(?P<meta_synopsis>)" --embed-metadata --impersonate Chrome-133 -f '\''bestvideo[height<=1080]+bestaudio'\'''
-alias yt-dlp_1440p='$my_bin_path/yt-dlp -o "%(title)s.%(ext)s" --parse-metadata "[%(title)s](%(webpage_url)s):%(meta_description)s" --parse-metadata ":(?P<meta_synopsis>)" --embed-metadata --impersonate Chrome-133 -f '\''bestvideo[height<=1440]+bestaudio'\'''
-alias yt-dlp_onlybestaudio='$my_bin_path/yt-dlp -o "%(title)s.%(ext)s" --parse-metadata "[%(title)s](%(webpage_url)s):%(meta_description)s" --parse-metadata ":(?P<meta_synopsis>)" --embed-metadata --impersonate Chrome-133 -f bestaudio --extract-audio --audio-format best'
-alias free='free -ht'
-alias showshortcut='dconf dump /org/gnome/settings-daemon/plugins/media-keys/'
-alias update_my_sysupdate_script='sudo bash -c '\''rm -f $my_bin_path/sysupdate && wget -q -P $my_bin_path "https://raw.githubusercontent.com/NRGLine4Sec/config-l/main/sysupdate" && chmod +x $my_bin_path/sysupdate'\'''
-alias update_my_auditd_rules='sudo bash -c '\''rm -f /etc/audit/rules.d/audit.rules && wget -q -P /etc/audit/rules.d/ "https://raw.githubusercontent.com/NRGLine4Sec/config-l/main/audit.rules" && augenrules --check && systemctl restart auditd'\'''
-alias sshuttle='sudo /home/$local_user/.local/pipx/venvs/sshuttle/bin/sshuttle'
-alias my_ext_ip="curl --silent --location 'https://ipinfo.io/ip'"
-alias last_apt_kernel='apt-cache search --names-only "^linux-(headers|image)-[0-9]+\.[0-9]+(\.[0-9]+)?([-+](bpo|deb)[^ -]*)?-(amd64$|amd64-unsigned$)" | sort'
-HISTTIMEFORMAT="%Y/%m/%d %T   "
-is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/\$1 ;}
-to_lower() { tr [:upper:] [:lower:] <<< "\$@" ;}
-mpv_youtube() { mpv <($my_bin_path --impersonate Chrome-133 -o - "\$1") }
-mpv_youtube_audio() { mpv --no-video <($my_bin_path -f bestaudio --extract-audio --audio-format best --impersonate Chrome-133 -o - "\$1") }
-youtube_description() { $my_bin_path/yt-dlp --impersonate Chrome-133 --playlist-items 0 --print description "\$1" ;}
-
-# for Ansible vault editor
-export EDITOR=nano
-
-# for python binnary
-export PATH="\$PATH:/home/$local_user/.local/bin"
-
-# share history between terminals
-# ref : https://subbass.blogspot.com/2009/10/howto-sync-bash-history-between.html
-# ref : https://stackoverflow.com/questions/15116806/how-can-i-see-all-of-the-bash-history
-shopt -s histappend
-PROMPT_COMMAND="history -n; history -a"
-unset HISTFILESIZE
-HISTSIZE=20000
-EOF
+  $ExeAsUser cat "$script_path"/my_user.bashrc >> /home/"$local_user"/.bashrc
+# $my_bin_path
+# $local_user
 }
 
 configure_bashrc_root() {
   # alias for root
   execandlog "is_file_present_and_rmfile "/root/.bashrc" && \
   cp "$script_path"/.bashrc /root/.bashrc"
-  cat>> /root/.bashrc << EOF
-
-# alias perso
-alias ll='ls --color=always -l -h'
-alias la='ls --color=always -A'
-alias l='ls --color=always -CF'
-alias asearch='apt-cache search'
-alias ashow='apt-cache show'
-alias h='history'
-alias nn='nano -c'
-alias cl='clear'
-alias grep='grep --color=auto'
-alias diff='diff --unified=0 --color=auto'
-alias diff_side_by_side='/usr/bin/diff --color=auto --side-by-side --width=\$COLUMNS'
-alias i='ag install'
-alias ip='ip --color=auto'
-alias u='ag update'
-alias upp='ag update && ag upgrade'
-alias uppr='ag update && ag dist-upgrade'
-alias free='free -ht'
-HISTTIMEFORMAT=\"%Y/%m/%d %T   \"
-is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/\$1 ;}
-to_lower() { tr [:upper:] [:lower:] <<< "\$@" ;}
-
-# share history between terminals
-# ref : https://subbass.blogspot.com/2009/10/howto-sync-bash-history-between.html
-# ref : https://stackoverflow.com/questions/15116806/how-can-i-see-all-of-the-bash-history
-shopt -s histappend
-PROMPT_COMMAND="history -n; history -a"
-unset HISTFILESIZE
-HISTSIZE=20000
-EOF
+  cat "$script_path"/my_root.bashrc >> /root/.bashrc
 }
 
 configure_zshrc_user() {
   execandlog "is_file_present_and_rmfile "/home/"$local_user"/.zshrc" && \
   cp "$script_path"/.zshrc /home/"$local_user"/.zshrc && \
   chown "$local_user":"$local_user" /home/"$local_user"/.zshrc"
-  $ExeAsUser cat>> /home/"$local_user"/.zshrc << EOF
-
-# alias perso
-alias ll='ls --color=always -l -h'
-alias la='ls --color=always -A'
-alias l='ls --color=always -CF'
-alias asearch='apt-cache search'
-alias ashow='apt-cache show'
-alias h='fc -li 1'
-alias nn='nano -c'
-alias cl='clear'
-alias grep='grep --color=auto'
-alias diff='diff --unified=0 --color=auto'
-alias diff_side_by_side='/usr/bin/diff --color=auto --side-by-side --width=\$COLUMNS'
-alias i='sudo ag install'
-alias u='sudo ag update'
-alias upp='sudo ag update && sudo ag upgrade'
-alias uppr='sudo ag update && sudo ag dist-upgrade'
-alias yt-dlp='$my_bin_path/yt-dlp -o "%(title)s.%(ext)s" --parse-metadata "[%(title)s](%(webpage_url)s):%(meta_description)s" --parse-metadata ":(?P<meta_synopsis>)" --embed-metadata --impersonate Chrome-133'
-alias yt-dlp_uniq='$my_bin_path/yt-dlp -o "%(title)s - %(epoch)s.%(ext)s" --parse-metadata "[%(title)s](%(webpage_url)s):%(meta_description)s" --parse-metadata ":(?P<meta_synopsis>)" --embed-metadata --impersonate Chrome-133'
-alias yt-dlp_best='$my_bin_path/yt-dlp -o "%(title)s.%(ext)s" --parse-metadata "[%(title)s](%(webpage_url)s):%(meta_description)s" --parse-metadata ":(?P<meta_synopsis>)" --embed-metadata --impersonate Chrome-133 -f "bestvideo+bestaudio"'
-alias yt-dlp_1080p='$my_bin_path/yt-dlp -o "%(title)s.%(ext)s" --parse-metadata "[%(title)s](%(webpage_url)s):%(meta_description)s" --parse-metadata ":(?P<meta_synopsis>)" --embed-metadata --impersonate Chrome-133 -f '\''bestvideo[height<=1080]+bestaudio'\'''
-alias yt-dlp_1440p='$my_bin_path/yt-dlp -o "%(title)s.%(ext)s" --parse-metadata "[%(title)s](%(webpage_url)s):%(meta_description)s" --parse-metadata ":(?P<meta_synopsis>)" --embed-metadata --impersonate Chrome-133 -f '\''bestvideo[height<=1440]+bestaudio'\'''
-alias yt-dlp_onlybestaudio='$my_bin_path/yt-dlp -o "%(title)s.%(ext)s" --parse-metadata "[%(title)s](%(webpage_url)s):%(meta_description)s" --parse-metadata ":(?P<meta_synopsis>)" --embed-metadata --impersonate Chrome-133 -f bestaudio --extract-audio --audio-format best'
-alias free='free -ht'
-alias update_my_sysupdate_script='sudo bash -c '\''rm -f $my_bin_path/sysupdate && wget -q -P $my_bin_path "https://raw.githubusercontent.com/NRGLine4Sec/config-l/main/sysupdate" && chmod +x $my_bin_path/sysupdate'\'''
-alias update_my_auditd_rules='sudo bash -c '\''rm -f /etc/audit/rules.d/audit.rules && wget -q -P /etc/audit/rules.d/ "https://raw.githubusercontent.com/NRGLine4Sec/config-l/main/audit.rules" && augenrules --check && systemctl restart auditd'\'''
-alias showshortcut='dconf dump /org/gnome/settings-daemon/plugins/media-keys/'
-alias sshuttle='sudo /root/.local/bin/sshuttle'
-alias my_ext_ip="curl --silent --location 'https://ipinfo.io/ip'"
-alias last_apt_kernel='apt-cache search --names-only "linux-(headers|image)-[[:digit:]]\.[[:digit:]]+\.[[:digit:]]+(-[[:digit:]]+|\+bpo)-(amd64$|amd64-unsigned$)" | sort'
-is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/\$1 ;}
-to_lower() { tr [:upper:] [:lower:] <<< "\$@" ;}
-mpv_youtube() { mpv <($my_bin_path --impersonate Chrome-133 -o - "\$1") }
-mpv_youtube_audio() { mpv --no-video <($my_bin_path -f bestaudio --extract-audio --audio-format best --impersonate Chrome-133 -o - "\$1") }
-youtube_description() { $my_bin_path/yt-dlp --impersonate Chrome-133 --playlist-items 0 --print description "\$1" ;}
-
-# for Ansible vault editor
-export EDITOR=nano
-
-# for python binnary
-export PATH="\$PATH:/home/$local_user/.local/bin"
-EOF
+  $ExeAsUser cat "$script_path"/my_user.zshrc >> /home/"$local_user"/.zshrc
 }
 
 configure_zshrc_root() {
   execandlog "is_file_present_and_rmfile "/root/.zshrc" && \
   cp "$script_path"/.zshrc /root/.zshrc"
-  cat>> /root/.zshrc << EOF
-
-# alias perso
-alias ll='ls --color=always -l -h'
-alias la='ls --color=always -A'
-alias l='ls --color=always -CF'
-alias asearch='apt-cache search'
-alias ashow='apt-cache show'
-alias h='fc -li 1'
-alias nn='nano -c'
-alias cl='clear'
-alias grep='grep --color=auto'
-alias diff='diff --unified=0 --color=auto'
-alias diff_side_by_side='/usr/bin/diff --color=auto --side-by-side --width=\$COLUMNS'
-alias i='ag install'
-alias ip='ip --color=auto'
-alias u='ag update'
-alias upp='ag update && ag upgrade'
-alias uppr='ag update && ag dist-upgrade'
-alias free='free -ht'
-is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/\$1 ;}
-to_lower() { tr [:upper:] [:lower:] <<< "\$@" ;}
-EOF
+  cat "$script_path"/my_root.zshrc >> /root/.zshrc
 }
 
 configure_bashrc() {
