@@ -10,7 +10,7 @@ alias nn='nano -c'
 alias cl='clear'
 alias grep='grep --color=auto'
 alias diff='diff --unified=0 --color=auto'
-alias diff_side_by_side='/usr/bin/diff --color=auto --side-by-side --width=\$COLUMNS'
+alias diff_side_by_side='/usr/bin/diff --color=auto --side-by-side --width=$COLUMNS'
 alias i='ag install'
 alias ip='ip --color=auto'
 alias u='ag update'
@@ -18,8 +18,8 @@ alias upp='ag update && ag upgrade'
 alias uppr='ag update && ag dist-upgrade'
 alias free='free -ht'
 HISTTIMEFORMAT=\"%Y/%m/%d %T   \"
-is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/\$1 ;}
-to_lower() { tr [:upper:] [:lower:] <<< "\$@" ;}
+is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/$1 ;}
+to_lower() { tr [:upper:] [:lower:] <<< "$@" ;}
 
 # share history between terminals
 # ref : https://subbass.blogspot.com/2009/10/howto-sync-bash-history-between.html

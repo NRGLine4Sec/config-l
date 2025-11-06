@@ -10,7 +10,7 @@ alias nn='nano -c'
 alias cl='clear'
 alias grep='grep --color=auto'
 alias diff='diff --unified=0 --color=auto'
-alias diff_side_by_side='/usr/bin/diff --color=auto --side-by-side --width=\$COLUMNS'
+alias diff_side_by_side='/usr/bin/diff --color=auto --side-by-side --width=$COLUMNS'
 alias i='sudo ag install'
 alias u='sudo ag update'
 alias upp='sudo ag update && sudo ag upgrade'
@@ -28,23 +28,14 @@ alias showshortcut='dconf dump /org/gnome/settings-daemon/plugins/media-keys/'
 alias sshuttle='sudo /root/.local/bin/sshuttle'
 alias my_ext_ip="curl --silent --location 'https://ipinfo.io/ip'"
 alias last_apt_kernel='apt-cache search --names-only "linux-(headers|image)-[[:digit:]]\.[[:digit:]]+\.[[:digit:]]+(-[[:digit:]]+|\+bpo)-(amd64$|amd64-unsigned$)" | sort'
-is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/\$1 ;}
-to_lower() { tr [:upper:] [:lower:] <<< "\$@" ;}
-mpv_youtube() { mpv <($my_bin_path --impersonate Chrome-133 -o - "\$1") }
-mpv_youtube_audio() { mpv --no-video <($my_bin_path -f bestaudio --extract-audio --audio-format best --impersonate Chrome-133 -o - "\$1") }
-youtube_description() { $my_bin_path/yt-dlp --impersonate Chrome-133 --playlist-items 0 --print description "\$1" ;}
+is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/$1 ;}
+to_lower() { tr [:upper:] [:lower:] <<< "$@" ;}
+mpv_youtube() { mpv <($my_bin_path --impersonate Chrome-133 -o - "$1") }
+mpv_youtube_audio() { mpv --no-video <($my_bin_path -f bestaudio --extract-audio --audio-format best --impersonate Chrome-133 -o - "$1") }
+youtube_description() { $my_bin_path/yt-dlp --impersonate Chrome-133 --playlist-items 0 --print description "$1" ;}
 
 # for Ansible vault editor
 export EDITOR=nano
 
 # for python binnary
-export PATH="\$PATH:/home/$local_user/.local/bin"
-
-update_my_zshrc() {
-  export my_bin_path='/usr/local/bin'
-  export local_user="$(getent passwd 1000 | awk -F':' '{print $1}')"
-  mv /home/"\$local_user"/.zshrc /home/"\$local_user"/.zshrc.old && \
-  curl -sL -o /home/"\$local_user"/.zshrc "https://raw.githubusercontent.com/NRGLine4Sec/config-l/main/.zshrc" && \
-  curl -sL -o /tmp/my_user.zshrc "https://raw.githubusercontent.com/NRGLine4Sec/config-l/main/my_user.zshrc" && \
-  cat /tmp/my_user.zshrc >> /home/"\$local_user"/.zshrc
-}
+export PATH="$PATH:/home/$local_user/.local/bin"

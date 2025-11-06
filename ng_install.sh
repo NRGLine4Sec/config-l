@@ -2881,6 +2881,28 @@ EOF
 }
 ################################################################################
 
+################################################################################
+## install du script update_my_zshrc
+##------------------------------------------------------------------------------
+install_update_my_zshrc() {
+  cat> "$my_bin_path"/update_my_zshrc << 'EOF'
+#!/bin/bash
+# __my_script__
+
+export my_bin_path='/usr/local/bin'
+export local_user="$(getent passwd 1000 | awk -F':' '{print $1}')"
+
+mv /home/"$local_user"/.zshrc /home/"$local_user"/.zshrc.old && \
+curl -sL -o /home/"$local_user"/.zshrc "https://raw.githubusercontent.com/NRGLine4Sec/config-l/main/.zshrc" && \
+curl -sL -o /tmp/my_user.zshrc "https://raw.githubusercontent.com/NRGLine4Sec/config-l/main/my_user.zshrc" && \
+envsubst '$my_bin_path $local_user' < /tmp/my_user.zshrc >> /home/"$local_user"/.zshrc
+}
+EOF
+  displayandexec "Installation du script update_my_zshr               " "\
+  chmod +x "$my_bin_path"/update_my_zshrc"
+}
+################################################################################
+
 install_all_perso_script() {
   install_sysupdate
   install_check_backport_update
@@ -2895,6 +2917,7 @@ install_all_perso_script() {
   install_play_pause_chromium
   install_decomp
   install_waitforssh
+  install_update_my_zshrc
 }
 install_all_perso_script
 ################################################################################

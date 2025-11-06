@@ -10,7 +10,7 @@ alias nn='nano -c'
 alias cl='clear'
 alias grep='grep --color=auto'
 alias diff='diff --unified=0 --color=auto'
-alias diff_side_by_side='/usr/bin/diff --color=auto --side-by-side --width=\$COLUMNS'
+alias diff_side_by_side='/usr/bin/diff --color=auto --side-by-side --width=$COLUMNS'
 alias i='sudo ag install'
 alias ip='ip --color=auto'
 alias u='sudo ag update'
@@ -30,17 +30,17 @@ alias sshuttle='sudo /home/$local_user/.local/pipx/venvs/sshuttle/bin/sshuttle'
 alias my_ext_ip="curl --silent --location 'https://ipinfo.io/ip'"
 alias last_apt_kernel='apt-cache search --names-only "^linux-(headers|image)-[0-9]+\.[0-9]+(\.[0-9]+)?([-+](bpo|deb)[^ -]*)?-(amd64$|amd64-unsigned$)" | sort'
 HISTTIMEFORMAT="%Y/%m/%d %T   "
-is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/\$1 ;}
-to_lower() { tr [:upper:] [:lower:] <<< "\$@" ;}
-mpv_youtube() { mpv <($my_bin_path --impersonate Chrome-133 -o - "\$1") }
-mpv_youtube_audio() { mpv --no-video <($my_bin_path -f bestaudio --extract-audio --audio-format best --impersonate Chrome-133 -o - "\$1") }
-youtube_description() { $my_bin_path/yt-dlp --impersonate Chrome-133 --playlist-items 0 --print description "\$1" ;}
+is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/$1 ;}
+to_lower() { tr [:upper:] [:lower:] <<< "$@" ;}
+mpv_youtube() { mpv <($my_bin_path --impersonate Chrome-133 -o - "$1") }
+mpv_youtube_audio() { mpv --no-video <($my_bin_path -f bestaudio --extract-audio --audio-format best --impersonate Chrome-133 -o - "$1") }
+youtube_description() { $my_bin_path/yt-dlp --impersonate Chrome-133 --playlist-items 0 --print description "$1" ;}
 
 # for Ansible vault editor
 export EDITOR=nano
 
 # for python binnary
-export PATH="\$PATH:/home/$local_user/.local/bin"
+export PATH="$PATH:/home/$local_user/.local/bin"
 
 # share history between terminals
 # ref : https://subbass.blogspot.com/2009/10/howto-sync-bash-history-between.html
