@@ -4,24 +4,12 @@
 ##
 
 
-## utiliser l'option -l de grep ou bien zgrep pour n'obtenir que le chemin du fichier qui contient le patern que'on recherche
-
 ## Pour obtenir toutes les commandes utilisés sur un système : sudo grep -o "COMMAND.*" /var/log/auth.log
-
-## Pour escape tous les caractère spéciaux automatiquement avec sed et pouvoir réutiliser le résultat dans une autre commande sed par exemple : sed -e 's/[]\/$*.^[]/\\&/g'
-## exemple pour le patern /var/log/auth.log : echo '/var/log/auth.log' | sed -e 's/[]\/$*.^[]/\\&/g'
-## on obtient alors : \/var\/log\/auth\.log
 
 ## Pour désactiver le bip système : xset b off
 
-
-
-
 # Regarder comment ils font avec le script shell de remediation : http://static.open-scap.org/ssg-guides/ssg-debian8-guide-anssi_np_nt28_high.html#xccdf_org.ssgproject.content_rule_sshd_disable_root_login
 # Regarder aussi pour ajouter cette conf la : http://static.open-scap.org/ssg-guides/ssg-debian8-guide-anssi_np_nt28_high.html#xccdf_org.ssgproject.content_rule_sshd_disable_empty_passwords
-##
-#
-##
 ##
 ## On peut aussi utiliser "if !" pour indiquer la négation de la condition d'un if par exempe if ! wget www.google.Fr; then echo "pas d'accès à Internet";fi
 ##
@@ -29,21 +17,9 @@
 ##
 ## Regarder pour voir si on install gnome-boxes
 ##
-##
 ## Regarder pour voir si on install zulucrypt
 ##
-##
 ## Une extension Gnome permet de faire en sorte de désactivé le black screen après avoir vérouiller la session (Win + L) : https://extensions.gnome.org/extension/1414/unblank/
-##
-## Pour faire l'install du scriptt avec apt-fast à place de apt-get
-## On vérifie que aria1 est installé, si il ne l'ait pas, on l'install
-# if ! dpkg-query --show aria2 >/dev/null 2>&1; then
-#     apt-get update
-#     apt-get install -y aria2
-#   fi
-## Ensuite faire l'install de apt-fast
-##
-##
 ##
 ## ajouter l'outil suivant https://github.com/orhun/kmon
 ##
@@ -57,11 +33,6 @@
 ## Tester l'outil ultracopier (apt-get install ultracopier) et notamment son intégration avec nautilus
 ##
 ## Regarder pour installer tumbler-plugins-extra
-##
-##
-#
-
-#
 #
 # ----
 # apparement ce fichier de conf est renseigner par libreoffice en faisant le delta entre la conf par défaut et les modifs de conf, il faudrait donc voir ce que contient le fichier après une install, faire les modifs nécessaire et faire un diff pour obtenir les paramètres qui sont ajouter dans le fichier
@@ -69,58 +40,22 @@
 # https://forum.openoffice.org/en/forum/viewtopic.php?f=16&t=64520
 # https://askubuntu.com/questions/83605/how-do-i-export-customized-libreoffice-config-files
 # ----
-#
-#
-
 
 # ref : [Configurer sa souris Logitech MX Master sous Linux (Ubuntu) – Miximum](https://www.miximum.fr/blog/configurer-sa-souris-logitech-mx-master-sous-linux-ubuntu/)
 
-
 ## copier leur système d'affiche pour l'usage : [Remove Elasticsearch indices that older than a given date.](https://gist.github.com/yumminhuang/ec03bcacbbc6434412b82ca0c34e7a18)
-
-## a regarder pour installer setools-gui
-
-## commande à garder dans un coin : sudo lshw -class memory
 
 ## regarder de plus près cette outil : https://github.com/jwyllie83/tcpping (ou au moins trouver la commande équivalente pour faire du ping TCP avec nmap)
 ## https://hub.packtpub.com/discovering-network-hosts-with-tcp-syn-and-tcp-ack-ping-scans-in-nmaptutorial/
 
-## utiliser dbus-monitor pour monitorer les appels dbus
-
 ## regarder nsntrace (apt-get install -y nsntrace)
 ## sudo nsntrace -d enp -o result.pcap -u $USER signal-desktop
-
-
-
 
 # script à regarder de plus près pour voir comment intégrer un affichage des tirets et des hashtags en fonction de la longueur du terminal et du message a afficher
 # declare -ag COL_LEN=($(wget -qO- http://bit.ly/cpu_flags | awk -F\| 'BEGIN { NR==1;getline; H1=$1; H2=$2; H3=$3 } { for (i=1; i<=NF; i++) { max[i] = length($i) > max[i] ? length($i) : max[i] ;ncols = i > ncols ? i : ncols }} END { {print H2":"max[2]"\n"H3":"max[3]"\n"H1":"max[1]"\n"}}'))
 # export LS='─'
 # (printf "%s\n" ${COL_LEN[@]%%:*} | paste -sd\| && printf "%s\n" ${COL_LEN[@]##*:} | xargs -n1 bash -c 'eval printf "%.3s" ${LS}{1..${0}};echo' | paste -sd"|"
 # wget -qO- http://bit.ly/cpu_flags | awk -F\| '!/^CLASS/{print $2"|"$3"|"$1}') | column -nexts '|' | sed '1,2s/.*$/'$(printf "\e[1m")'&'$(printf "\e[0m")'/'
-
-
-
-# gestioin des mots de passe stockés
-# gnome-key - seahorse
-# [What are Linux keyring, gnome-keyring, Secret Service, D-Bus](https://rtfm.co.ua/en/what-is-linux-keyring-gnome-keyring-secret-service-and-d-bus/)
-# [How to store a new record in gnome keyring via secret-tool in an ansible task or how to pipe stdin in an ansible shell task? - Stack Overflow](https://stackoverflow.com/questions/58894523/how-to-store-a-new-record-in-gnome-keyring-via-secret-tool-in-an-ansible-task-or)
-# [https://raw.githubusercontent.com/isamert/dotfiles/master/.scripts/getpassword](https://raw.githubusercontent.com/isamert/dotfiles/master/.scripts/getpassword)
-# [KeepassXC Question about CLI : KeePass](https://www.reddit.com/r/KeePass/comments/a5tjx2/keepassxc_question_about_cli/)
-# [Automatize your logins with gnome-keyring (and optionally with KeePassXC) | isamert](https://isamert.net/jekyll/update/2018/10/05/automatize-your-logins-with-gnome-keyring-and-keepassxc.html)
-# [Keyring alternative: Access KeePassXC entries of an unlocked database from the command line : linux](https://www.reddit.com/r/linux/comments/ehfhud/keyring_alternative_access_keepassxc_entries_of/)
-# [Question #209138 : Questions : gkeyring](https://answers.launchpad.net/gkeyring/+question/209138)
-# [Using KeePassXC as your system-keyring and ssh-agent - Cogitri's blog](https://www.cogitri.dev/posts/03-keepassxc-freedesktop-secret/)
-# [KeepassXC as the System Keyring [Chuck Nemeth]](https://www.chucknemeth.com/linux/security/keyring/keepassxc-keyring)
-# [keyring · PyPI](https://pypi.org/project/keyring/)
-# [keyring [Chuck Nemeth]](https://www.chucknemeth.com/linux/security/keyring/keyring)
-# [secret-tool [Chuck Nemeth]](https://www.chucknemeth.com/linux/security/keyring/secret-tool)
-
-# les mdp sont sotckés dans ~/.local/share/keyrings/
-
-
-
-# lien à regarder lorsqu'il y a une nouvelle release de debian et qu'on veut préparer le script : [Chapter 5. Issues to be aware of for debian testing](https://www.debian.org/releases/testing/amd64/release-notes/ch-information.en.html)
 
 ################################################################################
 ## ROADMAP
@@ -139,8 +74,6 @@
 # systemctl stop apt-daily.timer
 # systemctl stop apt-daily-upgrade.timer
 # - rajouter dans le script sysupdate la possibilité de n'update qu'un seul paquet en particulier en le méttant en argument de l'apelle au script
-
-
 
 ################################################################################
 
@@ -553,8 +486,8 @@ is_script_launch_with_gnome_terminal
 ## vérification que le SecureBoot est activé
 ##------------------------------------------------------------------------------
 check_secureboot_enabled() {
-  if $(command -v mokutil >/dev/null); then
-    if $(mokutil --sb-state 2>/dev/null | grep -q 'SecureBoot enabled'); then
+  if command -v mokutil >/dev/null; then
+    if mokutil --sb-state 2>/dev/null | grep -q 'SecureBoot enabled'; then
       secureboot_enable=1
     fi
   fi
@@ -600,12 +533,6 @@ check_latest_version_manual_install_apps() {
     shotcut_appimage='shotcut-linux-x86_64-240626.AppImage'
   fi
   # check version : https://github.com/mltframework/shotcut/releases/
-
-  stacer_version="$($CURL 'https://api.github.com/repos/oguzhaninan/Stacer/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
-  if [ $? != 0 ] || [ -z "$stacer_version" ]; then
-    stacer_version='1.1.0'
-  fi
-  # check version : https://github.com/oguzhaninan/Stacer/releases/
 
   keepassxc_version="$($CURL 'https://api.github.com/repos/keepassxreboot/keepassxc/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
   if [ $? != 0 ] || [ -z "$keepassxc_version" ]; then
@@ -699,8 +626,6 @@ manual_check_latest_version() {
   echo 'Shotcut : '"$shotcut_version"
   shotcut_appimage="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"name": "\K.*?(?=")' | grep 'AppImage')"
   echo 'Shotcut AppImage : '"$shotcut_appimage"
-  stacer_version="$($CURL 'https://api.github.com/repos/oguzhaninan/Stacer/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
-  echo 'Stacer : '"$stacer_version"
   keepassxc_version="$($CURL 'https://api.github.com/repos/keepassxreboot/keepassxc/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
   echo 'KeePassXC : '"$keepassxc_version"
   bat_version="$($CURL 'https://api.github.com/repos/sharkdp/bat/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
@@ -754,15 +679,20 @@ network_int_name="$(ip route list default | awk 'NR==1,/^default/{print $5}')"
 # pci=`lspci  | awk '/Ethernet/{print $1}'`; find /sys/class/net ! -type d | xargs --max-args=1 realpath | awk -v pciid=$pci -F\/ '{if($0 ~ pciid){print $NF}}'
 
 ipv4_local_address="$(ip -o -4 addr list "$network_int_name" | awk '{print $4}' | cut -d/ -f1)"
-ipv4_external_address="$(curl --silent --location 'https://ipinfo.io/ip' 2>/dev/null)"
+ipv4_external_address="$(curl -4 --silent --location 'https://ipinfo.io/ip' 2>/dev/null)"
 if [ -z "$ipv4_external_address" ]; then
-  ipv4_external_address="$($WGET --output-document - 'https://ifconfig.me')"
+  ipv4_external_address="$($WGET -4 --output-document - 'https://checkip.amazonaws.com')"
+  if [ -z "$ipv4_external_address" ]; then
+    ipv4_external_address="$(busybox nslookup -type=TXT o-o.myaddr.l.google.com ns1.google.com | sed -n 's/.*text = "\(.*\)"/\1/p')"
+  fi
 fi
 ipv6_local_address="$(ip -o -6 addr list "$network_int_name" | awk '/fe80/{print $4}' | cut -d/ -f1)"
 ipv6_external_address="$(ip -o -6 addr list "$network_int_name" | grep -v 'noprefixroute' | awk '{print $4}' | cut -d/ -f1)"
-computer_ram="$(awk '/^MemTotal:/{printf("%.0f", $2/1024/1024+1);}' /proc/meminfo)"
-# grep "MemTotal" /proc/meminfo | awk '{print $2}' | sed -r 's/.{3}$//'
-# potentiellement à remplacer avec free -g | awk '/^Mem:/{print $2}'
+computer_ram="$(awk '/^MemTotal:/{printf("%.0f Go", $2/1024/1000 + 0.5)}' /proc/meminfo)"
+# $2 est en kibioctets (KiB, 1024 octets),
+# on divise d’abord par 1024 pour obtenir des mébioctets (MiB),
+# puis par 1000 pour convertir en “mégaoctets commerciaux” (Mo),
+# enfin on ajoute +0.5 avant le format %.0f pour forcer un arrondi à l’unité supérieure
 
 computer_proc_nb="$(grep -c '^processor' /proc/cpuinfo)"
 computer_proc_model_name="$(grep -Po -m 1 '(^model name\s*: )\K.*' /proc/cpuinfo)"
@@ -911,6 +841,7 @@ echo '              lancement du script : sudo bash '"$script_name"
 echo '              version du système  : '"$version_linux" "$system_version" "($debian_release)"
 echo '              architecture CPU    : '"$computer_proc_architecture"
 echo '              nombre de coeur CPU : '"$computer_proc_nb"
+echo '              mémoire RAM         : '"$computer_ram"
 if [ "$secureboot_enable" == 1 ]; then
   echo '              SecureBoot          : Activé'
 else
@@ -981,7 +912,7 @@ Pin: release *
 Pin-Priority: -1
 
 # blacklist some packages to prevent conflict with manual install
-Package: yt-dlp youtube-dl keepassxc python3-opensnitch-ui opensnitch ansible ansible-core
+Package: yt-dlp youtube-dl keepassxc python3-opensnitch-ui opensnitch ansible ansible-core bat
 Pin: release *
 Pin-Priority: -1
 
@@ -1874,6 +1805,7 @@ EOF
   $AGI signal-desktop"
 }
 # https://signal.org/download/linux/
+# curl -sL https://updates.signal.org/static/desktop/apt/signal-desktop.sources | cat
 ################################################################################
 
 ################################################################################
@@ -3083,7 +3015,9 @@ configure_logrotate() {
   sed -E -i 's/^# keep [[:digit:]]+ weeks worth of backlogs/# keep 8 weeks worth of backlogs/' /etc/logrotate.conf && \
   sed -E -i 's/^rotate [[:digit:]]+/rotate 8/' /etc/logrotate.conf"
 }
-configure_logrotate
+if [ "$bullseye" == 1 ]; then
+  configure_logrotate
+fi
 ################################################################################
 
 ################################################################################
@@ -3200,18 +3134,6 @@ configure_wireshark
 # 	"Destination", "%d",
 # 	"Protocol", "%p",
 # 	"Length", "%L"
-################################################################################
-
-################################################################################
-## configuration de stacer
-##------------------------------------------------------------------------------
-configure_stacer() {
-  execandlog "[ -d /home/"$local_user"/.config/stacer/ ] || $ExeAsUser mkdir /home/"$local_user"/.config/stacer/"
-  $ExeAsUser echo '[General]
-  AppQuitDialogDontAsk=true
-  Language=fr' > /home/"$local_user"/.config/stacer/settings.ini
-}
-# configure_stacer
 ################################################################################
 
 ################################################################################
@@ -4604,7 +4526,7 @@ create_root_part_snapshot_with_btrfs() {
 }
 
 check_if_root_part_is_btrfs() {
-  if $(findmnt / --raw --noheadings --output=FSTYPE | grep -qw 'btrfs' &>/dev/null); then
+  if findmnt / --raw --noheadings --output=FSTYPE | grep -qw 'btrfs' &>/dev/null; then
     create_root_part_snapshot_with_btrfs
   else
     create_root_part_snapshot_with_timeshift_rsync
