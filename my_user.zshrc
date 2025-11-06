@@ -43,8 +43,8 @@ export PATH="\$PATH:/home/$local_user/.local/bin"
 update_my_zshrc() {
   export my_bin_path='/usr/local/bin'
   export local_user="$(getent passwd 1000 | awk -F':' '{print $1}')"
-  mv /home/"$local_user"/.zshrc /home/"$local_user"/.zshrc.old && \
-  curl -sL -o /home/"$local_user"/.zshrc "https://raw.githubusercontent.com/NRGLine4Sec/config-l/main/.zshrc" && \
+  mv /home/"\$local_user"/.zshrc /home/"\$local_user"/.zshrc.old && \
+  curl -sL -o /home/"\$local_user"/.zshrc "https://raw.githubusercontent.com/NRGLine4Sec/config-l/main/.zshrc" && \
   curl -sL -o /tmp/my_user.zshrc "https://raw.githubusercontent.com/NRGLine4Sec/config-l/main/my_user.zshrc" && \
-  cat /tmp/my_user.zshrc >> /home/"$local_user"/.zshrc
+  cat /tmp/my_user.zshrc >> /home/"\$local_user"/.zshrc
 }

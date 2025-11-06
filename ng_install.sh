@@ -122,7 +122,7 @@ log_dir_path='/var/log/postinstall'
 ## Vérification que le script s'execute pour la première fois
 ##------------------------------------------------------------------------------
 check_if_fisrt_time_script_executed() {
-  if $(grep -qE '[[:blank:]]+Fin du script[[:blank:]]+' "$log_dir_path"/*/log_script_install*.log 2>/dev/null); then
+  if grep -qE '[[:blank:]]+Fin du script[[:blank:]]+' "$log_dir_path"/*/log_script_install*.log 2>/dev/null; then
     fisrt_time_script_executed=1
   fi
 }
@@ -437,7 +437,7 @@ sync_date_and_time
 ## vérification que le script s'execute sur une debian
 ##------------------------------------------------------------------------------
 check_distrib_is_debian() {
-  if $(grep '^NAME=' /etc/os-release | grep -i 'debian' &>/dev/null); then
+  if grep '^NAME=' /etc/os-release | grep -i 'debian' &>/dev/null; then
     version_linux='Debian'
   else
     echo -e "${RED}######################################################################${RESET}" | tee --append "$log_file"
@@ -1950,11 +1950,6 @@ install_ansible() {
   $ExeAsUser pipx inject ansible proxmoxer && \
   $ExeAsUser pipx inject --include-deps --include-apps ansible requests && \
   $ExeAsUser pipx inject ansible pykeepass"
-  $ExeAsUser cat>> /home/"$local_user"/.bashrc << 'EOF'
-
-# for Ansible vault editor
-export EDITOR=nano
-EOF
 }
 # ref : [pipx install ansible - No binaries associated with this package. · Issue #20 · pypa/pipx](https://github.com/pypa/pipx/issues/20#issuecomment-1346446624)
 ################################################################################
@@ -2687,7 +2682,7 @@ install_check_domain_creation_date() {
 # __my_script__
 
 check_if_domain_exist() {
-  if $(whois "$1" | grep 'No entries found' >/dev/null); then
+  if whois "$1" | grep -q 'No entries found' 2>/dev/null; then
     echo "Le domaine "$1" n'existe pas."
     exit 1
   fi
@@ -4297,7 +4292,8 @@ configure_bashrc_user() {
   execandlog "is_file_present_and_rmfile "/home/"$local_user"/.bashrc" && \
   cp "$script_path"/.bashrc /home/"$local_user"/.bashrc && \
   chown "$local_user":"$local_user" /home/"$local_user"/.bashrc"
-  $ExeAsUser cat "$script_path"/my_user.bashrc >> /home/"$local_user"/.bashrc
+  $ExeAsUser envsubst < "$script_path"/my_user.bashrc >> /home/"$local_user"/.bashrc
+
 # $my_bin_path
 # $local_user
 }
@@ -4306,20 +4302,20 @@ configure_bashrc_root() {
   # alias for root
   execandlog "is_file_present_and_rmfile "/root/.bashrc" && \
   cp "$script_path"/.bashrc /root/.bashrc"
-  cat "$script_path"/my_root.bashrc >> /root/.bashrc
+  envsubst < "$script_path"/my_root.bashrc >> /root/.bashrc
 }
 
 configure_zshrc_user() {
   execandlog "is_file_present_and_rmfile "/home/"$local_user"/.zshrc" && \
   cp "$script_path"/.zshrc /home/"$local_user"/.zshrc && \
   chown "$local_user":"$local_user" /home/"$local_user"/.zshrc"
-  $ExeAsUser cat "$script_path"/my_user.zshrc >> /home/"$local_user"/.zshrc
+  $ExeAsUser envsubst < "$script_path"/my_user.zshrc >> /home/"$local_user"/.zshrc
 }
 
 configure_zshrc_root() {
   execandlog "is_file_present_and_rmfile "/root/.zshrc" && \
   cp "$script_path"/.zshrc /root/.zshrc"
-  cat "$script_path"/my_root.zshrc >> /root/.zshrc
+  envsubst < "$script_path"/my_root.zshrc >> /root/.zshrc
 }
 
 configure_bashrc() {
