@@ -3624,6 +3624,11 @@ EOF
   $ExeAsUser cat> /home/"$local_user"/.config/mpv/mpv.conf << 'EOF'
 # Enable hardware decoding if available
 hwdec=auto
+
+# Open MPV maximized by default
+# ref : https://www.reddit.com/r/mpv/comments/q9rye0/comment/k7romo0/
+# ref : https://mpv.io/manual/master/#options-autofit
+# autofit=100%
 EOF
 }
 configure_mpv
