@@ -4,8 +4,6 @@
 ##
 
 
-## Pour obtenir toutes les commandes utilisés sur un système : sudo grep -o "COMMAND.*" /var/log/auth.log
-
 ## Pour désactiver le bip système : xset b off
 
 # Regarder comment ils font avec le script shell de remediation : http://static.open-scap.org/ssg-guides/ssg-debian8-guide-anssi_np_nt28_high.html#xccdf_org.ssgproject.content_rule_sshd_disable_root_login
@@ -499,44 +497,38 @@ check_secureboot_enabled
 ## fonction qui permet de checker automatiquement les versions des logiciels qui s'installent manuellement, de façon automatique
 ##------------------------------------------------------------------------------
 check_latest_version_manual_install_apps() {
-  veracrypt_version="$($CURL 'https://www.veracrypt.fr/en/Downloads.html' | grep 'tar.bz2' | grep -v '.sig\|x86\|Source\|freebsd' | grep -Po '(?<=veracrypt-)([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+-[[:alnum:]]+|[[:digit:]]+\.[[:digit:]]+-[[:alnum:]]+|[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+|[[:digit:]]+\.[[:digit:]]+)(?=-setup)')"
+  veracrypt_version="$($CURL 'https://www.veracrypt.fr/en/Downloads.html' | grep 'tar.bz2' | grep -v '.sig\|x86\|Source\|freebsd' | grep -Po '(?<=veracrypt-)([0-9]+\.[0-9]+\.[0-9]+-[[:alnum:]]+|[0-9]+\.[0-9]+-[[:alnum:]]+|[0-9]+\.[0-9]+\.[0-9]+|[0-9]+\.[0-9]+)(?=-setup)')"
   # permet de récupérer la version lorsque la release est du type 'veracrypt-1.24-Update3-setup.tar.bz2' ainsi que 'veracrypt-1.24.3-Update3-setup.tar.bz2' ou 'veracrypt-1.24-setup.tar.bz2' ou 'veracrypt-1.24.4-setup.tar.bz2'
   if [ $? != 0 ] || [ -z "$veracrypt_version" ]; then
-      veracrypt_version='1.26.7'
+      veracrypt_version='1.26.24'
   fi
   # check version : https://www.veracrypt.fr/en/Downloads.html
 
-  drawio_version="$($CURL 'https://api.github.com/repos/jgraph/drawio-desktop/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
-  if [ $? != 0 ] || [ -z "$drawio_version" ]; then
-    drawio_version='24.7.5'
-  fi
+  # drawio_version="$($CURL 'https://api.github.com/repos/jgraph/drawio-desktop/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
+  # if [ $? != 0 ] || [ -z "$drawio_version" ]; then
+  #   drawio_version='24.7.5'
+  # fi
   # check version : https://github.com/jgraph/drawio-desktop/releases
-
-  boostnote_version="$($CURL 'https://api.github.com/repos/BoostIO/boost-releases/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
-  if [ $? != 0 ] || [ -z "$boostnote_version" ]; then
-    boostnote_version='0.16.1'
-  fi
-  # check version : https://github.com/BoostIO/boost-releases/releases/
 
   etcher_version="$($CURL 'https://api.github.com/repos/balena-io/etcher/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
   if [ $? != 0 ] || [ -z "$etcher_version" ]; then
-    etcher_version='1.18.4'
+    etcher_version='2.1.4'
   fi
   # check version : https://github.com/balena-io/etcher/releases/
 
-  shotcut_version="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
-  if [ $? != 0 ] || [ -z "$shotcut_version" ]; then
-    shotcut_version='24.06.26'
-  fi
-  shotcut_appimage="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"name": "\K.*?(?=")' | grep 'AppImage')"
-  if [ $? != 0 ] || [ -z "$shotcut_appimage" ]; then
-    shotcut_appimage='shotcut-linux-x86_64-240626.AppImage'
-  fi
+  # shotcut_version="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
+  # if [ $? != 0 ] || [ -z "$shotcut_version" ]; then
+  #   shotcut_version='24.06.26'
+  # fi
+  # shotcut_appimage="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"name": "\K.*?(?=")' | grep 'AppImage')"
+  # if [ $? != 0 ] || [ -z "$shotcut_appimage" ]; then
+  #   shotcut_appimage='shotcut-linux-x86_64-240626.AppImage'
+  # fi
   # check version : https://github.com/mltframework/shotcut/releases/
 
   keepassxc_version="$($CURL 'https://api.github.com/repos/keepassxreboot/keepassxc/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
   if [ $? != 0 ] || [ -z "$keepassxc_version" ]; then
-    keepassxc_version='2.7.9'
+    keepassxc_version='2.7.10'
   fi
   # check version : https://github.com/keepassxreboot/keepassxc/releases/
 
@@ -552,21 +544,21 @@ check_latest_version_manual_install_apps() {
   fi
   # check version : https://github.com/laurent22/joplin/releases/
 
-  krita_version="$($CURL 'https://krita.org/fr/download/'| tr -s '<' '\n' | grep 'stable' | grep -m1 -e '.appimage' | grep -Po '(?<=/stable/krita/)([[:digit:]]+\.+[[:digit:]]+\.[[:digit:]]+)')"
-  if [ $? != 0 ] || [ -z "$krita_version" ]; then
-    krita_version='5.2.3'
-  fi
+  # krita_version="$($CURL 'https://krita.org/fr/download/'| tr -s '<' '\n' | grep 'stable' | grep -m1 -e '.appimage' | grep -Po '(?<=/stable/krita/)([0-9]+\.+[0-9]+\.[0-9]+)')"
+  # if [ $? != 0 ] || [ -z "$krita_version" ]; then
+  #   krita_version='5.2.3'
+  # fi
   # check version : https://krita.org/fr/download/
 
   opensnitch_stable_version="$($CURL 'https://api.github.com/repos/evilsocket/opensnitch/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
   if [ $? != 0 ] || [ -z "$opensnitch_stable_version" ]; then
-    opensnitch_stable_version='1.6.6'
+    opensnitch_stable_version='1.7.2'
   fi
   # check version : https://github.com/evilsocket/opensnitch/releases/
 
   opensnitch_latest_version="$(curl --silent 'https://api.github.com/repos/evilsocket/opensnitch/releases' | awk 'BEGIN{RS="}"} /"prerelease": true,/ {for (x=1;x<=NF;x++) if ($x~"tag_name") {gsub(/[v|"|,$]/,"");print $(x);exit;}}')"
   if [ $? != 0 ] || [ -z "$opensnitch_latest_version" ]; then
-    opensnitch_latest_version='1.6.0-rc.5'
+    opensnitch_latest_version='1.7.0-rc.2'
   fi
   # check version : https://github.com/evilsocket/opensnitch/releases/
   # je suis obligé de ne pas utilisé l'option --show-error car sinon j'obtiens une erreur : curl: (23) Failure writing output to destination
@@ -578,16 +570,10 @@ check_latest_version_manual_install_apps() {
   fi
   # check version : https://github.com/hashcat/hashcat/releases/
 
-  winscp_version="$($CURL 'https://winscp.net/eng/downloads.php' | grep -Po '(?<=WinSCP-)([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)(?=-Portable.zip")')"
-  if [ $? != 0 ] || [ -z "$winscp_version" ]; then
-    winscp_version='5.21.8'
-  fi
-  # check version : https://winscp.net/eng/downloads.php
-
-  geeqie_version="$($CURL 'https://api.github.com/repos/BestImageViewer/geeqie/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
-  if [ $? != 0 ] || [ -z "$geeqie_version" ]; then
-    geeqie_version='2.4'
-  fi
+  # geeqie_version="$($CURL 'https://api.github.com/repos/BestImageViewer/geeqie/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
+  # if [ $? != 0 ] || [ -z "$geeqie_version" ]; then
+  #   geeqie_version='2.4'
+  # fi
   # check version : https://github.com/BestImageViewer/geeqie/releases
 
   ytdlp_version="$($CURL 'https://api.github.com/repos/yt-dlp/yt-dlp/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
@@ -601,6 +587,12 @@ check_latest_version_manual_install_apps() {
     ventoy_version='1.0.99'
   fi
   # check version : https://github.com/ventoy/Ventoy/releases
+
+  deno_version="$($CURL 'https://api.github.com/repos/denoland/deno/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
+  if [ $? != 0 ] || [ -z "$deno_version" ]; then
+    deno_version='2.5.6'
+  fi
+  # check version : https://github.com/denoland/deno/releases/
 }
 
 
@@ -612,44 +604,41 @@ check_latest_version_manual_install_apps() {
 ################################################################################
 ## Pour obtenir un listing des logiciels avec les dernières versions disponnibles
 ##------------------------------------------------------------------------------
-CURL='curl --silent --location --show-error'
-manual_check_latest_version() {
-  veracrypt_version="$($CURL 'https://www.veracrypt.fr/en/Downloads.html' | grep 'tar.bz2' | grep -v '.sig\|x86\|Source\|freebsd' | grep -Po '(?<=veracrypt-)([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+-[[:alnum:]]+|[[:digit:]]+\.[[:digit:]]+-[[:alnum:]]+|[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+|[[:digit:]]+\.[[:digit:]]+)(?=-setup)')"
-  echo 'VeraCrypt : '"$veracrypt_version"
-  drawio_version="$($CURL 'https://api.github.com/repos/jgraph/drawio-desktop/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
-  echo 'drawio : '"$drawio_version"
-  boostnote_version="$($CURL 'https://api.github.com/repos/BoostIO/boost-releases/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
-  echo 'Boosnote : '"$boostnote_version"
-  etcher_version="$($CURL 'https://api.github.com/repos/balena-io/etcher/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
-  echo 'Etcher : '"$etcher_version"
-  shotcut_version="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
-  echo 'Shotcut : '"$shotcut_version"
-  shotcut_appimage="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"name": "\K.*?(?=")' | grep 'AppImage')"
-  echo 'Shotcut AppImage : '"$shotcut_appimage"
-  keepassxc_version="$($CURL 'https://api.github.com/repos/keepassxreboot/keepassxc/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
-  echo 'KeePassXC : '"$keepassxc_version"
-  bat_version="$($CURL 'https://api.github.com/repos/sharkdp/bat/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
-  echo 'bat : '"$bat_version"
-  joplin_version="$($CURL 'https://api.github.com/repos/laurent22/joplin/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
-  echo 'Joplin : '"$joplin_version"
-  krita_version="$($CURL 'https://krita.org/fr/download/'| tr -s '<' '\n' | grep 'stable' | grep -m1 -e '.appimage' | grep -Po '(?<=/stable/krita/)([[:digit:]]+\.+[[:digit:]]+\.[[:digit:]]+)')"
-  echo 'Krita : '"$krita_version"
-  opensnitch_stable_version="$($CURL 'https://api.github.com/repos/evilsocket/opensnitch/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
-  echo 'OpenSnitch stable : '"$opensnitch_stable_version"
-  opensnitch_latest_version="$(curl --silent 'https://api.github.com/repos/evilsocket/opensnitch/releases' | awk 'BEGIN{RS="}"} /"prerelease": true,/ {for (x=1;x<=NF;x++) if ($x~"tag_name") {gsub(/[v|"|,$]/,"");print $(x);exit;}}')"
-  echo 'OpenSnitch latest (dev) : '"$opensnitch_latest_version"
-  hashcat_version="$($CURL 'https://api.github.com/repos/hashcat/hashcat/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
-  echo 'hashcat : '"$hashcat_version"
-  winscp_version="$($CURL 'https://winscp.net/eng/downloads.php' | grep -Po '(?<=WinSCP-)([[:digit:]]+\.+[[:digit:]]+\.[[:digit:]]+)(?=-Portable.zip")')"
-  echo 'WinSCP : '"$winscp_version"
-  geeqie_version="$($CURL 'https://api.github.com/repos/BestImageViewer/geeqie/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
-  echo 'Geeqie : '"$geeqie_version"
-  ytdlp_version="$($CURL 'https://api.github.com/repos/yt-dlp/yt-dlp/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
-  echo 'yt-dlp : '"$ytdlp_version"
-  ventoy_version="$($CURL 'https://api.github.com/repos/ventoy/Ventoy/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
-  echo 'Ventoy : '"$ventoy_version"
-}
-# manual_check_latest_version
+# bash << 'EOF'
+# CURL='curl --silent --location --show-error' && \
+# veracrypt_version="$($CURL 'https://www.veracrypt.fr/en/Downloads.html' | grep 'tar.bz2' | grep -v '.sig\|x86\|Source\|freebsd' | grep -Po '(?<=veracrypt-)([0-9]+\.[0-9]+\.[0-9]+-[[:alnum:]]+|[0-9]+\.[0-9]+-[[:alnum:]]+|[0-9]+\.[0-9]+\.[0-9]+|[0-9]+\.[0-9]+)(?=-setup)')" && \
+# echo 'VeraCrypt : '"$veracrypt_version" && \
+# drawio_version="$($CURL 'https://api.github.com/repos/jgraph/drawio-desktop/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
+# echo 'drawio : '"$drawio_version" && \
+# etcher_version="$($CURL 'https://api.github.com/repos/balena-io/etcher/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
+# echo 'Etcher : '"$etcher_version" && \
+# shotcut_version="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
+# echo 'Shotcut : '"$shotcut_version" && \
+# shotcut_appimage="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"name": "\K.*?(?=")' | grep 'AppImage')" && \
+# echo 'Shotcut AppImage : '"$shotcut_appimage" && \
+# keepassxc_version="$($CURL 'https://api.github.com/repos/keepassxreboot/keepassxc/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')" && \
+# echo 'KeePassXC : '"$keepassxc_version" && \
+# bat_version="$($CURL 'https://api.github.com/repos/sharkdp/bat/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
+# echo 'bat : '"$bat_version" && \
+# joplin_version="$($CURL 'https://api.github.com/repos/laurent22/joplin/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
+# echo 'Joplin : '"$joplin_version" && \
+# krita_version="$($CURL 'https://krita.org/fr/download/'| tr -s '<' '\n' | grep 'stable' | grep -m1 -e '.appimage' | grep -Po '(?<=/stable/krita/)([0-9]+\.+[0-9]+\.[0-9]+)')" && \
+# echo 'Krita : '"$krita_version" && \
+# opensnitch_stable_version="$($CURL 'https://api.github.com/repos/evilsocket/opensnitch/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
+# echo 'OpenSnitch stable : '"$opensnitch_stable_version" && \
+# opensnitch_latest_version="$(curl --silent --location 'https://api.github.com/repos/evilsocket/opensnitch/releases' | awk 'BEGIN{RS="}"} /"prerelease": true,/ {for (x=1;x<=NF;x++) if ($x~"tag_name") {gsub(/[v|"|,$]/,"");print $(x);exit;}}')" && \
+# echo 'OpenSnitch latest (dev) : '"$opensnitch_latest_version" && \
+# hashcat_version="$($CURL 'https://api.github.com/repos/hashcat/hashcat/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
+# echo 'hashcat : '"$hashcat_version" && \
+# geeqie_version="$($CURL 'https://api.github.com/repos/BestImageViewer/geeqie/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
+# echo 'Geeqie : '"$geeqie_version" && \
+# ytdlp_version="$($CURL 'https://api.github.com/repos/yt-dlp/yt-dlp/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')" && \
+# echo 'yt-dlp : '"$ytdlp_version" && \
+# ventoy_version="$($CURL 'https://api.github.com/repos/ventoy/Ventoy/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
+# echo 'Ventoy : '"$ventoy_version" && \
+# deno_version="$($CURL 'https://api.github.com/repos/denoland/deno/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
+# echo 'deno : '"$deno_version" && \
+# EOF
 ################################################################################
 
 export local_user="$(awk -F':' '/:1000:/{print $1}' /etc/passwd)"
@@ -709,8 +698,8 @@ DCONF_load="DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus"
 DCONF_reset="DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/"$local_user_UID"/bus" dconf reset"
 # les variables DCONF_* ne doivent pas être appelés entre parenthèses
 
-my_bin_path='/usr/local/bin'
-my_local_bin_path='/home/"$local_user"/.local/bin'
+export my_bin_path='/usr/local/bin'
+export my_user_bin_path="/home/"$local_user"/.local/bin"
 # ref : [Filesystem Hierarchy Standard](https://refspecs.linuxfoundation.org/FHS_2.3/fhs-2.3.html#USRLOCALLOCALHIERARCHY)
 
 # on active le mode case insensitive de bash
@@ -877,21 +866,31 @@ echo ''
 # remise au propre de /etc/apt/sources.list
 
 make_apt_source_list_clean() {
-  cat> /etc/apt/sources.list << EOF
-deb https://deb.debian.org/debian/ $debian_release main contrib non-free non-free-firmware
-deb-src https://deb.debian.org/debian/ $debian_release main contrib non-free non-free-firmware
+  cat> /etc/apt/sources.list.d/debian.sources << EOF
+Types: deb deb-src
+URIs: https://deb.debian.org/debian/
+Suites: $debian_release
+Components: main contrib non-free non-free-firmware
+Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
 
-deb https://security.debian.org/debian-security $debian_release-security main contrib non-free-firmware
-deb-src https://security.debian.org/debian-security $debian_release-security main contrib non-free-firmware
+Types: deb deb-src
+URIs: https://security.debian.org/debian-security/
+Suites: $debian_release-security
+Components: main contrib non-free-firmware
+Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
 
-# $debian_release-updates, to get updates before a point release is made
-# see https://www.debian.org/doc/manuals/debian-reference/ch02.en.html#_updates_and_backports
-deb https://deb.debian.org/debian/ $debian_release-updates main contrib non-free non-free-firmware
-deb-src https://deb.debian.org/debian/ $debian_release-updates main contrib non-free non-free-firmware
-
-# backports
-# see https://backports.debian.org/
-deb https://deb.debian.org/debian $debian_release-backports main contrib non-free non-free-firmware
+Types: deb deb-src
+URIs: https://deb.debian.org/debian/
+Suites: $debian_release-updates
+Components: main contrib non-free non-free-firmware
+Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
+EOF
+  cat> /etc/apt/sources.list.d/debian-backports.sources << EOF
+Types: deb
+URIs: https://deb.debian.org/debian/
+Suites: $debian_release-backports
+Components: main contrib non-free non-free-firmware
+Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
 EOF
 }
 make_apt_source_list_clean
@@ -912,7 +911,7 @@ Pin: release *
 Pin-Priority: -1
 
 # blacklist some packages to prevent conflict with manual install
-Package: yt-dlp youtube-dl keepassxc python3-opensnitch-ui opensnitch ansible ansible-core bat
+Package: yt-dlp youtube-dl keepassxc python3-opensnitch-ui opensnitch opensnitch-ebpf-modules ansible ansible-core bat
 Pin: release *
 Pin-Priority: -1
 
@@ -1200,7 +1199,6 @@ install_debian_apt_package() {
   displayandexec "Installation de aria2                               " "$AGI aria2"
   displayandexec "Installation de arping                              " "$AGI arping"
   displayandexec "Installation de auditd                              " "$AGI auditd"
-  displayandexec "Installation de audacity                            " "$AGI audacity"
   displayandexec "Installation de apparmor-profiles                   " "$AGI apparmor-profiles"
   displayandexec "Installation de apparmor-profiles-extra             " "$AGI apparmor-profiles-extra"
   displayandexec "Installation de b3sum                               " "$AGI b3sum"
@@ -1210,10 +1208,10 @@ install_debian_apt_package() {
   displayandexec "Installation de bpfcc-tools                         " "$AGI bpfcc-tools"
   displayandexec "Installation de bpftool                             " "$AGI bpftool"
   displayandexec "Installation de bpftrace                            " "$AGI bpftrace"
-  displayandexec "Installation de bwm-ng                              " "$AGI bwm-ng"
+  displayandexec "Installation de bsdextrautils                       " "$AGI bsdextrautils" # needed to get hexdump binnary
+  displayandexec "Installation de bwm-ng                              " "$AGI bwm-ng" # simple console-based live bandwidth monitor
   displayandexec "Installation de cadaver                             " "$AGI cadaver"
-  displayandexec "Installation de calibre                             " "$AGI calibre"
-  displayandexec "Installation de dctrl-tools                         " "$AGI dctrl-tools"
+  displayandexec "Installation de dctrl-tools                         " "$AGI dctrl-tools" # Command-line tools to process Debian package information
   displayandexec "Installation de chkrootkit                          " "$AGI chkrootkit"
   displayandexec "Installation de chromium                            " "$AGI chromium-l10n"
   displayandexec "Installation de clamav                              " "$AGI clamav clamtk clamtk-gnome libclamunrar"
@@ -1226,13 +1224,13 @@ install_debian_apt_package() {
   displayandexec "Installation de dos2unix                            " "$AGI dos2unix"
   displayandexec "Installation de elfutils                            " "$AGI elfutils"
   displayandexec "Installation de ethtool                             " "$AGI ethtool"
-  displayandexec "Installation de ettercap-graphical                  " "$AGI ettercap-graphical" # à vérifier, mais peut-être que ce paquet pourra être supprimer
   displayandexec "Installation de evince                              " "$AGI evince"
   displayandexec "Installation de exiv2                               " "$AGI exiv2"
   displayandexec "Installation de libimage-exiftool-perl              " "$AGI libimage-exiftool-perl" # needed to get exiftool binnary
   displayandexec "Installation de ffmpeg                              " "$AGI ffmpeg"
   displayandexec "Installation de firefox-esr-l10n-fr                 " "$AGI firefox-esr-l10n-fr"
   displayandexec "Installation de firejail                            " "$AGI firejail firejail-profiles"
+  displayandexec "Installation de firewalld                           " "$AGI firewalld"
   displayandexec "Installation de flameshot                           " "$AGI flameshot"
   displayandexec "Installation de freerdp3-sdl                        " "$AGI freerdp3-sdl"
   displayandexec "Installation de freerdp3-wayland                    " "$AGI freerdp3-wayland"
@@ -1328,7 +1326,6 @@ install_debian_apt_package() {
   displayandexec "Installation de qpdf                                " "$AGI qpdf"
   displayandexec "Installation de rclone                              " "$AGI rclone"
   displayandexec "Installation de rdesktop                            " "$AGI rdesktop"
-  # displayandexec "Installation de remmina                             " "$AGI remmina"
   # displayandexec "Installation de rkhunter                            " "$AGI rkhunter" # because [#1057470 - Outdated rkhunter since 2018-02 - Debian Bug report logs](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1057470#10)
   displayandexec "Installation de rsync                               " "$AGI rsync"
   displayandexec "Installation de sdparm                              " "$AGI sdparm"
@@ -1354,14 +1351,13 @@ install_debian_apt_package() {
   displayandexec "Installation de tree                                " "$AGI tree"
   displayandexec "Installation de tigervnc-viewer                     " "$AGI tigervnc-viewer"
   displayandexec "Installation de tshark                              " "$AGI tshark"
-  displayandexec "Installation de ufw                                 " "$AGI ufw"
+  # displayandexec "Installation de ufw                                 " "$AGI ufw"
   displayandexec "Installation de unoconv                             " "$AGI unoconv"
   displayandexec "Installation de unrar                               " "$AGI unrar"
   displayandexec "Installation de vlc                                 " "$AGI vlc"
   displayandexec "Installation de vpnc                                " "$AGI vpnc"
   displayandexec "Installation de wget                                " "$AGI wget"
   displayandexec "Installation de wine                                " "$AGI wine"
-  # displayandexec "Installation de wine32                              " "dpkg --add-architecture i386 && $AG update ; $AGI wine32"
   displayandexec "Installation de wipe                                " "$AGI wipe"
   displayandexec "Installation de wireshark                           " "$AGI wireshark"
   displayandexec "Installation de xclip                               " "$AGI xclip"
@@ -1372,7 +1368,7 @@ install_debian_apt_package() {
   displayandexec "Installation de xxhash                              " "$AGI xxhash"
   displayandexec "Installation de xz-utils                            " "$AGI xz-utils"
   displayandexec "Installation de yersinia                            " "$AGI yersinia" # à réflechir si c'est encore utile
-  displayandexec "Installation de yq                                  " "$AGI yq"
+  displayandexec "Installation de yq                                  " "$AGI yq" # équivalent de jq pour les fichiers YAML
   # displayandexec "Installation de zenmap                              " "$AGI zenmap"
   # zenmap n'est pas dispo dans debian bullseye car python2 est EOL, pour traquer l'avencement du portage du code vers python3 : https://github.com/nmap/nmap/issues/1176
   displayandexec "Installation de zbar-tools                          " "$AGI zbar-tools" # utile pour lire les QRcode en CLI
@@ -1494,24 +1490,6 @@ manual_install_dir='/opt/manual_install'
 execandlog "is_dir_present_or_mkdir "$manual_install_dir""
 
 ################################################################################
-## instalation de WinSCP
-##------------------------------------------------------------------------------
-install_winscp() {
-  local tmp_dir="$(mktemp -d)"
-  displayandexec "Installation de WinSCP                              " "\
-reset_dir ""$manual_install_dir"/winscp/" && \
-$WGET -P "$tmp_dir" https://winscp.net/download/WinSCP-"$winscp_version"-Portable.zip && \
-unzip "$tmp_dir"/WinSCP-"$winscp_version"-Portable.zip -d "$manual_install_dir"/winscp/ && \
-echo "wine "$manual_install_dir"/winscp/WinSCP.exe" > "$my_bin_path"/winscp && \
-chmod +x "$my_bin_path"/winscp; \
-rm -rf "$tmp_dir""
-}
-# il semblerait que WinSCP a besoin spécifiquement de wine32 et ne fonctionne pas avec wine64
-# il faudrait tester à nouveau sur une machine au propre (sans wine32) et revérifier cela car j'ai pu lancer WinSCP sans problème avec wine64 /opt/manual_install/winscp/WinSCP.exe
-# avec WinSCP en version
-################################################################################
-
-################################################################################
 ## instalation de Veracrypt
 ##------------------------------------------------------------------------------
 install_veracrypt() {
@@ -1569,7 +1547,7 @@ Signed-By: /usr/share/keyrings/apt-fast-archive-keyring.gpg
 EOF
   displayandexec "Installation de apt-fast                            " "\
   is_file_present_and_rmfile "/usr/share/keyrings/apt-fast-archive-keyring.gpg" && \
-  $WGET --output-document - 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xA2166B8DE8BDC3367D1901C11EE2FF37CA8DA16B' | gpg --dearmor --output /usr/share/keyrings/apt-fast-archive-keyring.gpg && \
+  $WGET --output-document - 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xBC5934FD3DEBD4DAEA544F791E2824A7F22B44BD' | gpg --dearmor --output /usr/share/keyrings/apt-fast-archive-keyring.gpg && \
   $AG update && \
   $AGI apt-fast"
 }
@@ -1577,6 +1555,7 @@ EOF
 # il faut récupérer la clé avec l'URL qui a une forme suivante :
 # https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xA2166B8DE8BDC3367D1901C11EE2FF37CA8DA16B
 # Il suffit de mettre la clé (A2166B8DE8BDC3367D1901C11EE2FF37CA8DA16B) après le 0x du search
+# https://github.com/ilikenwf/apt-fast?tab=readme-ov-file#debian-and-derivates
 ################################################################################
 
 ################################################################################
@@ -1631,7 +1610,7 @@ install_virtualbox_bookworm() {
   $AG update && \
   $AGI virtualbox-7.0"
   local tmp_dir="$(mktemp -d)"
-  virtualbox_version="$(virtualbox --help 2>/dev/null | grep -Po '( v)\K[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+')"
+  virtualbox_version="$(virtualbox --help 2>/dev/null | grep -Po '( v)\K[0-9]+\.[0-9]+\.[0-9]+')"
   displayandexec "Installation de VM VirtualBox Extension Pack        " "\
   $WGET -P "$tmp_dir" https://download.virtualbox.org/virtualbox/"$virtualbox_version"/Oracle_VM_VirtualBox_Extension_Pack-"$virtualbox_version".vbox-extpack && \
   echo y | /usr/bin/VBoxManage extpack install --replace "$tmp_dir"/Oracle_VM_VirtualBox_Extension_Pack-"$virtualbox_version".vbox-extpack; \
@@ -1814,7 +1793,7 @@ EOF
 install_asbru() {
   cat> /etc/apt/sources.list.d/asbru-cm.sources << 'EOF'
 Types: deb
-URIs: https://packagecloud.io/asbru-cm/asbru-cm/debian/
+URIs: https://dl.cloudsmith.io/public/asbru-cm/release/deb/debian
 Suites: bullseye
 Components: main
 Signed-By: /usr/share/keyrings/asbru-archive-keyring.gpg
@@ -1822,19 +1801,17 @@ EOF
   displayandexec "Installation des dépendances de Asbru               " "$AGI perl libvte-2.91-0 libcairo-perl libglib-perl libpango-perl libsocket6-perl libexpect-perl libnet-proxy-perl libyaml-perl libcrypt-cbc-perl libcrypt-blowfish-perl libgtk3-perl libnet-arp-perl libossp-uuid-perl openssh-client telnet ftp libcrypt-rijndael-perl libxml-parser-perl libcanberra-gtk-module dbus-x11 libx11-guitest-perl libgtk3-simplelist-perl gir1.2-wnck-3.0 gir1.2-vte-2.91"
   displayandexec "Installation de Asbru                               " "\
   is_file_present_and_rmfile "/usr/share/keyrings/asbru-archive-keyring.gpg" && \
-  $CURL 'https://packagecloud.io/asbru-cm/asbru-cm/gpgkey' | gpg --dearmor --output /usr/share/keyrings/asbru-archive-keyring.gpg && \
+  $CURL 'https://dl.cloudsmith.io/public/asbru-cm/release/gpg.7684B0670B1C65E8.key' | gpg --dearmor --output /usr/share/keyrings/asbru-archive-keyring.gpg && \
   $AG update && \
   $AGI asbru-cm keepassxc-"
 }
 
 # On rajoute keepassxc- dans la commande d'install du paquet pour pas que asbru install keepassxc en tant que dépendance (même si il n'est seulement que dans les recommmends (apt-cache show asbru-cm | grep keepassxc))
 
-# a priori le nouveau dépot serrait celui de cloudsmith.io d'après https://docs.asbru-cm.net/General/Installation/#debian
-# https://dl.cloudsmith.io/public/asbru-cm/release/gpg.7684B0670B1C65E8.key
-# deb [arch=amd64 signed-by=/usr/share/keyrings/asbru-archive-keyring.gpg] https://dl.cloudsmith.io/public/asbru-cm/release/deb/debian bullseye main
-#deb-src https://dl.cloudsmith.io/public/asbru-cm/release/deb/debian bullseye main
-
 # Pour voir la liste des version de debian disponibles dans les dépots de Cloudsmith : [Cloudsmith - Repositories - asbru-cm (asbru-cm) - release (release) - Packages](https://cloudsmith.io/~asbru-cm/repos/release/packages/?q=distribution%3Adebian&sort=-date)
+
+# Pour récupérer le lien de la dernière clé GPG :
+# curl -1sLf 'https://dl.cloudsmith.io/public/asbru-cm/release/cfg/setup/bash.deb.sh' | grep gpg_keyring_path
 ################################################################################
 
 ################################################################################
@@ -1853,22 +1830,16 @@ install_bat() {
 ## instalation de yt-dlp
 ##------------------------------------------------------------------------------
 install_yt-dlp() {
-  # install Deno (JavaScript, TypeScript, and WebAssembly runtime) because of :
-  # [[Announcement] Upcoming new requirements for YouTube downloads · Issue #14404 · yt-dlp/yt-dlp](https://github.com/yt-dlp/yt-dlp/issues/14404)
-  # [[Announcement] Upcoming new requirements for YouTube downloads · Issue #14404 · yt-dlp/yt-dlp](https://github.com/yt-dlp/yt-dlp/issues/14404#issuecomment-3330980464)
-  # [[ie/youtube] Force player `0004de42` by seproDev · Pull Request #14398 · yt-dlp/yt-dlp](https://github.com/yt-dlp/yt-dlp/pull/14398)
-  # [[Announcement] Upcoming new requirements for YouTube downloads · Issue #14404 · yt-dlp/yt-dlp](https://github.com/yt-dlp/yt-dlp/issues/14404#issuecomment-3330980464)
-  
-  # local tmp_dir="$(mktemp -d)"
-  # $WGET -P "$my_bin_path" https://github.com/denoland/deno/releases/download/v2.5.2/deno-x86_64-unknown-linux-gnu.zip
-  # unzip "$tmp_dir"/deno-x86_64-unknown-linux-gnu.zip -d "$manual_install_dir"/ && \
-  # rm -rf "$tmp_dir"
-  # /tmp/test_unzip_deno/deno --version | grep -Po '^(deno )\K[0-9]+\.[0-9]+\.[0-9]+'
+  local tmp_dir="$(mktemp -d)"
+  displayandexec "Installation de deno (need after yt-dlp v2025.11.12)" "\
+  $WGET -P "$tmp_dir" https://github.com/denoland/deno/releases/download/v"$deno_version"/deno-x86_64-unknown-linux-gnu.zip && \
+  unzip "$tmp_dir"/deno-x86_64-unknown-linux-gnu.zip -d "$my_user_bin_path"/; \
+  rm -rf "$tmp_dir""
 
   displayandexec "Installation de yt-dlp                              " "\
-  is_file_present_and_rmfile ""$my_bin_path"/yt-dlp" && \
-  $WGET -P "$my_bin_path" https://github.com/yt-dlp/yt-dlp/releases/download/"$ytdlp_version"/yt-dlp_linux  && \
-  chmod +x "$my_bin_path"/yt-dlp"
+  is_file_present_and_rmfile ""$my_user_bin_path"/yt-dlp" && \
+  $CURL --output "$my_user_bin_path"/yt-dlp https://github.com/yt-dlp/yt-dlp/releases/download/"$ytdlp_version"/yt-dlp_linux  && \
+  chmod +x "$my_user_bin_path"/yt-dlp"
 }
 ################################################################################
 
@@ -1936,9 +1907,6 @@ install_opensnitch() {
   $AG install -f -y; \
   rm -rf "$tmp_dir""
 }
-# l'installation de OpenSnitch est intérecatif mais n'utilise pas d'entrés dans debconf-set-selections
-# potentiellement qu'on peut corriger le problème avec debian non-interractive
-# c'est probablement lié au fait que dpkg ne respect peut être pas la variable DEBIAN_FRONTEND
 ################################################################################
 
 ################################################################################
@@ -1964,7 +1932,7 @@ install_hashcat() {
   reset_dir ""$manual_install_dir"/hashcat/" && \
   7z x "$tmp_dir"/hashcat-"$hashcat_version".7z -o"$manual_install_dir"/hashcat && \
   chown -R "$local_user":"$local_user" "$manual_install_dir"/hashcat && \
-  ln -s "$manual_install_dir"/hashcat/hashcat-"$hashcat_version"/hashcat.bin "$my_bin_path"/hashcat; \
+  ln -s "$manual_install_dir"/hashcat/hashcat-"$hashcat_version"/hashcat.bin "$my_user_bin_path"/hashcat; \
   rm -rf "$tmp_dir""
 # hashcat a besoin d'être capable d'écrire dans son répertoire, il faut donc soit associer le répertoire à l'utilisateur soit le lancer en sudo
 }
@@ -2077,8 +2045,13 @@ EOF
 ## instalation de Visual Studio Code
 ##------------------------------------------------------------------------------
 install_vscode() {
-  cat> /etc/apt/sources.list.d/vscode.list << 'EOF'
-deb [arch=amd64 signed-by=/usr/share/keyrings/vscode-archive-keyring.gpg] https://packages.microsoft.com/repos/code stable main
+  cat> /etc/apt/sources.list.d/vscode.sources << 'EOF'
+Types: deb
+URIs: https://packages.microsoft.com/repos/code
+Suites: stable
+Components: main
+Architectures: amd64
+Signed-By: /usr/share/keyrings/vscode-archive-keyring.gpg
 EOF
   displayandexec "Installation de vscode                              " "\
   is_file_present_and_rmfile "/usr/share/keyrings/vscode-archive-keyring.gpg" && \
@@ -2113,7 +2086,7 @@ EOF
 ##------------------------------------------------------------------------------
 install_ventoy() {
   local tmp_dir="$(mktemp -d)"
-  cat> "$my_bin_path"/ventoy << EOF
+  cat> "$my_user_bin_path"/ventoy << EOF
 #!/bin/bash
 sudo $manual_install_dir/ventoy/ventoy-$ventoy_version/VentoyGUI.x86_64
 EOF
@@ -2121,7 +2094,7 @@ EOF
   $WGET -P "$tmp_dir" https://github.com/ventoy/Ventoy/releases/download/v"$ventoy_version"/ventoy-"$ventoy_version"-linux.tar.gz && \
   reset_dir ""$manual_install_dir"/ventoy/" && \
   tar --directory "$manual_install_dir"/ventoy -xzf "$tmp_dir"/ventoy-"$ventoy_version"-linux.tar.gz && \
-  chmod +x "$my_bin_path"/ventoy; \
+  chmod +x "$my_user_bin_path"/ventoy; \
   rm -rf "$tmp_dir""
 }
 ################################################################################
@@ -2175,22 +2148,25 @@ install_flatpak() {
 }
 
 install_flatpak_software() {
-  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub org.onlyoffice.desktopeditors"
-  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub org.remmina.Remmina"
-  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub org.geeqie.Geeqie"
-  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub fr.handbrake.ghb"
-  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub com.jgraph.drawio.desktop"
-  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub org.bunkus.mkvtoolnix-gui"
-  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub io.github.flattool.Warehouse"
-  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub org.virt_manager.virt-viewer"
-  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub org.shotcut.Shotcut"
-  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub org.kde.krita"
-  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub com.spotify.Client"
-  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub com.github.tchx84.Flatseal"
-  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub org.filezillaproject.Filezilla"
-  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub org.inkscape.Inkscape"
-  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub com.github.xournalpp.xournalpp"
-  # execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub com.vscodium.codium"
+  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub org.onlyoffice.desktopeditors" # onlyoffice
+  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub org.remmina.Remmina" # remmina
+  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub org.geeqie.Geeqie" # geeqie
+  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub fr.handbrake.ghb" # handbrake
+  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub com.jgraph.drawio.desktop" # drawio
+  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub org.bunkus.mkvtoolnix-gui" # mkvtoolnix
+  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub io.github.flattool.Warehouse" # flattool
+  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub org.virt_manager.virt-viewer" # virt-viewer
+  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub org.shotcut.Shotcut" # shotcut
+  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub org.kde.krita" # krita
+  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub com.spotify.Client" # spotify
+  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub com.github.tchx84.Flatseal" # flatseal
+  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub org.filezillaproject.Filezilla" # filezilla
+  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub org.inkscape.Inkscape" # inkscape
+  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub com.github.xournalpp.xournalpp" # xournalpp
+  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub com.saivert.pwvucontrol" # pwvucontrol
+  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub com.calibre_ebook.calibre" # calibre
+  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub org.audacityteam.Audacity" # audacity
+  # execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub com.vscodium.codium" # vscodium
 }
 # flatpak list --app
 # flatpak history
@@ -2547,9 +2523,9 @@ echo ''
 ##------------------------------------------------------------------------------
 install_sysupdate() {
   displayandexec "Installation du script sysupdate                    " "\
-  is_file_present_and_rmfile ""$my_bin_path"/sysupdate" && \
-  cp "$script_path"/sysupdate "$my_bin_path"/sysupdate && \
-  chmod +x "$my_bin_path"/sysupdate"
+  is_file_present_and_rmfile ""$my_user_bin_path"/sysupdate" && \
+  cp "$script_path"/sysupdate "$my_user_bin_path"/sysupdate && \
+  chmod +x "$my_user_bin_path"/sysupdate"
 }
 ################################################################################
 
@@ -2560,7 +2536,7 @@ install_check_backport_update() {
   # porbablement qu'il vaudrait lister les paquets qui peuvent être mis à jours avec sudo apt-get update && sudo apt list --upgradable
   # certainement avec quelque chose comme : awk '/~bpo/ && /.bpo/ {print $0}' <(sudo apt list --upgradable 2>/dev/null)
   # c'est beaucoup plus rapide
-  cat> "$my_bin_path"/check_backport_update << 'EOF'
+  cat> "$my_user_bin_path"/check_backport_update << 'EOF'
 #!/bin/bash
 # __my_script__
 
@@ -2574,7 +2550,7 @@ done <<< "$list_backport"
 exit 0
 EOF
   displayandexec "Installation du script check_backport_update        " "\
-  chmod +x "$my_bin_path"/check_backport_update"
+  chmod +x "$my_user_bin_path"/check_backport_update"
 }
 ################################################################################
 
@@ -2582,7 +2558,7 @@ EOF
 ## install du script wsudo
 ##------------------------------------------------------------------------------
 install_wsudo() {
-  cat> "$my_bin_path"/wsudo << 'EOF'
+  cat> "$my_user_bin_path"/wsudo << 'EOF'
 #!/bin/bash
 # __my_script__
 
@@ -2595,7 +2571,7 @@ xhost -SI:localuser:root
 xhost
 EOF
   displayandexec "Installation du script wsudo                        " "\
-  chmod +x "$my_bin_path"/wsudo"
+  chmod +x "$my_user_bin_path"/wsudo"
 }
 ################################################################################
 
@@ -2603,21 +2579,21 @@ EOF
 ## install du script launch_url_file
 ##------------------------------------------------------------------------------
 install_launch_url_file() {
-  cat> "$my_bin_path"/launch_url_file << 'EOF'
+  cat> "$my_user_bin_path"/launch_url_file << 'EOF'
 #!/bin/bash
 # __my_script__
 
 chromium "$(tail -n 1 "$@" | cut -c 5-)"
 EOF
   displayandexec "Installation du script launch_url_file              " "\
-  chmod +x "$my_bin_path"/launch_url_file"
+  chmod +x "$my_user_bin_path"/launch_url_file"
   cat> /usr/share/applications/launch_url_file.desktop << 'EOF'
 [Desktop Entry]
 Type=Application
 Name=launch_url_file
 Comment=script de lancement des fichiers URL depuis nautilus
 Icon=chromium
-Exec=$my_bin_path/launch_url_file
+Exec=$my_user_bin_path/launch_url_file
 Categories=FileTools;
 EOF
 }
@@ -2628,14 +2604,19 @@ EOF
 ## install du script scanmyhome
 ##------------------------------------------------------------------------------
 install_scanmyhome() {
-  cat> "$my_bin_path"/scanmyhome << 'EOF'
+  cat> "$my_user_bin_path"/scanmyhome << 'EOF'
 #!/bin/bash
 # __my_script__
 
-clamscan --recursive --infected /home/
+clamscan \
+  --max-dir-recursion=20 \
+  --max-filesize=100M \
+  --recursive \
+  --infected \
+  /home/
 EOF
   displayandexec "Installation du script scanmyhome                   " "\
-  chmod +x "$my_bin_path"/scanmyhome"
+  chmod +x "$my_user_bin_path"/scanmyhome"
 }
 ################################################################################
 
@@ -2643,7 +2624,7 @@ EOF
 ## install du script rktscan
 ##------------------------------------------------------------------------------
 install_rktscan() {
-  cat> "$my_bin_path"/rktscan << 'EOF'
+  cat> "$my_user_bin_path"/rktscan << 'EOF'
 #!/bin/bash
 # __my_script__
 
@@ -2655,7 +2636,7 @@ sudo chkrootkit -q
 echo "--------------------------------------------------------------------------------"
 EOF
   displayandexec "Installation du script rktscan                      " "\
-  chmod +x "$my_bin_path"/rktscan"
+  chmod +x "$my_user_bin_path"/rktscan"
 }
 ################################################################################
 
@@ -2677,7 +2658,7 @@ EOF
 ## install du script check_domain_creation_date
 ##------------------------------------------------------------------------------
 install_check_domain_creation_date() {
-  cat> "$my_bin_path"/check_domain_creation_date << 'EOF'
+  cat> "$my_user_bin_path"/check_domain_creation_date << 'EOF'
 #!/bin/bash
 # __my_script__
 
@@ -2689,10 +2670,10 @@ check_if_domain_exist() {
 }
 check_if_domain_exist "$1"
 
-domain_creation_date="$(whois "$1" | grep -Po -m 1 '(Creation Date:[[:space:]])\K([[:digit:]]+-[[:digit:]]+-[[:digit:]]+)')"
+domain_creation_date="$(whois "$1" | grep -Po -m 1 '(Creation Date:[[:space:]])\K([0-9]+-[0-9]+-[0-9]+)')"
 
 if [[ -z "$domain_creation_date" ]]; then
-	domain_creation_date="$(whois "$1" | grep -Po -m 1 '(created:[[:space:]]+)\K([[:digit:]]+-[[:digit:]]+-[[:digit:]]+)')"
+	domain_creation_date="$(whois "$1" | grep -Po -m 1 '(created:[[:space:]]+)\K([0-9]+-[0-9]+-[0-9]+)')"
   if [[ -z "$domain_creation_date" ]]; then
   	exit 1
   fi
@@ -2716,7 +2697,7 @@ fi
 exit $?
 EOF
   displayandexec "Installation du script check_domain_creation_date   " "\
-  chmod +x "$my_bin_path"/check_domain_creation_date"
+  chmod +x "$my_user_bin_path"/check_domain_creation_date"
 }
 ################################################################################
 
@@ -2724,7 +2705,7 @@ EOF
 ## install du script appairmebt
 ##------------------------------------------------------------------------------
 install_appairmebt() {
-  cat> "$my_bin_path"/appairmebt << 'EOF'
+  cat> "$my_user_bin_path"/appairmebt << 'EOF'
 #!/bin/bash
 # __my_script__
 
@@ -2735,7 +2716,7 @@ bluetoothctl trust BB:BB:BB:BB:BB:BB >/dev/null
 bluetoothctl connect BB:BB:BB:BB:BB:BB >/dev/null
 EOF
   displayandexec "Installation du script appairmebt                   " "\
-  chmod +x "$my_bin_path"/appairmebt"
+  chmod +x "$my_user_bin_path"/appairmebt"
 }
 # script permettant de démarrer le bluetooth et d’appairer automatiquement avec le périphérique qu'on souhaite
 #
@@ -2799,14 +2780,14 @@ EOF
 ## install du script desactivebt
 ##------------------------------------------------------------------------------
 install_desactivebt() {
-  cat> "$my_bin_path"/desactivebt << 'EOF'
+  cat> "$my_user_bin_path"/desactivebt << 'EOF'
 #!/bin/bash
 # __my_script__
 
 gdbus call --session --dest org.gnome.SettingsDaemon.Rfkill --object-path /org/gnome/SettingsDaemon/Rfkill --method org.freedesktop.DBus.Properties.Set "org.gnome.SettingsDaemon.Rfkill" "BluetoothAirplaneMode" "<true>" >/dev/null
 EOF
   displayandexec "Installation du script desactivebt                  " "\
-  chmod +x "$my_bin_path"/desactivebt"
+  chmod +x "$my_user_bin_path"/desactivebt"
 }
 ################################################################################
 
@@ -2814,7 +2795,7 @@ EOF
 ## install du script play_pause_chromium
 ##------------------------------------------------------------------------------
 install_play_pause_chromium() {
-  cat> "$my_bin_path"/play_pause_chromium << 'EOF'
+  cat> "$my_user_bin_path"/play_pause_chromium << 'EOF'
 #!/bin/bash
 # __my_script__
 
@@ -2822,7 +2803,7 @@ dbus_dest_org="$(dbus-send --session --dest=org.freedesktop.DBus --type=method_c
 dbus-send --print-reply --dest="$dbus_dest_org" /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player.PlayPause >/dev/null
 EOF
   displayandexec "Installation du script play_pause_chromium          " "\
-  chmod +x "$my_bin_path"/play_pause_chromium"
+  chmod +x "$my_user_bin_path"/play_pause_chromium"
 }
 ################################################################################
 
@@ -2865,7 +2846,7 @@ EOF
 ## install du script waitforssh
 ##------------------------------------------------------------------------------
 install_waitforssh() {
-  cat> "$my_bin_path"/waitforssh << 'EOF'
+  cat> "$my_user_bin_path"/waitforssh << 'EOF'
 #!/bin/bash
 # __my_script__
 
@@ -2877,7 +2858,7 @@ until ssh -o ConnectTimeout=2 -p "$ssh_port" "$ssh_target" 2>/dev/null; do
 done
 EOF
   displayandexec "Installation du script waitforssh                   " "\
-  chmod +x "$my_bin_path"/waitforssh"
+  chmod +x "$my_user_bin_path"/waitforssh"
 }
 ################################################################################
 
@@ -2885,21 +2866,45 @@ EOF
 ## install du script update_my_zshrc
 ##------------------------------------------------------------------------------
 install_update_my_zshrc() {
-  cat> "$my_bin_path"/update_my_zshrc << 'EOF'
+  cat> "$my_user_bin_path"/update_my_zshrc << 'EOF'
 #!/bin/bash
 # __my_script__
 
 export my_bin_path='/usr/local/bin'
 export local_user="$(getent passwd 1000 | awk -F':' '{print $1}')"
+export my_user_bin_path="/home/"$local_user"/.local/bin"
 
 mv /home/"$local_user"/.zshrc /home/"$local_user"/.zshrc.old && \
 curl -sL -o /home/"$local_user"/.zshrc "https://raw.githubusercontent.com/NRGLine4Sec/config-l/main/.zshrc" && \
 curl -sL -o /tmp/my_user.zshrc "https://raw.githubusercontent.com/NRGLine4Sec/config-l/main/my_user.zshrc" && \
-envsubst '$my_bin_path $local_user' < /tmp/my_user.zshrc >> /home/"$local_user"/.zshrc
+envsubst '$my_bin_path $local_user $my_user_bin_path' < /tmp/my_user.zshrc >> /home/"$local_user"/.zshrc
 }
 EOF
-  displayandexec "Installation du script update_my_zshr               " "\
-  chmod +x "$my_bin_path"/update_my_zshrc"
+  displayandexec "Installation du script update_my_zshrc              " "\
+  chmod +x "$my_user_bin_path"/update_my_zshrc"
+}
+################################################################################
+
+################################################################################
+## install du script update_my_bashrc
+##------------------------------------------------------------------------------
+install_update_my_bashrc() {
+  cat> "$my_user_bin_path"/update_my_bashrc << 'EOF'
+#!/bin/bash
+# __my_script__
+
+export my_bin_path='/usr/local/bin'
+export local_user="$(getent passwd 1000 | awk -F':' '{print $1}')"
+export my_user_bin_path="/home/"$local_user"/.local/bin"
+
+mv /home/"$local_user"/.bashrc /home/"$local_user"/.bashrc.old && \
+curl -sL -o /home/"$local_user"/.bashrc "https://raw.githubusercontent.com/NRGLine4Sec/config-l/main/.bashrc" && \
+curl -sL -o /tmp/my_user.bashrc "https://raw.githubusercontent.com/NRGLine4Sec/config-l/main/my_user.bashrc" && \
+envsubst '$my_bin_path $local_user $my_user_bin_path' < /tmp/my_user.bashrc >> /home/"$local_user"/.bashrc
+}
+EOF
+  displayandexec "Installation du script update_my_bashrc             " "\
+  chmod +x "$my_user_bin_path"/update_my_bashrc"
 }
 ################################################################################
 
@@ -2947,7 +2952,7 @@ fi
 # on change le port par défaut
 configure_ssh() {
   displayandexec "Configuration de ssh                                " "\
-  sed -i -E 's/^(#)?Port [[:digit:]]+/Port '"$SSH_Port"'/' /etc/ssh/sshd_config && \
+  sed -i -E 's/^(#)?Port [0-9]+/Port '"$SSH_Port"'/' /etc/ssh/sshd_config && \
   sed -i -E 's/^(#)?PermitRootLogin (yes|no|without-password|prohibit-password)/PermitRootLogin no/' /etc/ssh/sshd_config"
   cat>> /etc/ssh/sshd_config << EOF
 
@@ -2997,6 +3002,18 @@ configure_loop_device_mount_dir
 ################################################################################
 
 ################################################################################
+## configuration d'un répertoire pour monter gocryptfs
+##------------------------------------------------------------------------------
+# création du répertoire qui servira de point de montage pour des gocryptfs
+# on le créer dans /home/"$local_user"/.mnt/gocryptfs/ car cela permet de lire et écrire sans élévation de privilège lors de l'execution du mount
+configure_gocryptfs_mount_dir() {
+  displayandexec "Configuration d'un répertoire pour mount gocryptfs  " "\
+  is_dir_present_or_mkdir_as_user "/home/"$local_user"/.mnt/gocryptfs/""
+}
+configure_gocryptfs_mount_dir
+################################################################################
+
+################################################################################
 ## configuration du logrotate pour le auth.log
 ##------------------------------------------------------------------------------
 configure_logrotate_auth_log() {
@@ -3030,8 +3047,8 @@ fi
 # par défaut elle est à 4 (debian bullseye)
 configure_logrotate() {
   displayandexec "Configuration de logrotate                          " "\
-  sed -E -i 's/^# keep [[:digit:]]+ weeks worth of backlogs/# keep 8 weeks worth of backlogs/' /etc/logrotate.conf && \
-  sed -E -i 's/^rotate [[:digit:]]+/rotate 8/' /etc/logrotate.conf"
+  sed -E -i 's/^# keep [0-9]+ weeks worth of backlogs/# keep 8 weeks worth of backlogs/' /etc/logrotate.conf && \
+  sed -E -i 's/^rotate [0-9]+/rotate 8/' /etc/logrotate.conf"
 }
 if [ "$bullseye" == 1 ]; then
   configure_logrotate
@@ -3058,9 +3075,9 @@ configure_auditd_rules
 ##------------------------------------------------------------------------------
 configure_auditd() {
   displayandexec "Configuration de auditd                             " "\
-  sed -E -i 's/^space_left = [[:digit:]]+/space_left = 20%/' /etc/audit/auditd.conf && \
-  sed -E -i 's/^max_log_file = [[:digit:]]+/max_log_file = 10/' /etc/audit/auditd.conf && \
-  sed -E -i 's/^num_logs = [[:digit:]]+/num_logs = 50/' /etc/audit/auditd.conf && \
+  sed -E -i 's/^space_left = [0-9]+/space_left = 20%/' /etc/audit/auditd.conf && \
+  sed -E -i 's/^max_log_file = [0-9]+/max_log_file = 10/' /etc/audit/auditd.conf && \
+  sed -E -i 's/^num_logs = [0-9]+/num_logs = 50/' /etc/audit/auditd.conf && \
   systemctl restart auditd"
 }
 configure_auditd
@@ -3097,7 +3114,7 @@ configure_wlfreerdp
 ##------------------------------------------------------------------------------
 configure_freshclam() {
   displayandexec "Configuration de freshclam                          " "\
-  sed -E -i 's/^Checks [[:digit:]]+/Checks 1/' /etc/clamav/freshclam.conf"
+  sed -E -i 's/^Checks [0-9]+/Checks 1/' /etc/clamav/freshclam.conf"
 }
 configure_freshclam
 # Check for new database 1 times a day (insteed of 24)
@@ -3331,7 +3348,7 @@ configure_nano() {
   displayandexec "Configuration de nano                               " "\
   sed -i -E 's/^(#)?# set linenumbers/set linenumbers/' /etc/nanorc && \
   sed -i -E 's/^(#)?# set softwrap/set softwrap/' /etc/nanorc && \
-  sed -i -E 's/^(#)?# set tabsize [[:digit:]]+/set tabsize 4/' /etc/nanorc"
+  sed -i -E 's/^(#)?# set tabsize [0-9]+/set tabsize 4/' /etc/nanorc"
 }
 configure_nano
 ################################################################################
@@ -3666,8 +3683,8 @@ configure_handbrake
 # Il semblerait que le fichier de conf se créer aussi lorsqu'on lance Geeqie et qu'on le quitte proprement (en appuyant sur la croix en haut de la fenêtre)
 configure_geeqie() {
   if is_file_present "/home/"$local_user"/.config/geeqie/geeqierc.xml"; then
-    $ExeAsUser sed -i -E 's/image.alpha_color_1 = "#[[:digit:]]+"/image.alpha_color_1 = "#FFFFFFFFFFFF"/' /home/"$local_user"/.config/geeqie/geeqierc.xml
-    $ExeAsUser sed -i -E 's/image.alpha_color_2 = "#[[:digit:]]+"/image.alpha_color_2 = "#FFFFFFFFFFFF"/' /home/"$local_user"/.config/geeqie/geeqierc.xml
+    $ExeAsUser sed -i -E 's/image.alpha_color_1 = "#[0-9]+"/image.alpha_color_1 = "#FFFFFFFFFFFF"/' /home/"$local_user"/.config/geeqie/geeqierc.xml
+    $ExeAsUser sed -i -E 's/image.alpha_color_2 = "#[0-9]+"/image.alpha_color_2 = "#FFFFFFFFFFFF"/' /home/"$local_user"/.config/geeqie/geeqierc.xml
 
   # on désactive la capacité de geekie d'ouvrir des .pdf
     $ExeAsUser sed -i -E 's%<file_type key = "pdf" enabled = "true" extensions = ".pdf" description = "Portable Document Format" file_class = "6" writable = "false" allow_sidecar = "false" />%<file_type key = "pdf" enabled = "false" extensions = ".pdf" description = "Portable Document Format" file_class = "6" writable = "false" allow_sidecar = "false" />%' /home/"$local_user"/.config/geeqie/geeqierc.xml
@@ -3678,7 +3695,7 @@ configure_geeqie() {
 
     $ExeAsUser sed -i 's/image.zoom_to_fit_allow_expand = "false"/image.zoom_to_fit_allow_expand = "true"/' /home/"$local_user"/.config/geeqie/geeqierc.xml
 
-    $ExeAsUser sed -i 's/image.zoom_quality = "[[:digit:]]+"/image.zoom_quality = "3"/' /home/"$local_user"/.config/geeqie/geeqierc.xml
+    $ExeAsUser sed -i 's/image.zoom_quality = "[0-9]+"/image.zoom_quality = "3"/' /home/"$local_user"/.config/geeqie/geeqierc.xml
   fi
 }
 configure_geeqie
@@ -3960,8 +3977,8 @@ CustomGnomeShortcut() {
 
 CustomGnomeShortcut "Ouvrir le terminal" "gnome-terminal" "<Super>r"
 CustomGnomeShortcut "Ouvrir l explorateur de fichier" "nautilus -w /home/$local_user/" "<Super>e"
-CustomGnomeShortcut "Appairer automatiquement avec le peripherique bluetooth" ""$my_bin_path"/appairmebt" "<Super><Alt>b"
-CustomGnomeShortcut "désactiver le bluetooth" ""$my_bin_path"/desactivebt" "<Primary><Alt>b"
+CustomGnomeShortcut "Appairer automatiquement avec le peripherique bluetooth" ""$my_user_bin_path"/appairmebt" "<Super><Alt>b"
+CustomGnomeShortcut "désactiver le bluetooth" ""$my_user_bin_path"/desactivebt" "<Primary><Alt>b"
 
 # $1       name of the shortcut
 # $2       command to execute
@@ -4102,7 +4119,6 @@ ConfigureGnomeTerminal
 configure_mime_types() {
   $ExeAsUser cat> /home/"$local_user"/.config/mimeapps.list << 'EOF'
 [Added Associations]
-application/octet-stream=code.desktop;
 application/vnd.jgraph.mxfile=com.jgraph.drawio.desktop;
 application/x-php=code.desktop;
 application/x-mswinurl=launch_url_file.desktop;
@@ -4123,6 +4139,7 @@ video/webm=mpv.desktop;
 video/x-flv=mpv.desktop;org.gnome.Totem.desktop;vlc.desktop;
 video/mp4=mpv.desktop;org.gnome.Totem.desktop;vlc.desktop;
 video/quicktime=mpv.desktop;
+video/mp2t=mpv.desktop;
 image/webp=org.geeqie.Geeqie.desktop;
 
 [Default Applications]
@@ -4139,6 +4156,7 @@ video/x-matroska=mpv.desktop
 video/webm=mpv.desktop
 video/x-flv=mpv.desktop
 video/quicktime=mpv.desktop
+video/mp2t=mpv.desktop
 x-scheme-handler/http=chromium.desktop
 x-scheme-handler/https=chromium.desktop
 x-scheme-handler/about=chromium.desktop
@@ -4171,6 +4189,22 @@ EOF
 }
 configure_mime_types_association_drawio
 # ref : [Give *.drawio files MIME type to make application association work](https://gist.github.com/giner/0eb272c11085036c4438413f6de0e454)
+
+configure_mime_types_association_dot_ts_file() {
+  execandlog "is_dir_present_or_mkdir_as_user "/home/"$local_user"/.local/share/mime/packages/"" && \
+  $ExeAsUser cat> /home/"$local_user"/.local/share/mime/packages/ts.xml << 'EOF'
+<?xml version="1.0" encoding="utf-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <!-- map .ts to video/mp2t (MIME standard) -->
+  <mime-type type="video/mp2t">
+    <comment>MPEG transport stream</comment>
+    <glob pattern="*.ts"/>
+  </mime-type>
+</mime-info>
+EOF
+  execandlog "$ExeAsUser update-mime-database /home/"$local_user"/.local/share/mime"
+}
+configure_mime_types_association_dot_ts_file
 ################################################################################
 
 ################################################################################
@@ -4315,30 +4349,27 @@ configure_bashrc_user() {
   execandlog "is_file_present_and_rmfile "/home/"$local_user"/.bashrc" && \
   cp "$script_path"/.bashrc /home/"$local_user"/.bashrc && \
   chown "$local_user":"$local_user" /home/"$local_user"/.bashrc"
-  $ExeAsUser envsubst < "$script_path"/my_user.bashrc >> /home/"$local_user"/.bashrc
-
-# $my_bin_path
-# $local_user
+  $ExeAsUser envsubst '$my_bin_path $local_user $my_user_bin_path' < "$script_path"/my_user.bashrc >> /home/"$local_user"/.bashrc
 }
 
 configure_bashrc_root() {
   # alias for root
   execandlog "is_file_present_and_rmfile "/root/.bashrc" && \
   cp "$script_path"/.bashrc /root/.bashrc"
-  envsubst < "$script_path"/my_root.bashrc >> /root/.bashrc
+  envsubst '$my_bin_path $local_user $my_user_bin_path' < "$script_path"/my_root.bashrc >> /root/.bashrc
 }
 
 configure_zshrc_user() {
   execandlog "is_file_present_and_rmfile "/home/"$local_user"/.zshrc" && \
   cp "$script_path"/.zshrc /home/"$local_user"/.zshrc && \
   chown "$local_user":"$local_user" /home/"$local_user"/.zshrc"
-  $ExeAsUser envsubst < "$script_path"/my_user.zshrc >> /home/"$local_user"/.zshrc
+  $ExeAsUser envsubst '$my_bin_path $local_user $my_user_bin_path' < "$script_path"/my_user.zshrc >> /home/"$local_user"/.zshrc
 }
 
 configure_zshrc_root() {
   execandlog "is_file_present_and_rmfile "/root/.zshrc" && \
   cp "$script_path"/.zshrc /root/.zshrc"
-  envsubst < "$script_path"/my_root.zshrc >> /root/.zshrc
+  envsubst '$my_bin_path $local_user $my_user_bin_path' < "$script_path"/my_root.zshrc >> /root/.zshrc
 }
 
 configure_bashrc() {
@@ -4411,7 +4442,7 @@ update_rkhunter() {
 ## Execution d'un scan pour détecter la présence de rootkits
 ##------------------------------------------------------------------------------
 # execution de rktscan
-# displayandexec "Execution de rktscan                                " ""$my_bin_path"/rktscan"
+# displayandexec "Execution de rktscan                                " ""$my_user_bin_path"/rktscan"
 # on désactive le scan des rootkits lors de l'execution du script car il met énormément de temps à se terminer
 ################################################################################
 
@@ -4485,8 +4516,8 @@ disable_unneeded_services() {
 ################################################################################
 ## configuration des règles de firewall
 ##------------------------------------------------------------------------------
-configure_firewall() {
-  displayandexec "Configuration du firewall                           " "\
+configure_firewall_ufw() {
+  displayandexec "Configuration du firewall (ufw)                     " "\
   ufw --force reset && \
   ufw default deny incoming && \
   ufw default allow outgoing && \
@@ -4495,7 +4526,22 @@ configure_firewall() {
   ufw logging high && \
   ufw --force enable"
 }
-configure_firewall
+# configure_firewall_ufw
+
+configure_firewall_firewalld() {
+  displayandexec "Configuration du firewall (firewalld)               " "\
+  firewall-cmd --state &>/dev/null && \
+  firewall-cmd --permanent --complete-reload && \
+  firewall-cmd --permanent --new-zone=custom && \
+  firewall-cmd --set-default-zone=custom && \
+  firewall-cmd --permanent --zone=custom --set-target=DROP && \
+  firewall-cmd --permanent --zone=custom --add-port="$SSH_Port"/tcp && \
+  firewall-cmd --permanent --zone=custom --add-rich-rule="rule family='ipv4' port port="$SSH_Port" protocol='tcp' limit value='10/m' accept" && \
+  firewall-cmd --set-log-denied=all
+  firewall-cmd --reload && \
+  systemctl enable --now firewalld"
+}
+configure_firewall_firewalld
 ################################################################################
 
 #réapplication de la cond par défaut pour la mise en veille automatique
@@ -4530,7 +4576,12 @@ cd
 create_root_part_snapshot_with_timeshift_rsync() {
   displayandexec "Création d'un snapshot de / avec Timeshift          " "\
   umount -l /run/timeshift/backup; \
-  timeshift --scripted --create --rsync --comments 'first snapshot, after postinstall script' --snapshot-device /dev/"$root_part_kname""
+  timeshift \
+  --scripted \
+  --create \
+  --rsync \
+  --comments 'first snapshot, after postinstall script' \
+  --snapshot-device /dev/"$root_part_kname""
   # cette étape est très longue lorsqu'il faut faire un premier snapshot (car timeshift doit faire en fait un miroir du système existant)
   # sur un HDD pas très rapide, il y en a pour à peu près une heure
 }

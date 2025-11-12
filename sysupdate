@@ -35,8 +35,8 @@ WGET='wget -q'
 CURL='curl --silent --location --show-error'
 local_user="$(awk -F':' '/:1000:/{print $1}' /etc/passwd)"
 my_bin_path='/usr/local/bin'
-my_local_bin_path='/home/"$local_user"/.local/bin'
-ExeAsUser="sudo -u "$local_user""
+export my_user_bin_path="/home/"$local_user"/.local/bin"
+export ExeAsUser="sudo -u "$local_user""
 program_name="$0"
 program_options="$@"
 now="$(date +"%d-%m-%Y-%H-%M")"
@@ -156,43 +156,36 @@ CheckAvailableUpdate() {
 
 CheckUpdateShotcut() {
   local SoftwareName='Shotcut'
-  local v1="$("$(grep -Po '(^Exec=)\K(.*\.AppImage$)' /usr/share/applications/shotcut.desktop)" --version 2> /dev/null | grep -Po '(Shotcut )\K([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)')"
+  local v1="$("$(grep -Po '(^Exec=)\K(.*\.AppImage$)' /usr/share/applications/shotcut.desktop)" --version 2> /dev/null | grep -Po '(Shotcut )\K([0-9]+\.[0-9]+\.[0-9]+)')"
   local v2="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
 CheckUpdateKeepassxc() {
   local SoftwareName='KeePassXC'
-  local v1="$(grep -Po '^Exec.*-\K[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+' /usr/share/applications/keepassxc.desktop)"
+  local v1="$(grep -Po '^Exec.*-\K[0-9]+\.[0-9]+\.[0-9]+' /usr/share/applications/keepassxc.desktop)"
   local v2="$($CURL 'https://api.github.com/repos/keepassxreboot/keepassxc/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
 CheckUpdateJoplin() {
   local SoftwareName='Joplin'
-  local v1="$(grep -Po '^Exec.*-\K[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+' /usr/share/applications/joplin.desktop)"
+  local v1="$(grep -Po '^Exec.*-\K[0-9]+\.[0-9]+\.[0-9]+' /usr/share/applications/joplin.desktop)"
   local v2="$($CURL 'https://api.github.com/repos/laurent22/joplin/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
-  CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
-}
-
-CheckUpdateStacer() {
-  local SoftwareName='Stacer'
-  local v1="$(strings /usr/share/stacer/stacer | grep -Po '(Stacer v)\K([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)')"
-  local v2="$($CURL 'https://api.github.com/repos/oguzhaninan/Stacer/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
 CheckUpdateBat() {
   local SoftwareName='Bat'
-  local v1="$(bat --version | grep -Po '(bat )\K[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+')"
+  local v1="$(bat --version | grep -Po '(bat )\K[0-9]+\.[0-9]+\.[0-9]+')"
   local v2="$($CURL 'https://api.github.com/repos/sharkdp/bat/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
 CheckUpdateKrita() {
   local SoftwareName='Krita'
-  local v1="$(grep -Po '^Exec.*-\K[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+' /usr/share/applications/krita.desktop)"
-  local v2="$($CURL 'https://krita.org/fr/download/'| tr -s '<' '\n' | grep 'stable' | grep -m1 -e '.appimage' | grep -Po '(?<=/stable/krita/)([[:digit:]]+\.+[[:digit:]]+\.[[:digit:]]+)')"
+  local v1="$(grep -Po '^Exec.*-\K[0-9]+\.[0-9]+\.[0-9]+' /usr/share/applications/krita.desktop)"
+  local v2="$($CURL 'https://krita.org/fr/download/'| tr -s '<' '\n' | grep 'stable' | grep -m1 -e '.appimage' | grep -Po '(?<=/stable/krita/)([0-9]+\.+[0-9]+\.[0-9]+)')"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
@@ -212,21 +205,21 @@ CheckUpdateOpensnitchRC() {
 
 CheckUpdateDrawio() {
   local SoftwareName='Drawio'
-  local v1="$(grep -Po '^Exec.*-\K[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+' /usr/share/applications/drawio.desktop)"
+  local v1="$(grep -Po '^Exec.*-\K[0-9]+\.[0-9]+\.[0-9]+' /usr/share/applications/drawio.desktop)"
   local v2="$($CURL 'https://api.github.com/repos/jgraph/drawio-desktop/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
 CheckUpdateEtcher() {
   local SoftwareName='Etcher'
-  local v1="$(grep -Po '^Exec.*-\K[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+' /usr/share/applications/balena-etcher-electron.desktop)"
+  local v1="$(grep -Po '^Exec.*-\K[0-9]+\.[0-9]+\.[0-9]+' /usr/share/applications/balena-etcher-electron.desktop)"
   local v2="$($CURL 'https://api.github.com/repos/balena-io/etcher/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
 CheckUpdateGeeqie() {
   local SoftwareName='Geeqie'
-  local v1="$(grep -Po '^Exec.*-v\K([[:digit:]]\.[[:digit:]]+\+[[:digit:]]+|[[:digit:]]\.[[:digit:]]+\.[[:digit:]]+\+[[:digit:]]+)(?=\-x86_64.AppImage)' /usr/share/applications/geeqie.desktop)"
+  local v1="$(grep -Po '^Exec.*-v\K([0-9]\.[0-9]+\+[0-9]+|[0-9]\.[0-9]+\.[0-9]+\+[0-9]+)(?=\-x86_64.AppImage)' /usr/share/applications/geeqie.desktop)"
   local v2="$($CURL 'https://api.github.com/repos/BestImageViewer/geeqie/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
   if [[ -z "$v1" ]]; then v1=0; fi
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
@@ -243,30 +236,24 @@ CheckUpdateYt-dlp() {
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
+CheckUpdateDeno() {
+  local SoftwareName='Deno'
+  local v1="$($my_user_bin_path/deno --version | grep -Po '^(deno )\K[0-9]+\.[0-9]+\.[0-9]+' 2>/dev/null)"
+  local v2="$($CURL 'https://api.github.com/repos/denoland/deno/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
+  CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
+}
+
 CheckUpdateHashcat() {
   local SoftwareName='Hashcat'
-  local v1="$(hashcat --version | grep -Po '(v)\K([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)')"
+  local v1="$(hashcat --version | grep -Po '(v)\K([0-9]+\.[0-9]+\.[0-9]+)')"
   local v2="$($CURL 'https://api.github.com/repos/hashcat/hashcat/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
 CheckUpdateVeracrypt() {
   local SoftwareName='Veracrypt'
-  local v1="$(veracrypt --text --version | grep -Poi '(?<=veracrypt )\K([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+-[[:alnum:]]+|[[:digit:]]+\.[[:digit:]]+-[[:alnum:]]+|[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+|[[:digit:]]+\.[[:digit:]]+)(?=$)')"
-  local v2="$($CURL 'https://www.veracrypt.fr/en/Downloads.html' | grep 'tar.bz2' | grep -v '.sig\|x86\|Source\|freebsd' | grep -Po '(?<=veracrypt-)([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+-[[:alnum:]]+|[[:digit:]]+\.[[:digit:]]+-[[:alnum:]]+|[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+|[[:digit:]]+\.[[:digit:]]+)(?=-setup)')"
-  CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
-}
-
-CheckUpdateWinscp() {
-  local SoftwareName='WinSCP'
-  local v1="$(7z l "$manual_install_dir"/winscp/WinSCP.exe | grep -Po '(ProductVersion: )\K([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)')"
-  # autre méthode plus compliqué pour récuperer la version avec un dump du process en utilisant gcore
-  # execute WinSCP
-  # dump the process with the PID of the WinSCP process : gcore -o winscp.dump "$(pgrep WinSCP.exe)"
-  # extract the version from the dump memory of the process :
-  # grep --text -Po '(WinSCP-release-)\K([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)' winscp.pid.86694
-  # find . -type f -regex '.*winscp.dump\.[0-9]+$' -exec grep --text -Po '(WinSCP-release-)\K([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)' {} \;
-  local v2="$($CURL 'https://winscp.net/eng/downloads.php' | grep -Po '(?<=WinSCP-)([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)(?=-Portable.zip")')"
+  local v1="$(veracrypt --text --version | grep -Poi '(?<=veracrypt )\K([0-9]+\.[0-9]+\.[0-9]+-[[:alnum:]]+|[0-9]+\.[0-9]+-[[:alnum:]]+|[0-9]+\.[0-9]+\.[0-9]+|[0-9]+\.[0-9]+)(?=$)')"
+  local v2="$($CURL 'https://www.veracrypt.fr/en/Downloads.html' | grep 'tar.bz2' | grep -v '.sig\|x86\|Source\|freebsd' | grep -Po '(?<=veracrypt-)([0-9]+\.[0-9]+\.[0-9]+-[[:alnum:]]+|[0-9]+\.[0-9]+-[[:alnum:]]+|[0-9]+\.[0-9]+\.[0-9]+|[0-9]+\.[0-9]+)(?=-setup)')"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
@@ -315,14 +302,6 @@ UpdateJoplin() {
   sed -i "s,^Exec=.*,Exec="$manual_install_dir"/Joplin/Joplin-"$joplin_version".AppImage,g" /usr/share/applications/joplin.desktop && \
   [ -f /home/"$local_user"/.config/autostart/joplin.desktop ] && sed -i "s,^Exec=.*,Exec="$manual_install_dir"/Joplin/Joplin-"$joplin_version".AppImage,g" /home/"$local_user"/.config/autostart/joplin.desktop && \
   [ -f "$manual_install_dir"/Joplin/256x256.png ] || $WGET -P "$manual_install_dir"/Joplin/ 'https://raw.githubusercontent.com/laurent22/joplin/master/Assets/LinuxIcons/256x256.png'
-}
-
-UpdateStacer() {
-  local stacer_version="$1"
-  local tmp_dir="$(mktemp -d)" && \
-  $WGET -P "$tmp_dir" https://github.com/oguzhaninan/Stacer/releases/download/v$stacer_version/stacer_"$stacer_version"_amd64.deb && \
-  dpkg -i "$tmp_dir"/stacer_"$stacer_version"_amd64.deb
-  # rm -rf "$tmp_dir"
 }
 
 UpdateBat() {
@@ -401,8 +380,18 @@ UpdateGeeqie() {
   [ -f "$manual_install_dir"/Geeqie/geeqie.svg ] || $WGET -P "$manual_install_dir"/Geeqie/ 'https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/geeqie.svg'
 }
 
+UpdateDeno() {
+  local deno_version="$1"
+  local tmp_dir="$(mktemp -d)"
+  displayandexec "Mise à jour de deno (need after yt-dlp v2025.11.12) " "\
+  rm -f "$my_user_bin_path"/deno && \
+  $WGET -P "$tmp_dir" https://github.com/denoland/deno/releases/download/v"$deno_version"/deno-x86_64-unknown-linux-gnu.zip && \
+  $ExeAsUser unzip "$tmp_dir"/deno-x86_64-unknown-linux-gnu.zip -d "$my_user_bin_path"/; \
+  rm -rf "$tmp_dir""
+}
+
 UpdateYt-dlp() {
-  displayandexec "Mise à jour de yt-dlp                               " "yt-dlp --update"
+  displayandexec "Mise à jour de yt-dlp                               " "$ExeAsUser $my_user_bin_path/yt-dlp --update"
 }
 
 UpdateHashcat() {
@@ -426,16 +415,6 @@ UpdateVeracrypt() {
   "$tmp_dir"/veracrypt-"$veracrypt_version"-setup-gui-x64 --nox11 --noexec --target "$tmp_dir" && \
   tail -n +$(sed -n 's/.*PACKAGE_START=\([0-9]*\).*/\1/p' "$tmp_dir"/veracrypt_install_gui_x64.sh) "$tmp_dir"/veracrypt_install_gui_x64.sh > "$tmp_dir"/veracrypt_installer.tar && \
   tar -C / --no-overwrite-dir -xpzvf "$tmp_dir"/veracrypt_installer.tar
-  rm -rf "$tmp_dir"
-}
-
-UpdateWinscp() {
-  local winscp_version="$1"
-  local tmp_dir="$(mktemp -d)" && \
-  [ -d "$manual_install_dir"/winscp/ ] && rm -rf "$manual_install_dir"/winscp/ && \
-  mkdir "$manual_install_dir"/winscp/ && \
-  $WGET -P "$tmp_dir" https://winscp.net/download/WinSCP-"$winscp_version"-Portable.zip && \
-  unzip "$tmp_dir"/WinSCP-"$winscp_version"-Portable.zip -d "$manual_install_dir"/winscp/
   rm -rf "$tmp_dir"
 }
 
@@ -472,26 +451,21 @@ AddTo_software_update_failed() {
 ################################################################################
 
 software_list='
-Shotcut
 Keepassxc
 Joplin
 Bat
-Krita
-Drawio
 Etcher
+Deno
 Yt-dlp
 Hashcat
 Veracrypt
-Geeqie
 Ventoy'
-# Stacer
-# Winscp
-# on supprimer Geeqie de la liste temporairement car les nouveaux AppImage ne fonctionnent pas, la dernière version qui fonctionne correctement sur bullseye est celle la : Geeqie-v2.0+20220921.AppImage
-# cf le lien du bug ci-dessous :
-# [Latest AppImages fail to run on Debian 11 · Issue #1055 · BestImageViewer/geeqie](https://github.com/BestImageViewer/geeqie/issues/1055)
 
-# OpensnitchRC
-# On supprime OpensnitchRC pour le moment tant qu'il n'y a pas une nouvelle release qui corrige le problème de différence entre les versions obtenues du binnaire et celle produite par Github
+# plus nécessaire car transformé en flatpak :
+# Geeqie
+# Krita
+# Shotcut
+# Drawio
 
 # si on veut avoir les latest stable de Opensnitch, il faut remplacer OpensnitchRC par Opensnitch
 

@@ -17,5 +17,5 @@ alias u='ag update'
 alias upp='ag update && ag upgrade'
 alias uppr='ag update && ag dist-upgrade'
 alias free='free -ht'
-is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/$1 ;}
 to_lower() { tr [:upper:] [:lower:] <<< "$@" ;}
+to_upper() { tr [:lower:] [:upper:] <<< "$@" ;}
