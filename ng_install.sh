@@ -1833,12 +1833,12 @@ install_yt-dlp() {
   local tmp_dir="$(mktemp -d)"
   displayandexec "Installation de deno (need after yt-dlp v2025.11.12)" "\
   $WGET -P "$tmp_dir" https://github.com/denoland/deno/releases/download/v"$deno_version"/deno-x86_64-unknown-linux-gnu.zip && \
-  unzip "$tmp_dir"/deno-x86_64-unknown-linux-gnu.zip -d "$my_user_bin_path"/; \
+  $ExeAsUser unzip "$tmp_dir"/deno-x86_64-unknown-linux-gnu.zip -d "$my_user_bin_path"/; \
   rm -rf "$tmp_dir""
 
   displayandexec "Installation de yt-dlp                              " "\
   is_file_present_and_rmfile ""$my_user_bin_path"/yt-dlp" && \
-  $CURL --output "$my_user_bin_path"/yt-dlp https://github.com/yt-dlp/yt-dlp/releases/download/"$ytdlp_version"/yt-dlp_linux  && \
+  $ExeAsUser $CURL --output "$my_user_bin_path"/yt-dlp https://github.com/yt-dlp/yt-dlp/releases/download/"$ytdlp_version"/yt-dlp_linux  && \
   chmod +x "$my_user_bin_path"/yt-dlp"
 }
 ################################################################################
@@ -2086,7 +2086,7 @@ EOF
 ##------------------------------------------------------------------------------
 install_ventoy() {
   local tmp_dir="$(mktemp -d)"
-  cat> "$my_user_bin_path"/ventoy << EOF
+  $ExeAsUser cat> "$my_user_bin_path"/ventoy << EOF
 #!/bin/bash
 sudo $manual_install_dir/ventoy/ventoy-$ventoy_version/VentoyGUI.x86_64
 EOF
@@ -2536,7 +2536,7 @@ install_check_backport_update() {
   # porbablement qu'il vaudrait lister les paquets qui peuvent être mis à jours avec sudo apt-get update && sudo apt list --upgradable
   # certainement avec quelque chose comme : awk '/~bpo/ && /.bpo/ {print $0}' <(sudo apt list --upgradable 2>/dev/null)
   # c'est beaucoup plus rapide
-  cat> "$my_user_bin_path"/check_backport_update << 'EOF'
+  $ExeAsUser cat> "$my_user_bin_path"/check_backport_update << 'EOF'
 #!/bin/bash
 # __my_script__
 
@@ -2558,7 +2558,7 @@ EOF
 ## install du script wsudo
 ##------------------------------------------------------------------------------
 install_wsudo() {
-  cat> "$my_user_bin_path"/wsudo << 'EOF'
+  $ExeAsUser cat> "$my_user_bin_path"/wsudo << 'EOF'
 #!/bin/bash
 # __my_script__
 
@@ -2579,7 +2579,7 @@ EOF
 ## install du script launch_url_file
 ##------------------------------------------------------------------------------
 install_launch_url_file() {
-  cat> "$my_user_bin_path"/launch_url_file << 'EOF'
+  $ExeAsUser cat> "$my_user_bin_path"/launch_url_file << 'EOF'
 #!/bin/bash
 # __my_script__
 
@@ -2604,7 +2604,7 @@ EOF
 ## install du script scanmyhome
 ##------------------------------------------------------------------------------
 install_scanmyhome() {
-  cat> "$my_user_bin_path"/scanmyhome << 'EOF'
+  $ExeAsUser cat> "$my_user_bin_path"/scanmyhome << 'EOF'
 #!/bin/bash
 # __my_script__
 
@@ -2624,7 +2624,7 @@ EOF
 ## install du script rktscan
 ##------------------------------------------------------------------------------
 install_rktscan() {
-  cat> "$my_user_bin_path"/rktscan << 'EOF'
+  $ExeAsUser cat> "$my_user_bin_path"/rktscan << 'EOF'
 #!/bin/bash
 # __my_script__
 
@@ -2658,7 +2658,7 @@ EOF
 ## install du script check_domain_creation_date
 ##------------------------------------------------------------------------------
 install_check_domain_creation_date() {
-  cat> "$my_user_bin_path"/check_domain_creation_date << 'EOF'
+  $ExeAsUser cat> "$my_user_bin_path"/check_domain_creation_date << 'EOF'
 #!/bin/bash
 # __my_script__
 
@@ -2705,7 +2705,7 @@ EOF
 ## install du script appairmebt
 ##------------------------------------------------------------------------------
 install_appairmebt() {
-  cat> "$my_user_bin_path"/appairmebt << 'EOF'
+  $ExeAsUser cat> "$my_user_bin_path"/appairmebt << 'EOF'
 #!/bin/bash
 # __my_script__
 
@@ -2780,7 +2780,7 @@ EOF
 ## install du script desactivebt
 ##------------------------------------------------------------------------------
 install_desactivebt() {
-  cat> "$my_user_bin_path"/desactivebt << 'EOF'
+  $ExeAsUser cat> "$my_user_bin_path"/desactivebt << 'EOF'
 #!/bin/bash
 # __my_script__
 
@@ -2795,7 +2795,7 @@ EOF
 ## install du script play_pause_chromium
 ##------------------------------------------------------------------------------
 install_play_pause_chromium() {
-  cat> "$my_user_bin_path"/play_pause_chromium << 'EOF'
+  $ExeAsUser cat> "$my_user_bin_path"/play_pause_chromium << 'EOF'
 #!/bin/bash
 # __my_script__
 
@@ -2846,7 +2846,7 @@ EOF
 ## install du script waitforssh
 ##------------------------------------------------------------------------------
 install_waitforssh() {
-  cat> "$my_user_bin_path"/waitforssh << 'EOF'
+  $ExeAsUser cat> "$my_user_bin_path"/waitforssh << 'EOF'
 #!/bin/bash
 # __my_script__
 
@@ -2866,7 +2866,7 @@ EOF
 ## install du script update_my_zshrc
 ##------------------------------------------------------------------------------
 install_update_my_zshrc() {
-  cat> "$my_user_bin_path"/update_my_zshrc << 'EOF'
+  $ExeAsUser cat> "$my_user_bin_path"/update_my_zshrc << 'EOF'
 #!/bin/bash
 # __my_script__
 
@@ -2889,7 +2889,7 @@ EOF
 ## install du script update_my_bashrc
 ##------------------------------------------------------------------------------
 install_update_my_bashrc() {
-  cat> "$my_user_bin_path"/update_my_bashrc << 'EOF'
+  $ExeAsUser cat> "$my_user_bin_path"/update_my_bashrc << 'EOF'
 #!/bin/bash
 # __my_script__
 
