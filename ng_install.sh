@@ -2524,7 +2524,7 @@ echo ''
 install_sysupdate() {
   displayandexec "Installation du script sysupdate                    " "\
   is_file_present_and_rmfile ""$my_user_bin_path"/sysupdate" && \
-  cp "$script_path"/sysupdate "$my_user_bin_path"/sysupdate && \
+  cp "$script_path"/scripts/sysupdate "$my_user_bin_path"/sysupdate && \
   chmod +x "$my_user_bin_path"/sysupdate"
 }
 ################################################################################
@@ -2908,6 +2908,17 @@ EOF
 }
 ################################################################################
 
+################################################################################
+## install du script fix_zip_file_with_filename_too_long
+##------------------------------------------------------------------------------
+install_fix_zip_file_with_filename_too_long() {
+  displayandexec "Installation de fix_zip_file_with_filename_too_long " "\
+  is_file_present_and_rmfile ""$my_user_bin_path"/fix_zip_file_with_filename_too_long.sh" && \
+  cp "$script_path"/scripts/fix_zip_file_with_filename_too_long.sh "$my_user_bin_path"/fix_zip_file_with_filename_too_long.sh && \
+  chmod +x "$my_user_bin_path"/fix_zip_file_with_filename_too_long.sh"
+}
+################################################################################
+
 install_all_perso_script() {
   install_sysupdate
   install_check_backport_update
@@ -2923,6 +2934,7 @@ install_all_perso_script() {
   install_decomp
   install_waitforssh
   install_update_my_zshrc
+  install_fix_zip_file_with_filename_too_long
 }
 install_all_perso_script
 ################################################################################
@@ -4352,29 +4364,29 @@ fi
 configure_bashrc_user() {
   # alias for the user
   execandlog "is_file_present_and_rmfile "/home/"$local_user"/.bashrc" && \
-  cp "$script_path"/.bashrc /home/"$local_user"/.bashrc && \
+  cp "$script_path"/dot_files/.bashrc /home/"$local_user"/.bashrc && \
   chown "$local_user":"$local_user" /home/"$local_user"/.bashrc"
-  $ExeAsUser envsubst '$my_bin_path $local_user $my_user_bin_path' < "$script_path"/my_user.bashrc >> /home/"$local_user"/.bashrc
+  $ExeAsUser envsubst '$my_bin_path $local_user $my_user_bin_path' < "$script_path"/dot_files/my_user.bashrc >> /home/"$local_user"/.bashrc
 }
 
 configure_bashrc_root() {
   # alias for root
   execandlog "is_file_present_and_rmfile "/root/.bashrc" && \
-  cp "$script_path"/.bashrc /root/.bashrc"
-  envsubst '$my_bin_path $local_user $my_user_bin_path' < "$script_path"/my_root.bashrc >> /root/.bashrc
+  cp "$script_path"/dot_files/.bashrc /root/.bashrc"
+  envsubst '$my_bin_path $local_user $my_user_bin_path' < "$script_path"/dot_files/my_root.bashrc >> /root/.bashrc
 }
 
 configure_zshrc_user() {
   execandlog "is_file_present_and_rmfile "/home/"$local_user"/.zshrc" && \
-  cp "$script_path"/.zshrc /home/"$local_user"/.zshrc && \
+  cp "$script_path"/dot_files/.zshrc /home/"$local_user"/.zshrc && \
   chown "$local_user":"$local_user" /home/"$local_user"/.zshrc"
-  $ExeAsUser envsubst '$my_bin_path $local_user $my_user_bin_path' < "$script_path"/my_user.zshrc >> /home/"$local_user"/.zshrc
+  $ExeAsUser envsubst '$my_bin_path $local_user $my_user_bin_path' < "$script_path"/dot_files/my_user.zshrc >> /home/"$local_user"/.zshrc
 }
 
 configure_zshrc_root() {
   execandlog "is_file_present_and_rmfile "/root/.zshrc" && \
-  cp "$script_path"/.zshrc /root/.zshrc"
-  envsubst '$my_bin_path $local_user $my_user_bin_path' < "$script_path"/my_root.zshrc >> /root/.zshrc
+  cp "$script_path"/dot_files/.zshrc /root/.zshrc"
+  envsubst '$my_bin_path $local_user $my_user_bin_path' < "$script_path"/dot_files/my_root.zshrc >> /root/.zshrc
 }
 
 configure_bashrc() {

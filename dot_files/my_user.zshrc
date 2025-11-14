@@ -5,14 +5,13 @@ alias la='ls --color=always -A'
 alias l='ls --color=always -CF'
 alias asearch='apt-cache search'
 alias ashow='apt-cache show'
-alias h='history'
+alias h='fc -li 1'
 alias nn='nano -c'
 alias cl='clear'
 alias grep='grep --color=auto'
 alias diff='diff --unified=0 --color=auto'
 alias diff_side_by_side='/usr/bin/diff --color=auto --side-by-side --width=$COLUMNS'
 alias i='sudo ag install'
-alias ip='ip --color=auto'
 alias u='sudo ag update'
 alias upp='sudo ag update && sudo ag upgrade'
 alias uppr='sudo ag update && sudo ag dist-upgrade'
@@ -23,13 +22,12 @@ alias yt-dlp_1080p='$my_user_bin_path/yt-dlp -o "%(title)s.%(ext)s" --parse-meta
 alias yt-dlp_1440p='$my_user_bin_path/yt-dlp -o "%(title)s.%(ext)s" --parse-metadata "[%(title)s](%(webpage_url)s):%(meta_description)s" --parse-metadata ":(?P<meta_synopsis>)" --embed-metadata --impersonate Chrome-133 -f '\''bestvideo[height<=1440]+bestaudio'\'''
 alias yt-dlp_onlybestaudio='$my_user_bin_path/yt-dlp -o "%(title)s.%(ext)s" --parse-metadata "[%(title)s](%(webpage_url)s):%(meta_description)s" --parse-metadata ":(?P<meta_synopsis>)" --embed-metadata --impersonate Chrome-133 -f bestaudio --extract-audio --audio-format best'
 alias free='free -ht'
-alias showshortcut='dconf dump /org/gnome/settings-daemon/plugins/media-keys/'
-alias update_my_sysupdate_script='bash -c '\''rm -f $my_user_bin_path/sysupdate && wget -q -P $my_user_bin_path "https://raw.githubusercontent.com/NRGLine4Sec/config-l/main/sysupdate" && chmod +x $my_user_bin_path/sysupdate'\'''
+alias update_my_sysupdate_script='bash -c '\''rm -f $my_user_bin_path/sysupdate && wget -q -P $my_user_bin_path "https://raw.githubusercontent.com/NRGLine4Sec/config-l/scripts/sysupdate" && chmod +x $my_user_bin_path/sysupdate'\'''
 alias update_my_auditd_rules='sudo bash -c '\''rm -f /etc/audit/rules.d/audit.rules && wget -q -P /etc/audit/rules.d/ "https://raw.githubusercontent.com/NRGLine4Sec/config-l/main/audit.rules" && augenrules --check && systemctl restart auditd'\'''
-alias sshuttle='sudo /home/$local_user/.local/pipx/venvs/sshuttle/bin/sshuttle'
+alias showshortcut='dconf dump /org/gnome/settings-daemon/plugins/media-keys/'
+alias sshuttle='sudo /root/.local/bin/sshuttle'
 alias my_ext_ip="curl --silent --location 'https://ipinfo.io/ip'"
-alias last_apt_kernel='apt-cache search --names-only "^linux-(headers|image)-[0-9]+\.[0-9]+(\.[0-9]+)?([-+](bpo|deb)[^ -]*)?-(amd64$|amd64-unsigned$)" | sort'
-HISTTIMEFORMAT="%Y/%m/%d %T   "
+alias last_apt_kernel='apt-cache search --names-only "linux-(headers|image)-[[:digit:]]\.[[:digit:]]+\.[[:digit:]]+(-[[:digit:]]+|\+bpo)-(amd64$|amd64-unsigned$)" | sort'
 is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/$1 ;}
 to_lower() { tr [:upper:] [:lower:] <<< "$@" ;}
 to_upper() { tr [:lower:] [:upper:] <<< "$@" ;}
@@ -42,11 +40,3 @@ export EDITOR=nano
 
 # for python binnary
 export PATH="$PATH:/home/$local_user/.local/bin"
-
-# share history between terminals
-# ref : https://subbass.blogspot.com/2009/10/howto-sync-bash-history-between.html
-# ref : https://stackoverflow.com/questions/15116806/how-can-i-see-all-of-the-bash-history
-shopt -s histappend
-PROMPT_COMMAND="history -n; history -a"
-unset HISTFILESIZE
-HISTSIZE=20000
