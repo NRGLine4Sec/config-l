@@ -22,7 +22,7 @@ alias yt-dlp_1080p='$my_user_bin_path/yt-dlp -o "%(title)s.%(ext)s" --parse-meta
 alias yt-dlp_1440p='$my_user_bin_path/yt-dlp -o "%(title)s.%(ext)s" --parse-metadata "[%(title)s](%(webpage_url)s):%(meta_description)s" --parse-metadata ":(?P<meta_synopsis>)" --embed-metadata --impersonate Chrome-133 -f '\''bestvideo[height<=1440]+bestaudio'\'''
 alias yt-dlp_onlybestaudio='$my_user_bin_path/yt-dlp -o "%(title)s.%(ext)s" --parse-metadata "[%(title)s](%(webpage_url)s):%(meta_description)s" --parse-metadata ":(?P<meta_synopsis>)" --embed-metadata --impersonate Chrome-133 -f bestaudio --extract-audio --audio-format best'
 alias free='free -ht'
-alias update_my_sysupdate_script='bash -c '\''rm -f $my_user_bin_path/sysupdate && wget -q -P $my_user_bin_path "https://raw.githubusercontent.com/NRGLine4Sec/config-l/scripts/sysupdate" && chmod +x $my_user_bin_path/sysupdate'\'''
+alias update_my_sysupdate_script='bash -c '\''rm -f $my_user_bin_path/sysupdate && wget -q -P $my_user_bin_path "https://raw.githubusercontent.com/NRGLine4Sec/config-l/refs/heads/main/scripts/sysupdate" && chmod +x $my_user_bin_path/sysupdate'\'''
 alias update_my_auditd_rules='sudo bash -c '\''rm -f /etc/audit/rules.d/audit.rules && wget -q -P /etc/audit/rules.d/ "https://raw.githubusercontent.com/NRGLine4Sec/config-l/main/audit.rules" && augenrules --check && systemctl restart auditd'\'''
 alias showshortcut='dconf dump /org/gnome/settings-daemon/plugins/media-keys/'
 alias sshuttle='sudo /root/.local/bin/sshuttle'
