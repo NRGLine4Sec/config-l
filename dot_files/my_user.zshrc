@@ -27,7 +27,7 @@ alias update_my_auditd_rules='sudo bash -c '\''rm -f /etc/audit/rules.d/audit.ru
 alias showshortcut='dconf dump /org/gnome/settings-daemon/plugins/media-keys/'
 alias sshuttle='sudo /root/.local/bin/sshuttle'
 alias my_ext_ip="curl --silent --location 'https://ipinfo.io/ip'"
-alias last_apt_kernel='apt-cache search --names-only "linux-(headers|image)-[[:digit:]]\.[[:digit:]]+\.[[:digit:]]+(-[[:digit:]]+|\+bpo)-(amd64$|amd64-unsigned$)" | sort'
+alias last_apt_kernel='apt-cache search --names-only "linux-(headers|image)-[[:digit:]]\.[[:digit:]]+\.[[:digit:]]+(-[[:digit:]]+|\+bpo|\+deb13)-(amd64$|amd64-unsigned$)" | sort'
 is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/$1 ;}
 to_lower() { tr [:upper:] [:lower:] <<< "$@" ;}
 to_upper() { tr [:lower:] [:upper:] <<< "$@" ;}
