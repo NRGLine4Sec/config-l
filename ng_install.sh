@@ -3632,6 +3632,9 @@ Alt+left  add video-pan-x  0.01         # move the video right
 Alt+right add video-pan-x -0.01         # move the video left
 Alt+up    add video-pan-y  0.01         # move the video down
 Alt+down  add video-pan-y -0.01         # move the video up
+
+# Copy filepath of current playing file
+Ctrl+b show-text "${path} copied to clipboard"; run sh -c "echo -n \"${path}\" | xclip -selection clipboard"
 EOF
   $ExeAsUser cat> /home/"$local_user"/.config/mpv/mpv.conf << 'EOF'
 # Enable hardware decoding if available
@@ -3641,6 +3644,10 @@ hwdec=auto
 # ref : https://www.reddit.com/r/mpv/comments/q9rye0/comment/k7romo0/
 # ref : https://mpv.io/manual/master/#options-autofit
 # autofit=100%
+
+# play the image for the given amount of seconds
+# ref : https://mpv.io/manual/stable/#options-image-display-duration
+image-display-duration=5
 EOF
 }
 configure_mpv
