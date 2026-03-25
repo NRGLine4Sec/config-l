@@ -56,7 +56,7 @@ Options:
   update            or --update             Update all software with available updates
   list              or --list               List all software in \$software_list
   Usage examples:
-  $program_name only_one_check=Geeqie
+  $program_name only_one_check=Joplin
 EOF
 }
 
@@ -154,13 +154,6 @@ CheckAvailableUpdate() {
 
 ################################################################################
 
-CheckUpdateShotcut() {
-  local SoftwareName='Shotcut'
-  local v1="$("$(grep -Po '(^Exec=)\K(.*\.AppImage$)' /usr/share/applications/shotcut.desktop)" --version 2> /dev/null | grep -Po '(Shotcut )\K([0-9]+\.[0-9]+\.[0-9]+)')"
-  local v2="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
-  CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
-}
-
 CheckUpdateKeepassxc() {
   local SoftwareName='KeePassXC'
   local v1="$(grep -Po '^Exec.*-\K[0-9]+\.[0-9]+\.[0-9]+' /usr/share/applications/keepassxc.desktop)"
@@ -182,13 +175,6 @@ CheckUpdateBat() {
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
-CheckUpdateKrita() {
-  local SoftwareName='Krita'
-  local v1="$(grep -Po '^Exec.*-\K[0-9]+\.[0-9]+\.[0-9]+' /usr/share/applications/krita.desktop)"
-  local v2="$($CURL 'https://krita.org/fr/download/'| tr -s '<' '\n' | grep 'stable' | grep -m1 -e '.appimage' | grep -Po '(?<=/stable/krita/)([0-9]+\.+[0-9]+\.[0-9]+)')"
-  CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
-}
-
 CheckUpdateOpensnitch() {
   local SoftwareName='OpenSnitch'
   local v1="$(opensnitchd --version)"
@@ -203,30 +189,11 @@ CheckUpdateOpensnitchRC() {
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
 }
 
-CheckUpdateDrawio() {
-  local SoftwareName='Drawio'
-  local v1="$(grep -Po '^Exec.*-\K[0-9]+\.[0-9]+\.[0-9]+' /usr/share/applications/drawio.desktop)"
-  local v2="$($CURL 'https://api.github.com/repos/jgraph/drawio-desktop/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
-  CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
-}
-
 CheckUpdateEtcher() {
   local SoftwareName='Etcher'
   local v1="$(grep -Po '^Exec.*-\K[0-9]+\.[0-9]+\.[0-9]+' /usr/share/applications/balena-etcher-electron.desktop)"
   local v2="$($CURL 'https://api.github.com/repos/balena-io/etcher/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
   CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
-}
-
-CheckUpdateGeeqie() {
-  local SoftwareName='Geeqie'
-  local v1="$(grep -Po '^Exec.*-v\K([0-9]\.[0-9]+\+[0-9]+|[0-9]\.[0-9]+\.[0-9]+\+[0-9]+)(?=\-x86_64.AppImage)' /usr/share/applications/geeqie.desktop)"
-  local v2="$($CURL 'https://api.github.com/repos/BestImageViewer/geeqie/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
-  if [[ -z "$v1" ]]; then v1=0; fi
-  CheckAvailableUpdate "$SoftwareName" "$v2" "$v1"
-  # return 0
-  # depuis le passage de Geeqie à la création de AppImage à partir de la CI/CD Github dans "Continuous build", il est inutil de check la version car il est hautement probable qu'il existe une nouvelle release de dispo
-  # si jamais ils reviennent à un mode de publication de AppImage sur la base de version en mode release, il faudra supprimer le return 0 à la fin de la fonction
-  # il semble que Geeqie soit revenu à un versioning en mode release, si jamais ils rechangent à nouveau, il suffira d'ajouter return 0 à la fin de la fonction
 }
 
 CheckUpdateYt-dlp() {
@@ -266,16 +233,6 @@ CheckUpdateVentoy() {
 
 ################################################################################
 
-UpdateShotcut() {
-  local shotcut_version="$1"
-  local shotcut_appimage="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"name": "\K.*?(?=")' | grep 'AppImage')" && \
-  rm -f "$manual_install_dir"/shotcut/*.AppImage && \
-	$WGET -P "$manual_install_dir"/shotcut/ https://github.com/mltframework/shotcut/releases/download/v"$shotcut_version"/"$shotcut_appimage" && \
-	chmod +x "$manual_install_dir"/shotcut/"$shotcut_appimage" && \
-  sed -i "s,.*Exec=.*,Exec="$manual_install_dir"/shotcut/"$shotcut_appimage",g" /usr/share/applications/shotcut.desktop && \
-  [ -f "$manual_install_dir"/shotcut/shotcut-logo-64.png ] || $WGET -P "$manual_install_dir"/shotcut/ 'https://github.com/mltframework/shotcut/raw/master/icons/shotcut-logo-64.png'
-}
-
 UpdateKeepassxc() {
   local keepassxc_version="$1"
   rm -f "$manual_install_dir"/KeePassXC/KeePassXC-*.AppImage && \
@@ -312,15 +269,6 @@ UpdateBat() {
   rm -rf "$tmp_dir"
 }
 
-UpdateKrita() {
-  local krita_version="$1"
-  rm -f "$manual_install_dir"/Krita/krita-*.appimage && \
-  $WGET -P "$manual_install_dir"/Krita/ https://download.kde.org/stable/krita/"$krita_version"/krita-"$krita_version"-x86_64.appimage && \
-  chmod +x "$manual_install_dir"/Krita/krita-"$krita_version"-x86_64.appimage && \
-  sed -i "s,^Exec=.*,Exec="$manual_install_dir"/Krita/krita-"$krita_version"-x86_64.appimage,g" /usr/share/applications/krita.desktop && \
-  [ -f "$manual_install_dir"/Krita/krita.png ] || $WGET -P "$manual_install_dir"/Krita/ 'https://invent.kde.org/graphics/krita/-/raw/master/pics/krita.png'
-}
-
 UpdateOpensnitch() {
   local opensnitch_version="$1"
   local tmp_dir="$(mktemp -d)" && \
@@ -343,15 +291,6 @@ UpdateOpensnitchRC() {
   $AG install -f -y
 }
 
-UpdateDrawio() {
-  local drawio_version="$1"
-  rm -f "$manual_install_dir"/drawio/drawio-*.AppImage && \
-  $WGET -P "$manual_install_dir"/drawio/ https://github.com/jgraph/drawio-desktop/releases/download/v"$drawio_version"/drawio-x86_64-"$drawio_version".AppImage && \
-  chmod +x "$manual_install_dir"/drawio/drawio-x86_64-"$drawio_version".AppImage && \
-  sed -i 's,^Exec=.*,Exec='"$manual_install_dir"'/drawio/drawio-x86_64-'"$drawio_version"'.AppImage,g' /usr/share/applications/drawio.desktop
-  [ -f "$manual_install_dir"/drawio/drawlogo256.png ] || $WGET -P "$manual_install_dir"/drawio/ 'https://raw.githubusercontent.com/jgraph/drawio/master/src/main/webapp/images/drawlogo256.png'
-}
-
 UpdateEtcher() {
   local etcher_version="$1"
   rm -f "$manual_install_dir"/balenaEtcher/balenaEtcher-*.AppImage && \
@@ -359,25 +298,6 @@ UpdateEtcher() {
   chmod +x "$manual_install_dir"/balenaEtcher/balenaEtcher-"$etcher_version"-x64.AppImage && \
   sed -i "s,^Exec=.*,Exec=$manual_install_dir/balenaEtcher/balenaEtcher-"$etcher_version"-x64.AppImage,g" /usr/share/applications/balena-etcher-electron.desktop
   [ -f "$manual_install_dir"/balenaEtcher/icon.png ] || $WGET -P "$manual_install_dir"/balenaEtcher/ 'https://github.com/balena-io/etcher/raw/master/assets/icon.png'
-}
-
-# UpdateGeeqie() {
-#   local geeqie_version="$1"
-#   rm -f "$manual_install_dir"/Geeqie/Geeqie-*.AppImage && \
-#   $WGET -P "$manual_install_dir"/Geeqie/ 'https://github.com/BestImageViewer/geeqie/releases/download/continuous/Geeqie-latest-x86_64.AppImage' && \
-#   chmod +x "$manual_install_dir"/Geeqie/Geeqie-latest-x86_64.AppImage && \
-#   sed -i "s,^Exec=.*,Exec=$manual_install_dir/Geeqie/Geeqie-latest-x86_64.AppImage,g" /usr/share/applications/geeqie.desktop
-#   [ -f "$manual_install_dir"/Geeqie/geeqie.svg ] || $WGET -P "$manual_install_dir"/Geeqie/ 'https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/geeqie.svg'
-# }
-
-# Ancienne fonction UpdateGeeqie avec le mode de version par Continuous build (avant que Geeqie ne repasse à un mode normal par Release)
-UpdateGeeqie() {
-  local geeqie_version="$1"
-  rm -f "$manual_install_dir"/Geeqie/Geeqie-v*.AppImage && \
-  $WGET -P "$manual_install_dir"/Geeqie/ https://github.com/BestImageViewer/geeqie/releases/download/v"$geeqie_version"/Geeqie-v"$geeqie_version"-x86_64.AppImage && \
-  chmod +x "$manual_install_dir"/Geeqie/Geeqie-v"$geeqie_version"-x86_64.AppImage && \
-  sed -i "s,^Exec=.*,Exec=$manual_install_dir/Geeqie/Geeqie-v"$geeqie_version"-x86_64.AppImage,g" /usr/share/applications/geeqie.desktop
-  [ -f "$manual_install_dir"/Geeqie/geeqie.svg ] || $WGET -P "$manual_install_dir"/Geeqie/ 'https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/geeqie.svg'
 }
 
 UpdateDeno() {
@@ -462,10 +382,6 @@ Veracrypt
 Ventoy'
 
 # plus nécessaire car transformé en flatpak :
-# Geeqie
-# Krita
-# Shotcut
-# Drawio
 
 # si on veut avoir les latest stable de Opensnitch, il faut remplacer OpensnitchRC par Opensnitch
 

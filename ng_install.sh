@@ -58,20 +58,13 @@
 ################################################################################
 ## ROADMAP
 ##------------------------------------------------------------------------------
-# - tester de faire l'instllation des apps avec apt-fast à la place de apt-get et mesurer la différence de temps d'excution du script
 # - essayer de comprendre pouquoi il y a parfois un certain nombre de fichier qui devrait appartenir à l'utilisaeur et qui appartiennet pourtant à l'utilisateur root, parfois, c'est des rerpertoire entier qui appartiennent à root dans .config/
 # Peut être un problème dans l'utilisation de ExeAsUser ?, essayer de monitorer avec des tests.
-# - regarder de près concernant l'intéret de d'installer le librairie du wivedine de google dans le chromium de debian
 # - rajouter une variable qui contient l'usage du script pour afficher de quel manière l'utiliser lorsque d'un des arguments n'est pas correct (l'équivalent d'un --help)
 # - potentiellement intégrer l'installation de l'outil xdotool (pour wayland il faut plutot ydotool)
 # - potentiellement installer le paquet iozone3
 # - potentiellement installer qview (https://interversehq.com/qview/download/)
 # - regarder pour voir si on peut gérer la taille de la ligne affiché avec fmt --width=60 en se basant sur la longueur max donné par la fonction check_available_columns_in_terminal
-# regarder si on ajoute les commandes suivantes :
-# Stop and disable apt-daily upgrade services;
-# systemctl stop apt-daily.timer
-# systemctl stop apt-daily-upgrade.timer
-# - rajouter dans le script sysupdate la possibilité de n'update qu'un seul paquet en particulier en le méttant en argument de l'apelle au script
 
 ################################################################################
 
@@ -272,7 +265,6 @@ cp "$(readlink -f "${BASH_SOURCE[0]}")" "$log_dir"/"$(basename "${BASH_SOURCE[0]
 chmod 600 "$log_dir"/"$(basename "${BASH_SOURCE[0]}")-"$now""
 # on copie le contenu du script dans le répertoire $log_dir pour pouvoir savoir plus tard ce qu'il y avait dans le script au moment de son execution
 # le chmod permet de s'assurer qu'il ne sera pas executer par mégarde et qu'il n'est accessible qu'en lecture pour root
-# si le cp ne marche pas, tenter de faire cat "$(readlink -f "${BASH_SOURCE[0]}")" > "$log_dir"/"$(basename "$0")"
 ################################################################################
 
 script_path="$(dirname $(readlink -f "${BASH_SOURCE[0]}"))"
@@ -504,27 +496,11 @@ check_latest_version_manual_install_apps() {
   fi
   # check version : https://www.veracrypt.fr/en/Downloads.html
 
-  # drawio_version="$($CURL 'https://api.github.com/repos/jgraph/drawio-desktop/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
-  # if [ $? != 0 ] || [ -z "$drawio_version" ]; then
-  #   drawio_version='24.7.5'
-  # fi
-  # check version : https://github.com/jgraph/drawio-desktop/releases
-
   etcher_version="$($CURL 'https://api.github.com/repos/balena-io/etcher/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
   if [ $? != 0 ] || [ -z "$etcher_version" ]; then
     etcher_version='2.1.4'
   fi
   # check version : https://github.com/balena-io/etcher/releases/
-
-  # shotcut_version="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
-  # if [ $? != 0 ] || [ -z "$shotcut_version" ]; then
-  #   shotcut_version='24.06.26'
-  # fi
-  # shotcut_appimage="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"name": "\K.*?(?=")' | grep 'AppImage')"
-  # if [ $? != 0 ] || [ -z "$shotcut_appimage" ]; then
-  #   shotcut_appimage='shotcut-linux-x86_64-240626.AppImage'
-  # fi
-  # check version : https://github.com/mltframework/shotcut/releases/
 
   keepassxc_version="$($CURL 'https://api.github.com/repos/keepassxreboot/keepassxc/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
   if [ $? != 0 ] || [ -z "$keepassxc_version" ]; then
@@ -543,12 +519,6 @@ check_latest_version_manual_install_apps() {
     joplin_version='3.0.14'
   fi
   # check version : https://github.com/laurent22/joplin/releases/
-
-  # krita_version="$($CURL 'https://krita.org/fr/download/'| tr -s '<' '\n' | grep 'stable' | grep -m1 -e '.appimage' | grep -Po '(?<=/stable/krita/)([0-9]+\.+[0-9]+\.[0-9]+)')"
-  # if [ $? != 0 ] || [ -z "$krita_version" ]; then
-  #   krita_version='5.2.3'
-  # fi
-  # check version : https://krita.org/fr/download/
 
   opensnitch_stable_version="$($CURL 'https://api.github.com/repos/evilsocket/opensnitch/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
   if [ $? != 0 ] || [ -z "$opensnitch_stable_version" ]; then
@@ -569,12 +539,6 @@ check_latest_version_manual_install_apps() {
     hashcat_version='6.2.6'
   fi
   # check version : https://github.com/hashcat/hashcat/releases/
-
-  # geeqie_version="$($CURL 'https://api.github.com/repos/BestImageViewer/geeqie/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
-  # if [ $? != 0 ] || [ -z "$geeqie_version" ]; then
-  #   geeqie_version='2.4'
-  # fi
-  # check version : https://github.com/BestImageViewer/geeqie/releases
 
   ytdlp_version="$($CURL 'https://api.github.com/repos/yt-dlp/yt-dlp/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')"
   if [ $? != 0 ] || [ -z "$ytdlp_version" ]; then
@@ -608,30 +572,20 @@ check_latest_version_manual_install_apps() {
 # CURL='curl --silent --location --show-error' && \
 # veracrypt_version="$($CURL 'https://www.veracrypt.fr/en/Downloads.html' | grep 'tar.bz2' | grep -v '.sig\|x86\|Source\|freebsd' | grep -Po '(?<=veracrypt-)([0-9]+\.[0-9]+\.[0-9]+-[[:alnum:]]+|[0-9]+\.[0-9]+-[[:alnum:]]+|[0-9]+\.[0-9]+\.[0-9]+|[0-9]+\.[0-9]+)(?=-setup)')" && \
 # echo 'VeraCrypt : '"$veracrypt_version" && \
-# drawio_version="$($CURL 'https://api.github.com/repos/jgraph/drawio-desktop/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
-# echo 'drawio : '"$drawio_version" && \
 # etcher_version="$($CURL 'https://api.github.com/repos/balena-io/etcher/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
 # echo 'Etcher : '"$etcher_version" && \
-# shotcut_version="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
-# echo 'Shotcut : '"$shotcut_version" && \
-# shotcut_appimage="$($CURL 'https://api.github.com/repos/mltframework/shotcut/releases/latest' | grep -Po '"name": "\K.*?(?=")' | grep 'AppImage')" && \
-# echo 'Shotcut AppImage : '"$shotcut_appimage" && \
 # keepassxc_version="$($CURL 'https://api.github.com/repos/keepassxreboot/keepassxc/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')" && \
 # echo 'KeePassXC : '"$keepassxc_version" && \
 # bat_version="$($CURL 'https://api.github.com/repos/sharkdp/bat/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
 # echo 'bat : '"$bat_version" && \
 # joplin_version="$($CURL 'https://api.github.com/repos/laurent22/joplin/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
 # echo 'Joplin : '"$joplin_version" && \
-# krita_version="$($CURL 'https://krita.org/fr/download/'| tr -s '<' '\n' | grep 'stable' | grep -m1 -e '.appimage' | grep -Po '(?<=/stable/krita/)([0-9]+\.+[0-9]+\.[0-9]+)')" && \
-# echo 'Krita : '"$krita_version" && \
 # opensnitch_stable_version="$($CURL 'https://api.github.com/repos/evilsocket/opensnitch/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
 # echo 'OpenSnitch stable : '"$opensnitch_stable_version" && \
 # opensnitch_latest_version="$(curl --silent --location 'https://api.github.com/repos/evilsocket/opensnitch/releases' | awk 'BEGIN{RS="}"} /"prerelease": true,/ {for (x=1;x<=NF;x++) if ($x~"tag_name") {gsub(/[v|"|,$]/,"");print $(x);exit;}}')" && \
 # echo 'OpenSnitch latest (dev) : '"$opensnitch_latest_version" && \
 # hashcat_version="$($CURL 'https://api.github.com/repos/hashcat/hashcat/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
 # echo 'hashcat : '"$hashcat_version" && \
-# geeqie_version="$($CURL 'https://api.github.com/repos/BestImageViewer/geeqie/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
-# echo 'Geeqie : '"$geeqie_version" && \
 # ytdlp_version="$($CURL 'https://api.github.com/repos/yt-dlp/yt-dlp/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')" && \
 # echo 'yt-dlp : '"$ytdlp_version" && \
 # ventoy_version="$($CURL 'https://api.github.com/repos/ventoy/Ventoy/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
@@ -1559,30 +1513,6 @@ EOF
 ################################################################################
 
 ################################################################################
-## instalation de drawio
-##------------------------------------------------------------------------------
-install_drawio() {
-  displayandexec "Installation de drawio                              " "\
-  reset_dir ""$manual_install_dir"/drawio/" && \
-  $WGET -P "$manual_install_dir"/drawio/ https://github.com/jgraph/drawio-desktop/releases/download/v"$drawio_version"/drawio-x86_64-"$drawio_version".AppImage && \
-  chmod +x "$manual_install_dir"/drawio/drawio-x86_64-"$drawio_version".AppImage && \
-  $WGET -P "$manual_install_dir"/drawio/ 'https://raw.githubusercontent.com/jgraph/drawio/master/src/main/webapp/images/drawlogo256.png'"
-  cat> /usr/share/applications/drawio.desktop << EOF
-[Desktop Entry]
-Name=draw.io
-Exec=$manual_install_dir/drawio/drawio-x86_64-$drawio_version.AppImage
-Terminal=false
-Type=Application
-Icon=$manual_install_dir/drawio/drawlogo256.png
-StartupWMClass=draw.io
-Comment=diagrams.net desktop
-MimeType=application/vnd.jgraph.mxfile;application/vnd.visio;
-Categories=Graphics;
-EOF
-}
-################################################################################
-
-################################################################################
 ## instalation de Typora
 ##------------------------------------------------------------------------------
 install_typora() {
@@ -1601,7 +1531,7 @@ EOF
 ################################################################################
 ## instalation de VirtualBox
 ##------------------------------------------------------------------------------
-install_virtualbox_bookworm() {
+install_virtualbox() {
   displayandexec "Installation des dépendances de VirtualBox          " "set +x && $AGI dkms"
   displayandexec "Installation de VirtualBox                          " "\
   echo 'deb [signed-by=/usr/share/keyrings/virtualbox-archive-keyring.gpg] https://download.virtualbox.org/virtualbox/debian bookworm contrib' > /etc/apt/sources.list.d/virtualbox.list && \
@@ -1743,29 +1673,6 @@ EOF
 ################################################################################
 
 ################################################################################
-## instalation de Shotcut
-##------------------------------------------------------------------------------
-install_shotcut() {
-  displayandexec "Installation de Shotcut                             " "\
-  reset_dir ""$manual_install_dir"/shotcut/" && \
-  $WGET -P "$manual_install_dir"/shotcut/ https://github.com/mltframework/shotcut/releases/download/v"$shotcut_version"/"$shotcut_appimage" && \
-  chmod +x "$manual_install_dir"/shotcut/"$shotcut_appimage" && \
-  $WGET -P "$manual_install_dir"/shotcut/ 'https://github.com/mltframework/shotcut/raw/master/icons/shotcut-logo-64.png'"
-  cat> /usr/share/applications/shotcut.desktop << EOF
-[Desktop Entry]
-Name=shotcut
-Exec=$manual_install_dir/shotcut/$shotcut_appimage
-Terminal=false
-Type=Application
-Icon=$manual_install_dir/shotcut/shotcut-logo-64.png
-Comment=a free, open source, cross-platform video editor
-MimeType=video/x-matroska;video/webm;video/x-flv;video/mp4;
-Categories=Graphics;
-EOF
-}
-################################################################################
-
-################################################################################
 ## instalation de Signal
 ##------------------------------------------------------------------------------
 install_signal() {
@@ -1865,34 +1772,6 @@ EOF
 ################################################################################
 
 ################################################################################
-## instalation de Krita
-##------------------------------------------------------------------------------
-install_krita() {
-  displayandexec "Installation de Krita                               " "\
-  reset_dir ""$manual_install_dir"/Krita/" && \
-  $WGET -P "$manual_install_dir"/Krita/ https://download.kde.org/stable/krita/"$krita_version"/krita-"$krita_version"-x86_64.appimage && \
-  chmod +x "$manual_install_dir"/Krita/krita-"$krita_version"-x86_64.appimage && \
-  $WGET -P "$manual_install_dir"/Krita/ 'https://invent.kde.org/graphics/krita/-/raw/master/pics/krita.png'"
-  cat> /usr/share/applications/krita.desktop << EOF
-[Desktop Entry]
-Name=Krita
-Exec=$manual_install_dir/Krita/krita-$krita_version-x86_64.appimage
-GenericName=Digital Painting
-GenericName[fr]=Peinture numérique
-MimeType=application/x-krita;image/openraster;application/x-krita-paintoppreset;
-Comment=Digital Painting
-Comment[fr]=Peinture numérique
-Type=Application
-Icon=$manual_install_dir/Krita/krita.png
-Categories=Qt;KDE;Graphics;2DGraphics;RasterGraphics;
-StartupNotify=true
-StartupWMClass=krita
-EOF
-}
-# le contenu du .desktop est basé sur celui-ci : https://github.com/KDE/krita/blob/master/krita/org.kde.krita.desktop
-################################################################################
-
-################################################################################
 ## instalation de OpenSnitch
 ##------------------------------------------------------------------------------
 install_opensnitch() {
@@ -1959,50 +1838,9 @@ install_weasyprint() {
 ################################################################################
 
 ################################################################################
-## instalation de Geeqie
-##------------------------------------------------------------------------------
-install_geeqie() {
-  displayandexec "Installation de Geeqie                              " "\
-  reset_dir ""$manual_install_dir"/Geeqie/" && \
-  $WGET -P "$manual_install_dir"/Geeqie/ https://github.com/BestImageViewer/geeqie/releases/download/v"$geeqie_version"/Geeqie-v"$geeqie_version"-x86_64.AppImage && \
-  $WGET -P "$manual_install_dir"/Geeqie/ 'https://raw.githubusercontent.com/geeqie/geeqie.github.io/master/geeqie.svg' && \
-  chmod +x "$manual_install_dir"/Geeqie/Geeqie-v"$geeqie_version"-x86_64.AppImage"
-  cat> /usr/share/applications/geeqie.desktop << EOF
-[Desktop Entry]
-Name=Geeqie
-GenericName=Image Viewer
-GenericName[fr]=Visualisateur d'images
-Comment=View and manage images
-Comment[fr]=Voir et gérer des images
-Exec=$manual_install_dir/Geeqie/Geeqie-v$geeqie_version-x86_64.AppImage
-Icon=$manual_install_dir/Geeqie/geeqie.svg
-Type=Application
-Terminal=false
-# Startup notification disabled, since the remote -r switch may not open a new window...
-#StartupNotify=false
-#StartupWMClass=geeqie
-NotShowIn=X-Geeqie;
-Categories=Graphics;Viewer;
-MimeType=application/x-navi-animation;image/bmp;image/x-bmp;image/x-MS-bmp;image/gif;image/x-icon;image/jpeg;image/png;image/x-portable-anymap;image/x-portable-bitmap;image/x-portable-graymap;image/x-portable-pixmap;image/x-tga;image/tiff;image/x-xbitmap;image/x-xpixmap;image/svg;image/svg+xml;image/x-png;image/xpm;image/x-ico;
-EOF
-}
-# le contenu du .desktop est basé sur celui-ci : https://github.com/geeqie/geeqie.github.io/blob/master/geeqie.desktop
-
-# à noter que maintenant les AppImages sont générées automatiquement par la CI/CD Github dans "Continuous build" : [Release Continuous build · BestImageViewer/geeqie](https://github.com/BestImageViewer/geeqie/releases/tag/continuous)
-# à priori, il ne semble plus exister de AppImage pour une version spécifiquement, mais uniquement des AppImages créées automatiquement suite à un merge request du code source : [Where can I download a Geeqie Appimage 2.4 for Xubuntu · Issue #1404 · BestImageViewer/geeqie](https://github.com/BestImageViewer/geeqie/issues/1404#issuecomment-2183912638)
-
-
-# le code à utiliser si jamais ils suppriment encore une fois la génération des AppImages via des releases
-#   $WGET -P "$manual_install_dir"/Geeqie/ 'https://github.com/BestImageViewer/geeqie/releases/download/continuous/Geeqie-latest-x86_64.AppImage' && \
-#   chmod +x "$manual_install_dir"/Geeqie/Geeqie-latest-x86_64.AppImage"
-
-# Exec=$manual_install_dir/Geeqie/Geeqie-latest-x86_64.AppImage
-################################################################################
-
-################################################################################
 ## instalation de timeshift
 ##------------------------------------------------------------------------------
-install_timeshift_bookworm() {
+install_timeshift() {
   cat> /etc/apt/sources.list.d/timeshift.sources << 'EOF'
 Types: deb
 URIs: http://packages.linuxmint.com/
@@ -2020,7 +1858,7 @@ EOF
 # https://launchpad.net/~teejee2008/+archive/ubuntu/timeshift
 
 # ancienne install depuis Ubuntu :
-# install_timeshift_bookworm() {
+# install_timeshift() {
 #   cat> /etc/apt/sources.list.d/timeshift.list << 'EOF'
 # deb [arch=amd64 signed-by=/usr/share/keyrings/timeshift-archive-keyring.gpg] http://ppa.launchpad.net/teejee2008/timeshift/ubuntu kinetic main
 # #deb-src http://ppa.launchpad.net/teejee2008/timeshift/ubuntu kinetic main
@@ -2166,6 +2004,7 @@ install_flatpak_software() {
   execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub com.saivert.pwvucontrol" # pwvucontrol
   execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub com.calibre_ebook.calibre" # calibre
   execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub org.audacityteam.Audacity" # audacity
+  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub org.kde.dolphin" # dolphin
   # execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub com.vscodium.codium" # vscodium
 }
 # flatpak list --app
@@ -2205,62 +2044,29 @@ done
 # apelle à la fonction qui permet de récupérer toutes les versions des logiciels qui s'installent manuellement
 check_latest_version_manual_install_apps
 
-install_all_manual_install_apps_bookworm() {
-  # install_winscp
-  install_veracrypt
-  # install_spotify
-  install_apt-fast
-  # install_drawio
-  install_typora
-  install_virtualbox_bookworm
-  install_keepassxc
-  install_etcher
-  # install_shotcut
-  install_signal
-  install_asbru
-  # install_bat
-  install_yt-dlp
-  install_joplin
-  # install_krita
-  install_opensnitch
-  install_ansible
-  install_hashcat
-  install_sshuttle
-  install_weasyprint
-  # install_geeqie
-  install_timeshift_bookworm
-  install_vscode
-  install_brave
-  install_ventoy
-  install_bindtointerface
-  install_flatpak
-  install_glow
-}
+# install_all_manual_install_apps_bookworm() {
+# }
 
 install_all_manual_install_apps_trixie() {
   # install_winscp
   install_veracrypt
   # install_spotify
   install_apt-fast
-  # install_drawio
   install_typora
-  # install_virtualbox_bookworm
+  # install_virtualbox
   install_keepassxc
   install_etcher
-  # install_shotcut
   install_signal
   install_asbru
   # install_bat
   install_yt-dlp
   install_joplin
-  # install_krita
   install_opensnitch
   install_ansible
   install_hashcat
   install_sshuttle
   install_weasyprint
-  # install_geeqie
-  # install_timeshift_bookworm
+  install_timeshift
   install_vscode
   install_brave
   install_ventoy
@@ -2270,9 +2076,9 @@ install_all_manual_install_apps_trixie() {
 }
 
 if [ -z "$fisrt_time_script_executed" ]; then
-  if [ "$bookworm" == 1 ]; then
-    install_all_manual_install_apps_bookworm
-  fi
+  # if [ "$bookworm" == 1 ]; then
+  #   install_all_manual_install_apps_bookworm
+  # fi
   if [ "$trixie" == 1 ]; then
     install_all_manual_install_apps_trixie
   fi
@@ -4249,6 +4055,30 @@ fi
 
 # à noter qu'on fait le check avec bullseye parce que nautilus-wipe a été supprimé de bookworm car Nautilus utilise GTK4 dans bookworm
 # ref : [#1017619 - nautilus-wipe: Fails to build with nautilus 43 - Debian Bug report logs](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1017619)
+
+# ajout du script nautilus "Open With MPV"
+install_nautilus_script() {
+  $ExeAsUser cat> "/home/"$local_user"/.local/share/nautilus/scripts/Open With MPV" << 'EOF'
+#!/bin/bash
+# __my_script__
+
+# Ensure locale-safe behavior
+IFS=$'\n'
+
+# Nautilus gives all selected paths separated by newlines
+for path in $NAUTILUS_SCRIPT_SELECTED_FILE_PATHS; do
+  # If the item is a directory, open it as a playlist
+  if [ -d "$path" ]; then
+    mpv --no-terminal --playlist="$path"
+  else
+    # If the user selected a file, behavior could be adapted
+    mpv --no-terminal "$path"
+  fi
+done
+EOF
+  displayandexec "Installation du script nautilus Open With MPV       " "$ExeAsUser chmod +x "/home/"$local_user"/.local/share/nautilus/scripts/Open With MPV""
+}
+install_nautilus_script
 ################################################################################
 
 ################################################################################
