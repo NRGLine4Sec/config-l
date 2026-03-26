@@ -986,7 +986,11 @@ update_ca_certificates() {
 update_ca_certificates
 
 # make debian non-interactive
-export DEBIAN_FRONTEND=noninteractive DEBCONF_ADMIN_EMAIL="" UCF_FORCE_CONFFNEW=1 UCF_FORCE_CONFFMISS=1
+export DEBIAN_FRONTEND=noninteractive \
+APT_LISTCHANGES_FRONTEND=cat \
+DEBCONF_ADMIN_EMAIL="" \
+UCF_FORCE_CONFFNEW=1 \
+UCF_FORCE_CONFFMISS=1
 
 upgrade_system_apt() {
   displayandexec "Mise à jour du system                               " "\
@@ -4415,6 +4419,22 @@ disable_unneeded_services() {
   systemctl mask --now .service"
 }
 # disable_unneeded_services
+################################################################################
+
+################################################################################
+## désactivation du nouveau système qui remplace unattended-upgrades
+##------------------------------------------------------------------------------
+disable_new_unattended_upgrades_system() {
+  # Désactiver les timers de refresh quotidien
+  displayandexec "Désactivation du nouveau système unattended-upgrades" "\
+  systemctl mask --now apt-daily.timer apt-daily-upgrade.timer apt-daily.service apt-daily-upgrade.service"
+  # Empêche GNOME Software de télécharger ou notifier automatiquement
+  execandlog "gsettings set org.gnome.software download-updates false && \
+  gsettings set org.gnome.software download-updates-notify false && \
+  gsettings set org.gnome.software allow-updates false && \
+  gsettings set org.gnome.software refresh-when-metered false"
+}
+disable_new_unattended_upgrades_system
 ################################################################################
 
 ################################################################################
