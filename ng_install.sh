@@ -2006,6 +2006,8 @@ install_flatpak_software() {
   execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub org.audacityteam.Audacity" # audacity
   execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub org.kde.dolphin" # dolphin
   # execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub com.vscodium.codium" # vscodium
+  # execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub page.codeberg.censor.Censor" # Censor
+  # execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub io.github.tobagin.Ntfyr" # Ntfyr
 }
 # flatpak list --app
 # flatpak history
@@ -2725,6 +2727,52 @@ install_fix_zip_file_with_filename_too_long() {
 }
 ################################################################################
 
+################################################################################
+## install du script cks_copy
+##------------------------------------------------------------------------------
+install_cks_copy() {
+  $ExeAsUser cat> "$my_user_bin_path"/cks_copy << 'EOF'
+#!/bin/bash
+# __my_script__
+
+src_dir="$1"
+dst_dir="$2"
+
+rsync \
+--recursive \
+--archive \
+--no-owner \
+--no-group \
+--mkpath \
+--checksum \
+--checksum-choice=xxh128 \
+--no-compress \
+--delete \
+--verbose \
+--stats \
+--human-readable \
+--progress \
+--log-file="$(mktemp --suffix=_rsync_log)" \
+"$src_dir" \
+"$dst_dir"
+}
+EOF
+  displayandexec "Installation du script cks_copy                     " "\
+  chmod +x "$my_user_bin_path"/cks_copy"
+}
+################################################################################
+
+################################################################################
+## install du script rsync_from_checkpoint.sh
+##------------------------------------------------------------------------------
+install_rsync_from_checkpoint() {
+  displayandexec "Installation de rsync_from_checkpoint.sh            " "\
+  is_file_present_and_rmfile ""$my_user_bin_path"/rsync_from_checkpoint.sh" && \
+  cp "$script_path"/scripts/rsync_from_checkpoint.sh "$my_user_bin_path"/rsync_from_checkpoint.sh && \
+  chmod +x "$my_user_bin_path"/rsync_from_checkpoint.sh"
+}
+################################################################################
+
 install_all_perso_script() {
   install_sysupdate
   install_check_backport_update
@@ -2741,6 +2789,8 @@ install_all_perso_script() {
   install_waitforssh
   install_update_my_zshrc
   install_fix_zip_file_with_filename_too_long
+  install_cks_copy
+  install_rsync_from_checkpoint
 }
 install_all_perso_script
 ################################################################################
