@@ -65,7 +65,8 @@ if [ -n "$CONFIG_FILE" ]; then
         line="${line%"${line##*[![:space:]]}"}"
 
         # skip commentaires / lignes vides
-        [[ -z "$line" || "$line" =~ ^[;\#] ]] && continue
+        regex_comment='^[[:space:]]*[;#]'
+        [[ -z "$line" || "$line" =~ $regex_comment ]] && continue
 
         # Détecte une ligne de section INI de la forme [section] via une regex Bash.
         # Si le match réussit, le nom de la section (sans les crochets) est capturé dans BASH_REMATCH[1].
@@ -97,6 +98,15 @@ if [ -n "$CONFIG_FILE" ]; then
 
     done < "$CONFIG_FILE"
 fi
+
+# Example de fichier de config .ini valide
+# [main]
+# src=/data/source
+# dst=/data/destination
+
+# [exclusions]
+# /data/source/tmp
+# /data/source/cache
 
 # =======================
 # NORMALISATION EXCLUSIONS
@@ -200,7 +210,6 @@ RSYNC_OPTS=(
 --human-readable
 --no-compress
 --progress
---delete
 )
 
 [ "$DRYRUN" -eq 1 ] && RSYNC_OPTS+=(--dry-run)
