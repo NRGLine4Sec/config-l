@@ -110,6 +110,9 @@ CheckUpdateSystem() {
 }
 
 UpdateFlatpak() {
+  run_with_sudo
+  create_log_file
+  log_with_bash_x
   displayandexec "Mise à jour des applications Flatpak                " "flatpak update --assumeyes"
 }
 UpdateFlatpak
@@ -126,30 +129,6 @@ CheckAvailableUpdate() {
   fi
 }
 # inspiré de [test - How to compare a program's version in a shell script? - Unix & Linux Stack Exchange](https://unix.stackexchange.com/questions/285924/how-to-compare-a-programs-version-in-a-shell-script/567537#567537)
-
-# ancienne méthode :
-# CheckAvailableUpdate() {
-#   local PREFIX_1="$(echo $2 | sed -e 's/[a-z]//' )"
-#   local SUFFIX_1="$(echo $2 | sed -e 's/[0-9]//' )"
-#   local PREFIX_2="$(echo $3 | sed -e 's/[a-z]//' )"
-#   local SUFFIX_2="$(echo $3 | sed -e 's/[0-9]//' )"
-
-#   if [[ $PREFIX_1 > $PREFIX_2 ]] || ([[ $PREFIX_1 == $PREFIX_2 ]] && [[ $SUFFIX_1 > $SUFFIX_2 ]]); then
-#     # echo "$2 est plus grand que $3"
-#     echo "une mise à jour de $1 est disponible"
-#     retval=$1
-#   else
-#     echo "aucune mise à jour de $1 n'est disponible"
-#   fi
-# }
-
-# vérifier que ça fonctionne bien avec le cas spécidifque $2=0.17.1 et $3=0.16.1
-# pour faire des tests :
-# [[ 2020.12.22 > 2020.12.25 ]] && echo oui || echo non
-# [[ 0.17.1 > 0.16.1 ]] && echo oui || echo non
-
-# j'ai un cas spécifique qui ne fonctionne pas avec CheckAvailableUpdate Etcher 1.18.4 1.8.9
-
 # autre lien très intéressant à regarder en cas de futurs nouveaux problèmes avec la fonction de check des version : [versioning - How to compare two strings in dot separated version format in Bash? - Stack Overflow](https://stackoverflow.com/questions/4023830/how-to-compare-two-strings-in-dot-separated-version-format-in-bash)
 
 ################################################################################

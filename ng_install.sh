@@ -1479,16 +1479,16 @@ EOF
   spotify_repo_gpg_pubkey="$($CURL 'https://www.spotify.com/download/linux/' | tr -s '<' '\n' | grep -Po '(/pubkey_)\K[[:xdigit:]]+(?=.gpg)+')"
   displayandexec "Installation de spotify                             " "\
   is_file_present_and_rmfile "/usr/share/keyrings/spotify-archive-keyring.gpg" && \
-  $CURL 'https://download.spotify.com/debian/pubkey_'"$spotify_repo_gpg_pubkey"'.gpg' | gpg --dearmor --output /usr/share/keyrings/spotify-archive-keyring.gpg && \
+  $CURL 'https://download.spotify.com/debian/pubkey_'"$spotify_repo_gpg_pubkey"'.asc' | gpg --dearmor --output /usr/share/keyrings/spotify-archive-keyring.gpg && \
   $AG update && \
   $AGI spotify-client"
 }
 # pour obtenir la clé publique lorsqu'elle expire : https://www.spotify.com/fr/download/linux/
 
 # Pour changer la clé après coup :
-# spotify_repo_gpg_pubkey="$(curl -sL 'https://www.spotify.com/download/linux/' | tr -s '<' '\n' | grep -Po '(/pubkey_)\K[[:xdigit:]]+(?=.gpg)+')" && \
+# spotify_repo_gpg_pubkey="$(curl -sL 'https://www.spotify.com/download/linux/' | tr -s '<' '\n' | grep -Po '(/pubkey_)\K[[:xdigit:]]+(?=.asc)+')" && \
 # sudo rm -f "/usr/share/keyrings/spotify-archive-keyring.gpg" && \
-# curl -sL 'https://download.spotify.com/debian/pubkey_'"$spotify_repo_gpg_pubkey"'.gpg' | sudo gpg --dearmor --output /usr/share/keyrings/spotify-archive-keyring.gpg && \
+# curl -sL 'https://download.spotify.com/debian/pubkey_'"$spotify_repo_gpg_pubkey"'.asc' | sudo gpg --dearmor --output /usr/share/keyrings/spotify-archive-keyring.gpg && \
 # apt-get update
 ################################################################################
 
@@ -1705,7 +1705,7 @@ install_asbru() {
   cat> /etc/apt/sources.list.d/asbru-cm.sources << 'EOF'
 Types: deb
 URIs: https://dl.cloudsmith.io/public/asbru-cm/release/deb/debian
-Suites: bullseye
+Suites: trixie
 Components: main
 Signed-By: /usr/share/keyrings/asbru-archive-keyring.gpg
 EOF
@@ -4435,6 +4435,8 @@ disable_new_unattended_upgrades_system() {
   gsettings set org.gnome.software refresh-when-metered false"
 }
 disable_new_unattended_upgrades_system
+# Pour vérifier :
+# gsettings list-recursively org.gnome.software
 ################################################################################
 
 ################################################################################
