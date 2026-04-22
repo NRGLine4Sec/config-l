@@ -1433,6 +1433,48 @@ remove_no_longer_required_package() {
 }
 remove_no_longer_required_package
 
+
+#//////////////////////////////////////////////////////////////////////////////#
+#                       INSTALL Nix Package Manager APPS                       #
+#//////////////////////////////////////////////////////////////////////////////#
+
+echo ''
+echo '     ################################################################'
+echo '     #    INSTALLATION DES LOGICIELS AVEC LE PACKAGE MANAGER NIX    #'
+echo '     ################################################################'
+echo ''
+
+################################################################################
+## instalation de nix package manager
+##------------------------------------------------------------------------------
+install_nix() {
+  displayandexec "Installation de nix package manager                 " "\
+  sh <(curl --silent --location https://nixos.org/nix/install) --daemon --yes && \
+  nix-channel --add https://nixos.org/channels/nixpkgs-unstable nixpkgs && \
+  nix-shell -p nix-info --run "nix-info -m" && \
+  nix-channel --update"
+  cat>> /etc/nix/nix.conf <<'EOF'
+experimental-features = nix-command flakes
+EOF
+}
+################################################################################
+
+################################################################################
+## instalation de csvlens
+##------------------------------------------------------------------------------
+install_csvlens() {
+  displayandexec "Installation de csvlens                             " "\
+  nix profile add nixpkgs#csvlens"
+}
+################################################################################
+
+install_nix_software() {
+  install_csvlens
+}
+
+install_nix
+install_nix_software
+
 #//////////////////////////////////////////////////////////////////////////////#
 #                       INSTALL MANUAL INSTALL APPS                            #
 #//////////////////////////////////////////////////////////////////////////////#

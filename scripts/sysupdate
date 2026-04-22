@@ -110,12 +110,13 @@ CheckUpdateSystem() {
 }
 
 UpdateFlatpak() {
-  run_with_sudo
-  create_log_file
-  log_with_bash_x
   displayandexec "Mise à jour des applications Flatpak                " "flatpak update --assumeyes"
 }
-UpdateFlatpak
+
+UpdateNixPkg() {
+  displayandexec "Mise à jour des paquets Nix                         " "\
+  $ExeAsUser nix profile upgrade --all"
+}
 
 ################################################################################
 
@@ -371,6 +372,8 @@ CheckUpdateAndUpgrade() {
   create_log_file
   log_with_bash_x
   UpdateSystem
+  UpdateFlatpak
+  [ -d /nix/var/nix/profiles/default/bin/ ] && UpdateNixPkg
   for software in $software_list; do
   	CheckUpdate"$software"
   	if [ "$retval" ]; then
