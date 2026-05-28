@@ -16,12 +16,12 @@ alias ip='ip --color=auto'
 alias u='sudo ag update'
 alias upp='sudo ag update && sudo ag upgrade'
 alias uppr='sudo ag update && sudo ag dist-upgrade'
-alias yt-dlp='$my_user_bin_path/yt-dlp -o "%(title)s.%(ext)s" --parse-metadata "[%(title)s](%(webpage_url)s):%(meta_description)s" --parse-metadata ":(?P<meta_synopsis>)" --embed-metadata --impersonate Chrome-133'
-alias yt-dlp_uniq='$my_user_bin_path/yt-dlp -o "%(title)s - %(epoch)s.%(ext)s" --parse-metadata "[%(title)s](%(webpage_url)s):%(meta_description)s" --parse-metadata ":(?P<meta_synopsis>)" --embed-metadata --impersonate Chrome-133'
-alias yt-dlp_best='$my_user_bin_path/yt-dlp -o "%(title)s.%(ext)s" --parse-metadata "[%(title)s](%(webpage_url)s):%(meta_description)s" --parse-metadata ":(?P<meta_synopsis>)" --embed-metadata --impersonate Chrome-133 -f "bestvideo+bestaudio"'
-alias yt-dlp_1080p='$my_user_bin_path/yt-dlp -o "%(title)s.%(ext)s" --parse-metadata "[%(title)s](%(webpage_url)s):%(meta_description)s" --parse-metadata ":(?P<meta_synopsis>)" --embed-metadata --impersonate Chrome-133 -f '\''bestvideo[height<=1080]+bestaudio'\'''
-alias yt-dlp_1440p='$my_user_bin_path/yt-dlp -o "%(title)s.%(ext)s" --parse-metadata "[%(title)s](%(webpage_url)s):%(meta_description)s" --parse-metadata ":(?P<meta_synopsis>)" --embed-metadata --impersonate Chrome-133 -f '\''bestvideo[height<=1440]+bestaudio'\'''
-alias yt-dlp_onlybestaudio='$my_user_bin_path/yt-dlp -o "%(title)s.%(ext)s" --parse-metadata "[%(title)s](%(webpage_url)s):%(meta_description)s" --parse-metadata ":(?P<meta_synopsis>)" --embed-metadata --impersonate Chrome-133 -f bestaudio --extract-audio --audio-format best'
+alias yt-dlp='$my_user_bin_path/yt-dlp -o "%(title)s.%(ext)s" --parse-metadata "[%(title)s](%(webpage_url)s):%(meta_description)s" --parse-metadata ":(?P<meta_synopsis>)" --embed-metadata --impersonate Chrome-136'
+alias yt-dlp_uniq='$my_user_bin_path/yt-dlp -o "%(title)s - %(epoch)s.%(ext)s" --parse-metadata "[%(title)s](%(webpage_url)s):%(meta_description)s" --parse-metadata ":(?P<meta_synopsis>)" --embed-metadata --impersonate Chrome-136'
+alias yt-dlp_best='$my_user_bin_path/yt-dlp -o "%(title)s.%(ext)s" --parse-metadata "[%(title)s](%(webpage_url)s):%(meta_description)s" --parse-metadata ":(?P<meta_synopsis>)" --embed-metadata --impersonate Chrome-136 -f "bestvideo+bestaudio"'
+alias yt-dlp_1080p='$my_user_bin_path/yt-dlp -o "%(title)s.%(ext)s" --parse-metadata "[%(title)s](%(webpage_url)s):%(meta_description)s" --parse-metadata ":(?P<meta_synopsis>)" --embed-metadata --impersonate Chrome-136 -f '\''bestvideo[height<=1080]+bestaudio'\'''
+alias yt-dlp_1440p='$my_user_bin_path/yt-dlp -o "%(title)s.%(ext)s" --parse-metadata "[%(title)s](%(webpage_url)s):%(meta_description)s" --parse-metadata ":(?P<meta_synopsis>)" --embed-metadata --impersonate Chrome-136 -f '\''bestvideo[height<=1440]+bestaudio'\'''
+alias yt-dlp_onlybestaudio='$my_user_bin_path/yt-dlp -o "%(title)s.%(ext)s" --parse-metadata "[%(title)s](%(webpage_url)s):%(meta_description)s" --parse-metadata ":(?P<meta_synopsis>)" --embed-metadata --impersonate Chrome-136 -f bestaudio --extract-audio --audio-format best'
 alias free='free -ht'
 alias showshortcut='dconf dump /org/gnome/settings-daemon/plugins/media-keys/'
 alias update_my_sysupdate_script='bash -c '\''rm -f $my_user_bin_path/sysupdate && wget -q -P $my_user_bin_path "https://raw.githubusercontent.com/NRGLine4Sec/config-l/refs/heads/main/scripts/sysupdate" && chmod +x $my_user_bin_path/sysupdate'\'''
@@ -33,15 +33,14 @@ HISTTIMEFORMAT="%Y/%m/%d %T   "
 is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/$1 ;}
 to_lower() { tr [:upper:] [:lower:] <<< "$@" ;}
 to_upper() { tr [:lower:] [:upper:] <<< "$@" ;}
-mpv_youtube() { mpv <($my_user_bin_path --impersonate Chrome-133 -o - "$1") }
-mpv_youtube_audio() { mpv --no-video <($my_user_bin_path -f bestaudio --extract-audio --audio-format best --impersonate Chrome-133 -o - "$1") }
-youtube_description() { $my_user_bin_path/yt-dlp --impersonate Chrome-133 --playlist-items 0 --print description "$1" ;}
+mpv_youtube() { mpv <($my_user_bin_path/yt-dlp --impersonate Chrome-136 -o - "$1") }
+mpv_youtube_audio() { mpv --no-video <($my_user_bin_path/yt-dlp -f bestaudio --extract-audio --audio-format best --impersonate Chrome-136 -o - "$1") }
+youtube_description() { $my_user_bin_path/yt-dlp --impersonate Chrome-136 --playlist-items 0 --print description "$1" ;}
 
 # for Ansible vault editor
 export EDITOR=nano
 
-# for python binnary
-export PATH="$PATH:/home/$local_user/.local/bin"
+export PATH="$HOME/.local/bin:$PATH"
 
 # share history between terminals
 # ref : https://subbass.blogspot.com/2009/10/howto-sync-bash-history-between.html

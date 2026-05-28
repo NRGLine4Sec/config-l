@@ -286,9 +286,12 @@ UpdateDeno() {
   displayandexec "Mise à jour de deno (need after yt-dlp v2025.11.12) " "\
   rm -f "$my_user_bin_path"/deno && \
   $WGET -P "$tmp_dir" https://github.com/denoland/deno/releases/download/v"$deno_version"/deno-x86_64-unknown-linux-gnu.zip && \
-  $ExeAsUser unzip "$tmp_dir"/deno-x86_64-unknown-linux-gnu.zip -d "$my_user_bin_path"/; \
-  rm -rf "$tmp_dir""
+  $ExeAsUser unzip "$tmp_dir"/deno-x86_64-unknown-linux-gnu.zip -d "$my_user_bin_path"/"
+  # rm -rf "$tmp_dir""
 }
+# on supprimer temporairement le rm -rf car il semble y avoir un truc un peu étrange lors de l'update de Deno via lusage de la fonction displayandexec alors que quand on execute directement la commande suivante :
+# bash -c '  rm -f /home/$USER/.local/bin/deno &&   wget -q -P /tmp/tmp.NK8mIv3cyJ https://github.com/denoland/deno/releases/download/v2.7.14/deno-x86_64-unknown-linux-gnu.zip &&   sudo -u /$USER unzip /tmp/tmp.NK8mIv3cyJ/deno-x86_64-unknown-linux-gnu.zip -d /home//$USER/.local/bin/;'
+# celle-ci fonctionne parfaitement !
 
 UpdateYt-dlp() {
   displayandexec "Mise à jour de yt-dlp                               " "$ExeAsUser $my_user_bin_path/yt-dlp --update"
@@ -353,13 +356,16 @@ AddTo_software_update_failed() {
 software_list='
 Keepassxc
 Joplin
-Bat
 Etcher
 Deno
 Yt-dlp
 Hashcat
 Veracrypt
-Ventoy'
+Ventoy
+Opensnitch'
+
+# plus nécessaire car transformé en package Nix :
+# Bat
 
 # plus nécessaire car transformé en flatpak :
 

@@ -9,8 +9,6 @@
 # Regarder comment ils font avec le script shell de remediation : http://static.open-scap.org/ssg-guides/ssg-debian8-guide-anssi_np_nt28_high.html#xccdf_org.ssgproject.content_rule_sshd_disable_root_login
 # Regarder aussi pour ajouter cette conf la : http://static.open-scap.org/ssg-guides/ssg-debian8-guide-anssi_np_nt28_high.html#xccdf_org.ssgproject.content_rule_sshd_disable_empty_passwords
 ##
-## On peut aussi utiliser "if !" pour indiquer la négation de la condition d'un if par exempe if ! wget www.google.Fr; then echo "pas d'accès à Internet";fi
-##
 ## Regarder de près cet outil la : https://github.com/gustavo-iniguez-goya/arpsentinel-applet
 ##
 ## Regarder pour voir si on install gnome-boxes
@@ -97,7 +95,7 @@ redirect_and_enable_bash_debug_log
 ################################################################################
 ## Initialisation de la variable qui permet le calcul du temps d'execution du script
 ##------------------------------------------------------------------------------
-#juste pour vérifier que la fonction de calcul du temps d'execution fonctionne correctement, essayer ensuite de trouver une meilleur solution et de supprimer cette ligne
+# juste pour vérifier que la fonction de calcul du temps d'execution fonctionne correctement, essayer ensuite de trouver une meilleur solution et de supprimer cette ligne
 timedatectl set-timezone Europe/Paris >/dev/null
 systemctl restart systemd-timesyncd >/dev/null
 # utilisé à des fin de stats pour l'éxecution du script
@@ -330,7 +328,7 @@ execandlog() {
   local ret=$?
   return $ret
   export BASH_XTRACEFD='19'
-  # on ré-export la variable BASH_XTRACEFD au cas ou que certains scripts bash exécuter à l'intérieur des fonctions l'ait supprimé ou modifier (exemple DKMS)
+  # on ré-export la variable BASH_XTRACEFD au cas ou que certains scripts bash exécutés à l'intérieur des fonctions l'ait supprimé ou modifier (exemple DKMS)
 }
 ################################################################################
 
@@ -508,12 +506,6 @@ check_latest_version_manual_install_apps() {
   fi
   # check version : https://github.com/keepassxreboot/keepassxc/releases/
 
-  bat_version="$($CURL 'https://api.github.com/repos/sharkdp/bat/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
-  if [ $? != 0 ] || [ -z "$bat_version" ]; then
-    bat_version='0.24.0'
-  fi
-  # check version : https://github.com/sharkdp/bat/releases/
-
   joplin_version="$($CURL 'https://api.github.com/repos/laurent22/joplin/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')"
   if [ $? != 0 ] || [ -z "$joplin_version" ]; then
     joplin_version='3.0.14'
@@ -576,8 +568,6 @@ check_latest_version_manual_install_apps() {
 # echo 'Etcher : '"$etcher_version" && \
 # keepassxc_version="$($CURL 'https://api.github.com/repos/keepassxreboot/keepassxc/releases/latest' | grep -Po '"tag_name": "\K.*?(?=")')" && \
 # echo 'KeePassXC : '"$keepassxc_version" && \
-# bat_version="$($CURL 'https://api.github.com/repos/sharkdp/bat/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
-# echo 'bat : '"$bat_version" && \
 # joplin_version="$($CURL 'https://api.github.com/repos/laurent22/joplin/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
 # echo 'Joplin : '"$joplin_version" && \
 # opensnitch_stable_version="$($CURL 'https://api.github.com/repos/evilsocket/opensnitch/releases/latest' | grep -Po '"tag_name": "v\K.*?(?=")')" && \
@@ -809,16 +799,6 @@ echo ''
 ################################################################################
 ## application des mises à jour et modification du sources.list
 ##------------------------------------------------------------------------------
-# suppression du CDROM dans sources.list
-# displayandexec "Suppression du CDROM dans sources.list              " "sed -i '/cdrom/d' /etc/apt/sources.list"
-# cette commande n'est plus nécessaire à partir du moment ou on remet au propre le contenu de /apt/souces.list
-
-# à regarder pour désactiver la recherche de mise à jour qui provoque le lock de pdkg
-# systemctl status unattended-upgrades
-# systemctl stop unattended-upgrades
-
-# remise au propre de /etc/apt/sources.list
-
 make_apt_source_list_clean() {
   cat> /etc/apt/sources.list.d/debian.sources << EOF
 Types: deb deb-src
@@ -1101,7 +1081,7 @@ fi
 #    displayandexec "Installation de firmware-iwlwifi                    " "$AGI firmware-iwlwifi"
 # fi
 
-# si CPU/GPU is AMD
+# if CPU/GPU est AMD
 # awk '!/^[[:blank:]]/ && /^1002/' /usr/share/misc/pci.ids
 # l'ID 1002 correspond à Advanced Micro Devices, Inc. [AMD/ATI]
 if awk '{print $2}' /proc/bus/pci/devices | grep '^1002' &>/dev/null; then
@@ -1117,7 +1097,7 @@ if awk '{print $2}' /proc/bus/pci/devices | grep '^1002' &>/dev/null; then
 fi
 # apt policy firmware-amd-graphics xserver-xorg-video-amdgpu radeontop rocminfo
 
-# si CPU/GPU is Intel
+# if CPU/GPU est Intel
 # awk '!/^[[:blank:]]/ && /^8086/' /usr/share/misc/pci.ids
 # l'ID 8086 correspond à Intel Corporation
 if awk '{print $2}' /proc/bus/pci/devices | grep '^8086' &>/dev/null; then
@@ -1129,7 +1109,7 @@ if awk '{print $2}' /proc/bus/pci/devices | grep '^8086' &>/dev/null; then
   done
 fi
 
-# si carte Ethernet Realtek
+# if NIC is Realtek
 # awk '!/^[[:blank:]]/ && /^10ec/' /usr/share/misc/pci.ids
 # l'ID 10ec correspond à Realtek Semiconductor Co., Ltd.
 if awk '{print $2}' /proc/bus/pci/devices | grep '^10ec' &>/dev/null; then
@@ -1153,83 +1133,43 @@ fi
 shopt -u nocasematch
 
 install_debian_apt_package() {
-  displayandexec "Installation de ascii                               " "$AGI ascii"
   displayandexec "Installation de aria2                               " "$AGI aria2"
-  displayandexec "Installation de arping                              " "$AGI arping"
   displayandexec "Installation de auditd                              " "$AGI auditd"
   displayandexec "Installation de apparmor-profiles                   " "$AGI apparmor-profiles"
   displayandexec "Installation de apparmor-profiles-extra             " "$AGI apparmor-profiles-extra"
-  displayandexec "Installation de b3sum                               " "$AGI b3sum"
-  displayandexec "Installation de bat                                 " "$AGI bat"
   displayandexec "Installation de bind9-dnsutils                      " "$AGI bind9-dnsutils"
-  displayandexec "Installation de binwalk                             " "$AGI binwalk"
   displayandexec "Installation de bpfcc-tools                         " "$AGI bpfcc-tools"
   displayandexec "Installation de bpftool                             " "$AGI bpftool"
   displayandexec "Installation de bpftrace                            " "$AGI bpftrace"
   displayandexec "Installation de bsdextrautils                       " "$AGI bsdextrautils" # needed to get hexdump binnary
-  displayandexec "Installation de bwm-ng                              " "$AGI bwm-ng" # simple console-based live bandwidth monitor
-  displayandexec "Installation de cadaver                             " "$AGI cadaver"
   displayandexec "Installation de dctrl-tools                         " "$AGI dctrl-tools" # Command-line tools to process Debian package information
   displayandexec "Installation de chkrootkit                          " "$AGI chkrootkit"
   displayandexec "Installation de chromium                            " "$AGI chromium-l10n"
   displayandexec "Installation de clamav                              " "$AGI clamav clamtk clamtk-gnome libclamunrar"
-  displayandexec "Installation de colordiff                           " "$AGI colordiff"
   displayandexec "Installation de cups                                " "$AGI cups"
   displayandexec "Installation de curl                                " "$AGI curl"
   displayandexec "Installation de debconf-utils                       " "$AGI debconf-utils"
-  displayandexec "Installation de dmidecode                           " "$AGI dmidecode"
-  displayandexec "Installation de dmitry                              " "$AGI dmitry"
-  displayandexec "Installation de dos2unix                            " "$AGI dos2unix"
-  displayandexec "Installation de elfutils                            " "$AGI elfutils"
-  displayandexec "Installation de ethtool                             " "$AGI ethtool"
   displayandexec "Installation de evince                              " "$AGI evince"
-  displayandexec "Installation de exiv2                               " "$AGI exiv2"
-  displayandexec "Installation de libimage-exiftool-perl              " "$AGI libimage-exiftool-perl" # needed to get exiftool binnary
-  displayandexec "Installation de ffmpeg                              " "$AGI ffmpeg"
   displayandexec "Installation de firefox-esr-l10n-fr                 " "$AGI firefox-esr-l10n-fr"
   displayandexec "Installation de firejail                            " "$AGI firejail firejail-profiles"
   displayandexec "Installation de firewalld                           " "$AGI firewalld"
-  displayandexec "Installation de flameshot                           " "$AGI flameshot"
   displayandexec "Installation de freerdp3-sdl                        " "$AGI freerdp3-sdl"
   displayandexec "Installation de freerdp3-wayland                    " "$AGI freerdp3-wayland"
   displayandexec "Installation de gcc                                 " "$AGI gcc"
   displayandexec "Installation de genisoimage                         " "$AGI genisoimage" # needed to get isoinfo binnary
-  displayandexec "Installation de gimp                                " "$AGI gimp"
-  displayandexec "Installation de git                                 " "$AGI git"
   displayandexec "Installation de gitk                                " "$AGI gitk"
-  displayandexec "Installation de gocrypt                             " "$AGI gocryptfs"
-  displayandexec "Installation de gparted                             " "$AGI gparted"
-  displayandexec "Installation de gsmartcontrol                       " "$AGI gsmartcontrol"
-  # displayandexec "Installation de handbrake                           " "$AGI handbrake"
-  displayandexec "Installation de hardinfo                            " "$AGI hardinfo"
-  displayandexec "Installation de hdparm                              " "$AGI hdparm"
-  displayandexec "Installation de htop                                " "$AGI htop"
-  displayandexec "Installation de hugo                                " "$AGI hugo"
   displayandexec "Installation de hydra-gtk                           " "$AGI hydra-gtk"
-  displayandexec "Installation de hwinfo                              " "$AGI hwinfo"
-  displayandexec "Installation de icdiff                              " "$AGI icdiff"
-  displayandexec "Installation de iftop                               " "$AGI iftop"
-  displayandexec "Installation de inxi                                " "$AGI inxi"
-  displayandexec "Installation de iotop                               " "$AGI iotop"
-  displayandexec "Installation de ipcalc                              " "$AGI ipcalc"
-  displayandexec "Installation de jq                                  " "$AGI jq"
   displayandexec "Installation de libnotify-bin                       " "$AGI libnotify-bin"
   displayandexec "Installation de libsecret-tools                     " "$AGI libsecret-tools"
   displayandexec "Installation de linux-cpupower                      " "$AGI linux-cpupower"
   displayandexec "Installation de linux-perf                          " "$AGI linux-perf"
-  displayandexec "Installation de lnav                                " "$AGI lnav"
   displayandexec "Installation de locate                              " "$AGI locate"
-  displayandexec "Installation de lshw                                " "$AGI lshw"
-  displayandexec "Installation de lynx                                " "$AGI lynx"
   displayandexec "Installation de lz4                                 " "$AGI lz4"
   displayandexec "Installation de macchanger                          " "$AGI macchanger"
   displayandexec "Installation de make                                " "$AGI make"
-  displayandexec "Installation de mat2                                " "$AGI mat2"
-  displayandexec "Installation de mediainfo                           " "$AGI mediainfo mediainfo-gui"
   displayandexec "Installation de mpv                                 " "$AGI mpv youtube-dl- yt-dlp-"
   # on n'install pas la dépendance youtube-dl requise par mpv car la version des dépots debian est trop ancienne
   # ref : [ubuntu - How do I get apt-get to ignore some dependencies? - Server Fault](https://serverfault.com/questions/250224/how-do-i-get-apt-get-to-ignore-some-dependencies/663803#663803)
-  displayandexec "Installation de msitools                            " "$AGI msitools" # à noter qu'on peut aussi utiliser "7z x" pour extraire le contenu de fichier .msi mais msiextract a l'avantage de garder la structure des répertoires ainsi que les noms et majuscules des fichiers à l'intérieur
   if [ "$bullseye" == 1 ]; then
     displayandexec "Installation de nautilus-gtkhash                    " "$AGI nautilus-gtkhash"
   fi
@@ -1245,97 +1185,40 @@ install_debian_apt_package() {
   # il semble que la dépendance qui posait problème a été retirée et que nautilus-wipe pourrait certainement être intégré dans la release de Debian après Bookworm : [#1069334 - Not installable due to hardcoded pre-t64 library deps - Debian Bug report logs](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1069334)
   # [#1017619 - nautilus-wipe: Fails to build with nautilus 43 - Debian Bug report logs](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1017619)
   displayandexec "Installation de nbd-client                          " "$AGI nbd-client"
-  displayandexec "Installation de ncdu                                " "$AGI ncdu"
-  displayandexec "Installation de netdiscover                         " "$AGI netdiscover"
   displayandexec "Installation de network-manager-openvpn-gnome       " "$AGI network-manager-openvpn-gnome"
   displayandexec "Installation de network-manager-vpnc-gnome          " "$AGI network-manager-vpnc-gnome"
   # displayandexec "Installation de nextcloud-desktop                   " "$AGI nextcloud-desktop"
   displayandexec "Installation de nfs-common                          " "$AGI nfs-common"
-  displayandexec "Installation de ngrep                               " "$AGI ngrep"
-  displayandexec "Installation de nikto                               " "$AGI nikto"
-  displayandexec "Installation de nnn                                 " "$AGI nnn"
-  displayandexec "Installation de nmap                                " "$AGI nmap"
-  displayandexec "Installation de nvme-cli                            " "$AGI nvme-cli"
-  displayandexec "Installation de oathtool                            " "$AGI oathtool"
-  displayandexec "Installation de ocrfeeder                           " "$AGI python3-standard-imghdr ocrfeeder"
-  # python3-standard-imghdr seems to be an unspecified dependance to ocrfeeder because I get this error of the package is not present
-#   Traceback (most recent call last):
-#   File "/usr/bin/ocrfeeder", line 31, in <module>
-#     from ocrfeeder.studio.studioBuilder import Studio
-#   File "/usr/lib/python3/dist-packages/ocrfeeder/studio/studioBuilder.py", line 29, in <module>
-#     from . import widgetPresenter
-#   File "/usr/lib/python3/dist-packages/ocrfeeder/studio/widgetPresenter.py", line 21, in <module>
-#     from .dataHolder import DataBox, TEXT_TYPE, IMAGE_TYPE
-#   File "/usr/lib/python3/dist-packages/ocrfeeder/studio/dataHolder.py", line 20, in <module>
-#     from ocrfeeder.util import graphics
-#   File "/usr/lib/python3/dist-packages/ocrfeeder/util/graphics.py", line 25, in <module>
-#     import imghdr
-# ModuleNotFoundError: No module named 'imghdr'
   displayandexec "Installation de openvpn                             " "$AGI openvpn"
-  displayandexec "Installation de p7zip-full                          " "$AGI p7zip-full"
-  displayandexec "Installation de p7zip-rar                           " "$AGI p7zip-rar"
-  displayandexec "Installation de pdfgrep                             " "$AGI pdfgrep"
   displayandexec "Installation de pipx                                " "$AGI pipx"
-  displayandexec "Installation de pavucontrol                         " "$AGI pavucontrol"
   displayandexec "Installation de printer-driver-all                  " "$AGI printer-driver-all"
-  displayandexec "Installation de pv                                  " "$AGI pv"
   displayandexec "Installation de python3-pip                         " "$AGI python3-pip"
   displayandexec "Installation de python3-scapy                       " "$AGI python3-scapy"
-  displayandexec "Installation de qpdf                                " "$AGI qpdf"
-  displayandexec "Installation de rclone                              " "$AGI rclone"
-  displayandexec "Installation de rdesktop                            " "$AGI rdesktop"
-  # displayandexec "Installation de rkhunter                            " "$AGI rkhunter" # because [#1057470 - Outdated rkhunter since 2018-02 - Debian Bug report logs](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1057470#10)
-  displayandexec "Installation de rsync                               " "$AGI rsync"
-  displayandexec "Installation de sdparm                              " "$AGI sdparm"
-  displayandexec "Installation de secure-delete                       " "$AGI secure-delete"
-  displayandexec "Installation de sg3-utils                           " "$AGI sg3-utils"
-  displayandexec "Installation de shotwell                            " "$AGI shotwell"
   displayandexec "Installation de snmp                                " "$AGI snmp"
-  displayandexec "Installation de smem                                " "$AGI smem"
-  displayandexec "Installation de sqlite3                             " "$AGI sqlite3"
-  displayandexec "Installation de sqlitebrowser                       " "$AGI sqlitebrowser"
   displayandexec "Installation de ssh                                 " "$AGI ssh"
   displayandexec "Installation de sshfs                               " "$AGI sshfs"
-  displayandexec "Installation de sshpass                             " "$AGI sshpass"
-  displayandexec "Installation de strace                              " "$AGI strace"
   displayandexec "Installation de sudo                                " "$AGI sudo"
-  displayandexec "Installation de sysstat                             " "$AGI sysstat"
-  displayandexec "Installation de tcpdump                             " "$AGI tcpdump"
   displayandexec "Installation de telnet                              " "$AGI telnet"
   displayandexec "Installation de tesseract-ocr                       " "$AGI tesseract-ocr tesseract-ocr-fra"
   displayandexec "Installation de testdisk                            " "$AGI testdisk"
-  displayandexec "Installation de testssl.sh                          " "$AGI testssl.sh"
-  displayandexec "Installation de tmux                                " "$AGI tmux"
-  displayandexec "Installation de tree                                " "$AGI tree"
   displayandexec "Installation de tigervnc-viewer                     " "$AGI tigervnc-viewer"
-  displayandexec "Installation de tshark                              " "$AGI tshark"
   # displayandexec "Installation de ufw                                 " "$AGI ufw"
-  displayandexec "Installation de unoconv                             " "$AGI unoconv"
   displayandexec "Installation de unrar                               " "$AGI unrar"
-  displayandexec "Installation de vlc                                 " "$AGI vlc"
-  displayandexec "Installation de vpnc                                " "$AGI vpnc"
   displayandexec "Installation de wget                                " "$AGI wget"
-  displayandexec "Installation de wine                                " "$AGI wine"
   displayandexec "Installation de wipe                                " "$AGI wipe"
-  displayandexec "Installation de wireshark                           " "$AGI wireshark"
-  displayandexec "Installation de xclip                               " "$AGI xclip"
   displayandexec "Installation de xfsprogs                            " "$AGI xfsprogs" # nécessaire pour manipuler des filesystems XFS
   displayandexec "Installation de xinput                              " "$AGI xinput"
   displayandexec "Installation de xorriso                             " "$AGI xorriso"
   displayandexec "Installation de xxd                                 " "$AGI xxd"
-  displayandexec "Installation de xxhash                              " "$AGI xxhash"
   displayandexec "Installation de xz-utils                            " "$AGI xz-utils"
   displayandexec "Installation de yersinia                            " "$AGI yersinia" # à réflechir si c'est encore utile
-  displayandexec "Installation de yq                                  " "$AGI yq" # équivalent de jq pour les fichiers YAML
   # displayandexec "Installation de zenmap                              " "$AGI zenmap"
   # zenmap n'est pas dispo dans debian bullseye car python2 est EOL, pour traquer l'avencement du portage du code vers python3 : https://github.com/nmap/nmap/issues/1176
-  displayandexec "Installation de zbar-tools                          " "$AGI zbar-tools" # utile pour lire les QRcode en CLI
   displayandexec "Installation de zip                                 " "$AGI zip"
   displayandexec "Installation de zutils                              " "$AGI zutils"
   displayandexec "Installation de zsh                                 " "$AGI zsh zsh-syntax-highlighting"
   displayandexec "Installation de zstd                                " "$AGI zstd"
   displayandexec "Installation de wireguard                           " "$AGI wireguard"
-  displayandexec "Installation de whois                               " "$AGI whois"
 }
 install_debian_apt_package
 
@@ -1359,7 +1242,6 @@ firejail
 firejail-profiles
 freerdp3-sdl
 curl
-gocryptfs
 '
 #remmina # useless after switching installation to flatpak
 
@@ -1453,27 +1335,151 @@ install_nix() {
   nix-channel --add https://nixos.org/channels/nixpkgs-unstable nixpkgs && \
   nix-shell -p nix-info --run "nix-info -m" && \
   nix-channel --update"
-  cat>> /etc/nix/nix.conf <<'EOF'
+  cat>> /etc/nix/nix.conf << 'EOF'
 experimental-features = nix-command flakes
 EOF
+
+  cat> /etc/sudoers.d/custom_path << EOF
+Defaults secure_path="/home/$local_user/.nix-profile/bin:/nix/var/nix/profiles/default/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/home/$local_user/.local/bin"
+EOF
+  # probablement nécessaire pour pouvoir executer des programes installés via Nix par sudo
+  # ref : [How to make `sudo` preserve $PATH? - Unix & Linux Stack Exchange](https://unix.stackexchange.com/questions/83191/how-to-make-sudo-preserve-path#comment1390149_151188)
+  # [nix: not found on root user PATH using sudo after linux multiuser install · Issue #965 · DeterminateSystems/nix-installer](https://github.com/DeterminateSystems/nix-installer/issues/965)
+  # [Can use `sudo` with `nix-profile` - Help - NixOS Discourse](https://discourse.nixos.org/t/can-use-sudo-with-nix-profile/64660/3)
 }
 ################################################################################
 
+install_with_nix_pm() {
+  locale package_name="$1"
+  nix profile add "$package_name"
+}
+export -f install_with_nix_pm
+
 ################################################################################
-## instalation de csvlens
+## instalation des paquets avec Nix Package Manager
 ##------------------------------------------------------------------------------
-install_csvlens() {
-  displayandexec "Installation de csvlens                             " "\
-  nix profile add nixpkgs#csvlens"
+install_nix_packages() {
+  displayandexec "Installation de nikto                               " "install_with_nix_pm nixpkgs#nikto"
+  displayandexec "Installation de binwalk                             " "install_with_nix_pm nixpkgs#binwalk"
+  displayandexec "Installation de csvlens                             " "install_with_nix_pm nixpkgs#csvlens"
+  displayandexec "Installation de nnn                                 " "install_with_nix_pm nixpkgs#nnn"
+  displayandexec "Installation de nvme-cli                            " "install_with_nix_pm nixpkgs#nvme-cli"
+  displayandexec "Installation de htop                                " "install_with_nix_pm nixpkgs#htop"
+  displayandexec "Installation de ethtool                             " "install_with_nix_pm nixpkgs#ethtool"
+  displayandexec "Installation de qpdf                                " "install_with_nix_pm nixpkgs#qpdf"
+  displayandexec "Installation de pdfgrep                             " "install_with_nix_pm nixpkgs#pdfgrep"
+  displayandexec "Installation de lnav                                " "install_with_nix_pm nixpkgs#lnav"
+  displayandexec "Installation de b3sum                               " "install_with_nix_pm nixpkgs#b3sum"
+  displayandexec "Installation de ipcalc                              " "install_with_nix_pm nixpkgs#ipcalc"
+  displayandexec "Installation de lynx                                " "install_with_nix_pm nixpkgs#lynx"
+  displayandexec "Installation de ncdu                                " "install_with_nix_pm nixpkgs#ncdu"
+  displayandexec "Installation de tree                                " "install_with_nix_pm nixpkgs#tree"
+  displayandexec "Installation de nmap                                " "install_with_nix_pm nixpkgs#nmap"
+  displayandexec "Installation de xclip                               " "install_with_nix_pm nixpkgs#xclip"
+  displayandexec "Installation de lshw                                " "install_with_nix_pm nixpkgs#lshw"
+  displayandexec "Installation de colordiff                           " "install_with_nix_pm nixpkgs#colordiff"
+  displayandexec "Installation de iftop                               " "install_with_nix_pm nixpkgs#iftop"
+  displayandexec "Installation de hdparm                              " "install_with_nix_pm nixpkgs#hdparm"
+  displayandexec "Installation de ascii                               " "install_with_nix_pm nixpkgs#ascii"
+  displayandexec "Installation de pv                                  " "install_with_nix_pm nixpkgs#pv"
+  displayandexec "Installation de tcpdump                             " "install_with_nix_pm nixpkgs#tcpdump"
+  displayandexec "Installation de yq                                  " "install_with_nix_pm nixpkgs#yq" # équivalent de jq pour les fichiers YAML
+  displayandexec "Installation de shotwell                            " "install_with_nix_pm nixpkgs#shotwell"
+  displayandexec "Installation de rclone                              " "install_with_nix_pm nixpkgs#rclone"
+  displayandexec "Installation de exiv2                               " "install_with_nix_pm nixpkgs#exiv2"
+  displayandexec "Installation de vlc                                 " "install_with_nix_pm nixpkgs#vlc"
+  displayandexec "Installation de whois                               " "install_with_nix_pm nixpkgs#whois"
+  displayandexec "Installation de netdiscover                         " "install_with_nix_pm nixpkgs#netdiscover"
+  displayandexec "Installation de sysstat                             " "install_with_nix_pm nixpkgs#sysstat"
+  displayandexec "Installation de sdparm                              " "install_with_nix_pm nixpkgs#sdparm"
+  displayandexec "Installation de arping                              " "install_with_nix_pm nixpkgs#arping"
+  displayandexec "Installation de tmux                                " "install_with_nix_pm nixpkgs#tmux"
+  displayandexec "Installation de elfutils                            " "install_with_nix_pm nixpkgs#elfutils"
+  displayandexec "Installation de exiftool                            " "install_with_nix_pm nixpkgs#exiftool"
+  displayandexec "Installation de zbar                                " "install_with_nix_pm nixpkgs#zbar" # utile pour lire les QRcode en CLI
+  displayandexec "Installation de hwinfo                              " "install_with_nix_pm nixpkgs#hwinfo"
+  displayandexec "Installation de msitools                            " "install_with_nix_pm nixpkgs#msitools" # à noter qu'on peut aussi utiliser "7z x" pour extraire le contenu de fichier .msi mais msiextract a l'avantage de garder la structure des répertoires ainsi que les noms et majuscules des fichiers à l'intérieur
+  displayandexec "Installation de gparted                             " "install_with_nix_pm nixpkgs#gparted"
+  displayandexec "Installation de sshpass                             " "install_with_nix_pm nixpkgs#sshpass"
+  displayandexec "Installation de strace                              " "install_with_nix_pm nixpkgs#strace"
+  displayandexec "Installation de rdesktop                            " "install_with_nix_pm nixpkgs#rdesktop"
+  displayandexec "Installation de gimp                                " "install_with_nix_pm nixpkgs#gimp"
+  displayandexec "Installation de rsync                               " "install_with_nix_pm nixpkgs#rsync"
+  displayandexec "Installation de wireshark                           " "install_with_nix_pm nixpkgs#wireshark"
+  displayandexec "Installation de tshark                              " "install_with_nix_pm nixpkgs#tshark"
+  displayandexec "Installation de testssl                             " "install_with_nix_pm nixpkgs#testssl"
+  displayandexec "Installation de sqlitebrowser                       " "install_with_nix_pm nixpkgs#sqlitebrowser"
+  displayandexec "Installation de jq                                  " "install_with_nix_pm nixpkgs#jq"
+  displayandexec "Installation de git                                 " "install_with_nix_pm nixpkgs#git"
+  displayandexec "Installation de pavucontrol                         " "install_with_nix_pm nixpkgs#pavucontrol"
+  displayandexec "Installation de mat2                                " "install_with_nix_pm nixpkgs#mat2"
+  displayandexec "Installation de wine                                " "install_with_nix_pm nixpkgs#wine"
+  displayandexec "Installation de sg3_utils                           " "install_with_nix_pm nixpkgs#sg3_utils"
+  displayandexec "Installation de glow                                " "install_with_nix_pm nixpkgs#nixpkgs#glow"
+  displayandexec "Installation de bat                                 " "install_with_nix_pm nixpkgs#bat"
+  displayandexec "Installation de xxhash                              " "install_with_nix_pm nixpkgs#xxhash"
+  displayandexec "Installation de sqlite                              " "install_with_nix_pm nixpkgs#sqlite"
+  displayandexec "Installation de gocrypt                             " "install_with_nix_pm nixpkgs#gocryptfs"
+  displayandexec "Installation de ocrfeeder                           " "install_with_nix_pm nixpkgs#ocrfeeder"
+  displayandexec "Installation de dos2unix                            " "install_with_nix_pm nixpkgs#dos2unix"
+  displayandexec "Installation de ngrep                               " "install_with_nix_pm nixpkgs#ngrep"
+  displayandexec "Installation de hardinfo2                           " "install_with_nix_pm nixpkgs#hardinfo2"
+  displayandexec "Installation de bwm-ng                              " "install_with_nix_pm nixpkgs#bwm_ng" # simple console-based live bandwidth monitor
+  displayandexec "Installation de gsmartcontrol                       " "install_with_nix_pm nixpkgs#gsmartcontrol"
+  displayandexec "Installation de ffmpeg                              " "install_with_nix_pm nixpkgs#ffmpeg"
+  displayandexec "Installation de cadaver                             " "install_with_nix_pm nixpkgs#cadaver"
+  displayandexec "Installation de hugo                                " "install_with_nix_pm nixpkgs#hugo"
+  displayandexec "Installation de inxi                                " "install_with_nix_pm nixpkgs#inxi"
+  displayandexec "Installation de dmitry                              " "install_with_nix_pm nixpkgs#dmitry"
+  displayandexec "Installation de smem                                " "install_with_nix_pm nixpkgs#smem"
+  displayandexec "Installation de iotop-c                             " "install_with_nix_pm nixpkgs#iotop-c"
+  displayandexec "Installation de icdiff                              " "install_with_nix_pm nixpkgs#icdiff"
+  displayandexec "Installation de flameshot                           " "install_with_nix_pm nixpkgs#flameshot"
+  displayandexec "Installation de oath-toolkit                        " "install_with_nix_pm nixpkgs#oath-toolkit"
+  displayandexec "Installation de curl-impersonate                    " "install_with_nix_pm nixpkgs#curl-impersonate"
+
+  displayandexec "Installation de xpipe                               " "NIXPKGS_ALLOW_UNFREE=1 nix profile add nixpkgs#xpipe --impure"
+
+  # displayandexec "Installation de mediainfo                           " "install_with_nix_pm nixpkgs#mediainfo"
+  # displayandexec "Installation de mediainfo-gui                       " "install_with_nix_pm nixpkgs#mediainfo-gui"
+  # on désactive l'install de mediainfo et mediainfo-gui car ils n'ont pas l'air de fonctionner, en tout cas, la commande ne retourne rien du tout sur un fichier vidéo pour lequel on obtient un output correct avec la paquet mediainfo de Debian
+  # si jamais on passe à l'install via Nix, il faudra supprimer l'install via apt dans la fonction install_debian_apt_package
+
+
+  displayandexec "Installation de 7-Zip                               " "install_with_nix_pm nixpkgs#_7zz"
+  # à priori, il faut désormais installer plutôt 7zz (nixpkgs#_7zz)
+  # ref : [7zz: Code execution vulnerability (CVE-2024-11477) · Issue #358040 · NixOS/nixpkgs](https://github.com/NixOS/nixpkgs/issues/358040)
+  # il faudra peut-être faire un lien symbolique pour pouvoir utiliser 7z à la place de 7zz
+  # ln -s $HOME/.nix-profile/bin/7zz $HOME/.local/bin/7z
+
+  # displayandexec "Installation de secure-delete                       " "install_with_nix_pm nixpkgs#thc-secure-delete"
+  # ne fonctionne pas !
+  # [Build failure: thc-secure-delete · Issue #480247 · NixOS/nixpkgs](https://github.com/NixOS/nixpkgs/issues/480247)
+  # [thc-secure-delete: fix build with gcc15 by wishstudio · Pull Request #512643 · NixOS/nixpkgs](https://github.com/NixOS/nixpkgs/pull/512643)
+
+  # displayandexec "Installation de bpftool                             " "install_with_nix_pm nixpkgs#bpftools"
+  # à voir si on l'install via Nix ou si on conserve l'install via apt car bpftool dépends grandement de la version du kernel
+  # si jamais on passe à l'install via Nix, il faudra supprimer l'install via apt dans la fonction install_debian_apt_package
+}
+
+create_mpv_wrapper() {
+  cat> /home/"$local_user"/.local/bin/mpv << EOF
+#!/bin/bash
+exec nixGL -- /home/$local_user/.nix-profile/bin/mpv "$@"
+EOF
+  displayandexec "Création du wrapper pour mpv (for nixGL             " "chmod +x /home/"$local_user"/.local/bin/mpv"
+}
+
+fix_graphic_hwdec_with_nix_software() {
+  # Pour gérer correctement les paquets graphiques nécessitant notamment de l'accélération matériel
+  displayandexec "Installation de nixGL                               " "install_with_nix_pm github:nix-community/nixGL --impure"
+  create_mpv_wrapper
 }
 ################################################################################
-
-install_nix_software() {
-  install_csvlens
-}
 
 install_nix
 install_nix_software
+fix_graphic_hwdec_with_nix_software
 
 #//////////////////////////////////////////////////////////////////////////////#
 #                       INSTALL MANUAL INSTALL APPS                            #
@@ -1765,18 +1771,6 @@ EOF
 
 # Pour récupérer le lien de la dernière clé GPG :
 # curl -1sLf 'https://dl.cloudsmith.io/public/asbru-cm/release/cfg/setup/bash.deb.sh' | grep gpg_keyring_path
-################################################################################
-
-################################################################################
-## instalation de bat
-##------------------------------------------------------------------------------
-install_bat() {
-  local tmp_dir="$(mktemp -d)"
-  displayandexec "Installation de Bat                                 " "\
-  $WGET -P "$tmp_dir" https://github.com/sharkdp/bat/releases/download/v"$bat_version"/bat_"$bat_version"_amd64.deb && \
-  dpkg -i "$tmp_dir"/bat_"$bat_version"_amd64.deb; \
-  rm -rf "$tmp_dir""
-}
 ################################################################################
 
 ################################################################################
@@ -2106,7 +2100,6 @@ install_all_manual_install_apps_trixie() {
   install_etcher
   install_signal
   install_asbru
-  # install_bat
   install_yt-dlp
   install_joplin
   install_opensnitch
@@ -2120,7 +2113,7 @@ install_all_manual_install_apps_trixie() {
   install_ventoy
   install_bindtointerface
   install_flatpak
-  install_glow
+  # install_glow
 }
 
 if [ -z "$fisrt_time_script_executed" ]; then
@@ -2482,9 +2475,6 @@ install_rktscan() {
 #!/bin/bash
 # __my_script__
 
-# echo "scan de rootkit avec rkhunter"
-# sudo rkhunter --checkall --report-warnings-only
-# echo "--------------------------------------------------------------------------------"
 echo "scan de rootkit avec chkrootkit"
 sudo chkrootkit -q
 echo "--------------------------------------------------------------------------------"
@@ -2729,8 +2719,8 @@ export local_user="$(getent passwd 1000 | awk -F':' '{print $1}')"
 export my_user_bin_path="/home/"$local_user"/.local/bin"
 
 mv /home/"$local_user"/.zshrc /home/"$local_user"/.zshrc.old && \
-curl -sL -o /home/"$local_user"/.zshrc "https://raw.githubusercontent.com/NRGLine4Sec/config-l/main/.zshrc" && \
-curl -sL -o /tmp/my_user.zshrc "https://raw.githubusercontent.com/NRGLine4Sec/config-l/main/my_user.zshrc" && \
+curl -sL -o /home/"$local_user"/.zshrc "https://raw.githubusercontent.com/NRGLine4Sec/config-l/refs/heads/main/dot_files/.zshrc" && \
+curl -sL -o /tmp/my_user.zshrc "https://raw.githubusercontent.com/NRGLine4Sec/config-l/refs/heads/main/dot_files/my_user.zshrc" && \
 envsubst '$my_bin_path $local_user $my_user_bin_path' < /tmp/my_user.zshrc >> /home/"$local_user"/.zshrc
 }
 EOF
@@ -2752,8 +2742,8 @@ export local_user="$(getent passwd 1000 | awk -F':' '{print $1}')"
 export my_user_bin_path="/home/"$local_user"/.local/bin"
 
 mv /home/"$local_user"/.bashrc /home/"$local_user"/.bashrc.old && \
-curl -sL -o /home/"$local_user"/.bashrc "https://raw.githubusercontent.com/NRGLine4Sec/config-l/main/.bashrc" && \
-curl -sL -o /tmp/my_user.bashrc "https://raw.githubusercontent.com/NRGLine4Sec/config-l/main/my_user.bashrc" && \
+curl -sL -o /home/"$local_user"/.bashrc "https://raw.githubusercontent.com/NRGLine4Sec/config-l/refs/heads/main/dot_files/.bashrc" && \
+curl -sL -o /tmp/my_user.bashrc "https://raw.githubusercontent.com/NRGLine4Sec/config-l/refs/heads/main/dot_files/my_user.bashrc" && \
 envsubst '$my_bin_path $local_user $my_user_bin_path' < /tmp/my_user.bashrc >> /home/"$local_user"/.bashrc
 }
 EOF
@@ -2819,6 +2809,17 @@ install_rsync_from_checkpoint() {
 }
 ################################################################################
 
+################################################################################
+## install du script nix_check_updates.sh
+##------------------------------------------------------------------------------
+install_nix_check_updates() {
+  displayandexec "Installation de nix_check_updates.sh                " "\
+  is_file_present_and_rmfile ""$my_user_bin_path"/nix_check_updates.sh" && \
+  cp "$script_path"/scripts/nix_check_updates.sh "$my_user_bin_path"/nix_check_updates.sh && \
+  chmod +x "$my_user_bin_path"/nix_check_updates.sh"
+}
+################################################################################
+
 install_all_perso_script() {
   install_sysupdate
   install_check_backport_update
@@ -2837,6 +2838,7 @@ install_all_perso_script() {
   install_fix_zip_file_with_filename_too_long
   install_cks_copy
   install_rsync_from_checkpoint
+  install_nix_check_updates
 }
 install_all_perso_script
 ################################################################################
@@ -3102,19 +3104,6 @@ configure_etcher() {
 EOF
 }
 configure_etcher
-################################################################################
-
-################################################################################
-## configuration de rkhunter
-##------------------------------------------------------------------------------
-# suite aux infos de ce site : https://forum.cabane-libre.org/topic/239/invalid-web_cmd-configuration-option-relative-pathname-bin-false
-configure_rkhunter() {
-  displayandexec "Configuration de rkhunter                           " "\
-  sed -i 's/UPDATE_MIRRORS=0/UPDATE_MIRRORS=1/' /etc/rkhunter.conf && \
-  sed -i 's/MIRRORS_MODE=1/MIRRORS_MODE=0/' /etc/rkhunter.conf && \
-  sed -i 's%WEB_CMD=\"/bin/false\"%WEB_CMD=""%' /etc/rkhunter.conf"
-}
-# configure_rkhunter
 ################################################################################
 
 ################################################################################
@@ -3540,7 +3529,7 @@ Ctrl+b show-text "${path} copied to clipboard"; run sh -c "echo -n \"${path}\" |
 EOF
   $ExeAsUser cat> /home/"$local_user"/.config/mpv/mpv.conf << 'EOF'
 # Enable hardware decoding if available
-hwdec=auto
+hwdec=vaapi
 
 # Open MPV maximized by default
 # ref : https://www.reddit.com/r/mpv/comments/q9rye0/comment/k7romo0/
@@ -3552,6 +3541,7 @@ hwdec=auto
 image-display-duration=5
 EOF
 }
+
 configure_mpv
 # ref : [command line - Rotate video by a keyboard shortcut in mpv - Ask Ubuntu](https://askubuntu.com/questions/1212733/rotate-video-by-a-keyboard-shortcut-in-mpv/1345092#1345092)
 # [Configuration file for `mpv`](https://gist.github.com/doole/af4613629d223eb0e416)
@@ -4375,18 +4365,6 @@ configure_default_shell
 execandlog "find /home/"$local_user"/ -user 'root' -not -type l"
 execandlog "chown -R "$local_user":"$local_user" /home/"$local_user"/"
 # problement que la commande va rester dans le script car elle permet de corriger les appartenances des fichiers/dossiers s'il y en a besoin (par exemple, les déplacement de .zshrc et .bashrc du dossier du script)
-
-################################################################################
-## Mise à jour de la base de donnée de rkhunter
-##------------------------------------------------------------------------------
-update_rkhunter() {
-  displayandexec "Mise à jour de la base de donnée de rkhunter        " "\
-  rkhunter --versioncheck ;\
-  rkhunter --update ;\
-  rkhunter --propupd"
-}
-# update_rkhunter
-################################################################################
 
 ################################################################################
 ## Execution d'un scan pour détecter la présence de rootkits
