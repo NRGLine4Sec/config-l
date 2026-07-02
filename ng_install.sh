@@ -1463,11 +1463,13 @@ install_nix_packages() {
 }
 
 create_mpv_wrapper() {
-  cat> /home/"$local_user"/.local/bin/mpv << EOF
+  $ExeAsUser cat> /home/"$local_user"/.local/bin/mpv << 'EOF'
 #!/bin/bash
-exec nixGL -- /home/$local_user/.nix-profile/bin/mpv "$@"
+# __my_script__
+
+exec nixGL -- $HOME/.nix-profile/bin/mpv "$@"
 EOF
-  displayandexec "Création du wrapper pour mpv (for nixGL             " "chmod +x /home/"$local_user"/.local/bin/mpv"
+  displayandexec "Création du wrapper pour mpv (for nixGL)            " "chmod +x /home/"$local_user"/.local/bin/mpv"
 }
 
 fix_graphic_hwdec_with_nix_software() {
@@ -1475,6 +1477,20 @@ fix_graphic_hwdec_with_nix_software() {
   displayandexec "Installation de nixGL                               " "install_with_nix_pm github:nix-community/nixGL --impure"
   create_mpv_wrapper
 }
+
+install_claude_microvm() {
+  displayandexec "Installation de claude-microvm                      " "install_with_nix_pm github:systemstart/claude-microvm"
+  is_dir_present_or_mkdir_as_user "/home/$local_user/.ai_workdir"
+  $ExeAsUser cat> /home/"$local_user"/.local/bin/claude-code << 'EOF'
+#!/bin/bash
+# __my_script__
+
+export WORK_DIR=$HOME/.ai_workdir
+exec microvm-run claude "$@"
+EOF
+  displayandexec "Création du wrapper pour Claude Code                " "chmod +x /home/"$local_user"/.local/bin/claude-code"
+}
+install_claude_microvm
 ################################################################################
 
 install_nix
@@ -2059,6 +2075,9 @@ install_flatpak_software() {
 
 install_flatpak
 install_flatpak_software
+
+# à noter que la commande suivante est nécessaire pour que drawio puisse ouvrir directement (depuis Nautilus) des fichiers drawio
+# flatpak override --user --filesystem=home com.jgraph.drawio.desktop
 ################################################################################
 
 # Pour facilier la gestion du passage d'une version de debian à une autre
@@ -4089,16 +4108,19 @@ configure_mime_types_association_drawio() {
   $ExeAsUser cat> /home/"$local_user"/.local/share/mime/packages/drawio.xml << 'EOF'
 <?xml version="1.0" encoding="utf-8"?>
 <mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
-<mime-type type="application/vnd.jgraph.mxfile">
-  <glob pattern="*.drawio"/>
+  <mime-type type="application/vnd.jgraph.mxfile">
     <comment>draw.io Diagram</comment>
-  <icon name="x-office-document" />
-</mime-type>
-<mime-type type="application/vnd.visio">
-  <glob pattern="*.vsdx"/>
+    <magic priority="80">
+      <match type="string" value="&lt;mxfile" offset="0:256"/>
+    </magic>
+    <glob pattern="*.drawio" weight="80"/>
+    <icon name="x-office-document"/>
+  </mime-type>
+  <mime-type type="application/vnd.visio">
     <comment>VSDX Document</comment>
-  <icon name="x-office-document" />
-</mime-type>
+    <glob pattern="*.vsdx"/>
+    <icon name="x-office-document"/>
+  </mime-type>
 </mime-info>
 EOF
   execandlog "$ExeAsUser update-mime-database /home/"$local_user"/.local/share/mime"
