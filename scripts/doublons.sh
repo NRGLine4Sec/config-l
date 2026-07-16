@@ -286,8 +286,19 @@ printf 'Génération du rapport...\n\n' >&2
 # tronquee et donc faux. Seule la passe 2 (empreintes) est restreinte aux
 # candidats, ce qui est correct puisqu elle ne sert qu a former les groupes de
 # doublons.
+#
+# Le programme awk est fourni via un here-doc quote (<<'AWK_RAPPORT') capture
+# dans la variable PROG_AWK : le delimiteur entre apostrophes desactive toute
+# expansion bash dans le corps (dollars, antislashs et apostrophes y sont
+# litteraux, exactement comme dans un fichier .awk separe), sans creer de
+# fichier a cote. Le programme est ensuite passe en argument positionnel a awk.
+#
+# On capture via « IFS= read -r -d '' », qui lit jusqu au NUL (absent ici) donc
+# avale tout le here-doc d un coup, y compris les sauts de ligne. read renvoie
+# un code non nul en fin de flux (EOF sans separateur final), ce qui est normal
+# et attendu : le « || true » l absorbe pour ne pas declencher « set -e ».
 # ---------------------------------------------------------------------------
-awk -v RS='\0' -v FS='\t' -v seuil="$SEUIL" -v racine="$RACINE" '
+IFS= read -r -d '' PROG_AWK <<'AWK_RAPPORT' || true
 
 # --- Passe 1 : inventaire complet (taille \t chemin) ---
 # Sert a deux choses : la table des tailles, et le comptage du nombre total de
@@ -308,6 +319,7 @@ NR == FNR {
 }
 
 END {
+
     # -----------------------------------------------------------------------
     # Comptage des empreintes partagees entre paires de repertoires.
     # Une meme empreinte ne compte qu une fois par paire, meme si un
@@ -340,54 +352,103 @@ END {
     }
 
     # -----------------------------------------------------------------------
-    # Section 1 : repertoires au contenu recouvrant
+    # Regroupement transitif : union-find sur les paires qui atteignent le
+    # seuil. Deux repertoires partageant au moins `seuil` fichiers sont dans
+    # le meme groupe, et la transitivite fait le reste. Cela remplace la
+    # liste de paires (A-B, A-C, B-C pour un meme lot) par une seule entree
+    # par grappe de repertoires, ce qui supprime aussi toute instabilite
+    # d ordre d affichage.
+    # -----------------------------------------------------------------------
+    for (cle in commun) {
+        if (commun[cle] < seuil) continue
+        split(cle, p, SUBSEP)
+        a = p[1]; b = p[2]
+        if (!(a in parent)) parent[a] = a
+        if (!(b in parent)) parent[b] = b
+        union(a, b)
+    }
+
+    # -----------------------------------------------------------------------
+    # Section 1 : grappes de repertoires au contenu recouvrant
     # -----------------------------------------------------------------------
     print "###################################################################"
     print "#  RÉPERTOIRES AU CONTENU RECOUVRANT"
-    printf "#  Paires partageant au moins %d fichier(s) identique(s)\n", seuil
+    printf "#  Grappes reliées par au moins %d fichier(s) identique(s)\n", seuil
     printf "#  Racine analysée : %s\n", racine
     print "###################################################################"
     print ""
 
-    nb_paires = 0
-    for (cle in commun) {
-        if (commun[cle] >= seuil) {
-            cles[++nb_paires] = cle
+    # Regroupement des repertoires par racine de composante.
+    delete taille_grappe
+    for (d in parent) {
+        r = trouve(d)
+        membres_grappe[r, ++taille_grappe[r]] = d
+    }
+
+    # Une grappe est significative si elle contient au moins 2 repertoires.
+    nb_grappes = 0
+    for (r in taille_grappe) {
+        if (taille_grappe[r] >= 2) {
+            racines[++nb_grappes] = r
         }
     }
 
-    if (nb_paires == 0) {
-        printf "Aucune paire de répertoires n atteint le seuil de %d fichiers communs.\n\n", seuil
+    if (nb_grappes == 0) {
+        printf "Aucune grappe de répertoires n atteint le seuil de %d fichiers communs.\n\n", seuil
     } else {
-        # Tri decroissant sur le nombre de fichiers communs (tri par insertion).
-        for (i = 2; i <= nb_paires; i++) {
-            courant = cles[i]
+        # Tri des grappes par nombre de repertoires decroissant (tri par
+        # insertion), pour afficher d abord les recouvrements les plus larges.
+        for (i = 2; i <= nb_grappes; i++) {
+            courant = racines[i]
             j = i - 1
-            while (j >= 1 && commun[cles[j]] < commun[courant]) {
-                cles[j + 1] = cles[j]
+            while (j >= 1 && taille_grappe[racines[j]] < taille_grappe[courant]) {
+                racines[j + 1] = racines[j]
                 j--
             }
-            cles[j + 1] = courant
+            racines[j + 1] = courant
         }
 
-        for (i = 1; i <= nb_paires; i++) {
-            split(cles[i], p, SUBSEP)
-            a = p[1]
-            b = p[2]
+        for (g = 1; g <= nb_grappes; g++) {
+            r = racines[g]
+            nb = taille_grappe[r]
 
-            pa = (total_rep[a] > 0) ? (commun[cles[i]] * 100.0 / total_rep[a]) : 0
-            pb = (total_rep[b] > 0) ? (commun[cles[i]] * 100.0 / total_rep[b]) : 0
+            # Tri alphabetique des repertoires de la grappe pour un affichage
+            # stable et lisible.
+            for (i = 1; i <= nb; i++) liste[i] = membres_grappe[r, i]
+            for (i = 2; i <= nb; i++) {
+                courant = liste[i]
+                j = i - 1
+                while (j >= 1 && liste[j] > courant) {
+                    liste[j + 1] = liste[j]
+                    j--
+                }
+                liste[j + 1] = courant
+            }
 
             print "-------------------------------------------------------------------"
-            printf "%d fichier(s) en commun   (%s partagés)\n",
-                   commun[cles[i]], humain(octets[cles[i]])
-            printf "  A : %s\n", a
-            printf "      %d fichier(s) au total, soit %.0f%% en commun avec B\n",
-                   total_rep[a], pa
-            printf "  B : %s\n", b
-            printf "      %d fichier(s) au total, soit %.0f%% en commun avec A\n",
-                   total_rep[b], pb
-            printf "  => %s\n", verdict(pa, pb)
+            printf "Grappe de %d répertoires au contenu recouvrant :\n", nb
+            for (i = 1; i <= nb; i++) {
+                printf "  %s\n", cite(liste[i])
+                printf "      %d fichier(s) au total dans ce répertoire\n",
+                       total_rep[liste[i]]
+            }
+
+            # Detail des liens internes a la grappe : pour chaque paire de
+            # repertoires de la grappe effectivement reliee, on rappelle le
+            # nombre de fichiers communs. Utile pour distinguer un
+            # recouvrement total d un simple chevauchement partiel.
+            print "  Liens (fichiers communs entre répertoires de la grappe) :"
+            for (i = 1; i <= nb; i++) {
+                for (k = i + 1; k <= nb; k++) {
+                    a = liste[i]; b = liste[k]
+                    cle = (a < b) ? (a SUBSEP b) : (b SUBSEP a)
+                    if (cle in commun && commun[cle] >= seuil) {
+                        printf "    %d en commun  (%s)  :  %s  <->  %s\n",
+                               commun[cle], humain(octets[cle]),
+                               cite(a), cite(b)
+                    }
+                }
+            }
             print ""
         }
     }
@@ -443,7 +504,7 @@ END {
         printf "RÉCUPÉRABLE : %s\n", humain(recuperable)
         print  "FICHIERS    :"
         for (k = 1; k <= n[h]; k++) {
-            printf "  %s\n", membre[h, k]
+            printf "  %s\n", cite(membre[h, k])
         }
         print ""
     }
@@ -458,6 +519,18 @@ END {
 # ---------------------------------------------------------------------------
 # Fonctions awk
 # ---------------------------------------------------------------------------
+
+# Entoure un chemin de guillemets simples pour un copier-coller shell direct
+# (ex. : open 'chemin'). Les apostrophes internes sont neutralisees par la
+# sequence '\'' (fermeture, apostrophe litterale echappee, reouverture),
+# seule facon d inserer une apostrophe dans une chaine simple-quotee POSIX.
+# Contrairement a stat --format %N, on n echappe PAS les autres caracteres
+# (pas de \n ni \t) : le chemin reste litteral et donc utilisable tel quel.
+function cite(chemin,   s) {
+    s = chemin
+    gsub(/'/, "'\\''", s)
+    return "'" s "'"
+}
 
 # Repertoire parent d un chemin, sans fork vers dirname.
 function repertoire(chemin,   d) {
@@ -476,20 +549,34 @@ function humain(o,   unites, i) {
         o /= 1024
         i++
     }
-
     if (i == 1) return sprintf("%d %s", o, unites[i])
-    	return sprintf("%.1f %s", o, unites[i])
+    return sprintf("%.1f %s", o, unites[i])
 }
 
-# Interpretation du recouvrement entre deux repertoires.
-function verdict(pa, pb) {
-    if (pa >= 99 && pb >= 99) return "Contenus quasi identiques."
-    if (pa >= 99)             return "A semble entièrement contenu dans B."
-    if (pb >= 99)             return "B semble entièrement contenu dans A."
-    if (pa >= 50 || pb >= 50) return "Recouvrement partiel important."
-    return "Recouvrement partiel."
+# Union-find : recherche de racine avec compression de chemin.
+function trouve(x,   r, y, z) {
+    r = x
+    while (parent[r] != r) r = parent[r]
+    # Compression : on rattache tout le chemin directement a la racine.
+    y = x
+    while (parent[y] != y) {
+        z = parent[y]
+        parent[y] = r
+        y = z
+    }
+    return r
 }
 
-' "$TMP/inventaire" "$TMP/empreintes"
+# Union-find : fusion de deux ensembles.
+function union(a, b,   ra, rb) {
+    ra = trouve(a)
+    rb = trouve(b)
+    if (ra != rb) parent[ra] = rb
+}
+
+AWK_RAPPORT
+
+awk -v RS='\0' -v FS='\t' -v seuil="$SEUIL" -v racine="$RACINE" \
+    "$PROG_AWK" "$TMP/inventaire" "$TMP/empreintes"
 
 printf 'Terminé.\n' >&2
