@@ -2061,6 +2061,7 @@ install_flatpak_software() {
   execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub com.calibre_ebook.calibre" # calibre
   execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub org.audacityteam.Audacity" # audacity
   execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub org.kde.dolphin" # dolphin
+  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub io.github.totoshko88.RustConn" #RustConn
   # execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub com.vscodium.codium" # vscodium
   # execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub page.codeberg.censor.Censor" # Censor
   # execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub io.github.tobagin.Ntfyr" # Ntfyr
