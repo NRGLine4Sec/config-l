@@ -55,10 +55,13 @@ echo -e "${DIM}Récupération de la liste des paquets installés...${RESET}"
 
 PROFILE_JSON=$(nix profile list --json 2>/dev/null)
 
-# Extraire : "NOM|STORE_BASENAME"
+# Extraire : "NOM|STORE_BASENAME|ORIGINAL_URL|LOCKED_URL"
 mapfile -t PKG_LINES < <(echo "$PROFILE_JSON" | jq -r '
   .elements | to_entries[] |
-  .key + "|" + (.value.storePaths[0] // "" | split("/")[-1])
+  .key + "|"
+  + (.value.storePaths[0] // "" | split("/")[-1]) + "|"
+  + (.value.originalUrl // "") + "|"
+  + (.value.url // "")
 ')
 
 if [[ ${#PKG_LINES[@]} -eq 0 ]]; then
@@ -68,13 +71,12 @@ fi
 
 TOTAL=${#PKG_LINES[@]}
 
-echo -e "${DIM}$TOTAL paquets trouvés. Interrogation de nixpkgs upstream (${JOBS} en parallèle)...${RESET}\n"
+echo -e "${DIM}$TOTAL paquets trouvés. Interrogation upstream (${JOBS} en parallèle)...${RESET}\n"
 
 # ─── Fichiers temporaires pour les résultats parallèles ──────────────────────
 TMPDIR_RESULTS=$(mktemp -d)
 trap 'rm -rf "$TMPDIR_RESULTS"' EXIT
 
-# Compteur partagé de progression (via fichier)
 PROGRESS_FILE="$TMPDIR_RESULTS/progress"
 echo "0" > "$PROGRESS_FILE"
 PROGRESS_LOCK="$TMPDIR_RESULTS/progress.lock"
@@ -82,17 +84,55 @@ PROGRESS_LOCK="$TMPDIR_RESULTS/progress.lock"
 # ─── Fonction de vérification d'un paquet ────────────────────────────────────
 check_pkg() {
   local line="$1"
-  local pkg_name="${line%%|*}"
-  local store_basename="${line##*|}"
+  local pkg_name store_basename original_url locked_url
+  IFS='|' read -r pkg_name store_basename original_url locked_url <<< "$line"
 
-  # Suffixes de store path à ignorer (peuvent s'enchaîner, ex: -dev-man)
+  # Incrémenter le compteur de progression
+  (
+    flock 9
+    local count
+    count=$(cat "$PROGRESS_FILE")
+    echo $((count + 1)) > "$PROGRESS_FILE"
+  ) 9>"$PROGRESS_LOCK"
+
+  # ── Flake externe (non nixpkgs) ──────────────────────────────────────────
+  if [[ "$original_url" != "flake:nixpkgs" && -n "$original_url" ]]; then
+    local rev_installed rev_upstream date_upstream result_file
+    result_file="$TMPDIR_RESULTS/ext_${pkg_name}"
+
+    rev_installed=$(echo "$locked_url" | grep -oP '[0-9a-f]{40}' | head -1 || echo "")
+
+    local metadata_json
+    metadata_json=$(nix flake metadata "$original_url" --json 2>/dev/null || echo "")
+
+    if [[ -z "$metadata_json" ]]; then
+      echo "SKIP_EXT|$pkg_name|$original_url" > "$result_file"
+      return
+    fi
+
+    rev_upstream=$(echo "$metadata_json" | jq -r '.locked.rev // ""')
+    local ts_upstream
+    ts_upstream=$(echo "$metadata_json" | jq -r '.locked.lastModified // ""')
+    date_upstream=""
+    [[ -n "$ts_upstream" ]] && date_upstream=$(date -d "@${ts_upstream}" +%Y-%m-%d 2>/dev/null || echo "$ts_upstream")
+
+    if [[ -z "$rev_upstream" ]]; then
+      echo "SKIP_EXT|$pkg_name|$original_url" > "$result_file"
+    elif [[ "$rev_installed" == "$rev_upstream" ]]; then
+      echo "OK_EXT|$pkg_name|${date_upstream}|$original_url" > "$result_file"
+    else
+      # Récupérer la date du commit installé si possible
+      local date_installed="${rev_installed:0:8}"  # rev court comme fallback
+      echo "UPDATE_EXT|$pkg_name|${date_installed}|${date_upstream}|$original_url" > "$result_file"
+    fi
+    return
+  fi
+
+  # ── Paquet nixpkgs ───────────────────────────────────────────────────────
   local -a KNOWN_SUFFIXES=(-dev -man -doc -lib -bin -out -info -static -debug -locale)
 
-  # Supprimer le hash initial (premier segment avant le premier tiret)
   local without_hash="${store_basename#*-}"
 
-  # Étape 1 : strip les suffixes connus en fin du basename complet
-  # (gère -dev, -man, -doc, etc. éventuellement enchaînés)
   local stripped="$without_hash"
   local changed=true
   while $changed; do
@@ -105,11 +145,7 @@ check_pkg() {
     done
   done
 
-  # Étape 2 : trouver le premier segment commençant par un chiffre et reconstruire
-  # depuis là jusqu'à la fin. On normalise le nom du paquet (strip _ en préfixe)
-  # pour gérer les cas comme _7zz dont le store path commence par "7zz-26.00" :
-  # le segment "7zz" commence par un chiffre mais c'est le nom, pas la version.
-  local pkg_normalized="${pkg_name#_}"  # _7zz → 7zz
+  local pkg_normalized="${pkg_name#_}"
   local installed_version="?"
   local IFS_BAK="$IFS"
   IFS='-' read -ra PARTS <<< "$stripped"
@@ -121,7 +157,6 @@ check_pkg() {
     if $found; then
       version_parts+=("$part")
     elif [[ "$part" =~ ^[0-9] ]]; then
-      # Ignorer si c'est le premier segment ET qu'il correspond au nom du paquet normalisé
       if $first_segment && [[ "$part" == "$pkg_normalized" ]]; then
         first_segment=false
         continue
@@ -135,58 +170,43 @@ check_pkg() {
     installed_version=$(IFS='-'; echo "${version_parts[*]}")
   fi
 
-  # Interroger la version upstream
   local upstream_version
   upstream_version=$(nix eval --raw "nixpkgs#${pkg_name}.version" 2>/dev/null || echo "")
 
-  # Incrémenter le compteur de progression (avec lock)
-  (
-    flock 9
-    local count
-    count=$(cat "$PROGRESS_FILE")
-    echo $((count + 1)) > "$PROGRESS_FILE"
-  ) 9>"$PROGRESS_LOCK"
-
-  # Écrire le résultat dans un fichier dédié
+  local result_file="$TMPDIR_RESULTS/$pkg_name"
   if [[ -z "$upstream_version" ]]; then
-    echo "SKIP|$pkg_name" > "$TMPDIR_RESULTS/$pkg_name"
+    echo "SKIP|$pkg_name" > "$result_file"
   elif [[ "$installed_version" == "$upstream_version" ]]; then
-    echo "OK|$pkg_name|$installed_version" > "$TMPDIR_RESULTS/$pkg_name"
+    echo "OK|$pkg_name|$installed_version" > "$result_file"
   else
-    echo "UPDATE|$pkg_name|$installed_version|$upstream_version" > "$TMPDIR_RESULTS/$pkg_name"
+    echo "UPDATE|$pkg_name|$installed_version|$upstream_version" > "$result_file"
   fi
 }
 
 export -f check_pkg
 export TMPDIR_RESULTS PROGRESS_FILE PROGRESS_LOCK
 
-# ─── Lancement parallèle avec affichage de progression ───────────────────────
-
-# Lancer tous les jobs en parallèle avec un pool de $JOBS workers
+# ─── Lancement parallèle ─────────────────────────────────────────────────────
 declare -a PIDS=()
-SLOT=0
 
 for line in "${PKG_LINES[@]}"; do
-  # Attendre qu'un slot se libère si on a atteint la limite
   while [[ ${#PIDS[@]} -ge $JOBS ]]; do
     for i in "${!PIDS[@]}"; do
       if ! kill -0 "${PIDS[$i]}" 2>/dev/null; then
         unset 'PIDS[$i]'
       fi
     done
-    PIDS=("${PIDS[@]}")  # re-indexer
+    PIDS=("${PIDS[@]}")
     sleep 0.05
   done
 
   check_pkg "$line" &
   PIDS+=($!)
 
-  # Afficher la progression
   DONE=$(cat "$PROGRESS_FILE")
   printf "\r${DIM}[%d/%d] en cours...${RESET}" "$DONE" "$TOTAL"
 done
 
-# Attendre la fin de tous les jobs restants avec mise à jour de la progression
 while [[ ${#PIDS[@]} -gt 0 ]]; do
   for i in "${!PIDS[@]}"; do
     if ! kill -0 "${PIDS[$i]}" 2>/dev/null; then
@@ -201,26 +221,29 @@ done
 
 printf "\r%-60s\r" " "
 
-# ─── Collecte et tri des résultats ───────────────────────────────────────────
+# ─── Collecte des résultats ───────────────────────────────────────────────────
 declare -a UPDATES_AVAILABLE=()
+declare -a UPDATES_EXT=()
 declare -a UP_TO_DATE=()
+declare -a UP_TO_DATE_EXT=()
 declare -a SKIPPED=()
 
-# Lire les résultats dans l'ordre alphabétique (ordre des fichiers)
 while IFS= read -r result_file; do
   content=$(cat "$result_file")
   IFS='|' read -ra parts <<< "$content"
   case "${parts[0]}" in
-    UPDATE) UPDATES_AVAILABLE+=("${parts[1]}|${parts[2]}|${parts[3]}") ;;
-    OK)     UP_TO_DATE+=("${parts[1]}|${parts[2]}") ;;
-    SKIP)   SKIPPED+=("${parts[1]}") ;;
+    UPDATE)     UPDATES_AVAILABLE+=("${parts[1]}|${parts[2]}|${parts[3]}") ;;
+    UPDATE_EXT) UPDATES_EXT+=("${parts[1]}|${parts[2]}|${parts[3]}|${parts[4]}") ;;
+    OK)         UP_TO_DATE+=("${parts[1]}|${parts[2]}") ;;
+    OK_EXT)     UP_TO_DATE_EXT+=("${parts[1]}|${parts[2]}|${parts[3]}") ;;
+    SKIP|SKIP_EXT) SKIPPED+=("${parts[1]}") ;;
   esac
 done < <(find "$TMPDIR_RESULTS" -maxdepth 1 -type f ! -name 'progress*' | sort)
 
 # ─── Affichage des résultats ──────────────────────────────────────────────────
 
 if [[ ${#UPDATES_AVAILABLE[@]} -gt 0 ]]; then
-  echo -e "${BOLD}${YELLOW}⬆  Mises à jour disponibles (${#UPDATES_AVAILABLE[@]})${RESET}"
+  echo -e "${BOLD}${YELLOW}⬆  Mises à jour disponibles — nixpkgs (${#UPDATES_AVAILABLE[@]})${RESET}"
   echo -e "${DIM}──────────────────────────────────────────────────────────────${RESET}"
   printf "${BOLD}  %-28s %-18s %-18s${RESET}\n" "Paquet" "Installé" "Disponible"
   echo -e "${DIM}──────────────────────────────────────────────────────────────${RESET}"
@@ -231,20 +254,46 @@ if [[ ${#UPDATES_AVAILABLE[@]} -gt 0 ]]; then
   echo ""
 fi
 
-if ! $ONLY_UPDATES && [[ ${#UP_TO_DATE[@]} -gt 0 ]]; then
-  echo -e "${BOLD}${GREEN}✓  À jour (${#UP_TO_DATE[@]})${RESET}"
-  if $VERBOSE; then
-    echo -e "${DIM}──────────────────────────────────────────────────────────────${RESET}"
-    for entry in "${UP_TO_DATE[@]}"; do
-      IFS='|' read -r name version <<< "$entry"
-      printf "  ${GREEN}✓${RESET}  %-28s ${DIM}%s${RESET}\n" "$name" "$version"
-    done
-    echo ""
+if [[ ${#UPDATES_EXT[@]} -gt 0 ]]; then
+  echo -e "${BOLD}${YELLOW}⬆  Mises à jour disponibles — flakes externes (${#UPDATES_EXT[@]})${RESET}"
+  echo -e "${DIM}──────────────────────────────────────────────────────────────${RESET}"
+  printf "${BOLD}  %-28s %-12s %-12s %-s${RESET}\n" "Paquet" "Installé" "Disponible" "Source"
+  echo -e "${DIM}──────────────────────────────────────────────────────────────${RESET}"
+  for entry in "${UPDATES_EXT[@]}"; do
+    IFS='|' read -r name date_inst date_up source <<< "$entry"
+    printf "  ${CYAN}%-28s${RESET} ${RED}%-12s${RESET} ${GREEN}%-12s${RESET} ${DIM}%s${RESET}\n" "$name" "$date_inst" "$date_up" "$source"
+  done
+  echo ""
+fi
+
+if ! $ONLY_UPDATES; then
+  if [[ ${#UP_TO_DATE[@]} -gt 0 ]]; then
+    echo -e "${BOLD}${GREEN}✓  À jour — nixpkgs (${#UP_TO_DATE[@]})${RESET}"
+    if $VERBOSE; then
+      echo -e "${DIM}──────────────────────────────────────────────────────────────${RESET}"
+      for entry in "${UP_TO_DATE[@]}"; do
+        IFS='|' read -r name version <<< "$entry"
+        printf "  ${GREEN}✓${RESET}  %-28s ${DIM}%s${RESET}\n" "$name" "$version"
+      done
+      echo ""
+    fi
+  fi
+
+  if [[ ${#UP_TO_DATE_EXT[@]} -gt 0 ]]; then
+    echo -e "${BOLD}${GREEN}✓  À jour — flakes externes (${#UP_TO_DATE_EXT[@]})${RESET}"
+    if $VERBOSE; then
+      echo -e "${DIM}──────────────────────────────────────────────────────────────${RESET}"
+      for entry in "${UP_TO_DATE_EXT[@]}"; do
+        IFS='|' read -r name date source <<< "$entry"
+        printf "  ${GREEN}✓${RESET}  %-28s ${DIM}%s  %s${RESET}\n" "$name" "$date" "$source"
+      done
+      echo ""
+    fi
   fi
 fi
 
 if $VERBOSE && [[ ${#SKIPPED[@]} -gt 0 ]]; then
-  echo -e "${BOLD}${DIM}?  Non évaluables via nixpkgs#NOM.version (${#SKIPPED[@]})${RESET}"
+  echo -e "${BOLD}${DIM}?  Non évaluables (${#SKIPPED[@]})${RESET}"
   echo -e "${DIM}──────────────────────────────────────────────────────────────${RESET}"
   for name in "${SKIPPED[@]}"; do
     printf "  ${DIM}?  %s${RESET}\n" "$name"
@@ -253,9 +302,11 @@ if $VERBOSE && [[ ${#SKIPPED[@]} -gt 0 ]]; then
 fi
 
 # ─── Résumé ──────────────────────────────────────────────────────────────────
+TOTAL_UPDATES=$(( ${#UPDATES_AVAILABLE[@]} + ${#UPDATES_EXT[@]} ))
+TOTAL_OK=$(( ${#UP_TO_DATE[@]} + ${#UP_TO_DATE_EXT[@]} ))
 echo -e "${DIM}──────────────────────────────────────────────────────────────${RESET}"
-echo -e "${BOLD}Résumé :${RESET}  ${YELLOW}${#UPDATES_AVAILABLE[@]} MAJ dispo${RESET}  •  ${GREEN}${#UP_TO_DATE[@]} à jour${RESET}  •  ${DIM}${#SKIPPED[@]} ignorés${RESET}  •  Total : $TOTAL\n"
+echo -e "${BOLD}Résumé :${RESET}  ${YELLOW}${TOTAL_UPDATES} MAJ dispo${RESET}  •  ${GREEN}${TOTAL_OK} à jour${RESET}  •  ${DIM}${#SKIPPED[@]} ignorés${RESET}  •  Total : $TOTAL\n"
 
-if [[ ${#UPDATES_AVAILABLE[@]} -gt 0 ]]; then
+if [[ $TOTAL_UPDATES -gt 0 ]]; then
   echo -e "${DIM}Pour tout mettre à jour :${RESET}  ${BOLD}nix profile upgrade --all${RESET}\n"
 fi

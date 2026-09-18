@@ -2062,6 +2062,7 @@ install_flatpak_software() {
   execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub org.audacityteam.Audacity" # audacity
   execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub org.kde.dolphin" # dolphin
   execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub io.github.totoshko88.RustConn" #RustConn
+  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub dev.zed.Zed" # Zed
   # execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub com.vscodium.codium" # vscodium
   # execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub page.codeberg.censor.Censor" # Censor
   # execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub io.github.tobagin.Ntfyr" # Ntfyr
@@ -3522,6 +3523,26 @@ configure_vscode
 
   # execandlog "$ExeAsUser code --force --install-extension ms-vscode.PowerShell"
   # à vérifier si cette extension est vraiment nécessaire, à priori elle permet surtout de gérer l'execution et le debugage des scripts powershell (en gros plus utile sur un windows que sur un linux)
+################################################################################
+
+################################################################################
+## configuration de Zed
+##------------------------------------------------------------------------------
+
+
+  # akamud.vscode-theme-onedark -> 
+  # redhat.vscode-yaml -> 
+  # Y-Ysss.cisco-config-highlight -> 
+  # pustelto.bracketeer -> 
+  # mohsen1.prettify-json -> 
+  # mrmlnc.vscode-apache -> 
+  # vscode-nginx -> 
+  # speedproxies.squid-syntax -> 
+  # wholroyd.jinja -> 
+  # marduc812.nmap-peek -> Pas d'équivalent pour Zed (à date du 17/09/2026)
+  # william-voyek.vscode-nginx -> 
+  # yzhang.markdown-all-in-one -> 
+  # dgenzer.suricata-highlight-vscode -> Pas d'équivalent pour Zed (à date du 17/09/2026)
 ################################################################################
 
 ################################################################################
