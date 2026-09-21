@@ -2014,6 +2014,7 @@ EOF
 
 ################################################################################
 ## instalation de Glow
+##------------------------------------------------------------------------------
 install_glow() {
   cat> /etc/apt/sources.list.d/charm.sources << 'EOF'
 Types: deb
@@ -2030,6 +2031,14 @@ EOF
 }
 ################################################################################
 
+################################################################################
+## instalation de MarkItDown
+##------------------------------------------------------------------------------
+install_markitdown() {
+  displayandexec "Installation de markitdown                          " "\
+  $ExeAsUser pipx install 'markitdown[pdf, docx, pptx, xlsx, xls, audio-transcription, youtube-transcription]'"
+}
+# https://github.com/microsoft/markitdown
 ################################################################################
 
 ################################################################################
@@ -2135,6 +2144,7 @@ install_all_manual_install_apps_trixie() {
   install_bindtointerface
   install_flatpak
   # install_glow
+  install_markitdown
 }
 
 if [ -z "$fisrt_time_script_executed" ]; then
