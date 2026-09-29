@@ -27,13 +27,18 @@ alias update_my_auditd_rules='sudo bash -c '\''rm -f /etc/audit/rules.d/audit.ru
 alias showshortcut='dconf dump /org/gnome/settings-daemon/plugins/media-keys/'
 alias sshuttle='sudo /root/.local/bin/sshuttle'
 alias my_ext_ip="curl --silent --location 'https://ipinfo.io/ip'"
-alias last_apt_kernel='apt-cache search --names-only "linux-(headers|image)-[[:digit:]]\.[[:digit:]]+\.[[:digit:]]+(-[[:digit:]]+|\+bpo|\+deb13)-(amd64$|amd64-unsigned$)" | sort'
+alias last_apt_kernel="apt-cache search --names-only '^linux-(headers|image)-[0-9]+\.[0-9]+\.[0-9]+(-[0-9]+|\+bpo|\+deb13)-amd64(-unsigned)?$' | sort -V"
 is_bad_hash() { curl https://api.hashdd.com/v1/knownlevel/$1 ;}
 to_lower() { tr [:upper:] [:lower:] <<< "$@" ;}
 to_upper() { tr [:lower:] [:upper:] <<< "$@" ;}
 mpv_youtube() { mpv <($my_user_bin_path/yt-dlp --impersonate Chrome-136 -o - "$1") }
 mpv_youtube_audio() { mpv --no-video <($my_user_bin_path/yt-dlp -f bestaudio --extract-audio --audio-format best --impersonate Chrome-136 -o - "$1") }
 youtube_description() { $my_user_bin_path/yt-dlp --impersonate Chrome-136 --playlist-items 0 --print description "$1" ;}
+mynixupgrade() {
+  nix flake update --flake ~/.config/nix-flakes/virtualbox && \
+  NIXPKGS_ALLOW_UNFREE=1 nix profile upgrade --all --impure
+}
+alias myflatpakupdate='flatpak update --assumeyes'
 
 # for Ansible vault editor
 export EDITOR=nano

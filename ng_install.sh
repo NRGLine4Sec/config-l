@@ -1437,9 +1437,9 @@ install_nix_packages() {
   displayandexec "Installation de flameshot                           " "install_with_nix_pm nixpkgs#flameshot"
   displayandexec "Installation de oath-toolkit                        " "install_with_nix_pm nixpkgs#oath-toolkit"
   displayandexec "Installation de curl-impersonate                    " "install_with_nix_pm nixpkgs#curl-impersonate"
+  displayandexec "Installation de gh                                  " "install_with_nix_pm nixpkgs#gh"
 
-  displayandexec "Installation de xpipe                               " "NIXPKGS_ALLOW_UNFREE=1 nix profile add nixpkgs#xpipe --impure"
-
+ 
   # displayandexec "Installation de mediainfo                           " "install_with_nix_pm nixpkgs#mediainfo"
   # displayandexec "Installation de mediainfo-gui                       " "install_with_nix_pm nixpkgs#mediainfo-gui"
   # on désactive l'install de mediainfo et mediainfo-gui car ils n'ont pas l'air de fonctionner, en tout cas, la commande ne retourne rien du tout sur un fichier vidéo pour lequel on obtient un output correct avec la paquet mediainfo de Debian
@@ -1689,6 +1689,32 @@ EOF
   if [ "$secureboot_enable" == 1 ]; then
     configure_SecureBoot_params
   fi
+}
+
+install_virtualbox_kvmenabled_with_nix() {
+  is_dir_present_or_mkdir_as_user "/home/$local_user/.config/nix-flakes/virtualbox/"
+  $ExeAsUser cat> /home/"$local_user"/.config/nix-flakes/virtualbox/flake.nix << 'EOF'
+{
+  description = "VirtualBox with KVM backend";
+
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+
+  outputs = { nixpkgs, ... }:
+    let
+      system = "x86_64-linux";
+      pkgs = import nixpkgs {
+        inherit system;
+        config.allowUnfree = true;
+      };
+    in {
+      packages.${system}.virtualbox = pkgs.virtualbox.override {
+        enableKvm = true;
+      };
+    };
+}
+EOF
+  $ExeAsUser nix profile add /home/"$local_user"/.config/nix-flakes/virtualbox#virtualbox
+  $ExeAsUser nix flake update --flake /home/"$local_user"/.config/nix-flakes/virtualbox
 }
 ################################################################################
 
@@ -2145,6 +2171,7 @@ install_all_manual_install_apps_trixie() {
   install_flatpak
   # install_glow
   install_markitdown
+  install_virtualbox_kvmenabled_with_nix
 }
 
 if [ -z "$fisrt_time_script_executed" ]; then
@@ -3470,6 +3497,7 @@ cat> /opt/opensnitch/allow_list/signal-desktop/domains/signal-desktop.domains <<
 0.0.0.0 turn2.voip.signal.org
 0.0.0.0 turn3.voip.signal.org
 0.0.0.0 chat.signal.org
+0.0.0.0 grpc.chat.signal.org
 0.0.0.0 textsecure-service.whispersystems.org
 0.0.0.0 storage.signal.org
 0.0.0.0 cdn.signal.org
@@ -3477,6 +3505,17 @@ cat> /opt/opensnitch/allow_list/signal-desktop/domains/signal-desktop.domains <<
 0.0.0.0 cdn3.signal.org
 0.0.0.0 updates2.signal.org
 0.0.0.0 uptime.signal.org
+EOF
+  execandlog "reset_dir "/opt/opensnitch/allow_list/nix/domains/""
+  cat> /opt/opensnitch/allow_list/nix/domains/nix.domains << 'EOF'
+0.0.0.0 api.github.com
+0.0.0.0 cache.nixos.org
+0.0.0.0 channels.nixos.org
+0.0.0.0 codeload.github.com
+0.0.0.0 github.com
+0.0.0.0 microvm.cachix.org
+0.0.0.0 releases.nixos.org
+0.0.0.0 systemstart.cachix.org
 EOF
 }
 configure_opensnitch
