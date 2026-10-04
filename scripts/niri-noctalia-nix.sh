@@ -578,7 +578,32 @@ enabled = false                   # verrouillage assure par swaylock (PAM Debian
 position = "bottom_center"
 
 [dock]
-enabled = false
+enabled = true
+position = "bottom"
+show_running = true           # ajoute aussi les applis ouvertes non épinglées
+launcher_position = "end"     # bouton grille d'applications à droite, comme le dash GNOME
+launcher_icon = "grid-dots"
+icon_size = 44
+show_dots = true              # point sous les applis ouvertes
+magnification = false         # pas d'effet loupe façon macOS
+auto_hide = false
+reserve_space = true          # les fenêtres ne passent pas sous le dock
+pinned = [
+  "brave-browser",
+  "chromium",
+  "org.gnome.Terminal",
+  "org.gnome.Nautilus",
+  "signal-desktop",
+  "joplin",
+  "firefox-esr",
+  "firefox-esr-private",
+  "dev.zed.Zed",
+  "org.gnome.Todo",
+  "veracrypt",
+  "spotify",
+  "libreoffice-writer",
+  "io.github.totoshko88.RustConn"
+]
 
 [bar.main]
 position = "top"
