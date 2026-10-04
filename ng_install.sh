@@ -1789,33 +1789,6 @@ EOF
 ################################################################################
 
 ################################################################################
-## instalation de asbru
-##------------------------------------------------------------------------------
-install_asbru() {
-  cat> /etc/apt/sources.list.d/asbru-cm.sources << 'EOF'
-Types: deb
-URIs: https://dl.cloudsmith.io/public/asbru-cm/release/deb/debian
-Suites: trixie
-Components: main
-Signed-By: /usr/share/keyrings/asbru-archive-keyring.gpg
-EOF
-  displayandexec "Installation des dépendances de Asbru               " "$AGI perl libvte-2.91-0 libcairo-perl libglib-perl libpango-perl libsocket6-perl libexpect-perl libnet-proxy-perl libyaml-perl libcrypt-cbc-perl libcrypt-blowfish-perl libgtk3-perl libnet-arp-perl libossp-uuid-perl openssh-client telnet ftp libcrypt-rijndael-perl libxml-parser-perl libcanberra-gtk-module dbus-x11 libx11-guitest-perl libgtk3-simplelist-perl gir1.2-wnck-3.0 gir1.2-vte-2.91"
-  displayandexec "Installation de Asbru                               " "\
-  is_file_present_and_rmfile "/usr/share/keyrings/asbru-archive-keyring.gpg" && \
-  $CURL 'https://dl.cloudsmith.io/public/asbru-cm/release/gpg.7684B0670B1C65E8.key' | gpg --dearmor --output /usr/share/keyrings/asbru-archive-keyring.gpg && \
-  $AG update && \
-  $AGI asbru-cm keepassxc-"
-}
-
-# On rajoute keepassxc- dans la commande d'install du paquet pour pas que asbru install keepassxc en tant que dépendance (même si il n'est seulement que dans les recommmends (apt-cache show asbru-cm | grep keepassxc))
-
-# Pour voir la liste des version de debian disponibles dans les dépots de Cloudsmith : [Cloudsmith - Repositories - asbru-cm (asbru-cm) - release (release) - Packages](https://cloudsmith.io/~asbru-cm/repos/release/packages/?q=distribution%3Adebian&sort=-date)
-
-# Pour récupérer le lien de la dernière clé GPG :
-# curl -1sLf 'https://dl.cloudsmith.io/public/asbru-cm/release/cfg/setup/bash.deb.sh' | grep gpg_keyring_path
-################################################################################
-
-################################################################################
 ## instalation de yt-dlp
 ##------------------------------------------------------------------------------
 install_yt-dlp() {
@@ -2123,12 +2096,12 @@ repo_url='
 https://download.virtualbox.org/virtualbox/debian
 http://ppa.launchpad.net/apt-fast/stable/ubuntu
 https://updates.signal.org/desktop/apt
-https://packagecloud.io/asbru-cm/asbru-cm/debian
 http://ppa.launchpad.net/teejee2008/timeshift/ubuntu
 https://brave-browser-apt-release.s3.brave.com
 '
 # https://packages.microsoft.com/repos/code
 # http://repository.spotify.com
+# https://packagecloud.io/asbru-cm/asbru-cm/debian
 
 for url in $repo_url; do
   echo "$url"
@@ -2155,7 +2128,6 @@ install_all_manual_install_apps_trixie() {
   install_keepassxc
   install_etcher
   install_signal
-  install_asbru
   install_yt-dlp
   install_joplin
   install_opensnitch
@@ -2164,7 +2136,7 @@ install_all_manual_install_apps_trixie() {
   install_sshuttle
   install_weasyprint
   install_timeshift
-  install_vscode
+  # install_vscode
   install_brave
   install_ventoy
   install_bindtointerface
@@ -2910,9 +2882,6 @@ echo '     #             CONFIGURATION DES DIFFERENTS ELEMENTS            #'
 echo '     ################################################################'
 echo ''
 
-# exec_graphic_app_with_root_privileges "wireshark"
-# exec_graphic_app_with_user_privileges "ghb"
-# exec_graphic_app_with_user_privileges "/usr/share/code/code"
 # exec_graphic_app_with_user_privileges "$(grep -Po '(^Exec=)\K.*' /usr/share/applications/geeqie.desktop)"
 
 ################################################################################
@@ -2985,48 +2954,6 @@ configure_gocryptfs_mount_dir() {
   is_dir_present_or_mkdir_as_user "/home/"$local_user"/.mnt/gocryptfs/""
 }
 configure_gocryptfs_mount_dir
-################################################################################
-
-################################################################################
-## configuration du logrotate pour le auth.log
-##------------------------------------------------------------------------------
-configure_logrotate_auth_log() {
-  execandlog "sed -i '\/var\/log\/auth\.log/d' /etc/logrotate.d/rsyslog"
-  cat>> /etc/logrotate.d/rsyslog << 'EOF'
-/var/log/auth.log
-{
-  monthly
-	rotate 12
-	missingok
-	notifempty
-	compress
-	delaycompress
-	sharedscripts
-	postrotate
-		/usr/lib/rsyslog/rsyslog-rotate
-	endscript
-}
-EOF
-}
-if [ "$bullseye" == 1 ]; then
-  configure_logrotate_auth_log
-fi
-# cette conf permet de garder 12 mois de log de auth.log. Cela permet donc de garder pendant un an toutes les commandes utilisées (par root ou à travers sudo) ainsi que toutes les connexions d'utilisateur
-################################################################################
-
-################################################################################
-## configuration du logrotate
-##------------------------------------------------------------------------------
-# on augmente la rétention des logs à 8 semaines
-# par défaut elle est à 4 (debian bullseye)
-configure_logrotate() {
-  displayandexec "Configuration de logrotate                          " "\
-  sed -E -i 's/^# keep [0-9]+ weeks worth of backlogs/# keep 8 weeks worth of backlogs/' /etc/logrotate.conf && \
-  sed -E -i 's/^rotate [0-9]+/rotate 8/' /etc/logrotate.conf"
-}
-if [ "$bullseye" == 1 ]; then
-  configure_logrotate
-fi
 ################################################################################
 
 ################################################################################
@@ -3454,30 +3381,30 @@ view_details_columns_state3=@ByteArray(\0\0\0\xff\0\0\0\0\0\0\0\x1\0\0\0\x1\xff\
 view_details_columns_state4=@ByteArray(\0\0\0\xff\0\0\0\0\0\0\0\x1\0\0\0\x1\0\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x12\xd2\0\0\0\r\0\x1\x1\x1\0\0\0\0\0\0\0\0\x1\0\0\0\x64\xff\xff\xff\xff\0\0\0\x84\0\0\0\0\0\0\0\r\0\0\0\xb3\0\0\0\x1\0\0\0\x3\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0|\0\0\0\x1\0\0\0\0\0\0\x1\xef\0\0\0\
 x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x1\xd3\0\0\0\x1\0\0\0\0\0\0\x6\xd8\0\0\0\x1\0\0\0\0\0\0\x4M\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x3\xe8\0\0\0\0\x64)
 EOF
-  execandlog "reset_dir "/opt/opensnitch/allow_list/vscode/domains/""
-  cat> /opt/opensnitch/allow_list/vscode/domains/vscode.domains << 'EOF'
-# ref : [Setup Visual Studio Code's Network Connection](https://code.visualstudio.com/docs/setup/network)
-# Visual Studio Marketplace
-0.0.0.0 marketplace.visualstudio.com
-# Visual Studio Code download CDN
-0.0.0.0 az764295.vo.msecnd.net
-# GitHub repository raw file access
-0.0.0.0 raw.githubusercontent.com
-# Github repository
-0.0.0.0 github.com
-# Github API
-0.0.0.0 api.github.com
-# Used when logging in with GitHub or Microsoft for an extension or Settings Sync
-0.0.0.0 vscode.dev
-EOF
-  execandlog "reset_dir "/opt/opensnitch/allow_list/vscode/regexp/""
-  cat> /opt/opensnitch/allow_list/vscode/regexp/vscode.regexp << 'EOF'
-# ref : [Setup Visual Studio Code's Network Connection](https://code.visualstudio.com/docs/setup/network)
-# Visual Studio Marketplace
-.*.gallery.vsassets.io
-# Visual Studio Marketplace
-.*.gallerycdn.vsassets.io
-EOF
+#   execandlog "reset_dir "/opt/opensnitch/allow_list/vscode/domains/""
+#   cat> /opt/opensnitch/allow_list/vscode/domains/vscode.domains << 'EOF'
+# # ref : [Setup Visual Studio Code's Network Connection](https://code.visualstudio.com/docs/setup/network)
+# # Visual Studio Marketplace
+# 0.0.0.0 marketplace.visualstudio.com
+# # Visual Studio Code download CDN
+# 0.0.0.0 az764295.vo.msecnd.net
+# # GitHub repository raw file access
+# 0.0.0.0 raw.githubusercontent.com
+# # Github repository
+# 0.0.0.0 github.com
+# # Github API
+# 0.0.0.0 api.github.com
+# # Used when logging in with GitHub or Microsoft for an extension or Settings Sync
+# 0.0.0.0 vscode.dev
+# EOF
+#   execandlog "reset_dir "/opt/opensnitch/allow_list/vscode/regexp/""
+#   cat> /opt/opensnitch/allow_list/vscode/regexp/vscode.regexp << 'EOF'
+# # ref : [Setup Visual Studio Code's Network Connection](https://code.visualstudio.com/docs/setup/network)
+# # Visual Studio Marketplace
+# .*.gallery.vsassets.io
+# # Visual Studio Marketplace
+# .*.gallerycdn.vsassets.io
+# EOF
   execandlog "reset_dir "/opt/opensnitch/allow_list/joplin_plugin/domains/""
 cat> /opt/opensnitch/allow_list/joplin_plugin/domains/joplin_plugin.domains << 'EOF'
 # Github repository raw file access
@@ -3519,6 +3446,11 @@ EOF
 EOF
 }
 configure_opensnitch
+
+# domain Zed qui restent encore à terminer s'il faut les autoriser ou non :
+# cdn.agentclientprotocol.com
+# avatars.githubusercontent.com
+# api.zed.dev
 ################################################################################
 
 ################################################################################
@@ -3557,7 +3489,7 @@ configure_vscode() {
 }
 EOF
 }
-configure_vscode
+# configure_vscode
 # Pour installer des extensions en ligne de commande : [Managing Extensions in Visual Studio Code](https://code.visualstudio.com/docs/editor/extension-marketplace#_command-line-extension-management)
 # code --install-extension <extension-id>
 # code --install-extension redhat.ansible
@@ -3577,7 +3509,59 @@ configure_vscode
 ################################################################################
 ## configuration de Zed
 ##------------------------------------------------------------------------------
-
+$ExeAsUser tee /home/"$local_user"/.var/app/dev.zed.Zed/config/zed/settings.json << 'EOF' >/dev/null
+// Zed settings
+//
+// For information on how to configure Zed, see the Zed
+// documentation: https://zed.dev/docs/configuring-zed
+//
+// To see all of Zed's default settings without changing your
+// custom settings, run `zed: open default settings` from the
+// command palette (cmd-shift-p / ctrl-shift-p)
+{
+  "diff_view_style": "unified",
+  "restore_on_startup": "last_workspace",
+  "project_panel": {
+    "dock": "left"
+  },
+  "outline_panel": {
+    "dock": "left"
+  },
+  "collaboration_panel": {
+    "dock": "left"
+  },
+  "agent": {
+    "dock": "right",
+    "favorite_models": [],
+    "model_parameters": []
+  },
+  "git_panel": {
+    "dock": "left"
+  },
+  "auto_update": false,
+  "telemetry": {
+    "diagnostics": false,
+    "metrics": false
+  },
+  "base_keymap": "VSCode",
+  "minimap": {
+    "show": "always"
+  },
+  "autosave": {
+    "after_delay": {
+      "milliseconds": 1000
+    }
+  },
+  "soft_wrap": "editor_width",
+  "ui_font_size": 16,
+  "buffer_font_size": 15,
+  "theme": {
+    "mode": "system",
+    "light": "One Light",
+    "dark": "One Dark",
+  },
+}
+EOF
 
   # akamud.vscode-theme-onedark -> 
   # redhat.vscode-yaml -> 
@@ -3918,7 +3902,7 @@ button-layout='appmenu:minimize,maximize,close'
 
 [gnome/shell]
 app-picker-view=uint32 1
-favorite-apps=['brave-browser.desktop', 'chromium.desktop', 'org.gnome.Terminal.desktop', 'org.gnome.Nautilus.desktop', 'signal-desktop.desktop', 'joplin.desktop', 'firefox-esr.desktop', 'firefox-esr-private.desktop', 'code.desktop', 'org.gnome.Todo.desktop', 'veracrypt.desktop', 'spotify.desktop', 'libreoffice-writer.desktop', 'asbru-cm.desktop']
+favorite-apps=['brave-browser.desktop', 'chromium.desktop', 'org.gnome.Terminal.desktop', 'org.gnome.Nautilus.desktop', 'signal-desktop.desktop', 'joplin.desktop', 'firefox-esr.desktop', 'firefox-esr-private.desktop', 'dev.zed.Zed.desktop', 'org.gnome.Todo.desktop', 'veracrypt.desktop', 'spotify.desktop', 'libreoffice-writer.desktop', 'io.github.totoshko88.RustConn.desktop']
 had-bluetooth-devices-setup=false
 
 [gtk/settings/file-chooser]
@@ -4126,20 +4110,19 @@ configure_mime_types() {
   $ExeAsUser cat> /home/"$local_user"/.config/mimeapps.list << 'EOF'
 [Added Associations]
 application/vnd.jgraph.mxfile=com.jgraph.drawio.desktop;
-application/x-php=code.desktop;
+application/x-php=dev.zed.Zed.desktop;
 application/x-mswinurl=launch_url_file.desktop;
-application/x-shellscript=code.desktop;
+application/x-shellscript=dev.zed.Zed.desktop;
 application/x-gettext-translation=org.gnome.gedit.desktop;
-application/x-raw-disk-image=gnome-disk-image-mounter.desktop;
-application/x-shellscript=code.desktop;
+application/x-shellscript=dev.zed.Zed.desktop;
 application/x-keepass2=keepassxc.desktop;
 application/x-kdbx=keepassxc.desktop;
 text/markdown=typora.desktop;org.gnome.gedit.desktop;
 text/csv=libreoffice-calc.desktop;org.gnome.gedit.desktop;
-text/html=chromium.desktop;code.desktop;
-text/x-patch=code.desktop;
-text/x-diff=code.desktop;
-text/x-python=code.desktop;
+text/html=brave-browser.desktop;dev.zed.Zed.desktop;
+text/x-patch=dev.zed.Zed.desktop;
+text/x-diff=dev.zed.Zed.desktop;
+text/x-python=dev.zed.Zed.desktop;
 video/x-matroska=mpv.desktop;
 video/webm=mpv.desktop;
 video/x-flv=mpv.desktop;org.gnome.Totem.desktop;vlc.desktop;
@@ -4150,12 +4133,12 @@ image/webp=org.geeqie.Geeqie.desktop;
 
 [Default Applications]
 application/x-mswinurl=launch_url_file.desktop;
-application/x-shellscript=code.desktop
+application/x-shellscript=dev.zed.Zed.desktop
 application/x-keepass2=keepassxc.desktop
 application/x-kdbx=keepassxc.desktop
-text/html=chromium.desktop
-text/plain=code.desktop
-text/x-diff=code.desktop
+text/html=brave-browser.desktop
+text/plain=dev.zed.Zed.desktop
+text/x-diff=dev.zed.Zed.desktop
 text/markdown=typora.desktop
 video/mp4=mpv.desktop
 video/x-matroska=mpv.desktop
@@ -4163,10 +4146,10 @@ video/webm=mpv.desktop
 video/x-flv=mpv.desktop
 video/quicktime=mpv.desktop
 video/mp2t=mpv.desktop
-x-scheme-handler/http=chromium.desktop
-x-scheme-handler/https=chromium.desktop
-x-scheme-handler/about=chromium.desktop
-x-scheme-handler/unknown=chromium.desktop
+x-scheme-handler/http=brave-browser.desktop
+x-scheme-handler/https=brave-browser.desktop
+x-scheme-handler/about=brave-browser.desktop
+x-scheme-handler/unknown=brave-browser.desktop
 image/webp=org.geeqie.Geeqie.desktop
 image/heif=org.geeqie.Geeqie.desktop
 EOF
