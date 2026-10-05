@@ -2038,6 +2038,7 @@ install_flatpak_software() {
   execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub io.github.totoshko88.RustConn" #RustConn
   execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub dev.zed.Zed" # Zed
   # execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub page.codeberg.censor.Censor" # Censor
+  # execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub org.gnome.Papers" # Papers
 
   # execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub com.vscodium.codium" # vscodium
   # execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub io.github.tobagin.Ntfyr" # Ntfyr
@@ -3695,7 +3696,7 @@ fi
 
 # ajout du script nautilus "Open With MPV"
 install_nautilus_script() {
-  $ExeAsUser cat> "/home/"$local_user"/.local/share/nautilus/scripts/Open With MPV" << 'EOF'
+  $ExeAsUser cat> "/home/$local_user/.local/share/nautilus/scripts/Open With MPV" << 'EOF'
 #!/bin/bash
 # __my_script__
 
@@ -3721,7 +3722,41 @@ install_nautilus_script
 ################################################################################
 ## configuration de dolphin
 ##------------------------------------------------------------------------------
+dolphin_service_menu_mpv_open() {
+  $ExeAsUser cat> "$my_user_bin_path/mpv-open.sh" << 'EOF'
+#!/bin/bash
+# __my_script__
+
+# Dolphin passe les chemins selectionnes en arguments
+for path in "$@"; do
+  if [ -d "$path" ]; then
+    /usr/local/bin/mpv --no-terminal --playlist="$path"
+  else
+    /usr/local/bin/mpv --no-terminal "$path"
+  fi
+done
+EOF
+  execandlog "chmod +x $my_user_bin_path/mpv-open.sh"
+  $ExeAsUser cat> "/home/$local_user/.var/app/org.kde.dolphin/data/kio/servicemenus/mpv-open.desktop" << EOF
+[Desktop Entry]
+Type=Service
+MimeType=inode/directory;video/*;audio/*;
+Actions=mpvPlay;
+X-KDE-Priority=TopLevel
+
+[Desktop Action mpvPlay]
+Name=Lire avec mpv
+Icon=mpv
+Exec=flatpak-spawn --host $my_user_bin_path/mpv-open.sh %F
+EOF
+  execandlog "chmod +x /home/$local_user/.var/app/org.kde.dolphin/data/kio/servicemenus/mpv-open.desktop"
+}
+
+dolphin_service_menu_videos_1h() {
+  $ExeAsUser cat> "$my_user_bin_path/videos-1h.sh" << 'EOF'
 #!/usr/bin/env bash
+# __my_script__
+
 # Service menu Dolphin : affiche les videos d'au moins 1 h d'un ou plusieurs dossiers
 # Usage : videos-1h.sh DOSSIER [DOSSIER...]
 
@@ -3789,8 +3824,8 @@ fi
 
 xdg-open "$tmpdir"
 kdialog --title "$TITLE" --passivepopup "$added vidéo(s) d'au moins 1 h trouvée(s)." 5
-
-
+EOF
+  execandlog "chmod +x $my_user_bin_path/videos-1h.sh"
   $ExeAsUser cat> "/home/$local_user/.var/app/org.kde.dolphin/data/kio/servicemenus/videos-1h.desktop" << EOF
 [Desktop Entry]
 Type=Service
@@ -3801,8 +3836,17 @@ X-KDE-Priority=TopLevel
 [Desktop Action videos1h]
 Name=Afficher les vidéos de plus d'1 h
 Icon=video-x-generic
-Exec=flatpak-spawn --host /home/$local_user/.local/bin/videos-1h.sh %F
+Exec=flatpak-spawn --host $my_user_bin_path/videos-1h.sh %F
 EOF
+  execandlog "chmod +x /home/$local_user/.var/app/org.kde.dolphin/data/kio/servicemenus/videos-1h.desktop"
+}
+
+install_dolphin_service_menus() {
+  is_dir_present_or_mkdir_as_user "/home/$local_user/.var/app/org.kde.dolphin/data/kio/servicemenus/"
+  dolphin_service_menu_mpv_open
+  dolphin_service_menu_videos_1h
+}
+install_dolphin_service_menus
 ################################################################################
 
 ################################################################################
