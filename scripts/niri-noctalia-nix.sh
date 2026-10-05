@@ -16,13 +16,19 @@ readonly GPU_LINK="$STATE_DIR/gpu-drivers"
 readonly UNIT_DIR="$CFG_HOME/systemd/user"
 readonly NIRI_CFG="$CFG_HOME/niri/config.kdl"
 readonly NOCTALIA_CFG="$CFG_HOME/noctalia/config.toml"
-readonly SWAYLOCK_CFG="$CFG_HOME/swaylock/config"
+readonly NOCTALIA_STATE="$STATE_HOME/noctalia/settings.toml"
+readonly HYPRLOCK_CFG="$CFG_HOME/hypr/hyprlock.conf"
+readonly LOCK_SCRIPT="$HOME/.local/bin/niri-lock"
+readonly IDLE_DROPIN="$UNIT_DIR/niri-swayidle.service.d/override.conf"
+readonly BACKPORTS_LIST="/etc/apt/sources.list.d/backports.list"
+readonly MARKER="Genere par niri-noctalia-nix.sh"
 readonly PORTAL_CFG="$CFG_HOME/xdg-desktop-portal/niri-portals.conf"
 readonly MIME_LINK="$HOME/.local/share/applications/niri-mimeapps.list"
 readonly SESSION_WRAPPER="/usr/local/bin/niri-nix-session"
 readonly SESSION_DESKTOP="/usr/local/share/wayland-sessions/niri-nix.desktop"
 readonly TMPFILES_CONF="/etc/tmpfiles.d/niri-nix-gpu.conf"
 readonly PROFILE_ELEMENT="niri-nix-desktop"
+# swaylock reste installe comme verrou de secours (deblocage depuis un TTY)
 readonly APT_PACKAGES=(swaylock swayidle mate-polkit xdg-desktop-portal-gnome
                        xdg-desktop-portal-gtk gnome-keyring)
 readonly NIX_FLAGS=(--extra-experimental-features "nix-command flakes")
@@ -151,6 +157,24 @@ install_apt_packages() {
     ok "Paquets Debian présents (verrouillage, polkit, portails, trousseau)."
 }
 
+# hyprlock Debian : utilise la pile PAM du systeme, contrairement a un verrou
+# construit par Nix (linux-pam de Nix ne comprend pas les @include de Debian)
+install_hyprlock() {
+    if dpkg-query -W -f='${Status}' hyprlock 2>/dev/null | grep -q "install ok installed"; then
+        ok "hyprlock déjà installé."
+        return 0
+    fi
+    local suite="${VERSION_CODENAME:-trixie}-backports"
+    if ! grep -rqs -- "$suite" /etc/apt/sources.list /etc/apt/sources.list.d/; then
+        info "Activation du dépôt $suite."
+        echo "deb http://deb.debian.org/debian $suite main" | sudo tee "$BACKPORTS_LIST" >/dev/null
+    fi
+    sudo apt-get update -qq
+    sudo apt-get install -y -t "$suite" hyprlock
+    [[ -f /etc/pam.d/hyprlock ]] || warn "/etc/pam.d/hyprlock absent : hyprlock risque de refuser le mot de passe."
+    ok "hyprlock installé depuis $suite."
+}
+
 # --- Flake Nix ------------------------------------------------------------------
 write_flake() {
     mkdir -p "$FLAKE_DIR" "$STATE_DIR"
@@ -275,21 +299,31 @@ Conflicts=graphical-session.target graphical-session-pre.target
 After=graphical-session.target graphical-session-pre.target
 EOF
 
+    # Pas de verrouillage sur inactivite ; ecrans eteints apres 10 min,
+    # et 30 s apres le verrouillage si on ne deverrouille pas
     cat >"$UNIT_DIR/niri-swayidle.service" <<EOF
+# $MARKER
 [Unit]
-Description=Verrouillage automatique et extinction des écrans (niri)
+Description=Extinction des écrans et verrouillage avant veille (niri)
 PartOf=graphical-session.target
 After=graphical-session.target
 Requisite=graphical-session.target
 
 [Service]
 ExecStart=/usr/bin/swayidle -w \\
-    timeout 600 '/usr/bin/swaylock -f' \\
-    timeout 660 '$BIN/niri msg action power-off-monitors' \\
-    before-sleep '/usr/bin/swaylock -f' \\
-    lock '/usr/bin/swaylock -f'
+    timeout 30 'pidof hyprlock && $BIN/niri msg action power-off-monitors' \\
+    timeout 600 '$BIN/niri msg action power-off-monitors' \\
+    before-sleep '$LOCK_SCRIPT' \\
+    lock '$LOCK_SCRIPT'
 Restart=on-failure
 EOF
+
+    # Ancien override de niri-hyprlock-setup.sh : son contenu est desormais dans l'unite
+    if grep -qs 'niri-hyprlock-setup.sh' "$IDLE_DROPIN"; then
+        rm -f "$IDLE_DROPIN"
+        rmdir --ignore-fail-on-non-empty "$(dirname "$IDLE_DROPIN")"
+        info "Ancien override swayidle de niri-hyprlock-setup.sh supprimé."
+    fi
 
     cat >"$UNIT_DIR/niri-polkit.service" <<EOF
 [Unit]
@@ -306,6 +340,30 @@ EOF
     systemctl --user daemon-reload
     systemctl --user add-wants niri.service niri-swayidle.service niri-polkit.service
     ok "Unités systemd utilisateur installées (liées uniquement à la session niri)."
+}
+
+# Script genere (pas une config utilisateur) : reecrit a chaque install/update
+write_lock_script() {
+    mkdir -p "$(dirname "$LOCK_SCRIPT")"
+    cat >"$LOCK_SCRIPT" <<EOF
+#!/bin/sh
+# $MARKER
+# Verrouille avec hyprlock (PAM Debian) puis eteint reellement les ecrans
+if ! pidof hyprlock >/dev/null; then
+    /usr/bin/hyprlock &
+fi
+sleep 1
+$BIN/niri msg action power-off-monitors
+EOF
+    chmod 0755 "$LOCK_SCRIPT"
+    ok "Script de verrouillage écrit : $LOCK_SCRIPT"
+}
+
+restart_idle_if_running() {
+    if systemctl --user -q is-active niri.service; then
+        systemctl --user restart niri-swayidle.service
+        ok "swayidle redémarré dans la session niri en cours."
+    fi
 }
 
 install_portal_and_mime() {
@@ -473,7 +531,7 @@ binds {
     Mod+T hotkey-overlay-title="Terminal" { spawn "$TERMINAL_CMD"; }
     Ctrl+Alt+T { spawn "$TERMINAL_CMD"; }
     Mod+E hotkey-overlay-title="Fichiers" { spawn "nautilus" "--new-window"; }
-    Mod+L hotkey-overlay-title="Verrouiller" { spawn "/usr/bin/swaylock" "-f"; }
+    Mod+L hotkey-overlay-title="Verrouiller" { spawn "$LOCK_SCRIPT"; }
     Mod+O repeat=false { toggle-overview; }
     Mod+Q repeat=false { close-window; }
     Alt+F4 repeat=false { close-window; }
@@ -486,14 +544,15 @@ binds {
     XF86MonBrightnessDown allow-when-locked=true { spawn "$BIN/noctalia" "msg" "brightness-down"; }
 
     // Navigation (fleches uniquement, Mod+L etant reserve au verrouillage)
+    // Haut/Bas changent d'espace de travail comme GNOME, sauf fenetres empilees
     Mod+Left  { focus-column-left; }
     Mod+Right { focus-column-right; }
-    Mod+Up    { focus-window-up; }
-    Mod+Down  { focus-window-down; }
+    Mod+Up    { focus-window-or-workspace-up; }
+    Mod+Down  { focus-window-or-workspace-down; }
     Mod+Ctrl+Left  { move-column-left; }
     Mod+Ctrl+Right { move-column-right; }
-    Mod+Ctrl+Up    { move-window-up; }
-    Mod+Ctrl+Down  { move-window-down; }
+    Mod+Ctrl+Up    { move-window-up-or-to-workspace-up; }
+    Mod+Ctrl+Down  { move-window-down-or-to-workspace-down; }
     Mod+Home { focus-column-first; }
     Mod+End  { focus-column-last; }
 
@@ -536,8 +595,26 @@ $(width_binds)
     Mod+Shift+E { quit; }
     Ctrl+Alt+Delete { quit; }
 }
+
+// Ecrans propres a la machine (positions, echelles), hors de ce fichier.
+// Facultatif : niri l'ignore s'il n'existe pas (niri >= 26.04).
+include optional=true "outputs.kdl"
 EOF
     ok "Config niri écrite : $NIRI_CFG"
+}
+
+# Config niri conservee d'une version precedente : bascule Mod+L vers hyprlock
+migrate_niri_lock_bind() {
+    grep -Eq '^[[:space:]]*Mod\+L[[:space:]].*swaylock' "$NIRI_CFG" || return 0
+    local new_line="    Mod+L hotkey-overlay-title=\"Verrouiller\" { spawn \"$LOCK_SCRIPT\"; }"
+    cp -a "$NIRI_CFG" "$NIRI_CFG.bak-$STAMP"
+    sed -Ei "s|^[[:space:]]*Mod\+L[[:space:]].*swaylock.*$|${new_line}|" "$NIRI_CFG"
+    if ! "$BIN/niri" validate -c "$NIRI_CFG" >/dev/null 2>&1; then
+        cp -a "$NIRI_CFG.bak-$STAMP" "$NIRI_CFG"
+        warn "Impossible de basculer Mod+L vers hyprlock : config niri restaurée."
+        return 0
+    fi
+    ok "Mod+L bascule de swaylock vers $LOCK_SCRIPT (sauvegarde : $NIRI_CFG.bak-$STAMP)."
 }
 
 write_noctalia_config() {
@@ -572,7 +649,8 @@ community_ids = []
 enabled = true
 
 [lockscreen]
-enabled = false                   # verrouillage assure par swaylock (PAM Debian)
+enabled = false                   # verrouillage assure par hyprlock (PAM Debian)
+lock_before_suspend = false       # sinon le verrou Noctalia (PAM Nix) bloque au reveil
 
 [osd]
 position = "bottom_center"
@@ -580,14 +658,14 @@ position = "bottom_center"
 [dock]
 enabled = true
 position = "bottom"
-show_running = true           # ajoute aussi les applis ouvertes non épinglées
-launcher_position = "end"     # bouton grille d'applications à droite, comme le dash GNOME
+show_running = true           # ajoute aussi les applis ouvertes non epinglees
+launcher_position = "end"     # bouton grille d'applications a droite, comme le dash GNOME
 launcher_icon = "grid-dots"
 icon_size = 44
 show_dots = true              # point sous les applis ouvertes
-magnification = false         # pas d'effet loupe façon macOS
+magnification = false         # pas d'effet loupe facon macOS
 auto_hide = false
-reserve_space = true          # les fenêtres ne passent pas sous le dock
+reserve_space = true          # les fenetres ne passent pas sous le dock
 pinned = [
   "brave-browser",
   "chromium",
@@ -625,15 +703,117 @@ EOF
     ok "Config Noctalia écrite : $NOCTALIA_CFG"
 }
 
-write_swaylock_config() {
-    should_write "$SWAYLOCK_CFG" || return 0
-    cat >"$SWAYLOCK_CFG" <<'EOF'
-color=1d1d1d
-show-failed-attempts
-ignore-empty-password
-indicator-caps-lock
+# Force une cle dans une section TOML (cree la section ou la cle si besoin).
+# Ne reecrit le fichier (avec sauvegarde) que s'il change.
+set_toml_key() {
+    local file="$1" section="$2" key="$3" value="$4" tmp
+    tmp="$(mktemp)"
+    awk -v sec="[$section]" -v key="$key" -v val="$value" '
+        function flush() { while (blanks > 0) { print ""; blanks-- } }
+        BEGIN { insec = 0; found = 0; done = 0; blanks = 0 }
+        /^[[:space:]]*$/ { blanks++; next }
+        /^\[/ {
+            if (insec && !done) { print key " = " val; done = 1 }
+            flush()
+            insec = ($0 == sec)
+            if (insec) found = 1
+            print; next
+        }
+        insec && $0 ~ "^[[:space:]]*" key "[[:space:]]*=" {
+            line = $0
+            sub(/^[^=]*=[[:space:]]*/, "", line)
+            if (line ~ "^" val "([[:space:]]|#|$)") print
+            else print key " = " val
+            flush(); done = 1; next
+        }
+        { flush(); print }
+        END {
+            if (insec && !done) print key " = " val
+            else if (!found) { print ""; print sec; print key " = " val }
+            flush()
+        }' "$file" >"$tmp"
+    if ! cmp -s "$tmp" "$file"; then
+        [[ -e "$file.bak-$STAMP" ]] || cp -a "$file" "$file.bak-$STAMP"
+        cat "$tmp" >"$file"
+        info "$file : [$section] $key = $value"
+    fi
+    rm -f "$tmp"
+}
+
+# Le verrou Noctalia passe par le PAM de Nix et refuse le mot de passe sous
+# Debian : on le coupe aussi dans les reglages GUI, qui priment sur config.toml
+neutralize_noctalia_lock() {
+    local f
+    for f in "$NOCTALIA_CFG" "$NOCTALIA_STATE"; do
+        [[ -f "$f" ]] || continue
+        if [[ "$f" == "$NOCTALIA_STATE" ]] && ! grep -q '^\[lockscreen\]' "$f"; then
+            continue
+        fi
+        set_toml_key "$f" lockscreen enabled false
+        set_toml_key "$f" lockscreen lock_before_suspend false
+    done
+    ok "Verrouillage Noctalia désactivé (hyprlock s'en charge)."
+}
+
+write_hyprlock_config() {
+    should_write "$HYPRLOCK_CFG" || return 0
+    cat >"$HYPRLOCK_CFG" <<'EOF'
+# Genere par niri-noctalia-nix.sh
+general {
+    hide_cursor = true
+    ignore_empty_input = true
+}
+
+background {
+    monitor =
+    path = screenshot
+    blur_passes = 3
+    blur_size = 8
+    brightness = 0.6
+}
+
+label {
+    monitor =
+    text = $TIME
+    font_size = 96
+    font_family = Adwaita Sans
+    color = rgba(255, 255, 255, 1.0)
+    position = 0, 160
+    halign = center
+    valign = center
+}
+
+label {
+    monitor =
+    text = cmd[update:60000] date +"%A %e %B"
+    font_size = 22
+    font_family = Adwaita Sans
+    color = rgba(255, 255, 255, 0.85)
+    position = 0, 80
+    halign = center
+    valign = center
+}
+
+input-field {
+    monitor =
+    size = 320, 56
+    outline_thickness = 2
+    rounding = 14
+    inner_color = rgba(30, 30, 30, 0.6)
+    outer_color = rgba(53, 132, 228, 1.0)
+    check_color = rgba(53, 132, 228, 1.0)
+    fail_color = rgba(224, 27, 36, 1.0)
+    font_color = rgba(255, 255, 255, 1.0)
+    placeholder_text = Mot de passe
+    fail_text = Mot de passe incorrect
+    dots_center = true
+    fade_on_empty = false
+    position = 0, -40
+    halign = center
+    valign = center
+}
 EOF
-    ok "Config swaylock écrite : $SWAYLOCK_CFG"
+    ok "Config hyprlock écrite : $HYPRLOCK_CFG"
 }
 
 validate_configs() {
@@ -649,22 +829,34 @@ validate_configs() {
 do_install() {
     preflight
     install_apt_packages
+    install_hyprlock
     write_flake
     build_gpu_env
     install_profile
     install_system_files
+    write_lock_script
     install_user_units
     install_portal_and_mime
     write_niri_config
+    migrate_niri_lock_bind
     write_noctalia_config
-    write_swaylock_config
+    neutralize_noctalia_lock
+    write_hyprlock_config
     validate_configs
+    restart_idle_if_running
     cat <<EOF
 
 Installation terminée.
   1. Déconnecte-toi de GNOME.
   2. Dans GDM, choisis ton utilisateur, puis l'engrenage en bas à droite : « Niri (Nix) ».
-  3. Une fois connecté : Mod+Maj+/ affiche les raccourcis, Mod+A ouvre les applications.
+  3. Une fois connecté : Mod+Maj+/ affiche les raccourcis, Mod+A ouvre les applications,
+     Mod+L verrouille (hyprlock) et éteint les écrans.
+
+Écrans propres à ta machine : à décrire dans $(dirname "$NIRI_CFG")/outputs.kdl (facultatif).
+
+Si hyprlock refuse ton mot de passe : Ctrl+Alt+F3, connexion, puis
+  pkill -x hyprlock
+  WAYLAND_DISPLAY=\$(basename "\$(ls /run/user/\$(id -u)/wayland-? | head -1)") swaylock -f
 
 Diagnostic : journalctl --user -u niri.service -b
 Mise à jour : $0 --update
@@ -679,8 +871,14 @@ do_update() {
     nixc flake update --flake "path:$FLAKE_DIR"
     build_gpu_env
     install_profile
+    install_hyprlock
+    write_lock_script
     install_user_units
+    migrate_niri_lock_bind
+    neutralize_noctalia_lock
+    write_hyprlock_config
     validate_configs
+    restart_idle_if_running
     ok "Mise à jour terminée : déconnecte-toi puis reconnecte-toi à la session niri pour l'appliquer."
 }
 
@@ -698,7 +896,15 @@ do_uninstall() {
     rm -rf "$UNIT_DIR/niri.service.wants"
     rm -f "$UNIT_DIR/niri.service" "$UNIT_DIR/niri-shutdown.target" \
           "$UNIT_DIR/niri-swayidle.service" "$UNIT_DIR/niri-polkit.service"
+    if grep -qs 'niri-hyprlock-setup.sh' "$IDLE_DROPIN"; then
+        rm -f "$IDLE_DROPIN"
+        rmdir --ignore-fail-on-non-empty "$(dirname "$IDLE_DROPIN")"
+    fi
     systemctl --user daemon-reload
+
+    if grep -qs -e "$MARKER" -e 'niri-hyprlock-setup.sh' "$LOCK_SCRIPT"; then
+        rm -f "$LOCK_SCRIPT"
+    fi
 
     rm -f "$PORTAL_CFG"
     if [[ -L "$MIME_LINK" ]]; then
@@ -714,9 +920,9 @@ do_uninstall() {
     cat <<EOF
 
 Désinstallation terminée. Conservé volontairement :
-  - configs : $NIRI_CFG, $NOCTALIA_CFG, $SWAYLOCK_CFG
+  - configs : $NIRI_CFG, $NOCTALIA_CFG, $HYPRLOCK_CFG
   - flake : $FLAKE_DIR
-  - paquets apt : ${APT_PACKAGES[*]}
+  - paquets apt : ${APT_PACKAGES[*]} hyprlock
 Pour libérer l'espace Nix : nix-collect-garbage
 EOF
 }
