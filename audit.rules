@@ -39,27 +39,31 @@
 
 ## Audit the audit logs
 ### Successful and unsuccessful attempts to read information from the audit records
--w /var/log/audit/ -p wra -k T1005_Data_From_Local_System_audit_log
--w /var/audit/ -p wra -k T1005_Data_From_Local_System_audit_log
+-a always,exit -F arch=b64 -F dir=/var/log/audit -F perm=wra -k T1005_Data_From_Local_System_audit_log
+-a always,exit -F arch=b64 -F path=/var/log/audit -F perm=wra -k T1005_Data_From_Local_System_audit_log
+-a always,exit -F arch=b64 -F dir=/var/audit -F perm=wra -k T1005_Data_From_Local_System_audit_log
+-a always,exit -F arch=b64 -F path=/var/audit -F perm=wra -k T1005_Data_From_Local_System_audit_log
 
 ## Auditd configuration
 ### Modifications to audit configuration that occur while the audit collection functions are operating
--w /etc/audit/ -p wa -k auditconfig
--w /etc/libaudit.conf -p wa -k auditconfig
--w /etc/audisp/ -p wa -k audispconfig
+-a always,exit -F arch=b64 -F dir=/etc/audit -F perm=wa -k auditconfig
+-a always,exit -F arch=b64 -F path=/etc/audit -F perm=wa -k auditconfig
+-a always,exit -F arch=b64 -F path=/etc/libaudit.conf -F perm=wa -k auditconfig
+-a always,exit -F arch=b64 -F dir=/etc/audisp -F perm=wa -k audispconfig
+-a always,exit -F arch=b64 -F path=/etc/audisp -F perm=wa -k audispconfig
 
 ## Monitor for use of audit management tools
--w /sbin/auditctl -p x -k audittools
--w /sbin/auditd -p x -k audittools
--w /usr/sbin/auditd -p x -k audittools
--w /usr/sbin/augenrules -p x -k audittools
+-a always,exit -F arch=b64 -F path=/sbin/auditctl -F perm=x -k audittools
+-a always,exit -F arch=b64 -F path=/sbin/auditd -F perm=x -k audittools
+-a always,exit -F arch=b64 -F path=/usr/sbin/auditd -F perm=x -k audittools
+-a always,exit -F arch=b64 -F path=/usr/sbin/augenrules -F perm=x -k audittools
 
 ## Access to all audit trails
--a always,exit -F path=/usr/sbin/ausearch -F perm=x -k T1005_Data_From_Local_System_audit_log
--a always,exit -F path=/usr/sbin/aureport -F perm=x -k T1005_Data_From_Local_System_audit_log
--a always,exit -F path=/usr/sbin/aulast -F perm=x -k T1005_Data_From_Local_System_audit_log
--a always,exit -F path=/usr/sbin/aulastlogin -F perm=x -k T1005_Data_From_Local_System_audit_log
--a always,exit -F path=/usr/sbin/auvirt -F perm=x -k T1005_Data_From_Local_System_audit_log
+-a always,exit -F arch=b64 -F path=/usr/sbin/ausearch -F perm=x -k T1005_Data_From_Local_System_audit_log
+-a always,exit -F arch=b64 -F path=/usr/sbin/aureport -F perm=x -k T1005_Data_From_Local_System_audit_log
+-a always,exit -F arch=b64 -F path=/usr/sbin/aulast -F perm=x -k T1005_Data_From_Local_System_audit_log
+-a always,exit -F arch=b64 -F path=/usr/sbin/aulastlogin -F perm=x -k T1005_Data_From_Local_System_audit_log
+-a always,exit -F arch=b64 -F path=/usr/sbin/auvirt -F perm=x -k T1005_Data_From_Local_System_audit_log
 
 # Filters ---------------------------------------------------------------------
 
@@ -87,18 +91,20 @@
 # Rules -----------------------------------------------------------------------
 
 ## Kernel parameters
--w /etc/sysctl.conf -p wa -k sysctl
--w /etc/sysctl.d/ -p wa -k sysctl
+-a always,exit -F arch=b64 -F path=/etc/sysctl.conf -F perm=wa -k sysctl
+-a always,exit -F arch=b64 -F dir=/etc/sysctl.d -F perm=wa -k sysctl
+-a always,exit -F arch=b64 -F path=/etc/sysctl.d -F perm=wa -k sysctl
 
 ## Kernel module loading and unloading
--a always,exit -F perm=x -F auid!=unset -F path=/sbin/insmod -k modules
--a always,exit -F perm=x -F auid!=unset -F path=/sbin/modprobe -k modules
--a always,exit -F perm=x -F auid!=unset -F path=/sbin/rmmod -k modules
+-a always,exit -F arch=b64 -F perm=x -F auid!=unset -F path=/sbin/insmod -k modules
+-a always,exit -F arch=b64 -F perm=x -F auid!=unset -F path=/sbin/modprobe -k modules
+-a always,exit -F arch=b64 -F perm=x -F auid!=unset -F path=/sbin/rmmod -k modules
 -a always,exit -F arch=b64 -S finit_module -S init_module -S delete_module -F auid!=unset -k modules
 
 ## Modprobe configuration
--w /etc/modprobe.conf -p wa -k modprobe
--w /etc/modprobe.d/ -p wa -k modprobe
+-a always,exit -F arch=b64 -F path=/etc/modprobe.conf -F perm=wa -k modprobe
+-a always,exit -F arch=b64 -F dir=/etc/modprobe.d -F perm=wa -k modprobe
+-a always,exit -F arch=b64 -F path=/etc/modprobe.d -F perm=wa -k modprobe
 
 ## KExec usage (all actions)
 -a always,exit -F arch=b64 -S kexec_load -k KEXEC
@@ -110,8 +116,8 @@
 -a always,exit -F arch=b64 -S mount -S umount2 -F auid!=unset -k mount
 
 ### NFS mount
--a always,exit -F path=/sbin/mount.nfs -F perm=x -F auid>=500 -F auid!=unset -k T1078_Valid_Accounts
--a always,exit -F path=/usr/sbin/mount.nfs -F perm=x -F auid>=500 -F auid!=unset -k T1078_Valid_Accounts
+-a always,exit -F arch=b64 -F path=/sbin/mount.nfs -F perm=x -F auid>=500 -F auid!=unset -k T1078_Valid_Accounts
+-a always,exit -F arch=b64 -F path=/usr/sbin/mount.nfs -F perm=x -F auid>=500 -F auid!=unset -k T1078_Valid_Accounts
 
 ## Change swap (only attributable)
 -a always,exit -F arch=b64 -S swapon -S swapoff -F auid!=unset -k swap
@@ -119,60 +125,67 @@
 ## Time
 # -a always,exit -F arch=b64 -F uid!=ntp -S adjtimex -S settimeofday -S clock_settime -k time
 ### Local time zone
--w /etc/localtime -p wa -k localtime
+-a always,exit -F arch=b64 -F path=/etc/localtime -F perm=wa -k localtime
 
 ## Stunnel
--w /usr/sbin/stunnel -p x -k stunnel
--w /usr/bin/stunnel -p x -k stunnel
+-a always,exit -F arch=b64 -F path=/usr/sbin/stunnel -F perm=x -k stunnel
+-a always,exit -F arch=b64 -F path=/usr/bin/stunnel -F perm=x -k stunnel
 
 ## Cron configuration & scheduled jobs
--w /etc/cron.allow -p wa -k cron
--w /etc/cron.deny -p wa -k cron
--w /etc/cron.d/ -p wa -k cron
--w /etc/cron.daily/ -p wa -k cron
--w /etc/cron.hourly/ -p wa -k cron
--w /etc/cron.monthly/ -p wa -k cron
--w /etc/cron.weekly/ -p wa -k cron
--w /etc/crontab -p wa -k cron
--w /var/spool/cron/ -p wa -k cron
+-a always,exit -F arch=b64 -F path=/etc/cron.allow -F perm=wa -k cron
+-a always,exit -F arch=b64 -F path=/etc/cron.deny -F perm=wa -k cron
+-a always,exit -F arch=b64 -F dir=/etc/cron.d -F perm=wa -k cron
+-a always,exit -F arch=b64 -F path=/etc/cron.d -F perm=wa -k cron
+-a always,exit -F arch=b64 -F dir=/etc/cron.daily -F perm=wa -k cron
+-a always,exit -F arch=b64 -F path=/etc/cron.daily -F perm=wa -k cron
+-a always,exit -F arch=b64 -F dir=/etc/cron.hourly -F perm=wa -k cron
+-a always,exit -F arch=b64 -F path=/etc/cron.hourly -F perm=wa -k cron
+-a always,exit -F arch=b64 -F dir=/etc/cron.monthly -F perm=wa -k cron
+-a always,exit -F arch=b64 -F path=/etc/cron.monthly -F perm=wa -k cron
+-a always,exit -F arch=b64 -F dir=/etc/cron.weekly -F perm=wa -k cron
+-a always,exit -F arch=b64 -F path=/etc/cron.weekly -F perm=wa -k cron
+-a always,exit -F arch=b64 -F path=/etc/crontab -F perm=wa -k cron
+-a always,exit -F arch=b64 -F dir=/var/spool/cron -F perm=wa -k cron
+-a always,exit -F arch=b64 -F path=/var/spool/cron -F perm=wa -k cron
 
 ## User, group, password databases
--w /etc/group -p wa -k etcgroup
--w /etc/passwd -p wa -k etcpasswd
--w /etc/gshadow -k etcgroup
--w /etc/shadow -k etcpasswd
--w /etc/security/opasswd -k opasswd
+-a always,exit -F arch=b64 -F path=/etc/group -F perm=wa -k etcgroup
+-a always,exit -F arch=b64 -F path=/etc/passwd -F perm=wa -k etcpasswd
+-a always,exit -F arch=b64 -F path=/etc/gshadow -F perm=rwxa -k etcgroup
+-a always,exit -F arch=b64 -F path=/etc/shadow -F perm=rwxa -k etcpasswd
+-a always,exit -F arch=b64 -F path=/etc/security/opasswd -F perm=rwxa -k opasswd
 
 ## Sudoers file changes
--w /etc/sudoers -p wa -k actions
--w /etc/sudoers.d/ -p wa -k actions
+-a always,exit -F arch=b64 -F path=/etc/sudoers -F perm=wa -k actions
+-a always,exit -F arch=b64 -F dir=/etc/sudoers.d -F perm=wa -k actions
+-a always,exit -F arch=b64 -F path=/etc/sudoers.d -F perm=wa -k actions
 
 ## Passwd
--w /usr/bin/passwd -p x -k passwd_modification
+-a always,exit -F arch=b64 -F path=/usr/bin/passwd -F perm=x -k passwd_modification
 
 ## Tools to change group identifiers
--w /usr/sbin/groupadd -p x -k group_modification
--w /usr/sbin/groupmod -p x -k group_modification
--w /usr/sbin/addgroup -p x -k group_modification
--w /usr/sbin/useradd -p x -k user_modification
--w /usr/sbin/userdel -p x -k user_modification
--w /usr/sbin/usermod -p x -k user_modification
--w /usr/sbin/adduser -p x -k user_modification
+-a always,exit -F arch=b64 -F path=/usr/sbin/groupadd -F perm=x -k group_modification
+-a always,exit -F arch=b64 -F path=/usr/sbin/groupmod -F perm=x -k group_modification
+-a always,exit -F arch=b64 -F path=/usr/sbin/addgroup -F perm=x -k group_modification
+-a always,exit -F arch=b64 -F path=/usr/sbin/useradd -F perm=x -k user_modification
+-a always,exit -F arch=b64 -F path=/usr/sbin/userdel -F perm=x -k user_modification
+-a always,exit -F arch=b64 -F path=/usr/sbin/usermod -F perm=x -k user_modification
+-a always,exit -F arch=b64 -F path=/usr/sbin/adduser -F perm=x -k user_modification
 
 ## Login configuration and information
--w /etc/login.defs -p wa -k login
--w /etc/securetty -p wa -k login
--w /var/log/faillog -p wa -k login
--w /var/log/lastlog -p wa -k login
--w /var/log/tallylog -p wa -k login
+-a always,exit -F arch=b64 -F path=/etc/login.defs -F perm=wa -k login
+-a always,exit -F arch=b64 -F path=/etc/securetty -F perm=wa -k login
+-a always,exit -F arch=b64 -F path=/var/log/faillog -F perm=wa -k login
+-a always,exit -F arch=b64 -F path=/var/log/lastlog -F perm=wa -k login
+-a always,exit -F arch=b64 -F path=/var/log/tallylog -F perm=wa -k login
 
 ## Network Environment
 ### Changes to hostname
 -a always,exit -F arch=b64 -S sethostname -S setdomainname -k network_modifications
 
 ### Detect Remote Shell Use
--a always,exit -F arch=b64 -F exe=/bin/bash -F success=1 -S connect -k "remote_shell"
--a always,exit -F arch=b64 -F exe=/usr/bin/bash -F success=1 -S connect -k "remote_shell"
+-a always,exit -F arch=b64 -F exe=/bin/bash -F success=1 -S connect -k remote_shell
+-a always,exit -F arch=b64 -F exe=/usr/bin/bash -F success=1 -S connect -k remote_shell
 
 ### Successful IPv4 Connections
 -a always,exit -F arch=b64 -S connect -F a2=16 -F success=1 -F key=network_connect_4
@@ -181,93 +194,122 @@
 -a always,exit -F arch=b64 -S connect -F a2=28 -F success=1 -F key=network_connect_6
 
 ### Changes to other files
--w /etc/hosts -p wa -k network_modifications
--w /etc/network/ -p wa -k network
--a always,exit -F dir=/etc/NetworkManager/ -F perm=wa -k network_modifications
+-a always,exit -F arch=b64 -F path=/etc/hosts -F perm=wa -k network_modifications
+-a always,exit -F arch=b64 -F dir=/etc/network -F perm=wa -k network
+-a always,exit -F arch=b64 -F path=/etc/network -F perm=wa -k network
+-a always,exit -F arch=b64 -F dir=/etc/NetworkManager/ -F perm=wa -k network_modifications
 
 ### Changes to issue
--w /etc/issue -p wa -k etcissue
--w /etc/issue.net -p wa -k etcissue
+-a always,exit -F arch=b64 -F path=/etc/issue -F perm=wa -k etcissue
+-a always,exit -F arch=b64 -F path=/etc/issue.net -F perm=wa -k etcissue
 
 ## System startup scripts
--w /etc/init.d/ -p wa -k init
--w /etc/init/ -p wa -k init
+-a always,exit -F arch=b64 -F dir=/etc/init.d -F perm=wa -k init
+-a always,exit -F arch=b64 -F path=/etc/init.d -F perm=wa -k init
+-a always,exit -F arch=b64 -F dir=/etc/init -F perm=wa -k init
+-a always,exit -F arch=b64 -F path=/etc/init -F perm=wa -k init
 
 ## Library search paths
--w /etc/ld.so.conf -p wa -k libpath
--w /etc/ld.so.conf.d -p wa -k libpath
+-a always,exit -F arch=b64 -F path=/etc/ld.so.conf -F perm=wa -k libpath
+-a always,exit -F arch=b64 -F dir=/etc/ld.so.conf.d -F perm=wa -k libpath
+-a always,exit -F arch=b64 -F path=/etc/ld.so.conf.d -F perm=wa -k libpath
 
 ## Systemwide library preloads (LD_PRELOAD)
--w /etc/ld.so.preload -p wa -k systemwide_preloads
+-a always,exit -F arch=b64 -F path=/etc/ld.so.preload -F perm=wa -k systemwide_preloads
 
 ## Pam configuration
--w /etc/pam.d/ -p wa -k pam
--w /etc/security/limits.conf -p wa -k pam
--w /etc/security/limits.d/ -p wa -k pam
--w /etc/security/pam_env.conf -p wa -k pam
--w /etc/security/namespace.conf -p wa -k pam
--w /etc/security/namespace.d/ -p wa -k pam
--w /etc/security/namespace.init -p wa -k pam
+-a always,exit -F arch=b64 -F dir=/etc/pam.d -F perm=wa -k pam
+-a always,exit -F arch=b64 -F path=/etc/pam.d -F perm=wa -k pam
+-a always,exit -F arch=b64 -F path=/etc/security/limits.conf -F perm=wa -k pam
+-a always,exit -F arch=b64 -F dir=/etc/security/limits.d -F perm=wa -k pam
+-a always,exit -F arch=b64 -F path=/etc/security/limits.d -F perm=wa -k pam
+-a always,exit -F arch=b64 -F path=/etc/security/pam_env.conf -F perm=wa -k pam
+-a always,exit -F arch=b64 -F path=/etc/security/namespace.conf -F perm=wa -k pam
+-a always,exit -F arch=b64 -F dir=/etc/security/namespace.d -F perm=wa -k pam
+-a always,exit -F arch=b64 -F path=/etc/security/namespace.d -F perm=wa -k pam
+-a always,exit -F arch=b64 -F path=/etc/security/namespace.init -F perm=wa -k pam
 
 ## Mail configuration
--w /etc/aliases -p wa -k mail
--w /etc/postfix/ -p wa -k mail
--w /etc/exim4/ -p wa -k mail
+-a always,exit -F arch=b64 -F path=/etc/aliases -F perm=wa -k mail
+-a always,exit -F arch=b64 -F dir=/etc/postfix -F perm=wa -k mail
+-a always,exit -F arch=b64 -F path=/etc/postfix -F perm=wa -k mail
+-a always,exit -F arch=b64 -F dir=/etc/exim4 -F perm=wa -k mail
+-a always,exit -F arch=b64 -F path=/etc/exim4 -F perm=wa -k mail
 
 ## SSH configuration
--w /etc/ssh/sshd_config -k sshd
--w /etc/ssh/sshd_config.d -k sshd
+-a always,exit -F arch=b64 -F path=/etc/ssh/sshd_config -F perm=rwxa -k sshd
+-a always,exit -F arch=b64 -F dir=/etc/ssh/sshd_config.d -F perm=rwxa -k sshd
+-a always,exit -F arch=b64 -F path=/etc/ssh/sshd_config.d -F perm=rwxa -k sshd
 
 ## root ssh key tampering
--w /root/.ssh -p wa -k rootkey
+-a always,exit -F arch=b64 -F dir=/root/.ssh -F perm=wa -k rootkey
+-a always,exit -F arch=b64 -F path=/root/.ssh -F perm=wa -k rootkey
 
 # Systemd
--w /bin/systemctl -p x -k systemd
--w /etc/systemd/ -p wa -k systemd
--w /usr/lib/systemd -p wa -k systemd
+-a always,exit -F arch=b64 -F path=/bin/systemctl -F perm=x -k systemd
+-a always,exit -F arch=b64 -F dir=/etc/systemd -F perm=wa -k systemd
+-a always,exit -F arch=b64 -F path=/etc/systemd -F perm=wa -k systemd
+-a always,exit -F arch=b64 -F dir=/usr/lib/systemd -F perm=wa -k systemd
+-a always,exit -F arch=b64 -F path=/usr/lib/systemd -F perm=wa -k systemd
 
 ## https://systemd.network/systemd.generator.html
--w /etc/systemd/system-generators/ -p wa -k T1543_Create_or_Modify_System_Process_systemd_generator
--w /usr/local/lib/systemd/system-generators/ -p wa -k T1543_Create_or_Modify_System_Process_systemd_generator
--w /usr/lib/systemd/system-generators/ -p wa -k T1543_Create_or_Modify_System_Process_systemd_generator
+-a always,exit -F arch=b64 -F dir=/etc/systemd/system-generators -F perm=wa -k T1543_Create_or_Modify_System_Process_systemd_generator
+-a always,exit -F arch=b64 -F path=/etc/systemd/system-generators -F perm=wa -k T1543_Create_or_Modify_System_Process_systemd_generator
+-a always,exit -F arch=b64 -F dir=/usr/local/lib/systemd/system-generators -F perm=wa -k T1543_Create_or_Modify_System_Process_systemd_generator
+-a always,exit -F arch=b64 -F path=/usr/local/lib/systemd/system-generators -F perm=wa -k T1543_Create_or_Modify_System_Process_systemd_generator
+-a always,exit -F arch=b64 -F dir=/usr/lib/systemd/system-generators -F perm=wa -k T1543_Create_or_Modify_System_Process_systemd_generator
+-a always,exit -F arch=b64 -F path=/usr/lib/systemd/system-generators -F perm=wa -k T1543_Create_or_Modify_System_Process_systemd_generator
 
--w /etc/systemd/user-generators/ -p wa -k T1543_Create_or_Modify_System_Process_systemd_generator
--w /usr/local/lib/systemd/user-generators/ -p wa -k T1543_Create_or_Modify_System_Process_systemd_generator
--w /lib/systemd/system-generators/ -p wa -k T1543_Create_or_Modify_System_Process_systemd_generator
+-a always,exit -F arch=b64 -F dir=/etc/systemd/user-generators -F perm=wa -k T1543_Create_or_Modify_System_Process_systemd_generator
+-a always,exit -F arch=b64 -F path=/etc/systemd/user-generators -F perm=wa -k T1543_Create_or_Modify_System_Process_systemd_generator
+-a always,exit -F arch=b64 -F dir=/usr/local/lib/systemd/user-generators -F perm=wa -k T1543_Create_or_Modify_System_Process_systemd_generator
+-a always,exit -F arch=b64 -F path=/usr/local/lib/systemd/user-generators -F perm=wa -k T1543_Create_or_Modify_System_Process_systemd_generator
+-a always,exit -F arch=b64 -F dir=/lib/systemd/system-generators -F perm=wa -k T1543_Create_or_Modify_System_Process_systemd_generator
+-a always,exit -F arch=b64 -F path=/lib/systemd/system-generators -F perm=wa -k T1543_Create_or_Modify_System_Process_systemd_generator
 
 ## SELinux events that modify the system's Mandatory Access Controls (MAC)
--w /etc/selinux/ -p wa -k mac_policy
+-a always,exit -F arch=b64 -F dir=/etc/selinux -F perm=wa -k mac_policy
+-a always,exit -F arch=b64 -F path=/etc/selinux -F perm=wa -k mac_policy
 ### setfiles
 ### https://www.stigviewer.com/stig/red_hat_enterprise_linux_8/2021-12-03/finding/V-230430
--a always,exit -F path=/usr/bin/setfiles -F perm=x -F auid>=500 -F auid!=unset -k mac_policy
--a always,exit -F path=/usr/sbin/setfiles -F perm=x -F auid>=500 -F auid!=unset -k mac_policy
+-a always,exit -F arch=b64 -F path=/usr/bin/setfiles -F perm=x -F auid>=500 -F auid!=unset -k mac_policy
+-a always,exit -F arch=b64 -F path=/usr/sbin/setfiles -F perm=x -F auid>=500 -F auid!=unset -k mac_policy
 
 ## Critical elements access failures
--a always,exit -F arch=b64 -S open -F dir=/etc -F success=0 -k unauthedfileaccess
--a always,exit -F arch=b64 -S open -F dir=/bin -F success=0 -k unauthedfileaccess
--a always,exit -F arch=b64 -S open -F dir=/sbin -F success=0 -k unauthedfileaccess
--a always,exit -F arch=b64 -S open -F dir=/usr/bin -F success=0 -k unauthedfileaccess
--a always,exit -F arch=b64 -S open -F dir=/usr/sbin -F success=0 -k unauthedfileaccess
--a always,exit -F arch=b64 -S open -F dir=/var -F success=0 -k unauthedfileaccess
--a always,exit -F arch=b64 -S open -F dir=/home -F success=0 -k unauthedfileaccess
--a always,exit -F arch=b64 -S open -F dir=/srv -F success=0 -k unauthedfileaccess
+-a always,exit -F arch=b64 -S open,openat -F dir=/etc -F exit=-EACCES -k unauthedfileaccess
+-a always,exit -F arch=b64 -S open,openat -F dir=/etc -F exit=-EPERM -k unauthedfileaccess
+-a always,exit -F arch=b64 -S open,openat -F dir=/bin -F exit=-EACCES -k unauthedfileaccess
+-a always,exit -F arch=b64 -S open,openat -F dir=/bin -F exit=-EPERM -k unauthedfileaccess
+-a always,exit -F arch=b64 -S open,openat -F dir=/sbin -F exit=-EACCES -k unauthedfileaccess
+-a always,exit -F arch=b64 -S open,openat -F dir=/sbin -F exit=-EPERM -k unauthedfileaccess
+-a always,exit -F arch=b64 -S open,openat -F dir=/usr/bin -F exit=-EACCES -k unauthedfileaccess
+-a always,exit -F arch=b64 -S open,openat -F dir=/usr/bin -F exit=-EPERM -k unauthedfileaccess
+-a always,exit -F arch=b64 -S open,openat -F dir=/usr/sbin -F exit=-EACCES -k unauthedfileaccess
+-a always,exit -F arch=b64 -S open,openat -F dir=/usr/sbin -F exit=-EPERM -k unauthedfileaccess
+-a always,exit -F arch=b64 -S open,openat -F dir=/var -F exit=-EACCES -k unauthedfileaccess
+-a always,exit -F arch=b64 -S open,openat -F dir=/var -F exit=-EPERM -k unauthedfileaccess
+-a always,exit -F arch=b64 -S open,openat -F dir=/home -F exit=-EACCES -k unauthedfileaccess
+-a always,exit -F arch=b64 -S open,openat -F dir=/home -F exit=-EPERM -k unauthedfileaccess
+-a always,exit -F arch=b64 -S open,openat -F dir=/srv -F exit=-EACCES -k unauthedfileaccess
+-a always,exit -F arch=b64 -S open,openat -F dir=/srv -F exit=-EPERM -k unauthedfileaccess
 
 ## Process ID change (switching accounts) applications
--w /bin/su -p x -k priv_esc
--w /usr/bin/sudo -p x -k priv_esc
--w /etc/sudoers -p rw -k priv_esc
--w /etc/sudoers.d -p rw -k priv_esc
+-a always,exit -F arch=b64 -F path=/bin/su -F perm=x -k priv_esc
+-a always,exit -F arch=b64 -F path=/usr/bin/sudo -F perm=x -k priv_esc
+-a always,exit -F arch=b64 -F path=/etc/sudoers -F perm=rw -k priv_esc
+-a always,exit -F arch=b64 -F dir=/etc/sudoers.d -F perm=rw -k priv_esc
+-a always,exit -F arch=b64 -F path=/etc/sudoers.d -F perm=rw -k priv_esc
 
 ## Power state
--w /sbin/shutdown -p x -k power
--w /sbin/poweroff -p x -k power
--w /sbin/reboot -p x -k power
--w /sbin/halt -p x -k power
+-a always,exit -F arch=b64 -F path=/sbin/shutdown -F perm=x -k power
+-a always,exit -F arch=b64 -F path=/sbin/poweroff -F perm=x -k power
+-a always,exit -F arch=b64 -F path=/sbin/reboot -F perm=x -k power
+-a always,exit -F arch=b64 -F path=/sbin/halt -F perm=x -k power
 
 ## Session initiation information
--w /var/run/utmp -p wa -k session
--w /var/log/btmp -p wa -k session
--w /var/log/wtmp -p wa -k session
+-a always,exit -F arch=b64 -F path=/var/run/utmp -F perm=wa -k session
+-a always,exit -F arch=b64 -F path=/var/log/btmp -F perm=wa -k session
+-a always,exit -F arch=b64 -F path=/var/log/wtmp -F perm=wa -k session
 
 ## Discretionary Access Control (DAC) modifications
 -a always,exit -F arch=b64 -S chmod -F auid>=1000 -F auid!=unset -k perm_mod
@@ -287,140 +329,139 @@
 # Special Rules ---------------------------------------------------------------
 
 ## Reconnaissance
--w /usr/bin/whoami -p x -k recon
--w /usr/bin/id -p x -k recon
--w /bin/hostname -p x -k recon
--w /bin/uname -p x -k recon
--w /etc/issue -p r -k recon
--w /etc/hostname -p r -k recon
--w /usr/bin/hostnamectl -p x -k recon
--w /usr/bin/loginctl -p x -k recon
+-a always,exit -F arch=b64 -F path=/usr/bin/whoami -F perm=x -k recon
+-a always,exit -F arch=b64 -F path=/usr/bin/id -F perm=x -k recon
+-a always,exit -F arch=b64 -F path=/bin/hostname -F perm=x -k recon
+-a always,exit -F arch=b64 -F path=/bin/uname -F perm=x -k recon
+-a always,exit -F arch=b64 -F path=/etc/issue -F perm=r -k recon
+-a always,exit -F arch=b64 -F path=/etc/hostname -F perm=r -k recon
+-a always,exit -F arch=b64 -F path=/usr/bin/hostnamectl -F perm=x -k recon
+-a always,exit -F arch=b64 -F path=/usr/bin/loginctl -F perm=x -k recon
 
 ## Suspicious activity
--w /usr/bin/wget -p x -k susp_activity
--w /usr/bin/curl -p x -k susp_activity
--w /usr/bin/lwp-request -p x -k susp_activity
--w /usr/bin/base64 -p x -k susp_activity
--w /usr/bin/base32 -p x -k susp_activity
--w /bin/nc -p x -k susp_activity
+-a always,exit -F arch=b64 -F path=/usr/bin/wget -F perm=x -k susp_activity
+-a always,exit -F arch=b64 -F path=/usr/bin/curl -F perm=x -k susp_activity
+-a always,exit -F arch=b64 -F path=/usr/bin/lwp-request -F perm=x -k susp_activity
+-a always,exit -F arch=b64 -F path=/usr/bin/base64 -F perm=x -k susp_activity
+-a always,exit -F arch=b64 -F path=/usr/bin/base32 -F perm=x -k susp_activity
+-a always,exit -F arch=b64 -F path=/bin/nc -F perm=x -k susp_activity
 
--w /bin/netcat -p x -k susp_activity
--w /usr/bin/ncat -p x -k susp_activity
--w /usr/bin/ss -p x -k susp_activity
--w /usr/bin/netstat -p x -k susp_activity
--w /usr/bin/ssh -p x -k susp_activity
--w /usr/bin/scp -p x -k susp_activity
--w /usr/bin/sftp -p x -k susp_activity
--w /usr/bin/ftp -p x -k susp_activity
--w /usr/bin/socat -p x -k susp_activity
--w /usr/bin/wireshark -p x -k susp_activity
--w /usr/bin/tshark -p x -k susp_activity
--w /usr/bin/rawshark -p x -k susp_activity
--w /usr/bin/rdesktop -p x -k T1219_Remote_Access_Tools
--w /usr/bin/wlfreerdp -p x -k T1219_Remote_Access_Tools
--w /usr/bin/xfreerdp -p x -k T1219_Remote_Access_Tools
--w /usr/bin/sdl-freerdp3 -p x -k T1219_Remote_Access_Tools
--w /usr/bin/nmap -p x -k susp_activity
--w /usr/bin/systemd-detect-virt -p x -k susp_activity
--w /usr/bin/getent -p x -k susp_activity
--w /usr/bin/utmpdump -p x -k susp_activity
+-a always,exit -F arch=b64 -F path=/bin/netcat -F perm=x -k susp_activity
+-a always,exit -F arch=b64 -F path=/usr/bin/ncat -F perm=x -k susp_activity
+-a always,exit -F arch=b64 -F path=/usr/bin/ss -F perm=x -k susp_activity
+-a always,exit -F arch=b64 -F path=/usr/bin/netstat -F perm=x -k susp_activity
+-a always,exit -F arch=b64 -F path=/usr/bin/ssh -F perm=x -k susp_activity
+-a always,exit -F arch=b64 -F path=/usr/bin/scp -F perm=x -k susp_activity
+-a always,exit -F arch=b64 -F path=/usr/bin/sftp -F perm=x -k susp_activity
+-a always,exit -F arch=b64 -F path=/usr/bin/ftp -F perm=x -k susp_activity
+-a always,exit -F arch=b64 -F path=/usr/bin/socat -F perm=x -k susp_activity
+-a always,exit -F arch=b64 -F path=/usr/bin/wireshark -F perm=x -k susp_activity
+-a always,exit -F arch=b64 -F path=/usr/bin/tshark -F perm=x -k susp_activity
+-a always,exit -F arch=b64 -F path=/usr/bin/rawshark -F perm=x -k susp_activity
+-a always,exit -F arch=b64 -F path=/usr/bin/rdesktop -F perm=x -k T1219_Remote_Access_Tools
+-a always,exit -F arch=b64 -F path=/usr/bin/wlfreerdp -F perm=x -k T1219_Remote_Access_Tools
+-a always,exit -F arch=b64 -F path=/usr/bin/xfreerdp -F perm=x -k T1219_Remote_Access_Tools
+-a always,exit -F arch=b64 -F path=/usr/bin/sdl-freerdp3 -F perm=x -k T1219_Remote_Access_Tools
+-a always,exit -F arch=b64 -F path=/usr/bin/nmap -F perm=x -k susp_activity
+-a always,exit -F arch=b64 -F path=/usr/bin/systemd-detect-virt -F perm=x -k susp_activity
+-a always,exit -F arch=b64 -F path=/usr/bin/getent -F perm=x -k susp_activity
+-a always,exit -F arch=b64 -F path=/usr/bin/utmpdump -F perm=x -k susp_activity
 
 ## Added to catch netcat on Debian based distribution
--w /bin/nc.openbsd -p x -k susp_activity
--w /bin/nc.traditional -p x -k susp_activity
+-a always,exit -F arch=b64 -F path=/bin/nc.openbsd -F perm=x -k susp_activity
+-a always,exit -F arch=b64 -F path=/bin/nc.traditional -F perm=x -k susp_activity
 
 ## Sbin suspicious activity
--w /sbin/iptables -p x -k sbin_susp
--w /sbin/ip6tables -p x -k sbin_susp
--w /sbin/ifconfig -p x -k sbin_susp
--w /usr/sbin/arptables -p x -k sbin_susp
--w /usr/sbin/ebtables -p x -k sbin_susp
--w /sbin/xtables-nft-multi -p x -k sbin_susp
--w /usr/sbin/nft -p x -k sbin_susp
--w /usr/sbin/tcpdump -p x -k sbin_susp
--w /usr/sbin/traceroute -p x -k sbin_susp
--w /usr/sbin/ufw -p x -k sbin_susp
--w /usr/sbin/capsh -p x -k sbin_susp
+-a always,exit -F arch=b64 -F path=/sbin/iptables -F perm=x -k sbin_susp
+-a always,exit -F arch=b64 -F path=/sbin/ip6tables -F perm=x -k sbin_susp
+-a always,exit -F arch=b64 -F path=/sbin/ifconfig -F perm=x -k sbin_susp
+-a always,exit -F arch=b64 -F path=/usr/sbin/arptables -F perm=x -k sbin_susp
+-a always,exit -F arch=b64 -F path=/usr/sbin/ebtables -F perm=x -k sbin_susp
+-a always,exit -F arch=b64 -F path=/sbin/xtables-nft-multi -F perm=x -k sbin_susp
+-a always,exit -F arch=b64 -F path=/usr/sbin/nft -F perm=x -k sbin_susp
+-a always,exit -F arch=b64 -F path=/usr/sbin/tcpdump -F perm=x -k sbin_susp
+-a always,exit -F arch=b64 -F path=/usr/sbin/traceroute -F perm=x -k sbin_susp
+-a always,exit -F arch=b64 -F path=/usr/sbin/ufw -F perm=x -k sbin_susp
+-a always,exit -F arch=b64 -F path=/usr/sbin/capsh -F perm=x -k sbin_susp
 
 ## dbus-send invocation
 ### may indicate privilege escalation CVE-2021-3560
--w /usr/bin/dbus-send -p x -k dbus_send
--w /usr/bin/gdbus -p x -k gdubs_call
--w /usr/bin/busctl -p x -k busctl_call
+-a always,exit -F arch=b64 -F path=/usr/bin/dbus-send -F perm=x -k dbus_send
+-a always,exit -F arch=b64 -F path=/usr/bin/gdbus -F perm=x -k gdbus_call
+-a always,exit -F arch=b64 -F path=/usr/bin/busctl -F perm=x -k busctl_call
 
 ### dbus
--a always,exit -F path=/lib64/dbus-1/dbus-daemon-launch-helper -F perm=x -F auid>=500 -F auid!=unset -k T1078_Valid_Accounts
--a always,exit -F path=/usr/lib64/dbus-1/dbus-daemon-launch-helper -F perm=x -F auid>=500 -F auid!=unset -k T1078_Valid_Accounts
--a always,exit -F path=/usr/lib/dbus-1.0/dbus-daemon-launch-helper -F perm=x -F auid>=500 -F auid!=unset -k T1078_Valid_Accounts
-
-## setfiles
--a always,exit -F path=/usr/bin/setfiles -F perm=x -F auid>=500 -F auid!=unset -k T1078_Valid_Accounts
--a always,exit -F path=/usr/sbin/setfiles -F perm=x -F auid>=500 -F auid!=unset -k T1078_Valid_Accounts
+-a always,exit -F arch=b64 -F path=/lib64/dbus-1/dbus-daemon-launch-helper -F perm=x -F auid>=500 -F auid!=unset -k T1078_Valid_Accounts
+-a always,exit -F arch=b64 -F path=/usr/lib64/dbus-1/dbus-daemon-launch-helper -F perm=x -F auid>=500 -F auid!=unset -k T1078_Valid_Accounts
+-a always,exit -F arch=b64 -F path=/usr/lib/dbus-1.0/dbus-daemon-launch-helper -F perm=x -F auid>=500 -F auid!=unset -k T1078_Valid_Accounts
 
 ## vte-2.91
--a always,exit -F path=/lib64/vte-2.91/gnome-pty-helper -F perm=x -F auid>=500 -F auid!=unset -k T1078_Valid_Accounts
--a always,exit -F path=/usr/lib64/vte-2.91/gnome-pty-helper -F perm=x -F auid>=500 -F auid!=unset -k T1078_Valid_Accounts
+-a always,exit -F arch=b64 -F path=/lib64/vte-2.91/gnome-pty-helper -F perm=x -F auid>=500 -F auid!=unset -k T1078_Valid_Accounts
+-a always,exit -F arch=b64 -F path=/usr/lib64/vte-2.91/gnome-pty-helper -F perm=x -F auid>=500 -F auid!=unset -k T1078_Valid_Accounts
 
 ## pkexec invocation
 ### may indicate privilege escalation CVE-2021-4034
--w /usr/bin/pkexec -p x -k pkexec
+-a always,exit -F arch=b64 -F path=/usr/bin/pkexec -F perm=x -k pkexec
 
 ## Suspicious shells
-#-w /bin/ash -p x -k susp_shell
-#-w /bin/bash -p x -k susp_shell
-#-w /bin/csh -p x -k susp_shell
-#-w /bin/dash -p x -k susp_shell
-#-w /bin/busybox -p x -k susp_shell
-#-w /bin/ksh -p x -k susp_shell
-#-w /bin/fish -p x -k susp_shell
-#-w /bin/tcsh -p x -k susp_shell
-#-w /bin/zsh -p x -k susp_shell
-#-w /bin/xonsh -p x -k susp_shell
-#-w /usr/local/bin/xonsh -p x -k susp_shell
-#-w /bin/open -p x -k susp_shell
-#-w /bin/sh -p x -k susp_shell
-#-w /bin/rbash -p x -k susp_shell
-#-w /bin/clush -p x -k susp_shell
-#-w /usr/local/bin/clush -p x -k susp_shell
-#-w /etc/clustershell/clush.conf -p x -k susp_shell
-#-w /bin/xxh -p x -k susp_shell
-#-w /usr/local/bin/xxh -p x -k susp_shell
+#-a always,exit -F arch=b64 -F path=/bin/ash -F perm=x -k susp_shell
+#-a always,exit -F arch=b64 -F path=/bin/bash -F perm=x -k susp_shell
+#-a always,exit -F arch=b64 -F path=/bin/csh -F perm=x -k susp_shell
+#-a always,exit -F arch=b64 -F path=/bin/dash -F perm=x -k susp_shell
+#-a always,exit -F arch=b64 -F path=/bin/busybox -F perm=x -k susp_shell
+#-a always,exit -F arch=b64 -F path=/bin/ksh -F perm=x -k susp_shell
+#-a always,exit -F arch=b64 -F path=/bin/fish -F perm=x -k susp_shell
+#-a always,exit -F arch=b64 -F path=/bin/tcsh -F perm=x -k susp_shell
+#-a always,exit -F arch=b64 -F path=/bin/zsh -F perm=x -k susp_shell
+#-a always,exit -F arch=b64 -F path=/bin/xonsh -F perm=x -k susp_shell
+#-a always,exit -F arch=b64 -F path=/usr/local/bin/xonsh -F perm=x -k susp_shell
+#-a always,exit -F arch=b64 -F path=/bin/open -F perm=x -k susp_shell
+#-a always,exit -F arch=b64 -F path=/bin/sh -F perm=x -k susp_shell
+#-a always,exit -F arch=b64 -F path=/bin/rbash -F perm=x -k susp_shell
+#-a always,exit -F arch=b64 -F path=/bin/clush -F perm=x -k susp_shell
+#-a always,exit -F arch=b64 -F path=/usr/local/bin/clush -F perm=x -k susp_shell
+#-a always,exit -F arch=b64 -F path=/etc/clustershell/clush.conf -F perm=x -k susp_shell
+#-a always,exit -F arch=b64 -F path=/bin/xxh -F perm=x -k susp_shell
+#-a always,exit -F arch=b64 -F path=/usr/local/bin/xxh -F perm=x -k susp_shell
 
 ### https://gtfobins.github.io/gtfobins/tclsh/
--w /bin/tclsh -p x -k susp_shell
+-a always,exit -F arch=b64 -F path=/bin/tclsh -F perm=x -k susp_shell
 
 ### https://gtfobins.github.io/gtfobins/tmux/
--w /bin/tmux -p x -k susp_shell
--w /usr/local/bin/tmux -p x -k susp_shell
+-a always,exit -F arch=b64 -F path=/bin/tmux -F perm=x -k susp_shell
+-a always,exit -F arch=b64 -F path=/usr/local/bin/tmux -F perm=x -k susp_shell
 
 ### https://gtfobins.github.io/gtfobins/posh/
--w /bin/posh -p x -k susp_shell
--w /usr/bin/posh -p x -k susp_shell
+-a always,exit -F arch=b64 -F path=/bin/posh -F perm=x -k susp_shell
+-a always,exit -F arch=b64 -F path=/usr/bin/posh -F perm=x -k susp_shell
 
 ### https://gtfobins.github.io/gtfobins/ginsh/
--w /bin/ginsh -p x -k susp_shell
--w /usr/bin/ginsh -p x -k susp_shell
+-a always,exit -F arch=b64 -F path=/bin/ginsh -F perm=x -k susp_shell
+-a always,exit -F arch=b64 -F path=/usr/bin/ginsh -F perm=x -k susp_shell
 
 ### https://gtfobins.github.io/gtfobins/wish/
--w /bin/wish -p x -k susp_shell
--w /usr/bin/wish -p x -k susp_shell
+-a always,exit -F arch=b64 -F path=/bin/wish -F perm=x -k susp_shell
+-a always,exit -F arch=b64 -F path=/usr/bin/wish -F perm=x -k susp_shell
 
 ### https://gtfobins.github.io/gtfobins/yash/
--w /bin/yash -p x -k susp_shell
--w /usr/bin/yash -p x -k susp_shell
+-a always,exit -F arch=b64 -F path=/bin/yash -F perm=x -k susp_shell
+-a always,exit -F arch=b64 -F path=/usr/bin/yash -F perm=x -k susp_shell
 
--w /bin/busybox -p x -k susp_shell
--w /usr/bin/busybox -p x -k susp_shell
+-a always,exit -F arch=b64 -F path=/bin/busybox -F perm=x -k susp_shell
+-a always,exit -F arch=b64 -F path=/usr/bin/busybox -F perm=x -k susp_shell
 
 ## Shell/profile configurations
--w /etc/profile.d/ -p wa -k shell_profiles
--w /etc/profile -p wa -k shell_profiles
--w /etc/shells -p wa -k shell_profiles
--w /etc/bashrc -p wa -k shell_profiles
--w /etc/csh.cshrc -p wa -k shell_profiles
--w /etc/csh.login -p wa -k shell_profiles
--w /etc/fish/ -p wa -k shell_profiles
--w /etc/zsh/ -p wa -k shell_profiles
+-a always,exit -F arch=b64 -F dir=/etc/profile.d -F perm=wa -k shell_profiles
+-a always,exit -F arch=b64 -F path=/etc/profile.d -F perm=wa -k shell_profiles
+-a always,exit -F arch=b64 -F path=/etc/profile -F perm=wa -k shell_profiles
+-a always,exit -F arch=b64 -F path=/etc/shells -F perm=wa -k shell_profiles
+-a always,exit -F arch=b64 -F path=/etc/bashrc -F perm=wa -k shell_profiles
+-a always,exit -F arch=b64 -F path=/etc/csh.cshrc -F perm=wa -k shell_profiles
+-a always,exit -F arch=b64 -F path=/etc/csh.login -F perm=wa -k shell_profiles
+-a always,exit -F arch=b64 -F dir=/etc/fish -F perm=wa -k shell_profiles
+-a always,exit -F arch=b64 -F path=/etc/fish -F perm=wa -k shell_profiles
+-a always,exit -F arch=b64 -F dir=/etc/zsh -F perm=wa -k shell_profiles
+-a always,exit -F arch=b64 -F path=/etc/zsh -F perm=wa -k shell_profiles
 
 ## Injection
 ### These rules watch for code injection by the ptrace facility.
@@ -438,7 +479,7 @@
 
 ## Privilege Abuse
 ### The purpose of this rule is to detect when an admin may be abusing power by looking in user's home dir.
--a always,exit -F dir=/home -F auid=0 -F auid>=1000 -F auid!=unset -C auid!=obj_uid -k power_abuse
+-a always,exit -F arch=b64 -F dir=/home -F uid=0 -F auid>=1000 -F auid!=unset -C auid!=obj_uid -k power_abuse
 
 # Socket Creations
 # will catch both IPv4 and IPv6
@@ -454,63 +495,65 @@
 # Software Management ---------------------------------------------------------
 
 # DPKG / APT-GET (Debian/Ubuntu)
--w /usr/bin/dpkg -p x -k software_mgmt
--w /usr/bin/apt -p x -k software_mgmt
--w /usr/bin/apt-add-repository -p x -k software_mgmt
--w /usr/bin/apt-config -p x -k software_mgmt
--w /usr/bin/apt-get -p x -k software_mgmt
--w /usr/bin/apt-key -p x -k software_mgmt
--w /usr/bin/aptitude -p x -k software_mgmt
--w /usr/bin/wajig -p x -k software_mgmt
--w /usr/bin/snap -p x -k software_mgmt
+-a always,exit -F arch=b64 -F path=/usr/bin/dpkg -F perm=x -k software_mgmt
+-a always,exit -F arch=b64 -F path=/usr/bin/apt -F perm=x -k software_mgmt
+-a always,exit -F arch=b64 -F path=/usr/bin/apt-add-repository -F perm=x -k software_mgmt
+-a always,exit -F arch=b64 -F path=/usr/bin/apt-config -F perm=x -k software_mgmt
+-a always,exit -F arch=b64 -F path=/usr/bin/apt-get -F perm=x -k software_mgmt
+-a always,exit -F arch=b64 -F path=/usr/bin/apt-key -F perm=x -k software_mgmt
+-a always,exit -F arch=b64 -F path=/usr/bin/aptitude -F perm=x -k software_mgmt
+-a always,exit -F arch=b64 -F path=/usr/bin/wajig -F perm=x -k software_mgmt
+-a always,exit -F arch=b64 -F path=/usr/bin/snap -F perm=x -k software_mgmt
 
 # PIP(3) (Python installs)
--w /usr/bin/pip -p x -k T1072_third_party_software
--w /usr/local/bin/pip -p x -k T1072_third_party_software
--w /usr/bin/pip3 -p x -k T1072_third_party_software
--w /usr/local/bin/pip3 -p x -k T1072_third_party_software
--w /usr/bin/pipx -p x -k T1072_third_party_software
--w /usr/local/bin/pipx -p x -k T1072_third_party_software
+-a always,exit -F arch=b64 -F path=/usr/bin/pip -F perm=x -k T1072_third_party_software
+-a always,exit -F arch=b64 -F path=/usr/local/bin/pip -F perm=x -k T1072_third_party_software
+-a always,exit -F arch=b64 -F path=/usr/bin/pip3 -F perm=x -k T1072_third_party_software
+-a always,exit -F arch=b64 -F path=/usr/local/bin/pip3 -F perm=x -k T1072_third_party_software
+-a always,exit -F arch=b64 -F path=/usr/bin/pipx -F perm=x -k T1072_third_party_software
+-a always,exit -F arch=b64 -F path=/usr/local/bin/pipx -F perm=x -k T1072_third_party_software
 
--w /usr/bin/python -p x -k third_party_software_mgmt
--w /usr/bin/python2 -p x -k third_party_software_mgmt
--w /usr/bin/python2.7 -p x -k third_party_software_mgmt
--w /usr/bin/python3 -p x -k third_party_software_mgmt
+-a always,exit -F arch=b64 -F path=/usr/bin/python -F perm=x -k third_party_software_mgmt
+-a always,exit -F arch=b64 -F path=/usr/bin/python2 -F perm=x -k third_party_software_mgmt
+-a always,exit -F arch=b64 -F path=/usr/bin/python2.7 -F perm=x -k third_party_software_mgmt
+-a always,exit -F arch=b64 -F path=/usr/bin/python3 -F perm=x -k third_party_software_mgmt
 
 # LuaRocks (Lua installs)
--w /usr/bin/luarocks -p x -k T1072_third_party_software
+-a always,exit -F arch=b64 -F path=/usr/bin/luarocks -F perm=x -k T1072_third_party_software
 
 # Ruby (RubyGems installs)
--w /usr/bin/gem -p x -k T1072_third_party_software
+-a always,exit -F arch=b64 -F path=/usr/bin/gem -F perm=x -k T1072_third_party_software
 
 # Comprehensive Perl Archive Network (CPAN) (CPAN installs)
--w /usr/bin/cpan -p x -k T1072_third_party_software
+-a always,exit -F arch=b64 -F path=/usr/bin/cpan -F perm=x -k T1072_third_party_software
 
 # npm
--w /usr/bin/npm -p x -k T1072_third_party_software
+-a always,exit -F arch=b64 -F path=/usr/bin/npm -F perm=x -k T1072_third_party_software
 
 # Special Software ------------------------------------------------------------
 
 ## Docker
--w /usr/bin/dockerd -k docker
--w /usr/bin/docker -k docker
--w /usr/bin/docker-containerd -k docker
--w /usr/bin/docker-runc -k docker
--w /var/lib/docker -p wa -k docker
--w /etc/docker -k docker
-# -w /etc/sysconfig/docker -k docker # ne fonctionne pas
-# -w /etc/sysconfig/docker-storage -k docker # ne fonctionne pas
--w /usr/lib/systemd/system/docker.service -k docker
--w /usr/lib/systemd/system/docker.socket -k docker
+-a always,exit -F arch=b64 -F path=/usr/bin/dockerd -F perm=rwxa -k docker
+-a always,exit -F arch=b64 -F path=/usr/bin/docker -F perm=rwxa -k docker
+-a always,exit -F arch=b64 -F path=/usr/bin/docker-containerd -F perm=rwxa -k docker
+-a always,exit -F arch=b64 -F path=/usr/bin/docker-runc -F perm=rwxa -k docker
+-a always,exit -F arch=b64 -F dir=/var/lib/docker -F perm=wa -k docker
+-a always,exit -F arch=b64 -F path=/var/lib/docker -F perm=wa -k docker
+-a always,exit -F arch=b64 -F dir=/etc/docker -F perm=rwxa -k docker
+-a always,exit -F arch=b64 -F path=/etc/docker -F perm=rwxa -k docker
+# -a always,exit -F arch=b64 -F path=/etc/sysconfig/docker -F perm=rwxa -k docker # ne fonctionne pas
+# -a always,exit -F arch=b64 -F path=/etc/sysconfig/docker-storage -F perm=rwxa -k docker # ne fonctionne pas
+-a always,exit -F arch=b64 -F path=/usr/lib/systemd/system/docker.service -F perm=rwxa -k docker
+-a always,exit -F arch=b64 -F path=/usr/lib/systemd/system/docker.socket -F perm=rwxa -k docker
 
 ## Virtualization stuff
--w /usr/bin/qemu-system-x86_64 -p x -k qemu-system-x86_64
--w /usr/bin/qemu-img -p x -k qemu-img
--w /usr/bin/qemu-kvm -p x -k qemu-kvm
--w /usr/bin/qemu -p x -k qemu
--w /usr/bin/virtualbox -p x -k virtualbox
--w /usr/bin/virt-manager -p x -k virt-manager
--w /usr/bin/VBoxManage -p x -k VBoxManage
+-a always,exit -F arch=b64 -F path=/usr/bin/qemu-system-x86_64 -F perm=x -k qemu-system-x86_64
+-a always,exit -F arch=b64 -F path=/usr/bin/qemu-img -F perm=x -k qemu-img
+-a always,exit -F arch=b64 -F path=/usr/bin/qemu-kvm -F perm=x -k qemu-kvm
+-a always,exit -F arch=b64 -F path=/usr/bin/qemu -F perm=x -k qemu
+-a always,exit -F arch=b64 -F path=/usr/bin/virtualbox -F perm=x -k virtualbox
+-a always,exit -F arch=b64 -F path=/usr/bin/virt-manager -F perm=x -k virt-manager
+-a always,exit -F arch=b64 -F path=/usr/bin/VBoxManage -F perm=x -k VBoxManage
 
 ## VMware tools
 -a exit,never -F arch=b64 -S all -F exe=/usr/bin/vmtoolsd
@@ -587,10 +630,6 @@
 ### bit API.
 -a always,exit -F arch=b32 -S all -k 32bit_api
 
-# Make The Configuration Immutable --------------------------------------------
-
-##-e 2
-
 ## Exclusion for openat syscall with htop
 -A never,exit -F arch=b64 -S openat -F exe=/usr/bin/htop
 
@@ -603,3 +642,7 @@
 -A never,exit -F arch=b64 -S socket -F exe=/usr/lib/firefox-esr/firefox-esr
 -A never,exit -F arch=b64 -S socket -F exe=/opt/brave.com/brave/brave
 -A never,exit -F arch=b64 -S socket -F exe=/usr/lib/chromium/chromium
+
+# Make The Configuration Immutable --------------------------------------------
+
+##-e 2
