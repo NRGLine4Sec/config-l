@@ -3402,76 +3402,10 @@ ln -s /usr/share/applications/joplin.desktop /home/"$local_user"/.config/autosta
 ##------------------------------------------------------------------------------
 configure_keepassxc() {
   displayandexec "Configuration de KeePassXC                          " "\
-  reset_dir_as_user "/home/"$local_user"/.config/keepassxc/""
-  $ExeAsUser tee /home/"$local_user"/.config/keepassxc/keepassxc.ini << 'EOF' >/dev/null
-[General]
-AutoReloadOnChange=true
-AutoSaveAfterEveryChange=true
-AutoSaveOnExit=true
-BackupBeforeSave=true
-ConfigVersion=2
-OpenPreviousDatabasesOnStartup=true
-RememberLastDatabases=true
-RememberLastKeyFiles=true
-SingleInstance=true
-UpdateCheckMessageShown=true
-UseAtomicSaves=false
-
-[Browser]
-AllowExpiredCredentials=false
-AlwaysAllowAccess=false
-AlwaysAllowUpdate=false
-BestMatchOnly=false
-CustomProxyLocation=
-Enabled=true
-HttpAuthPermission=false
-MatchUrlScheme=true
-NoMigrationPrompt=false
-SearchInAllDatabases=true
-ShowNotification=true
-SortByUsername=false
-SupportBrowserProxy=true
-SupportKphFields=true
-UnlockDatabase=true
-UpdateBinaryPath=false
-UseCustomProxy=false
-
-[FdoSecrets]
-Enabled=false
-NoConfirmDeleteItem=false
-ShowNotification=true
-
-[GUI]
-AdvancedSettings=true
-ApplicationTheme=dark
-CheckForUpdates=false
-CheckForUpdatesIncludeBetas=false
-HidePasswords=true
-HidePreviewPanel=false
-HideToolbar=false
-HideUsernames=false
-Language=system
-MinimizeOnClose=false
-MinimizeOnStartup=false
-MinimizeToTray=false
-MonospaceNotes=false
-MovableToolbar=false
-ShowTrayIcon=false
-ToolButtonStyle=0
-TrayIconAppearance=monochrome-light
-
-[PasswordGenerator]
-AdditionalChars=
-ExcludedChars=
-Length=46
-Logograms=true
-
-[Security]
-LockDatabaseScreenLock=false
-EOF
+  reset_dir_as_user /home/$local_user/.config/keepassxc/"
+  execandlog "$ExeAsUser cp $script_path/dot_files/keepassxc/keepassxc.ini /home/$local_user/.config/keepassxc/keepassxc.ini"
 }
 configure_keepassxc
-# réfléchir au parametre DropToBackgroundOnCopy=false, voir si on ne le passe pas à True
 ################################################################################
 
 ################################################################################
