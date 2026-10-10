@@ -1400,7 +1400,7 @@ install_nix_packages() {
   displayandexec "Installation de gh                                  " "install_with_nix_pm nixpkgs#gh"
   displayandexec "Installation de wl-clipboard                        " "install_with_nix_pm nixpkgs#wl-clipboard"
   displayandexec "Installation de testdisk                            " "install_with_nix_pm nixpkgs#testdisk"
-
+  displayandexec "Installation de marktext                            " "install_with_nix_pm nixpkgs#marktext"
 
  
   # displayandexec "Installation de mediainfo                           " "install_with_nix_pm nixpkgs#mediainfo"
@@ -2042,6 +2042,12 @@ install_flatpak_software() {
 
   # execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub com.vscodium.codium" # vscodium
   # execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub io.github.tobagin.Ntfyr" # Ntfyr
+
+  # execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub com.github.marktext.marktext" # MarkText
+  # normallement on installerai MarkText via flatpak au lieu de Nix, mais on ne le fait pas à cause des ces issues :
+  # [Flathub Verification · Issue #3781 · marktext/marktext](https://github.com/marktext/marktext/issues/3781)
+  # [Flatpak runtime is end-of-life and needs update · Issue #4086 · marktext/marktext](https://github.com/marktext/marktext/issues/4086)
+  # [Request: build new flatpak to remove end-of-life warnings · Issue #4099 · marktext/marktext](https://github.com/marktext/marktext/issues/4099)
 
   # à noter que la commande suivante est nécessaire pour que drawio puisse ouvrir directement (depuis Nautilus) des fichiers drawio
   execandlog "$ExeAsUser flatpak override --user --filesystem=home com.jgraph.drawio.desktop"
@@ -3021,6 +3027,17 @@ configure_bat_root_user
 ################################################################################
 
 ################################################################################
+## configuration de marktext
+##------------------------------------------------------------------------------
+configure_marktext() {
+  execandlog "is_dir_present_or_mkdir_as_user /home/$local_user/.config/marktext/"
+  execandlog "is_file_present_and_rmfile /home/$local_user/.config/marktext/preferences.json && \
+  $ExeAsUser cp $script_path/dot_files/marktext/preferences.json /home/$local_user/.config/marktext/preferences.json"
+}
+configure_marktext
+################################################################################
+
+################################################################################
 ## configuration de cups-browsed
 ##------------------------------------------------------------------------------
 configure_cups_browsed() {
@@ -3048,69 +3065,9 @@ configure_firefox
 ## configuration de OpenSnitch
 ##------------------------------------------------------------------------------
 configure_opensnitch() {
-  execandlog "is_dir_present_or_mkdir_as_user "/home/"$local_user"/.config/opensnitch/""
-  $ExeAsUser tee /home/"$local_user"/.config/opensnitch/settings.conf << 'EOF' >/dev/null
-[General]
-statsDialog=0
-
-[database]
-file=:memory:
-max_days=1
-purge_interval=5
-purge_oldest=false
-type=0
-
-[global]
-default_action=0
-default_duration=6
-default_ignore_rules=false
-default_ignore_temporary_rules=0
-default_popup_advanced=true
-default_popup_advanced_dstip=true
-default_popup_advanced_dstport=false
-default_popup_advanced_uid=false
-default_popup_position=0
-default_target=0
-default_timeout=15
-disable_popups=false
-hide_systray_warning=true
-theme=dark_teal.xml
-
-[notifications]
-enabled=true
-type=0
-
-[promptDialog]
-geometry=@ByteArray(\x1\xd9\xd0\xcb\0\x3\0\0\0\0\r\xf2\0\0\x2O\0\0\xf\xf9\0\0\x3\xca\0\0\r\xf2\0\0\x2t\0\0\xf\xf9\0\0\x3\xca\0\0\0\0\0\0\0\0\xf\0\0\0\r\xf2\0\0\x2t\0\0\xf\xf9\0\0\x3\xca)
-
-[statsDialog]
-firewall_columns_state=@ByteArray(\0\0\0\xff\0\0\0\0\0\0\0\x1\0\0\0\x1\0\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\f\x3\0\0\0\0\x2\0\0\0\x1\0\0\0\x64\0\0\0\0\0\0\0\x64\0\0\av\0\0\0\f\0\x1\x1\x1\0\0\0\0\0\0\0\0\0\0\0\0\x64\xff\xff\xff\xff\0\0\0\x84\0\0\0\0\0\0\0\f\0\0\0\0\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\
-0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x1\xa4\0\0\0\x1\0\0\0\0\0\0\x1\x38\0\0\0\x1\0\0\0\0\0\0\x1\xde\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x3\xe8\0\0\0\0\x64)
-general_columns_state=@ByteArray(\0\0\0\xff\0\0\0\0\0\0\0\x1\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\b\x82\0\0\0\x2\0\0\0\a\0\0\0\x64\0\0\0\x1\0\0\0\x64\0\0\b\x11\0\0\0\b\0\x1\x1\x1\0\0\0\0\0\0\0\0\0\0\0\0\x64\xff\xff\xff\xff\0\0\0\x84\0\0\0\0\0\0\0\b\0\0\0\xca\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x2\xb1\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x2\x65\0\0\0\x1\0\0\0\0\0\0\x1i\0\
-0\0\x1\0\0\0\0\0\0\0\0\0\0\0\x1\0\0\0\0\0\0\x3\xe8\0\0\0\x1i)
-general_filter_text=
-general_limit_results=4
-geometry=@ByteArray(\x1\xd9\xd0\xcb\0\x3\0\0\0\0\0\0\0\0\0\0\0\0\a\x7f\0\0\x4\x37\0\0\x16\xb4\0\0\x1\x66\0\0\x1dh\0\0\x4j\0\0\0\x3\x2\0\0\0\a\x80\0\0\0\0\0\0\0%\0\0\a\x7f\0\0\x4\x37)
-last_tab=0
-nodes_columns_state=@ByteArray(\0\0\0\xff\0\0\0\0\0\0\0\x1\0\0\0\x1\0\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\av\0\0\0\n\0\x1\x1\x1\0\0\0\0\0\0\0\0\x1\0\0\0\x64\xff\xff\xff\xff\0\0\0\x84\0\0\0\0\0\0\0\n\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x88\0\0\0\x1\0\0\0\x3\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\
-0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x3\xce\0\0\0\x1\0\0\0\0\0\0\x3\xe8\0\0\0\0\x64)
-rules_columns_state=@ByteArray(\0\0\0\xff\0\0\0\0\0\0\0\x1\0\0\0\x1\0\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\aw\0\0\0\b\0\x1\x1\x1\0\0\0\0\0\0\0\0\0\0\0\0\x64\xff\xff\xff\xff\0\0\0\x84\0\0\0\0\0\0\0\b\0\0\0\xa4\0\0\0\x1\0\0\0\0\0\0\0\xc5\0\0\0\x1\0\0\0\0\0\0\x3%\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x1Y\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x3
-\xe8\0\0\0\x1Y)
-rules_splitter_pos=@ByteArray(\0\0\0\xff\0\0\0\x1\0\0\0\x2\0\0\0\0\0\0\aR\x1\xff\xff\xff\xff\x1\0\0\0\x1\0)
-rules_tree_0_expanded=false
-rules_tree_1_expanded=false
-show_columns=0, 2, 3, 4, 5, 6
-view_columns_state2=@ByteArray(\0\0\0\xff\0\0\0\0\0\0\0\x1\0\0\0\x1\0\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\xe\x93\0\0\0\a\0\x1\x1\x1\0\0\0\0\0\0\0\0\0\0\0\0\x64\xff\xff\xff\xff\0\0\0\x84\0\0\0\0\0\0\0\a\0\0\0\xa4\0\0\0\x1\0\0\0\0\0\0\0\xc5\0\0\0\x1\0\0\0\0\0\0\x3%\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\b\xd9\0\0\0\x1\0\0\0\0\0\0\x3\xe8\0\0\0\x1Y)
-view_columns_state3=@ByteArray(\0\0\0\xff\0\0\0\0\0\0\0\x1\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\a!\0\0\0\x2\0\x1\x1\x1\0\0\0\0\0\0\0\0\x1\0\0\0\x64\xff\xff\xff\xff\0\0\0\x84\0\0\0\0\0\0\0\x2\0\0\0\xc0\0\0\0\x1\0\0\0\x3\0\0\x6\x61\0\0\0\x1\0\0\0\0\0\0\x3\xe8\0\0\0\0\x64)
-view_columns_state4=@ByteArray(\0\0\0\xff\0\0\0\0\0\0\0\x1\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\xe\xb1\0\0\0\x2\0\x1\x1\x1\0\0\0\0\0\0\0\0\x1\0\0\0\x64\xff\xff\xff\xff\0\0\0\x84\0\0\0\0\0\0\0\x2\0\0\x1Y\0\0\0\x1\0\0\0\x3\0\0\rX\0\0\0\x1\0\0\0\0\0\0\x3\xe8\0\0\0\0\x64)
-view_details_columns_state0=@ByteArray(\0\0\0\xff\0\0\0\0\0\0\0\x1\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\xc8\0\0\0\x2\0\x1\x1\x1\0\0\0\0\0\0\0\0\x1\0\0\0\x64\xff\xff\xff\xff\0\0\0\x84\0\0\0\0\0\0\0\x2\0\0\0\x64\0\0\0\x1\0\0\0\x3\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x3\xe8\0\0\0\0\x64)
-view_details_columns_state2=@ByteArray(\0\0\0\xff\0\0\0\0\0\0\0\x1\0\0\0\x1\0\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x10\xfd\0\0\0\n\0\x1\x1\x1\0\0\0\0\0\0\0\0\0\0\0\0\x64\xff\xff\xff\xff\0\0\0\x84\0\0\0\0\0\0\0\n\0\0\0\xa4\0\0\0\x1\0\0\0\0\0\0\0\xc5\0\0\0\x1\0\0\0\0\0\0\x3%\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x1Y\0\0\0\x1\0\0\0\0\0\0\x1\x31\0\0\0\x1\
-0\0\0\0\0\0\bU\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x3\xe8\0\0\0\x1Q)
-view_details_columns_state3=@ByteArray(\0\0\0\xff\0\0\0\0\0\0\0\x1\0\0\0\x1\xff\xff\xff\xff\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\av\0\0\0\f\0\x1\x1\x1\0\0\0\0\0\0\0\0\x1\0\0\0\x64\xff\xff\xff\xff\0\0\0\x84\0\0\0\0\0\0\0\f\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0
-\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x3*\0\0\0\x1\0\0\0\0\0\0\x3\xe8\0\0\0\0\x64)
-view_details_columns_state4=@ByteArray(\0\0\0\xff\0\0\0\0\0\0\0\x1\0\0\0\x1\0\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x12\xd2\0\0\0\r\0\x1\x1\x1\0\0\0\0\0\0\0\0\x1\0\0\0\x64\xff\xff\xff\xff\0\0\0\x84\0\0\0\0\0\0\0\r\0\0\0\xb3\0\0\0\x1\0\0\0\x3\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0|\0\0\0\x1\0\0\0\0\0\0\x1\xef\0\0\0\
-x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x1\xd3\0\0\0\x1\0\0\0\0\0\0\x6\xd8\0\0\0\x1\0\0\0\0\0\0\x4M\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\x3\xe8\0\0\0\0\x64)
-EOF
+  execandlog "is_dir_present_or_mkdir_as_user /home/$local_user/.config/opensnitch/"
+  execandlog "is_file_present_and_rmfile /home/$local_user/.config/opensnitch/settings.conf && \
+  $ExeAsUser cp $script_path/dot_files/opensnitch/settings.conf /home/$local_user/.config/opensnitch/settings.conf"
 #   execandlog "reset_dir "/opt/opensnitch/allow_list/vscode/domains/""
 #   cat> /opt/opensnitch/allow_list/vscode/domains/vscode.domains << 'EOF'
 # # ref : [Setup Visual Studio Code's Network Connection](https://code.visualstudio.com/docs/setup/network)
@@ -3239,60 +3196,12 @@ EOF
 ################################################################################
 ## configuration de Zed
 ##------------------------------------------------------------------------------
-$ExeAsUser tee /home/"$local_user"/.var/app/dev.zed.Zed/config/zed/settings.json << 'EOF' >/dev/null
-// Zed settings
-//
-// For information on how to configure Zed, see the Zed
-// documentation: https://zed.dev/docs/configuring-zed
-//
-// To see all of Zed's default settings without changing your
-// custom settings, run `zed: open default settings` from the
-// command palette (cmd-shift-p / ctrl-shift-p)
-{
-  "tab_size": 2,
-  "diff_view_style": "unified",
-  "restore_on_startup": "last_workspace",
-  "project_panel": {
-    "dock": "left"
-  },
-  "outline_panel": {
-    "dock": "left"
-  },
-  "collaboration_panel": {
-    "dock": "left"
-  },
-  "agent": {
-    "dock": "right",
-    "favorite_models": [],
-    "model_parameters": []
-  },
-  "git_panel": {
-    "dock": "left"
-  },
-  "auto_update": false,
-  "telemetry": {
-    "diagnostics": false,
-    "metrics": false
-  },
-  "base_keymap": "VSCode",
-  "minimap": {
-    "show": "always"
-  },
-  "autosave": {
-    "after_delay": {
-      "milliseconds": 1000
-    }
-  },
-  "soft_wrap": "editor_width",
-  "ui_font_size": 16,
-  "buffer_font_size": 15,
-  "theme": {
-    "mode": "system",
-    "light": "One Light",
-    "dark": "One Dark",
-  },
+configure_zed() {
+  execandlog "is_dir_present_or_mkdir_as_user /home/$local_user/.var/app/dev.zed.Zed/config/zed/"
+  execandlog "is_file_present_and_rmfile /home/$local_user/.var/app/dev.zed.Zed/config/zed/settings.json && \
+  $ExeAsUser cp $script_path/dot_files/zed/settings.json /home/$local_user/.var/app/dev.zed.Zed/config/zed/settings.json"
 }
-EOF
+configure_zed
 
   # akamud.vscode-theme-onedark -> 
   # redhat.vscode-yaml -> 
@@ -3403,21 +3312,24 @@ configure_handbrake
 # On est obliger de créer le fichier de conf (/home/"$local_user"/.config/geeqie/geeqierc.xml) en lancant geeqie graphiquement et ensuite en allant dans Edit -> Preference -> cliquer sur OK
 # Il semblerait que le fichier de conf se créer aussi lorsqu'on lance Geeqie et qu'on le quitte proprement (en appuyant sur la croix en haut de la fenêtre)
 configure_geeqie() {
-  if is_file_present "/home/"$local_user"/.config/geeqie/geeqierc.xml"; then
-    $ExeAsUser sed -i -E 's/image.alpha_color_1 = "#[0-9]+"/image.alpha_color_1 = "#FFFFFFFFFFFF"/' /home/"$local_user"/.config/geeqie/geeqierc.xml
-    $ExeAsUser sed -i -E 's/image.alpha_color_2 = "#[0-9]+"/image.alpha_color_2 = "#FFFFFFFFFFFF"/' /home/"$local_user"/.config/geeqie/geeqierc.xml
+  local app_id="org.geeqie.Geeqie"
+  local rc="/home/${local_user}/.var/app/${app_id}/config/geeqie/geeqierc.xml"
 
-  # on désactive la capacité de geekie d'ouvrir des .pdf
-    $ExeAsUser sed -i -E 's%<file_type key = "pdf" enabled = "true" extensions = ".pdf" description = "Portable Document Format" file_class = "6" writable = "false" allow_sidecar = "false" />%<file_type key = "pdf" enabled = "false" extensions = ".pdf" description = "Portable Document Format" file_class = "6" writable = "false" allow_sidecar = "false" />%' /home/"$local_user"/.config/geeqie/geeqierc.xml
-
-  # on désactive la capacité de geekie d'ouvrir des fichiers compréssés
-    $ExeAsUser sed -i -E 's%<file_type key = "zip" enabled = "true" extensions = ".zip;.rar;.tar;.tar.gz;.tar.bz2;.tar.xz;.tgz;.tbz;.txz;.cbr;.cbz;.gz;.bz2;.xz;.lzh;.lza;.7z" description = "Archive files" file_class = "7" writable = "false" allow_sidecar = "false" />%<file_type key = "zip" enabled = "false" extensions = ".zip;.rar;.tar;.tar.gz;.tar.bz2;.tar.xz;.tgz;.tbz;.txz;.cbr;.cbz;.gz;.bz2;.xz;.lzh;.lza;.7z" description = "Archive files" file_class = "7" writable = "false" allow_sidecar = "false" />%' /home/"$local_user"/.config/geeqie/geeqierc.xml
-  # Pour voir les différents formats supportés par Geeqie : sed -n '/<filter>/,/<\/filter>/p' ~/.config/geeqie/geeqierc.xml
-
-    $ExeAsUser sed -i 's/image.zoom_to_fit_allow_expand = "false"/image.zoom_to_fit_allow_expand = "true"/' /home/"$local_user"/.config/geeqie/geeqierc.xml
-
-    $ExeAsUser sed -i 's/image.zoom_quality = "[0-9]+"/image.zoom_quality = "3"/' /home/"$local_user"/.config/geeqie/geeqierc.xml
+  # Geeqie réécrit geeqierc.xml à la fermeture : inutile de modifier s'il tourne
+  if pgrep -u "$local_user" -x geeqie >/dev/null; then
+    echo "Geeqie is running, close it before configuring" >&2
+    return 1
   fi
+
+  # Le fichier n'existe qu'après un premier lancement de l'application
+  is_file_present "$rc" || return 0
+
+  $ExeAsUser sed -i -E \
+    -e 's/(image\.alpha_color_[12] = )"#[0-9A-Fa-f]+"/\1"#FFFFFFFFFFFF"/' \
+    -e 's/(<file_type key = "(pdf|zip)" enabled = )"true"/\1"false"/' \
+    -e 's/(image\.zoom_to_fit_allow_expand = )"false"/\1"true"/' \
+    -e 's/(image\.zoom_quality = )"[0-9]+"/\1"3"/' \
+    "$rc"
 }
 configure_geeqie
 ################################################################################
