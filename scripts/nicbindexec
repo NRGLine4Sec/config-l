@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# __my_script__
+
+# nicbindexec: run a program whose traffic leaves through a given network
+# interface only, using pasta (unprivileged network namespace). The interface
+# stays usable by the rest of the system.
+#
+# Usage: nicbindexec <interface> <command> [args...]
+
+set -euo pipefail
+
+readonly PROG=${0##*/}
+
+die() {
+  printf '%s: %s\n' "$PROG" "$1" >&2
+  exit "${2:-1}"
+}
+
+if (( $# < 2 )); then
+  printf 'Usage: %s <interface> <command> [args...]\n' "$PROG" >&2
+  exit 2
+fi
+
+iface=$1
+shift
+
+command -v pasta >/dev/null || die "pasta not found (Debian: apt install passt)" 127
+[[ -e /sys/class/net/$iface ]] || die "no such interface: $iface"
+type -P -- "$1" >/dev/null || [[ -x $1 ]] || die "command not found: $1" 127
+
+# Only request the address families the interface actually carries. A missing
+# family is disabled inside the namespace, so it cannot leak through another
+# interface.
+opts=(--config-net --quiet)
+has4=$(ip -4 -o addr show dev "$iface" scope global 2>/dev/null || true)
+has6=$(ip -6 -o addr show dev "$iface" scope global 2>/dev/null || true)
+if [[ -n $has4 && -n $has6 ]]; then
+  opts+=(--outbound-if4 "$iface" --outbound-if6 "$iface")
+elif [[ -n $has4 ]]; then
+  opts+=(-4 --outbound-if4 "$iface")
+elif [[ -n $has6 ]]; then
+  opts+=(-6 --outbound-if6 "$iface")
+else
+  die "$iface has no global IPv4 or IPv6 address"
+fi
+
+# Go through sh: pasta's AppArmor profile only allows exec from some paths
+# (e.g. /usr/bin/firefox-esr resolves to /usr/lib/firefox-esr/firefox-esr).
+# No exec inside sh: sh stays PID 1 of the namespace, so the program keeps
+# normal Ctrl-C behaviour. When the program ends, sh exits and the kernel
+# kills every process left in the namespace.
+# shellcheck disable=SC2016  # "$@" is expanded by the inner sh
+exec pasta "${opts[@]}" -- sh -c '"$@"' sh "$@"
