@@ -19,6 +19,7 @@ readonly NOCTALIA_CFG="$CFG_HOME/noctalia/config.toml"
 readonly NOCTALIA_STATE="$STATE_HOME/noctalia/settings.toml"
 readonly HYPRLOCK_CFG="$CFG_HOME/hypr/hyprlock.conf"
 readonly LOCK_SCRIPT="$HOME/.local/bin/niri-lock"
+readonly COLUMN_DOWN="$HOME/.local/bin/niri-column-down"
 readonly IDLE_DROPIN="$UNIT_DIR/niri-swayidle.service.d/override.conf"
 readonly BACKPORTS_LIST="/etc/apt/sources.list.d/backports.list"
 readonly MARKER="Généré par niri-noctalia-nix.sh"
@@ -382,6 +383,44 @@ EOF
     ok "Lock script written: $LOCK_SCRIPT"
 }
 
+# Mod+Bas façon GNOME : niri n'a pas d'action qui réduit la colonne d'un cran
+# sans boucler (switch-preset-column-width-back repasse au plus large une fois
+# au plus étroit). Script généré, réécrit à chaque install/update.
+write_column_down_script() {
+    mkdir -p "$(dirname "$COLUMN_DOWN")"
+    cat >"$COLUMN_DOWN" <<EOF
+#!/usr/bin/env python3
+# $MARKER
+# Mod+Bas façon GNOME : écran complet → demi-écran → tiers d'écran, sans boucler
+import json
+import subprocess
+import sys
+
+NIRI = "$BIN/niri"
+EOF
+    cat >>"$COLUMN_DOWN" <<'EOF'
+
+
+def niri(*args):
+    return subprocess.run([NIRI, *args], capture_output=True, text=True, check=True).stdout
+
+
+window = json.loads(niri("msg", "--json", "focused-window"))
+output = json.loads(niri("msg", "--json", "focused-output"))
+if not window or not output or not output.get("logical"):
+    sys.exit(0)
+
+# Largeur de la tuile rapportée à celle de l'écran : ~1 en écran complet,
+# ~0,5 en demi-écran, ~0,33 au tiers (les marges expliquent l'écart)
+ratio = window["layout"]["tile_size"][0] / output["logical"]["width"]
+target = "50%" if ratio > 0.75 else "33.333%" if ratio > 0.4 else None
+if target:
+    niri("msg", "action", "set-column-width", target)
+EOF
+    chmod 0755 "$COLUMN_DOWN"
+    ok "Column resize helper written: $COLUMN_DOWN"
+}
+
 restart_idle_if_running() {
     if systemctl --user -q is-active niri.service; then
         systemctl --user restart niri-swayidle.service
@@ -593,15 +632,16 @@ binds {
     XF86MonBrightnessDown allow-when-locked=true { spawn "$BIN/noctalia" "msg" "brightness-down"; }
 
     // Navigation (flèches uniquement, Mod+L étant réservé au verrouillage)
-    // Haut/Bas changent d'espace de travail comme GNOME, sauf fenêtres empilées
+    // Haut/Bas façon GNOME : écran complet (barre et dock visibles) / réduction
+    // d'un cran ; les espaces de travail restent sur Mod+Page Haut/Bas
     Mod+Left  { focus-column-left; }
     Mod+Right { focus-column-right; }
-    Mod+Up    { focus-window-or-workspace-up; }
-    Mod+Down  { focus-window-or-workspace-down; }
+    Mod+Up    { set-column-width "100%"; }
+    Mod+Down  { spawn "$COLUMN_DOWN"; }
     Mod+Ctrl+Left  { move-column-left; }
     Mod+Ctrl+Right { move-column-right; }
-    Mod+Ctrl+Up    { move-window-up-or-to-workspace-up; }
-    Mod+Ctrl+Down  { move-window-down-or-to-workspace-down; }
+    Mod+Ctrl+Up    { move-window-up; }
+    Mod+Ctrl+Down  { move-window-down; }
     Mod+Home { focus-column-first; }
     Mod+End  { focus-column-last; }
 
@@ -653,6 +693,30 @@ EOF
 }
 
 # Config niri conservée d'une version précédente : bascule Mod+L vers hyprlock
+# Config niri conservée : remplace les raccourcis Haut/Bas d'espaces de travail
+# d'une version précédente par le comportement GNOME. Seules les lignes encore
+# identiques à celles générées sont touchées.
+migrate_niri_updown_binds() {
+    grep -Eq '^[[:space:]]*Mod\+(Ctrl\+)?(Up|Down)[[:space:]]+\{ (focus-window-or-workspace|move-window-(up|down)-or-to-workspace)' "$NIRI_CFG" || return 0
+    [[ -e "$NIRI_CFG.bak-$STAMP" ]] || cp -a "$NIRI_CFG" "$NIRI_CFG.bak-$STAMP"
+    local tmp
+    tmp="$(mktemp)"
+    sed -E \
+        -e "s|^([[:space:]]*)Mod\+Up([[:space:]]+)\{ focus-window-or-workspace-up; \}|\1Mod+Up\2{ set-column-width \"100%\"; }|" \
+        -e "s|^([[:space:]]*)Mod\+Down([[:space:]]+)\{ focus-window-or-workspace-down; \}|\1Mod+Down\2{ spawn \"$COLUMN_DOWN\"; }|" \
+        -e "s|^([[:space:]]*)Mod\+Ctrl\+Up([[:space:]]+)\{ move-window-up-or-to-workspace-up; \}|\1Mod+Ctrl+Up\2{ move-window-up; }|" \
+        -e "s|^([[:space:]]*)Mod\+Ctrl\+Down([[:space:]]+)\{ move-window-down-or-to-workspace-down; \}|\1Mod+Ctrl+Down\2{ move-window-down; }|" \
+        "$NIRI_CFG" >"$tmp"
+    cat "$tmp" >"$NIRI_CFG"
+    rm -f "$tmp"
+    if ! "$BIN/niri" validate -c "$NIRI_CFG" >/dev/null 2>&1; then
+        cp -a "$NIRI_CFG.bak-$STAMP" "$NIRI_CFG"
+        warn "Could not switch Mod+Up/Down to GNOME-style resizing: niri config restored."
+        return 0
+    fi
+    ok "Mod+Up/Down now resize like GNOME (backup: $NIRI_CFG.bak-$STAMP)."
+}
+
 migrate_niri_lock_bind() {
     grep -Eq '^[[:space:]]*Mod\+L[[:space:]].*swaylock' "$NIRI_CFG" || return 0
     local new_line="    Mod+L hotkey-overlay-title=\"Lock\" { spawn \"$LOCK_SCRIPT\"; }"
@@ -919,11 +983,13 @@ do_install() {
     install_profile
     install_system_files
     write_lock_script
+    write_column_down_script
     install_user_units
     write_session_env
     install_portal_and_mime
     write_niri_config
     migrate_niri_lock_bind
+    migrate_niri_updown_binds
     write_noctalia_config
     neutralize_noctalia_lock
     write_hyprlock_config
@@ -959,9 +1025,11 @@ do_update() {
     install_profile
     install_hyprlock
     write_lock_script
+    write_column_down_script
     install_user_units
     write_session_env
     migrate_niri_lock_bind
+    migrate_niri_updown_binds
     neutralize_noctalia_lock
     write_hyprlock_config
     migrate_hyprlock_clock
@@ -992,6 +1060,9 @@ do_uninstall() {
 
     if grep -qs -e 'niri-noctalia-nix.sh' -e 'niri-hyprlock-setup.sh' "$LOCK_SCRIPT"; then
         rm -f "$LOCK_SCRIPT"
+    fi
+    if grep -qs 'niri-noctalia-nix.sh' "$COLUMN_DOWN"; then
+        rm -f "$COLUMN_DOWN"
     fi
 
     rm -f "$PORTAL_CFG"

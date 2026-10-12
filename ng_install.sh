@@ -1401,6 +1401,7 @@ install_nix_packages() {
   displayandexec "Installation de wl-clipboard                        " "install_with_nix_pm nixpkgs#wl-clipboard"
   displayandexec "Installation de testdisk                            " "install_with_nix_pm nixpkgs#testdisk"
   displayandexec "Installation de marktext                            " "install_with_nix_pm nixpkgs#marktext"
+  displayandexec "Installation de passt                               " "install_with_nix_pm nixpkgs#passt"
 
  
   # displayandexec "Installation de mediainfo                           " "install_with_nix_pm nixpkgs#mediainfo"
