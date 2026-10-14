@@ -2038,6 +2038,7 @@ install_flatpak_software() {
   execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub org.kde.dolphin" # dolphin
   execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub io.github.totoshko88.RustConn" #RustConn
   execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub dev.zed.Zed" # Zed
+  execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub org.gnome.Loupe" # Loupe (remplace EOG, ref : [Why GNOME Replaced Eye of GNOME with Loupe as the Default Image Viewer | Linux Journal](https://www.linuxjournal.com/content/why-gnome-replaced-eye-gnome-loupe-default-image-viewer))
   # execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub page.codeberg.censor.Censor" # Censor
   # execandlog "$ExeAsUser flatpak install --user --assumeyes --noninteractive flathub org.gnome.Papers" # Papers
 
@@ -3246,10 +3247,18 @@ EOF
 # Enable hardware decoding if available
 hwdec=vaapi
 
-# Open MPV maximized by default
+# Open MPV maximized by default (utile pour l'environnement Gnome)
 # ref : https://www.reddit.com/r/mpv/comments/q9rye0/comment/k7romo0/
 # ref : https://mpv.io/manual/master/#options-autofit
 # autofit=100%
+
+# Don't resize the window when the media size changes (playlist of images
+# with different dimensions): niri stays in control of the window size
+auto-window-resize=no
+
+# Accept the window size set by niri; the image fits inside it while keeping
+# its aspect ratio (black bars), and small videos are scaled up
+keepaspect-window=no
 
 # play the image for the given amount of seconds
 # ref : https://mpv.io/manual/stable/#options-image-display-duration
@@ -3275,6 +3284,41 @@ EOF
 }
 # la configuration des préférences de Typora ne peut se faire que graphiquement le seul moyen de contourner ce problème est de configurer graphiquement les préférences et de récupérer le contenu du fichier /home/$local_user/.config/Typora/profile.data
 configure_typora
+################################################################################
+
+################################################################################
+## configuration de ghostty
+##------------------------------------------------------------------------------
+configure_ghostty() {
+  displayandexec "Configuration de ghostty                            " "\
+  reset_dir_as_user "/home/"$local_user"/.config/ghostty/"" && \
+  $ExeAsUser cat> /home/"$local_user"/.config/ghostty/config.ghostty << 'EOF'
+palette = 0=#21252b
+palette = 1=#e06c75
+palette = 2=#98c379
+palette = 3=#e5c07b
+palette = 4=#61afef
+palette = 5=#c678dd
+palette = 6=#56b6c2
+palette = 7=#abb2bf
+palette = 8=#767676
+palette = 9=#e06c75
+palette = 10=#98c379
+palette = 11=#e5c07b
+palette = 12=#61afef
+palette = 13=#c678dd
+palette = 14=#56b6c2
+palette = 15=#abb2bf
+background = #21252b
+foreground = #abb2bf
+cursor-color = #abb2bf
+cursor-text = #21252b
+selection-background = #323844
+selection-foreground = #abb2bf
+EOF
+}
+configure_ghostty
+# provient de : [Atom One Dark | ghostty.style](https://ghostty-style.vercel.app/config/atom-one-dark)
 ################################################################################
 
 ################################################################################
@@ -3440,7 +3484,7 @@ application/x-gettext-translation=org.gnome.gedit.desktop;
 application/x-shellscript=dev.zed.Zed.desktop;
 application/x-keepass2=keepassxc.desktop;
 application/x-kdbx=keepassxc.desktop;
-text/markdown=typora.desktop;org.gnome.gedit.desktop;
+text/markdown=marktext.desktop;typora.desktop;org.gnome.gedit.desktop;
 text/csv=libreoffice-calc.desktop;org.gnome.gedit.desktop;
 text/html=brave-browser.desktop;dev.zed.Zed.desktop;
 text/x-patch=dev.zed.Zed.desktop;
@@ -3448,11 +3492,11 @@ text/x-diff=dev.zed.Zed.desktop;
 text/x-python=dev.zed.Zed.desktop;
 video/x-matroska=mpv.desktop;
 video/webm=mpv.desktop;
-video/x-flv=mpv.desktop;org.gnome.Totem.desktop;vlc.desktop;
-video/mp4=mpv.desktop;org.gnome.Totem.desktop;vlc.desktop;
+video/x-flv=mpv.desktop;vlc.desktop;
+video/mp4=mpv.desktop;vlc.desktop;
 video/quicktime=mpv.desktop;
 video/mp2t=mpv.desktop;
-image/webp=org.geeqie.Geeqie.desktop;
+image/webp=org.gnome.Loupe.desktop,org.geeqie.Geeqie.desktop;
 
 [Default Applications]
 application/x-mswinurl=launch_url_file.desktop;
@@ -3462,7 +3506,7 @@ application/x-kdbx=keepassxc.desktop
 text/html=brave-browser.desktop
 text/plain=dev.zed.Zed.desktop
 text/x-diff=dev.zed.Zed.desktop
-text/markdown=typora.desktop
+text/markdown=marktext.desktop
 video/mp4=mpv.desktop
 video/x-matroska=mpv.desktop
 video/webm=mpv.desktop
@@ -3473,8 +3517,8 @@ x-scheme-handler/http=brave-browser.desktop
 x-scheme-handler/https=brave-browser.desktop
 x-scheme-handler/about=brave-browser.desktop
 x-scheme-handler/unknown=brave-browser.desktop
-image/webp=org.geeqie.Geeqie.desktop
-image/heif=org.geeqie.Geeqie.desktop
+image/webp=org.gnome.Loupe.desktop
+image/heif=org.gnome.Loupe.desktop
 EOF
 }
 configure_mime_types
